@@ -1,0 +1,4 @@
+node_modules/
+cfg/ai-s_key.json
+.env
+.DS_Store

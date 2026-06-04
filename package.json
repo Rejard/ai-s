@@ -1,0 +1,17 @@
+{
+  "name": "polygon-referral-investment-platform",
+  "version": "1.0.0",
+  "description": "Polygon-based referral and investment mock platform (Vite React + Express + SQLite)",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install --legacy-peer-deps",
+    "dev-backend": "cd backend && npm run dev",
+    "dev-frontend": "cd frontend && npm run dev",
+    "start": "concurrently \"npm run dev-backend\" \"npm run dev-frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "author": "",
+  "license": "ISC"
+}

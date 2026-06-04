@@ -1,0 +1,30 @@
+{
+  "name": "Ai S",
+  "short_name": "Ai S",
+  "description": "2단계 파트너 온체인 분배 및 AI 자동 투자 시뮬레이션 플랫폼",
+  "start_url": "/?demo=true",
+  "display": "standalone",
+  "background_color": "#05050f",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
