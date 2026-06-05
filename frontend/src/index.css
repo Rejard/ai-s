@@ -446,3 +446,17 @@ h1, h2, h3, h4, h5 {
   }
 }
 
+@media (max-width: 768px) {
+  .admin-layout-wrapper {
+    padding: 20px 15px !important;
+  }
+  .admin-content-row {
+    flex-direction: column !important;
+  }
+  .admin-col-left {
+    width: 100% !important;
+  }
+  .admin-col-right {
+    width: 100% !important;
+  }
+}

@@ -221,10 +221,11 @@ router.post('/delete-manager', async (req, res) => {
  * @desc 글로벌 AI 모델 정보 및 Gemini API Key를 서버 DB에 영구 저장
  */
 router.post('/save-ai-config', async (req, res) => {
-  const { model, apiKey } = req.body;
+  const { model, apiKey, interval } = req.body;
   try {
     if (model) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_model', ?)`, [model.trim()]);
     if (apiKey) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_gemini_api_key', ?)`, [apiKey.trim()]);
+    if (interval) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval', ?)`, [interval.toString()]);
     
     res.json({ success: true, message: '글로벌 AI 두뇌 및 API Key 설정이 서버 DB에 안전하게 저장되었습니다.' });
   } catch (err) {
@@ -238,11 +239,12 @@ router.post('/save-ai-config', async (req, res) => {
  */
 router.get('/ai-config', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key')");
+    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval')");
     const config = {
       model: 'Gemini 3.5 Flash',
       hasApiKey: false,
-      apiKey: ''
+      apiKey: '',
+      interval: '5'
     };
 
     settings.forEach(s => {
@@ -251,6 +253,7 @@ router.get('/ai-config', async (req, res) => {
         config.hasApiKey = true;
         config.apiKey = s.value;
       }
+      if (s.key === 'global_ai_interval') config.interval = s.value;
     });
 
     res.json({ success: true, config });

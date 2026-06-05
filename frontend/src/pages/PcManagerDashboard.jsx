@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -40,6 +40,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [performance, setPerformance] = useState(null);
   const [yieldHistory, setYieldHistory] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
+
+  // 신규: 중복 실행 방지용 전략 ID 레퍼런스
+  const lastExecutedStrategyIdRef = useRef(null);
 
   // Gate.io 실거래 주문 전용 상태
   const [orderAmount, setOrderAmount] = useState('');
@@ -381,6 +384,87 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     const interval = setInterval(fetchManagerData, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // 신규: 로컬 자동매매 실행 루프
+  useEffect(() => {
+    if (gridSettings.ai_grid_status !== 'ON' || !aiLogs || aiLogs.length === 0) return;
+    if (!gateioBalance) return; // 잔고가 아직 로드되지 않은 상태에서 전략이 '실행됨'으로 마킹되는 버그(Race Condition) 방지
+
+    const latestStrategy = aiLogs[0];
+    if (lastExecutedStrategyIdRef.current === latestStrategy.id) return; // 이미 실행한 전략
+
+    // 15분 이상 지난 전략은 무시
+    const strategyTime = new Date(latestStrategy.created_at).getTime();
+    const now = Date.now();
+    if (now - strategyTime > 15 * 60 * 1000) {
+      lastExecutedStrategyIdRef.current = latestStrategy.id;
+      return;
+    }
+
+    // 조건 검사
+    const lower = parseFloat(gridSettings.ai_grid_lower);
+    const upper = parseFloat(gridSettings.ai_grid_upper);
+    const decision = latestStrategy.decision;
+    const proposedPrice = parseFloat(latestStrategy.proposed_price);
+    const amountRatio = parseFloat(latestStrategy.proposed_amount) || 0.1; 
+
+    let tradeSide = null;
+    let tradeAmount = 0;
+    let tradePrice = proposedPrice;
+
+    if (decision === 'BUY') {
+      if (proposedPrice <= upper) {
+        tradeSide = 'buy';
+        const usdtBalance = gateioBalance ? gateioBalance.USDT : 0;
+        tradeAmount = (usdtBalance * amountRatio) / proposedPrice;
+      }
+    } else if (decision === 'SELL') {
+      if (proposedPrice >= lower) {
+        tradeSide = 'sell';
+        const sutBalance = gateioBalance ? gateioBalance.SUT : 0;
+        tradeAmount = sutBalance * amountRatio;
+      }
+    }
+
+    if (tradeSide && tradeAmount > 0) {
+      console.log(`[🤖 로컬 AI 실행] ${tradeSide} ${tradeAmount} SUT @ ${tradePrice} USDT`);
+      
+      const apiKey = localStorage.getItem('gateio_api_key') || '';
+      const apiSecret = localStorage.getItem('gateio_api_secret') || '';
+      if (!apiKey || !apiSecret) {
+        console.warn('API 키가 없어 매매를 스킵합니다.');
+        return;
+      }
+
+      // 백그라운드 매매 실행 함수
+      const executeAutoTrade = async () => {
+        try {
+          const res = await axios.post(`${API_BASE}/manager/gateio-order`, {
+            side: tradeSide,
+            amount: parseFloat(tradeAmount.toFixed(4)),
+            price: parseFloat(tradePrice)
+          }, {
+            headers: {
+              'x-manager-email': managerEmail,
+              'x-gateio-api-key': apiKey,
+              'x-gateio-api-secret': apiSecret
+            }
+          });
+          if (res.data.success) {
+            console.log('🤖 AI 자동 매매 체결 성공!', res.data);
+          }
+        } catch (e) {
+          console.error('🤖 AI 자동 매매 실패:', e);
+        }
+      };
+
+      executeAutoTrade();
+    }
+
+    // 어찌되었든 이 전략은 처리(또는 패스)했으므로 마킹
+    lastExecutedStrategyIdRef.current = latestStrategy.id;
+    
+  }, [aiLogs, gridSettings.ai_grid_status, gridSettings.ai_grid_lower, gridSettings.ai_grid_upper, gateioBalance, managerEmail]);
 
   // 2. KYC 승인 처리
   const handleApprove = async (walletAddressToApprove) => {

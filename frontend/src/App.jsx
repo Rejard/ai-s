@@ -19,6 +19,7 @@ import PcRegisterPage from './pages/PcRegisterPage';
 import PcWaitingPage from './pages/PcWaitingPage';
 import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
+import PcAdminDashboard from './pages/PcAdminDashboard';
 import { buildTrustWalletOpenUrl } from './lib/walletProvider';
 
 // 백엔드 API 기본 주소 설정
@@ -35,6 +36,7 @@ function AppContent() {
   const [userStatus, setUserStatus] = useState(''); // PENDING_KYC, APPROVED, REJECTED
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false);
 
   // 진짜 구글 로그인 연동 상태
   const [googleLoggedIn, setGoogleLoggedIn] = useState(false);
@@ -81,11 +83,34 @@ function AppContent() {
     window.location.href = buildGoogleOAuthRedirectUrl();
   };
 
-  const applyGoogleProfile = (profile) => {
+  const restoreSessionByEmail = async (email) => {
+    try {
+      const res = await axios.get(`${API_BASE}/auth/status-by-email/${email}`);
+      if (res.data.success && res.data.registered) {
+        const user = res.data.user;
+        setWalletAddress(user.walletAddress);
+        setIsRegistered(true);
+        setUserStatus(user.status);
+        setUserData(user);
+        console.log("[SESSION AUTO-RESTORED] Registered email detected:", user.walletAddress);
+        return user.walletAddress;
+      }
+    } catch (err) {
+      console.error("이메일 세션 자동 복원 실패:", err);
+    }
+    return null;
+  };
+
+  const applyGoogleProfile = async (profile) => {
     const email = profile.email?.toLowerCase().trim();
     if (!email) throw new Error('Google profile did not include an email address.');
 
     const name = profile.name || profile.given_name || email;
+    
+    setLoading(true);
+    await restoreSessionByEmail(email);
+    setLoading(false);
+
     setGoogleEmail(email);
     setGoogleName(name);
     setGoogleLoggedIn(true);
@@ -106,77 +131,101 @@ function AppContent() {
     });
     if (!res.ok) throw new Error(`Google userinfo failed with ${res.status}`);
 
-    applyGoogleProfile(await res.json());
+    await applyGoogleProfile(await res.json());
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     return true;
   };
 
-  // 컴포넌트 마운트 시 로컬 스토리지에서 가상 지갑 히스토리 및 세션, 쿼리 매개변수 로드
+  // 컴포넌트 마운트 시 통합 세션 복원 및 초기화 로직 수행
   useEffect(() => {
-    restoreGoogleOAuthRedirect().catch((err) => {
-      console.error('Google OAuth redirect restore failed:', err);
-      alert('Google 로그인 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
-    });
-
-    const params = new URLSearchParams(window.location.search);
-    const paramEmail = params.get('google_email');
-    const paramName = params.get('google_name');
-    
-    if (paramEmail && paramName) {
-      const email = decodeURIComponent(paramEmail).toLowerCase().trim();
-      const name = decodeURIComponent(paramName);
-      setGoogleEmail(email);
-      setGoogleName(name);
-      setGoogleLoggedIn(true);
-      localStorage.setItem('google_email', email);
-      localStorage.setItem('google_name', name);
-    } else {
-      const savedEmail = localStorage.getItem('google_email');
-      const savedName = localStorage.getItem('google_name');
-      if (savedEmail && savedName) {
-        setGoogleEmail(savedEmail);
-        setGoogleName(savedName);
-        setGoogleLoggedIn(true);
+    const initializeApp = async () => {
+      try {
+        await restoreGoogleOAuthRedirect();
+      } catch (err) {
+        console.error('Google OAuth redirect restore failed:', err);
+        alert('Google 로그인 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
       }
-    }
 
-    // 🌟 [DApp 인앱 브라우저 지갑 자동 감지(Auto-Connect) 엔진 고도화]
-    // 페이지 로드 시 window.ethereum이 존재한다면 (트러스트 월렛 내부 DApp 브라우저 진입),
-    // 사용자가 지갑 연결 버튼을 누르지 않아도 즉시 지갑 연동 요청(eth_requestAccounts)을 자동 격발하여
-    // 1초 만에 서명 팝업창을 띄우고 지갑 주소를 자동 결합시킵니다!
-    const autoConnectWallet = async () => {
-      if (window.ethereum) {
-        try {
-          // 1차 스캔: 기존 승인 이력 체크
-          let accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          
-          // 2차 스캔 (매우 중요): 승인 이력이 없는 신규 일반 회원인 경우, 자동 연동 요청 팝업창(eth_requestAccounts)을 즉각 띄워 결합!
-          if (accounts.length === 0) {
-            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          }
+      const params = new URLSearchParams(window.location.search);
+      const paramEmail = params.get('google_email');
+      const paramName = params.get('google_name');
+      
+      let currentEmail = '';
+      let currentName = '';
 
-          if (accounts.length > 0) {
-            const address = accounts[0];
-            setWalletAddress(address);
-            await checkUserStatus(address);
-            console.log("[AUTO-CONNECT SUCCESS] Connected to injected wallet:", address);
-          }
-        } catch (err) {
-          console.error("지갑 자동 조회 실패:", err);
+      if (paramEmail && paramName) {
+        currentEmail = decodeURIComponent(paramEmail).toLowerCase().trim();
+        currentName = decodeURIComponent(paramName);
+      } else {
+        const savedEmail = localStorage.getItem('google_email');
+        const savedName = localStorage.getItem('google_name');
+        if (savedEmail && savedName) {
+          currentEmail = savedEmail;
+          currentName = savedName;
         }
       }
-    };
-    
-    // 약간의 딜레이를 주어 Web3 프로바이더가 안정적으로 주입된 후 가동 보장
-    setTimeout(autoConnectWallet, 600);
 
+      let _googleLoggedIn = false;
+      if (currentEmail && currentName) {
+        setGoogleEmail(currentEmail);
+        setGoogleName(currentName);
+        setGoogleLoggedIn(true);
+        _googleLoggedIn = true;
+        localStorage.setItem('google_email', currentEmail);
+        localStorage.setItem('google_name', currentName);
+      }
+
+      const promises = [];
+      let emailWalletAddress = null;
+
+      // 1. 이메일 기반 가입 정보 조회 및 세션 복원
+      if (_googleLoggedIn && currentEmail) {
+        promises.push(
+          restoreSessionByEmail(currentEmail).then(addr => {
+            if (addr) emailWalletAddress = addr;
+          })
+        );
+      }
+
+      // 2. Web3 지갑 연동 확인 (딜레이 부여)
+      promises.push(
+        new Promise(resolve => setTimeout(async () => {
+          if (window.ethereum) {
+            try {
+              let accounts = await window.ethereum.request({ method: 'eth_accounts' });
+              if (accounts.length === 0) {
+                try {
+                  accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                } catch(e) {}
+              }
+              if (accounts.length > 0) {
+                const address = accounts[0];
+                if (emailWalletAddress) {
+                  console.log("[AUTO-CONNECT] Email session already established. Skipping injected wallet overwrite.");
+                } else {
+                  setWalletAddress(address);
+                  await checkUserStatus(address);
+                }
+              }
+            } catch (err) {
+              console.error("지갑 자동 조회 실패:", err);
+            }
+          }
+          resolve();
+        }, 600))
+      );
+
+      await Promise.all(promises);
+      setIsAppReady(true);
+    };
+
+    initializeApp();
   }, []);
 
   // 구글 로그인 성공 콜백 핸들러
-  const handleGoogleCredentialResponse = (response) => {
+  const handleGoogleCredentialResponse = async (response) => {
     try {
       const token = response.credential;
-      // JWT ID Token 안전하게 디코딩 (라이브러리 미설치 대처)
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
@@ -184,17 +233,20 @@ function AppContent() {
       }).join(''));
       
       const payload = JSON.parse(jsonPayload);
-      console.log("[GOOGLE AUTH SUCCESS]", payload);
       
       const email = payload.email.toLowerCase().trim();
       const name = payload.name || payload.given_name || '사용자';
       
+      localStorage.setItem('google_email', email);
+      localStorage.setItem('google_name', name);
+
+      setLoading(true);
+      await restoreSessionByEmail(email);
+      setLoading(false);
+      
       setGoogleEmail(email);
       setGoogleName(name);
       setGoogleLoggedIn(true);
-      
-      localStorage.setItem('google_email', email);
-      localStorage.setItem('google_name', name);
       
       alert(`🎉 Google 연동 성공: ${email} 계정으로 정상 연동되었습니다.`);
     } catch (e) {
@@ -203,9 +255,7 @@ function AppContent() {
     }
   };
 
-  // 동적으로 Google Identity Service SDK 로드 및 연동
   useEffect(() => {
-    // 🌟 모바일 인앱 브라우저 내부일 때 구글 OAuth SDK의 강제 리다이렉트 및 백화 현상을 원천 방어하기 위해 로드를 바이패스합니다!
     if (isInAppBrowser || shouldUseGoogleRedirectLogin) {
       console.log("[STEALTH CONTROL] Bypassed Google Identity SDK dynamic load for mobile In-App browser.");
       return;
@@ -226,7 +276,6 @@ function AppContent() {
           callback: handleGoogleCredentialResponse
         });
         
-        // 최초 화면 웰컴 구글 로그인 버튼 렌더링 시도
         renderGoogleSignInButton();
       }
     };
@@ -238,22 +287,20 @@ function AppContent() {
     };
   }, [googleLoggedIn]);
 
-  // 구글 로그인 공식 버튼 렌더링 헬퍼
   const renderGoogleSignInButton = () => {
     setTimeout(() => {
       const btnElem = document.getElementById('google-signin-btn');
       if (btnElem && window.google) {
-        // [버그 픽스] 이미 렌더링된 버튼이 있으면 중복 렌더링 방지 (순식간에 사라지는 현상 해결)
         if (btnElem.hasChildNodes()) return;
         
         window.google.accounts.id.renderButton(btnElem, {
-          theme: 'outline',         // 투명 배경 테두리 아웃라인으로 테마 대전환!
+          theme: 'outline',
           size: 'large',
           width: 280,
-          shape: 'pill',            // 둥근 캡슐 형태로 모서리 라운딩 조화
+          shape: 'pill',
           logo_alignment: 'left',
           text: 'signin_with',
-          locale: 'ko'              // 한국어 고정 렌더링
+          locale: 'ko'
         });
       }
     }, 200);
@@ -266,34 +313,6 @@ function AppContent() {
     }
   }, [googleLoggedIn]);
 
-  // 🌟 [자동 세션 복원 및 로그인 바이패스 엔진]
-  // 구글 계정으로 인증되었을 때, 혹시 해당 이메일로 이미 가입된 회원이 있는지 DB에서 조회하여
-  // 이미 가입된 회원이라면 지갑 주소와 회원 상태를 자동으로 복원해 즉시 대시보드로 이동시킵니다!
-  useEffect(() => {
-    const restoreSessionByEmail = async () => {
-      if (googleLoggedIn && googleEmail) {
-        try {
-          const res = await axios.get(`${API_BASE}/auth/status-by-email/${googleEmail}`);
-          if (res.data.success && res.data.registered) {
-            const user = res.data.user;
-            setWalletAddress(user.walletAddress);
-            setIsRegistered(true);
-            setUserStatus(user.status);
-            setUserData(user);
-            console.log("[SESSION AUTO-RESTORED] Registered email detected, automatically bypassed connect wallet step:", user.walletAddress);
-          }
-        } catch (err) {
-          console.error("이메일 기반 가입 세션 자동 복원 실패:", err);
-        }
-      }
-    };
-
-    restoreSessionByEmail();
-  }, [googleLoggedIn, googleEmail]);
-
-
-
-  // 회원 상태 조회 연동
   const checkUserStatus = async (address) => {
     if (!address) return;
     setLoading(true);
@@ -317,10 +336,6 @@ function AppContent() {
     }
   };
 
-
-
-  // 진짜 Web3 지갑 연결 시도 (트러스트 월렛 등)
-  // 진짜 Web3 지갑 연결 시도 (트러스트 월렛 등)
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
@@ -334,12 +349,8 @@ function AppContent() {
         alert('지갑 연결에 실패했거나 취소되었습니다.');
       }
     } else {
-      // 🌟 [모바일 딥링크 가드] 모바일 일반 브라우저(사파리 등)에서 접근 시, 
-      // 구글/트러스트월렛 중계 서버의 한국어 리다이렉트 버그(trust://ko/)를 우회하기 위해 다이렉트 스키마를 직접 기동합니다!
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
-        // 🌟 [딥링크 세션 인계 핵심] 트러스트 월렛 내부 브라우저가 새로 기동되어 열릴 때, 
-        // 현재 로그인되어 있는 구글 계정의 이메일과 이름을 주소창 파라미터에 고스란히 얹어서 전달합니다!
         const baseUrl = window.location.origin + window.location.pathname;
         const queryParams = new URLSearchParams();
         if (googleLoggedIn && googleEmail) {
@@ -358,7 +369,6 @@ function AppContent() {
     }
   };
 
-  // 지갑 연결 해제 (로그아웃)
   const disconnectWallet = () => {
     localStorage.removeItem('google_email');
     localStorage.removeItem('google_name');
@@ -366,7 +376,6 @@ function AppContent() {
     window.location.reload();
   };
 
-  // [버그 픽스] 구글 버튼이 DOM에서 파괴되었다가 다시 생성될 때를 대비한 전용 컴포넌트
   const GoogleSignInBtn = () => {
     useEffect(() => {
       if (shouldUseGoogleRedirectLogin) return;
@@ -396,11 +405,9 @@ function AppContent() {
     return <div id="google-signin-btn" style={{ minHeight: '44px', width: '280px', display: 'flex', justifyContent: 'center' }}></div>;
   };
 
-  // 지갑 미연결 또는 구글 미로그인 시 출력할 통합 인트로 화면 (모바일용)
   const renderIntro = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '0 20px', margin: 'auto 0' }}>
-        {/* 메인 웰컴 카드 */}
         <div className="glass-card glow-active" style={{ textAlign: 'center', padding: '35px 20px' }}>
           <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(139,92,246,0.1)', marginBottom: '16px' }}>
             <Shield size={44} color="#8B5CF6" />
@@ -411,10 +418,8 @@ function AppContent() {
             2단계 추천인 자동 분배 및 AI 자동 투자 시스템 시뮬레이션을 시작하십시오.
           </p>
 
-          {/* 1단계: 구글 로그인 연동 필수화 */}
           {!googleLoggedIn ? (
             isInAppBrowser ? (
-              /* 🌟 [모바일 인앱 1초 프리패스 퀵패스 서비스 개통] */
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
                 <button 
                   className="btn-primary glow-active"
@@ -444,7 +449,6 @@ function AppContent() {
                 </div>
               </div>
             ) : (
-              /* 일반 PC 및 팝업 브라우저용 공식 구글 로그인 버튼 */
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <div 
                   style={{ 
@@ -456,12 +460,10 @@ function AppContent() {
                 >
                   🔑 가입 및 인증을 위해 먼저 구글 계정으로 로그인해 주십시오.
                 </div>
-                {/* 전용 컴포넌트를 사용하여 렌더링/로딩 상태 변화 시 버튼을 잃지 않도록 보장 */}
                 <GoogleSignInBtn />
               </div>
             )
           ) : (
-            /* 2단계: 구글 로그인 성공 후 지갑 연결 활성화 */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{
                 background: 'rgba(16, 185, 129, 0.08)',
@@ -491,11 +493,9 @@ function AppContent() {
     );
   };
 
-  // PC 전용 프리미엄 인트로 화면 (좌측 소개, 우측 구글/지갑 연동 카드)
   const renderPcIntro = () => {
     return (
       <div className="pc-layout-wrapper">
-        {/* 좌측: 플랫폼 설명 및 피처 소개 */}
         <div className="pc-side-intro" style={{ animationDelay: '0.1s' }}>
           <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '16px', background: 'rgba(139,92,246,0.1)', marginBottom: '24px', width: 'fit-content' }}>
             <Sparkles size={36} color="#8B5CF6" />
@@ -539,7 +539,6 @@ function AppContent() {
           </div>
         </div>
 
-        {/* 우측: 연동 카드 */}
         <div style={{ width: '420px', flexShrink: 0 }}>
           <div className="glass-card glow-active" style={{ padding: '40px 30px', textAlign: 'center' }}>
             <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(139,92,246,0.08)', marginBottom: '20px' }}>
@@ -611,7 +610,7 @@ function AppContent() {
             position: 'relative'
           }
         : {
-            width: `${screenWidth}px`, // 자바스크립트로 계산한 100% 실제 가로 너비 강제 주입
+            width: `${screenWidth}px`,
             maxWidth: '100vw',
             minHeight: '100vh',
             backgroundColor: 'var(--bg-app)',
@@ -623,9 +622,6 @@ function AppContent() {
           }
       }
     >
-      {/* 상단 헤더 영역 - PC 대시보드 및 인트로 등에서는 각 화면 디자인을 깨뜨릴 수 있으므로 
-          isPcView가 아닐 때(모바일일 때)만 공통 상단 헤더를 보여주고, 
-          PC 뷰일 때는 각 전용 페이지가 직접 내부 헤더/사이드바를 그리도록 제어합니다! */}
       {!isPcView && (
         <header style={{
           padding: '18px 20px',
@@ -650,16 +646,14 @@ function AppContent() {
         </header>
       )}
 
-      {/* 바디 라우팅 콘텐츠 */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: isPcView ? '0' : '70px', position: 'relative' }}>
-        {loading ? (
+        {(!isAppReady || loading) ? (
           <div style={{ margin: 'auto', textAlign: 'center' }}>
             <div className="shimmer-loading" style={{ width: '50px', height: '50px', borderRadius: '50%', margin: '0 auto 15px' }}></div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>사용자 정보를 불러오는 중...</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>보안 세션을 확인하는 중입니다...</p>
           </div>
         ) : (
           <Routes>
-            {/* 👑 매니저 전용 보안 가드 라우팅 (lemaiiisk@gmail.com 마스터 이메일만 진입 보장) */}
             <Route path="/manager" element={
               googleLoggedIn && googleEmail.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase() ? (
                 isPcView ? (
@@ -672,16 +666,18 @@ function AppContent() {
               )
             } />
 
-            {/* 👑 어드민(관리자) 전용 보안 가드 라우팅 */}
             <Route path="/admin" element={
               googleLoggedIn && googleEmail.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase() ? (
-                <AdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                isPcView ? (
+                  <PcAdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                ) : (
+                  <AdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                )
               ) : (
                 <Navigate to="/" replace />
               )
             } />
 
-            {/* 매니저 전용 회원 정보 강제 수정 라우트 */}
             <Route path="/manager/edit-user/:walletAddress" element={
               googleLoggedIn && googleEmail.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase() ? (
                 <EditUserPage />
@@ -690,7 +686,6 @@ function AppContent() {
               )
             } />
 
-            {/* 기본 루트 */}
             <Route path="/" element={
               !googleLoggedIn || !walletAddress ? (
                 isPcView ? renderPcIntro() : renderIntro()
@@ -701,7 +696,6 @@ function AppContent() {
               ) : userStatus === 'APPROVED' ? (
                 <Navigate to="/dashboard" replace />
               ) : userStatus === 'REJECTED' ? (
-                /* 반려 상태 */
                 isPcView ? (
                   <div className="pc-layout-wrapper" style={{ justifyContent: 'center' }}>
                     <div className="glass-card" style={{ maxWidth: '450px', width: '100%', textAlign: 'center', padding: '40px' }}>
