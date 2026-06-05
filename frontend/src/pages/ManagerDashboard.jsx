@@ -620,7 +620,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               </span>
               {performance && (
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                  (원금: {performance.totalBuyUsdt.toFixed(2)} USDT)
+                  (원금: {performance.totalBuyUsdt.toFixed(2)} USDT / 보유 USDT: {gateioBalance ? parseFloat(gateioBalance.USDT).toFixed(2) : '0.00'} USDT)
                 </span>
               )}
             </div>
