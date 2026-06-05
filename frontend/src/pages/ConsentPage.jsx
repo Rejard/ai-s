@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ShieldCheck, AlertTriangle, Users, ChevronRight } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function ConsentPage({ walletAddress }) {
+function ConsentPage({ walletAddress, onLogout }) {
   const navigate = useNavigate();
   const [agreements, setAgreements] = useState({
     lossLiability: false,
@@ -84,6 +84,39 @@ function ConsentPage({ walletAddress }) {
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
+      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
+        (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
+        <div 
+          className="glass-card glow-active" 
+          onClick={() => navigate('/manager')}
+          style={{ 
+            padding: '12px 16px', 
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>👑</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 연동 중</div>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
+            </div>
+          </div>
+          <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
+            메니져 모드 가기
+          </button>
+        </div>
+      )}
+      
       {/* 선착순 정원 게이지 바 */}
       <div className="glass-card" style={{ padding: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '8px', color: 'var(--text-muted)' }}>
@@ -100,12 +133,26 @@ function ConsentPage({ walletAddress }) {
         </div>
       </div>
 
-      {/* 동의서 타이틀 */}
-      <div style={{ textAlign: 'center', margin: '10px 0' }}>
+      {/* 동의서 타이틀 및 로그아웃 버튼 */}
+      <div style={{ textAlign: 'center', margin: '10px 0', position: 'relative' }}>
         <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>투자의사 및 약관 동의</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
           안전하고 원활한 자동 투자 플랫폼 이용을 위해 아래 사항을 자세히 읽고 동의해 주십시오.
         </p>
+        <button 
+          onClick={onLogout}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-muted)',
+            fontSize: '12px',
+            textDecoration: 'underline',
+            marginTop: '15px',
+            cursor: 'pointer'
+          }}
+        >
+          계정 초기화 (로그아웃 하고 처음으로 돌아가기)
+        </button>
       </div>
 
       {/* 약관 리스트 */}
@@ -150,7 +197,7 @@ function ConsentPage({ walletAddress }) {
               style={{ width: '20px', height: '20px', accentColor: 'var(--accent-color)', cursor: 'pointer', marginTop: '2px' }}
             />
             <label htmlFor="withdrawalAuth" style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6', cursor: 'pointer' }}>
-              [필수] 가입비 및 월정액 자동 인출 권한(USDT Approve) 위임 동의
+              [필수] 가입비 및 월정액 자동 인출 권한(SUT Approve) 위임 동의
             </label>
           </div>
           <div style={{ 
@@ -163,7 +210,7 @@ function ConsentPage({ walletAddress }) {
             maxHeight: '80px',
             overflowY: 'auto'
           }}>
-            본 서비스의 정식 멤버십 가입비는 100 USDT이며, 10일 무료 체험 종료 후 자동으로 사용자의 지갑으로부터 인출(Pull) 청구됩니다. 또한 활성화를 유지하기 위한 월 정액 요금 및 사용자가 설정한 가상 자동 투자 자금의 유동적 정산을 위해, 플랫폼 스마트 컨트랙트(PlatformVault)에 사용자 지갑 내 테더(USDT) 자산의 특정 한도(Approve) 권한을 스마트 서명으로 위임하는 것에 전적으로 동의합니다. 이 권한을 활용해 백엔드는 서명 없이 월정액을 원격 자동 수납할 수 있습니다.
+            본 서비스의 가입은 온체인 스마트 컨트랙트를 통해 안전하게 이루어집니다. 사용자가 설정한 가상 자동 투자 자금의 유동적 정산을 위해, 플랫폼 스마트 컨트랙트에 사용자 지갑 내 SUT 자산의 특정 한도(Approve) 권한을 스마트 서명으로 위임하는 것에 전적으로 동의합니다. 이 권한을 활용해 백엔드는 서명 없이 월정액을 원격 자동 수납할 수 있습니다.
           </div>
         </div>
 
@@ -191,7 +238,7 @@ function ConsentPage({ walletAddress }) {
             maxHeight: '80px',
             overflowY: 'auto'
           }}>
-            본 플랫폼은 자금세탁 방지 및 불법 자금 차단을 위해 가입 신청 시 회원 실명, 전화번호, 국가 및 공식 신분증(여권/주민등록증 등) 제출을 통한 철저한 KYC 인증 절차를 요구합니다. 외국인 등 자동 데이터베이스 식별 불능 회원의 경우 플랫폼 본사 관리자 배심단이 직접 신원 대조를 거치는 수동 승인(Approved)을 진행하며, 승인이 보류되거나 반려된 상태에서는 서비스 전체 기능 이용이 일절 제한될 수 있음에 완전히 동의합니다.
+            본 플랫폼은 자금세탁 방지 및 불법 자금 차단을 위해 가입 신청 시 회원 실명, 전화번호, 국가 및 공식 신분증(여권/주민등록증 등) 제출을 통한 철저한 KYC 인증 절차를 요구합니다. 외국인 등 자동 데이터베이스 식별 불능 회원의 경우 플랫폼 본사 매니저 배심단이 직접 신원 대조를 거치는 수동 승인(Approved)을 진행하며, 승인이 보류되거나 반려된 상태에서는 서비스 전체 기능 이용이 일절 제한될 수 있음에 완전히 동의합니다.
           </div>
         </div>
 

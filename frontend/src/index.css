@@ -61,6 +61,14 @@ body {
   display: none; /* Chrome, Safari, Opera */
 }
 
+@media (max-width: 768px) {
+  .app-frame {
+    max-width: 100%;
+    border: none;
+    box-shadow: none;
+  }
+}
+
 /* Typography */
 h1, h2, h3, h4, h5 {
   font-family: var(--font-title);
@@ -276,3 +284,165 @@ h1, h2, h3, h4, h5 {
 .nav-item.active {
   color: var(--accent-color);
 }
+
+/* PC 전용 듀얼 레이아웃 스타일 */
+.pc-layout-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+              #080A10;
+  overflow: hidden;
+  padding: 40px;
+  gap: 80px;
+  position: relative;
+}
+
+/* PC 우주 느낌 그라디언트 구체 애니메이션용 */
+.pc-layout-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  animation: floatOrb 15s infinite alternate ease-in-out;
+}
+
+.pc-layout-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: -10%;
+  right: -10%;
+  width: 45vw;
+  height: 45vw;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: floatOrb 20s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(5%, 5%) scale(1.1); }
+}
+
+/* PC 전용 왼쪽 소개 패널 */
+.pc-side-intro {
+  display: flex;
+  flex-direction: column;
+  max-width: 450px;
+  color: var(--text-main);
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.pc-side-intro h1 {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #FFF 0%, #C7D2FE 50%, #8B5CF6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+}
+
+.pc-side-intro p {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 30px;
+}
+
+.pc-intro-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.pc-intro-card {
+  background: rgba(23, 27, 44, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.pc-intro-card:hover {
+  background: rgba(23, 27, 44, 0.6);
+  border-color: rgba(139, 92, 246, 0.2);
+  transform: translateX(5px);
+}
+
+.pc-intro-card .icon-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 12px;
+  color: #8B5CF6;
+}
+
+.pc-intro-card h4 {
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: #FFF;
+}
+
+.pc-intro-card p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* PC 중앙 모바일 폰 시뮬레이터 프레임 */
+.mobile-simulator-frame {
+  width: 400px;
+  height: 820px;
+  max-height: 90vh;
+  background-color: var(--bg-app);
+  border: 8px solid rgba(23, 27, 44, 0.85);
+  border-radius: 36px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85),
+              0 0 0 1px rgba(139, 92, 246, 0.15),
+              0 0 40px rgba(139, 92, 246, 0.08);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 스크롤바 숨기기 */
+.mobile-simulator-frame main {
+  scrollbar-width: none;
+  overflow-y: auto;
+}
+.mobile-simulator-frame main::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

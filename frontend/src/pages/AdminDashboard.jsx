@@ -2,458 +2,310 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  Users, DollarSign, Award, ArrowLeft, Check, X, 
-  Eye, ShieldAlert, BarChart3, Receipt, ExternalLink 
+  ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus, 
+  ArrowLeft, BarChart3, HelpCircle, Loader2
 } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function AdminDashboard({ walletAddress, adminEmail }) {
+function AdminDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
 
-  // 대기 유저 및 전체 회원, 통계 데이터 상태
-  const [pendingUsers, setPendingUsers] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [recentPayments, setRecentPayments] = useState([]);
+  // 매니저 목록 및 상태 관리
+  const [managers, setManagers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [promoteWallet, setPromoteWallet] = useState('');
+  const [submittingPromote, setSubmittingPromote] = useState(false);
+  const [submittingDelete, setSubmittingDelete] = useState(null);
 
-  // 모달 이미지 뷰어 상태
-  const [selectedIdCard, setSelectedIdCard] = useState(null);
-  const [submittingId, setSubmittingId] = useState(null);
+  // 최종 어드민 권한 고정 계정 정의
+  const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
+  const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
 
-  // 시연 편의성 및 외부인 무단 침입 철저 방어를 위한 관리자 비밀번호 보호 상태
-  const [adminPassword, setAdminPassword] = useState('');
-  const [authPassed, setAuthPassed] = useState(false);
-
-  // 🌟 이명학 마스터 관리자 구글 이메일 고정 정의
-  const MASTER_ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
-  
-  // 백엔드 보안 미들웨어를 통과하기 위한 x-admin-email 헤더 빌드 (아무나 접속 시에도 어드민 API 연동 허용)
+  // 어드민 연동 헤더 빌드
   const getAdminHeaders = () => {
     return {
       headers: {
-        'x-admin-email': MASTER_ADMIN_EMAIL
+        'x-admin-email': ADMIN_EMAIL
       }
     };
   };
 
-  // 1. 어드민 통합 데이터 로드
-  const fetchAdminData = async () => {
+  // 매니저 목록 조회
+  const fetchManagers = async () => {
+    if (!isAdmin) return;
     try {
-      // 1-1. KYC 승인 대기 목록
-      const pendingRes = await axios.get(`${API_BASE}/admin/pending-users`, getAdminHeaders());
-      if (pendingRes.data.success) {
-        setPendingUsers(pendingRes.data.users);
+      const res = await axios.get(`${API_BASE}/admin/managers`, getAdminHeaders());
+      if (res.data.success) {
+        setManagers(res.data.managers);
       }
-
-      // 1-2. 통계 및 최근 결제
-      const statsRes = await axios.get(`${API_BASE}/admin/stats`, getAdminHeaders());
-      if (statsRes.data.success) {
-        setStats(statsRes.data.stats);
-        setRecentPayments(statsRes.data.recentPayments);
-      }
-
-      // 1-3. 전체 회원 정보 목록 실시간 로드 추가!
-      const allUsersRes = await axios.get(`${API_BASE}/admin/users`, getAdminHeaders());
-      if (allUsersRes.data.success) {
-        setAllUsers(allUsersRes.data.users);
-      }
-
     } catch (err) {
-      console.error('어드민 데이터 로드 실패:', err);
+      console.error('매니저 목록 로드 실패:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAdminData();
-    // 5초마다 실시간 동기화 리프레시
-    const interval = setInterval(fetchAdminData, 5000);
+    fetchManagers();
+    // 5초 간격 실시간 갱신
+    const interval = setInterval(fetchManagers, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [managerEmail]);
 
-  // 2. KYC 승인 처리
-  const handleApprove = async (walletAddressToApprove) => {
-    if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) {
+  // 매니저 승격 격발
+  const handlePromoteManager = async (e) => {
+    if (e) e.preventDefault();
+    if (!promoteWallet || promoteWallet.trim().length !== 42) {
+      alert("올바른 42자리 지갑 주소를 입력해 주십시오.");
       return;
     }
-    setSubmittingId(walletAddressToApprove);
+
+    if (!confirm(`해당 회원(${promoteWallet.trim()})을 매니저로 정식 승격시키겠습니까?\n\n승격 시 기존 매니저 소속에서 이탈하여 독립 500명 가입 정원을 가집니다.`)) {
+      return;
+    }
+
+    setSubmittingPromote(true);
     try {
-      const res = await axios.post(`${API_BASE}/admin/approve-user`, { walletAddress: walletAddressToApprove }, getAdminHeaders());
+      const res = await axios.post(`${API_BASE}/admin/promote-manager`, {
+        walletAddress: promoteWallet.trim()
+      }, getAdminHeaders());
+
       if (res.data.success) {
-        alert(res.data.message);
-        fetchAdminData();
+        alert(`🎉 ${res.data.message}`);
+        setPromoteWallet('');
+        fetchManagers();
       }
     } catch (err) {
       const errMsg = err.response && err.response.data && err.response.data.message
         ? err.response.data.message
         : err.message;
-      alert('승인 처리 중 오류 발생: ' + errMsg);
+      alert(`❌ 승격 실패: ${errMsg}`);
     } finally {
-      setSubmittingId(null);
+      setSubmittingPromote(false);
     }
   };
 
-  // 3. KYC 반려 처리
-  const handleReject = async (walletAddressToReject) => {
-    if (!confirm('해당 회원의 신원 서류가 부적합하여 가입 신청을 반려하시겠습니까?')) {
+  // 매니저 계정 삭제 및 이관 격발
+  const handleDeleteManager = async (walletAddr, name) => {
+    if (!confirm(`⚠️ 경고: [${name}] 매니저 계정을 데이터베이스에서 영구 삭제하시겠습니까?\n\n이 작업은 취소할 수 없으며, 해당 매니저 산하의 모든 회원은 마스터 매니저 밑으로 강제 자동 이관됩니다.`)) {
       return;
     }
-    setSubmittingId(walletAddressToReject);
+
+    setSubmittingDelete(walletAddr);
     try {
-      const res = await axios.post(`${API_BASE}/admin/reject-user`, { walletAddress: walletAddressToReject }, getAdminHeaders());
+      const res = await axios.post(`${API_BASE}/admin/delete-manager`, {
+        walletAddress: walletAddr
+      }, getAdminHeaders());
+
       if (res.data.success) {
-        alert(res.data.message);
-        fetchAdminData();
+        alert(`🗑️ ${res.data.message}`);
+        fetchManagers();
       }
     } catch (err) {
-      alert('반려 처리 중 오류 발생: ' + err.message);
+      const errMsg = err.response && err.response.data && err.response.data.message
+        ? err.response.data.message
+        : err.message;
+      alert(`❌ 삭제 실패: ${errMsg}`);
     } finally {
-      setSubmittingId(null);
+      setSubmittingDelete(null);
     }
   };
 
-  if (loading) {
+  // 비인증 사용자 접근 차단 가드 뷰
+  if (!isAdmin) {
     return (
-      <div style={{ margin: 'auto', textAlign: 'center', padding: '20px' }}>
-        <div className="shimmer-loading" style={{ width: '40px', height: '40px', borderRadius: '50%', margin: '0 auto 15px' }}></div>
-        <p style={{ color: 'var(--text-muted)' }}>본사 관리자 통계 모듈을 빌드 중입니다...</p>
+      <div className="pc-layout-wrapper" style={{ justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <div className="glass-card" style={{ maxWidth: '480px', padding: '36px', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+          <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', marginBottom: '20px' }}>
+            <ShieldAlert size={48} color="var(--danger-color)" />
+          </div>
+          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>접근 권한 보안 제한</h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '24px' }}>
+            본 화면은 플랫폼 총괄 관리자(Admin)만 진입할 수 있는 통제구역입니다. 등록된 관리자 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.
+          </p>
+          <button className="btn-secondary" onClick={() => navigate('/dashboard')} style={{ width: '100%', padding: '12px' }}>
+            대시보드로 복귀
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+    <div className="pc-layout-wrapper" style={{ padding: '40px 50px', flexDirection: 'column', gap: '30px', alignItems: 'stretch' }}>
       
-      {/* 1. 어드민 상단 내비게이션 바 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* 1. 상단 타이틀 바 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '22px' }}>
+            👑
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>최상위 관리자(Admin) 관제 센터</h1>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🔑 플랫폼 전체 매니저 자산 현황 조회 및 승격/삭제 통제소</span>
+          </div>
+        </div>
+
         <button 
           className="btn-secondary" 
           onClick={() => navigate('/dashboard')}
-          style={{ width: 'auto', padding: '8px 14px', borderRadius: '10px', fontSize: '13px', gap: '5px' }}
+          style={{ width: 'auto', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', gap: '8px', fontWeight: '700' }}
         >
-          <ArrowLeft size={16} />
-          사용자 모드로
+          <ArrowLeft size={18} />
+          대시보드로 복귀
         </button>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-          🏢 <strong>본사 관리자 관제 시스템</strong>
-        </span>
       </div>
 
-      {/* 2. 대시보드 핵심 지표 통계 (글라스 2열 레이아웃) */}
-      {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+      {/* 2. 대시보드 메인 레이아웃 */}
+      <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
+        
+        {/* [좌측 컬럼] 매니저 승격 관리 & 누적 통계 */}
+        <div style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '24px', flexShrink: 0 }}>
           
-          <div className="glass-card" style={{ padding: '12px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', padding: '6px', borderRadius: '50%', background: 'rgba(139,92,246,0.08)', marginBottom: '6px' }}>
-              <Users size={16} color="#8B5CF6" />
+          {/* 어드민 계정 정보 카드 */}
+          <div className="glass-card" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>
+                A
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>이명학 총괄 관리자</h4>
+                <span style={{ fontSize: '11px', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: '700' }}>
+                  <ShieldCheck size={12} /> 최고 보안 인증 가동 중
+                </span>
+              </div>
             </div>
-            <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>1차 승인 정원 제한</div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#F3F4F6', marginTop: '4px' }}>
-              {stats.totalApproved} <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>/ {stats.limit}</span>
+            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
+              <div><b>어드민 이메일:</b> {managerEmail}</div>
+              <div style={{ wordBreak: 'break-all' }}><b>지갑 주소:</b> <span style={{ fontFamily: 'monospace' }}>{walletAddress}</span></div>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '12px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', padding: '6px', borderRadius: '50%', background: 'rgba(245,158,11,0.08)', marginBottom: '6px' }}>
-              <ShieldAlert size={16} color="#F59E0B" />
-            </div>
-            <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>가입 심사 대기자</div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#F59E0B', marginTop: '4px' }}>
-              {stats.totalPending} 명
-            </div>
+          {/* 🌟 신규 매니저 승격 폼 카드 */}
+          <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
+            <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserPlus size={20} color="#8B5CF6" />
+              신규 매니저 승격 관리
+            </h4>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+              승격할 회원은 반드시 기가입된 정회원(`APPROVED`) 상태여야 합니다. 승격 시 기존 매니저 하위 관계가 끊어지고 독립 매니저가 됩니다.
+            </p>
+
+            <form onSubmit={handlePromoteManager} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>회원 지갑 주소 (Wallet Address)</label>
+                <input 
+                  type="text" 
+                  value={promoteWallet}
+                  onChange={(e) => setPromoteWallet(e.target.value)}
+                  placeholder="0x로 시작하는 지갑 주소 입력"
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#FFF', outline: 'none' }}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                disabled={submittingPromote}
+                style={{ width: '100%', padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+              >
+                {submittingPromote ? <Loader2 size={16} className="spin" /> : '🚀 정식 매니저로 승격'}
+              </button>
+            </form>
           </div>
 
-          <div className="glass-card" style={{ padding: '12px', textAlign: 'center', gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
-              <span>수납 및 2단계 분배 총괄 (USDT)</span>
-              <BarChart3 size={14} color="var(--success-color)" />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-around', margin: '5px 0' }}>
-              <div>
-                <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>총 수납액</span>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#F3F4F6' }}>{stats.totalRevenue.toFixed(1)}</div>
-              </div>
-              <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-              <div>
-                <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>추천 분배액(50%)</span>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>{stats.totalDistributed.toFixed(1)}</div>
-              </div>
-              <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
-              <div>
-                <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>본사 귀속분(50%)</span>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#8B5CF6' }}>{stats.companyRevenue.toFixed(1)}</div>
-              </div>
-            </div>
+          {/* 정보 박스 */}
+          <div className="glass-card" style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.02)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
+            <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ShieldAlert size={16} color="var(--danger-color)" /> 매니저 통제 안전 가이드
+            </h4>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, textAlign: 'left' }}>
+              매니저 강등(Demote)은 지원하지 않습니다. 해지 시에는 계정 삭제(Delete) 처리만 가능하며, 삭제 시 산하 회원들의 이탈 방지를 위해 최초 마스터 지갑으로 이관되도록 구조화되어 있습니다.
+            </p>
           </div>
 
         </div>
-      )}
 
-      {/* 3. KYC 가입 승인 대기 심사 리스트 */}
-      <div className="glass-card">
-        <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ShieldAlert size={18} color="#F59E0B" />
-          신규 가입 심사 접수 목록 ({pendingUsers.length}건)
-        </h3>
+        {/* [우측 컬럼] 전체 매니저 통계 테이블 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <div className="glass-card" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '18px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '800' }}>
+              <BarChart3 size={20} color="#EF4444" />
+              활성 매니저 자산 및 회원 관리 보드 ({managers.length}명)
+            </h3>
 
-        {pendingUsers.length === 0 ? (
-          <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-            현재 새로 접수된 가입 신청이나 신원 서류 심사 대기자가 없습니다.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {pendingUsers.map((user) => (
-              <div 
-                key={user.id} 
-                style={{ 
-                  background: 'rgba(0,0,0,0.25)', 
-                  border: '1px solid rgba(255,255,255,0.03)', 
-                  borderRadius: '12px', 
-                  padding: '14px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px'
-                }}
-              >
-                {/* 상단 회원 기본 요약 */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>{user.name} ({user.country})</h4>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>구글인증: {user.email}</span>
-                  </div>
-                  <span style={{ fontSize: '9px', color: 'var(--text-dark)' }}>
-                    {new Date(user.joined_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </span>
-                </div>
-
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
-                  <div style={{ wordBreak: 'break-all' }}>지갑: **{user.wallet_address}**</div>
-                  <div>전화번호: {user.phone}</div>
-                </div>
-
-                {/* 첨부 서류 (신분증 보기 및 심사 승인 단축바) */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <button 
-                    type="button" 
-                    className="btn-secondary" 
-                    style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px' }}
-                    onClick={() => setSelectedIdCard(`http://localhost:5000${user.id_card_path}`)}
-                  >
-                    <Eye size={12} />
-                    신분증 확인
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn-primary" 
-                    style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px', background: 'var(--success-color)', boxShadow: 'none' }}
-                    onClick={() => handleApprove(user.wallet_address)}
-                    disabled={submittingId === user.wallet_address}
-                  >
-                    <Check size={12} />
-                    승인
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn-primary" 
-                    style={{ width: '40px', padding: '8px', fontSize: '11px', borderRadius: '8px', background: 'var(--danger-color)', boxShadow: 'none' }}
-                    onClick={() => handleReject(user.wallet_address)}
-                    disabled={submittingId === user.wallet_address}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                <Loader2 size={32} className="spin" style={{ margin: '0 auto 10px', color: 'var(--primary-color)' }} />
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>매니저 자금 장부를 확인하는 중입니다...</p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 4. 최근 결제 및 온체인 분배 히스토리 리스트 */}
-      <div className="glass-card">
-        <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Receipt size={18} color="#8B5CF6" />
-          최근 온체인 청구/수납 이력
-        </h3>
-
-        {recentPayments.length === 0 ? (
-          <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-            현재까지 플랫폼 스마트 컨트랙트를 통해 결제 및 분배된 수납 이력이 없습니다.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '250px', overflowY: 'auto', scrollbarWidth: 'none' }}>
-            {recentPayments.map((pay) => (
-              <div 
-                key={pay.id} 
-                style={{ 
-                  background: 'rgba(0,0,0,0.15)', 
-                  border: '1px solid rgba(255,255,255,0.02)', 
-                  borderRadius: '10px', 
-                  padding: '10px 12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#F3F4F6' }}>
-                    {pay.name} ({pay.type === 'MEMBERSHIP_FEE' ? '가입비 수납' : '월정액 수납'})
-                  </div>
-                  <a 
-                    href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    style={{ fontSize: '9px', color: 'var(--accent-color)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}
-                  >
-                    TX: {pay.tx_hash.substring(0, 10)}... <ExternalLink size={8} />
-                  </a>
-                </div>
-                
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--success-color)' }}>
-                    +{pay.amount} USDT
-                  </div>
-                  <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>
-                    50% 초대인 분배 완료
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 5. 전체 등록 회원 명부 패널 */}
-      <div className="glass-card">
-        <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Users size={18} color="#10B981" />
-          전체 등록 회원 명부 ({allUsers.length}명)
-        </h3>
-
-        {allUsers.length === 0 ? (
-          <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-            등록된 플랫폼 회원이 존재하지 않습니다.
-          </p>
-        ) : (
-          <div style={{ overflowX: 'auto', scrollbarWidth: 'thin' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '650px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: '11px' }}>
-                  <th style={{ padding: '10px 8px' }}>이름 (국가)</th>
-                  <th style={{ padding: '10px 8px' }}>이메일 / 연락처</th>
-                  <th style={{ padding: '10px 8px' }}>지갑 주소</th>
-                  <th style={{ padding: '10px 8px' }}>심사 상태</th>
-                  <th style={{ padding: '10px 8px' }}>가입 등급</th>
-                  <th style={{ padding: '10px 8px' }}>가입일</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allUsers.map((user) => {
-                  const isMaster = user.wallet_address.toLowerCase() === '0x015B8fA9aE51Dbebe7301a0A3F725Bf8811E5818'.toLowerCase();
-                  return (
-                    <tr 
-                      key={user.id} 
-                      onClick={() => navigate(`/admin/edit-user/${user.wallet_address}`)}
-                      style={{ 
-                        borderBottom: '1px solid rgba(255,255,255,0.03)', 
-                        fontSize: '11px', 
-                        color: '#E5E7EB',
-                        background: isMaster ? 'rgba(139,92,246,0.06)' : 'transparent',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = isMaster ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.02)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = isMaster ? 'rgba(139,92,246,0.06)' : 'transparent'}
-                    >
-                      <td style={{ padding: '12px 8px', fontWeight: '600' }}>
-                        <span style={{ color: isMaster ? '#C084FC' : '#FFF' }}>{user.name}</span>
-                        <span style={{ fontSize: '9px', color: 'var(--text-muted)', marginLeft: '4px' }}>({user.country})</span>
-                        {isMaster && (
-                          <span style={{ marginLeft: '6px', background: 'rgba(139,92,246,0.2)', color: '#C084FC', padding: '2px 6px', borderRadius: '4px', fontSize: '8px', fontWeight: '800' }}>마스터</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <div>{user.email}</div>
-                        <div style={{ fontSize: '9px', color: 'var(--text-dark)' }}>{user.phone}</div>
-                      </td>
-                      <td style={{ padding: '12px 8px', fontFamily: 'monospace', fontSize: '10px', color: '#A7F3D0' }}>
-                        {user.wallet_address.substring(0, 10)}...{user.wallet_address.substring(user.wallet_address.length - 8)}
-                      </td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <span style={{ 
-                          padding: '3px 8px', 
-                          borderRadius: '6px', 
-                          fontSize: '9px',
-                          fontWeight: '700',
-                          background: user.status === 'APPROVED' ? 'rgba(16,185,129,0.12)' : user.status === 'PENDING_KYC' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)',
-                          color: user.status === 'APPROVED' ? 'var(--success-color)' : user.status === 'PENDING_KYC' ? '#F59E0B' : 'var(--danger-color)'
-                        }}>
-                          {user.status === 'APPROVED' ? '승인완료' : user.status === 'PENDING_KYC' ? ' KYC대기 ' : ' 가입반려 '}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <span style={{ 
-                          padding: '3px 8px', 
-                          borderRadius: '6px', 
-                          fontSize: '9px',
-                          fontWeight: '700',
-                          background: user.tier === 'ACTIVE' ? 'rgba(139,92,246,0.12)' : user.tier === 'TRIAL' ? 'rgba(59,130,246,0.12)' : 'rgba(156,163,175,0.12)',
-                          color: user.tier === 'ACTIVE' ? '#C084FC' : user.tier === 'TRIAL' ? '#60A5FA' : '#9CA3AF'
-                        }}>
-                          {user.tier === 'ACTIVE' ? '정회원' : user.tier === 'TRIAL' ? '무료체험' : '만료됨'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 8px', color: 'var(--text-dark)', fontSize: '9px' }}>
-                        {new Date(user.joined_at).toLocaleDateString()}
-                      </td>
+            ) : managers.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '50px 0' }}>등록된 매니저가 존재하지 않습니다.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontSize: '11px' }}>
+                      <th style={{ padding: '12px 8px' }}>매니저 정보</th>
+                      <th style={{ padding: '12px 8px' }}>지갑 주소</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'right' }}>매니저 SUT (온체인)</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'right' }}>소속 회원 SUT 총액 (온체인)</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'center' }}>소속 회원</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'center' }}>액션</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  </thead>
+                  <tbody>
+                    {managers.map((m) => {
+                      const isMaster = m.wallet_address.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase();
+                      return (
+                        <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '12px', color: '#E5E7EB' }}>
+                          <td style={{ padding: '16px 8px' }}>
+                            <div style={{ fontWeight: 'bold', color: '#FFF' }}>
+                              {m.name} {isMaster && <span style={{ fontSize: '10px', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger-color)', padding: '2px 6px', borderRadius: '4px', marginLeft: '4px' }}>MASTER</span>}
+                            </div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>{m.email}</div>
+                          </td>
+                          <td style={{ padding: '16px 8px', fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-dark)' }}>
+                            {m.wallet_address.substring(0, 8)}...{m.wallet_address.substring(34)}
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: '700', color: 'var(--primary-color)' }}>
+                            {parseFloat(m.onchainBalance).toLocaleString()} <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>SUT</span>
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: '700', color: 'var(--success-color)' }}>
+                            {parseFloat(m.performance).toLocaleString()} <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>SUT</span>
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'center', fontWeight: 'bold' }}>
+                            {m.userCount} 명
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'center' }}>
+                            {isMaster ? (
+                              <span style={{ fontSize: '11px', color: 'var(--text-dark)' }}>삭제 불가</span>
+                            ) : (
+                              <button 
+                                className="btn-secondary"
+                                onClick={() => handleDeleteManager(m.wallet_address, m.name)}
+                                disabled={submittingDelete === m.wallet_address}
+                                style={{ padding: '6px 10px', background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger-color)', width: 'auto', borderRadius: '8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                {submittingDelete === m.wallet_address ? <Loader2 size={12} className="spin" /> : <Trash2 size={12} />}
+                                삭제
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-      {/* 6. 신분증 확대 보기 라이트박스 모달 */}
-      {selectedIdCard && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(0,0,0,0.9)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 2000,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexDirection: 'column',
-          gap: '15px'
-        }}>
-          <img 
-            src={selectedIdCard} 
-            alt="Submitted KYC ID Card" 
-            style={{ 
-              maxWidth: '90%', 
-              maxHeight: '75%', 
-              borderRadius: '12px', 
-              boxShadow: '0 0 40px rgba(0,0,0,0.8)',
-              border: '2px solid rgba(255,255,255,0.1)'
-            }} 
-          />
-          <button 
-            className="btn-primary" 
-            onClick={() => setSelectedIdCard(null)}
-            style={{ width: 'auto', padding: '10px 24px' }}
-          >
-            이미지 뷰어 닫기
-          </button>
+          </div>
+
         </div>
-      )}
+
+      </div>
 
     </div>
   );

@@ -9,16 +9,10 @@ const { triggerOnChainDistribution } = require('../contractHelper');
 async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
   const userWallet = user.wallet_address.toLowerCase();
   
-  // 1. referrals 테이블에서 1차/2차 추천인 정보 조회
-  const refTree = await queries.get(`
-    SELECT parent_address, grandparent_address FROM referrals WHERE user_address = ?
-  `, [userWallet]);
-
-  const ref1 = refTree ? refTree.parent_address : 'none';
-  const ref2 = refTree ? refTree.grandparent_address : 'none';
+  const ref1 = 'none';
+  const ref2 = 'none';
 
   console.log(`[PAYMENT PROCESS] Charging ${user.name} (${userWallet}). Type: ${paymentType}`);
-  console.log(`[PAYMENT PROCESS] Referral line -> Direct: ${ref1}, Grand: ${ref2}`);
 
   try {
     // 2. 스마트 컨트랙트 인출 & 2단계 배분 온체인 실행 (또는 시뮬레이션)
@@ -139,7 +133,7 @@ router.post('/trigger-charge-manually', async (req, res) => {
 
     res.json({
       success: true,
-      message: `${paymentType === 'MEMBERSHIP_FEE' ? '가입비 100 USDT' : '월정액비 100 USDT'} 강제 수납 및 2단계 균등 분배(각 25%) 온체인 격발이 완료되었습니다.`,
+      message: `${paymentType === 'MEMBERSHIP_FEE' ? '가입비 100 SUT' : '월정액비 100 SUT'} 강제 수납 및 온체인 격발이 완료되었습니다.`,
       txHash: paymentResult.txHash,
       distributors: paymentResult.result
     });

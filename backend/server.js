@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-manager-email', 'x-admin-email', 'x-gateio-api-key', 'x-gateio-api-secret']
 }));
 
 app.use(express.json());
@@ -28,9 +28,11 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // 라우터 마운트
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/manager', require('./routes/manager'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/investment', require('./routes/investment'));
-app.use('/api/cron', require('./routes/cron'));
+const cronRouter = require('./routes/cron');
+app.use('/api/cron', cronRouter);
 
 // API 이외의 모든 루트 요청은 리액트 SPA 빌드 인덱스 파일로 폴백 서빙
 app.get('*', (req, res) => {

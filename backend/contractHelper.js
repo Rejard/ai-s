@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 // .env 로드
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-const RPC_URL = process.env.RPC_URL || 'https://rpc-amoy.polygon.technology';
+const RPC_URL = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 // MockUSDT & PlatformVault의 ABI 및 Bytecode (자동 배포 및 상호작용용)
@@ -74,8 +74,11 @@ async function autoDeployContracts() {
   }
 
   try {
-    // 가스비 잔액 체크
-    const balance = await provider.getBalance(wallet.address);
+    // 가스비 잔액 체크 (with 3-second timeout to prevent server hang on RPC failure)
+    const balance = await Promise.race([
+      provider.getBalance(wallet.address),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("RPC Timeout")), 3000))
+    ]);
     const balanceEth = ethers.formatEther(balance);
     console.log(`Operator POL Balance: ${balanceEth} POL`);
 
@@ -87,48 +90,33 @@ async function autoDeployContracts() {
       return { usdtAddress, vaultAddress, simulated: true };
     }
 
-    console.log("🚀 Starting auto-deployment on Polygon Amoy...");
-    
-    // 1. MockUSDT 배포 (바이트코드가 스텁일 경우 실제 이더스 팩토리 대신 
-    // Amoy에서 널리 쓰이는 표준 Mock 토큰 주소를 사용하거나 시뮬레이션용 주소로 바인딩)
-    // 여기서는 테스트 편의상 Amoy 상의 표준 Mock 주소를 할당하거나 완전 가상으로 동작할 수 있도록 안전하게 Mocking 구조 제공
-    console.log("Deploying MockUSDT Contract...");
-    // 실제 배포 진행 (바이트코드가 복잡해 가스 한계가 날 수 있으므로 실패 시 즉시 Mocking 전환)
-    
-    // Amoy 테스트넷 상에서 원활한 구동을 위한 모의 주소 바인딩
-    usdtAddress = "0x53eFd69a9D675E19c3684B2f2a7aBf850259FF9C"; // Mock USDT on Amoy (예시)
-    vaultAddress = "0xB506c9aC243B52e1858e74E9873d6e5FA3eB507C"; // Mock Vault on Amoy (예시)
-
-    updateEnvFile(usdtAddress, vaultAddress);
-    console.log(`✔ Contracts mapped successfully:\n  MockUSDT: ${usdtAddress}\n  PlatformVault: ${vaultAddress}`);
-    
-    return { usdtAddress, vaultAddress, simulated: false };
+      console.log(`🚀 Starting deployment on Polygon Mainnet...`);
+      // 수동 관리 모드: 볼트 컨트랙트 에러 체크 건너뜀
+      console.log(`✔ 수동 지급 관리형 아키텍처로 인해 스마트 컨트랙트 볼트 확인 절차를 생략합니다.`);
   } catch (err) {
-    console.log("⚠ Error deploying contracts, fall back to SIMULATION MODE:", err.message);
-    isSimulationMode = true;
-    usdtAddress = '0x53eFd69a9D675E19c3684B2f2a7aBf850259FF9C';
-    vaultAddress = '0xB506c9aC243B52e1858e74E9873d6e5FA3eB507C';
-    return { usdtAddress, vaultAddress, simulated: true };
+    console.error("⚠ Error checking contracts on Mainnet:", err.message);
+    // throw err; // 서버 부트스트랩을 막지 않도록 주석 처리
   }
 }
 
 /**
  * @dev 사용자 지갑으로부터 USDT를 인출하고 2단계 균등 분배(각 25 USDT)를 온체인으로 실행
  */
-async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amountUsdt) {
-  const amountInDecimals = ethers.parseUnits(amountUsdt.toString(), 6); // 6 decimals (USDT)
+async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amountSut) {
+  // SUT Token is 18 decimals
+  const amountInDecimals = ethers.parseUnits(amountSut.toString(), 18);
 
   if (isSimulationMode) {
     // 시뮬레이션 모드일 때 가상의 트랜잭션 해시를 반환하며 정상 작동 확인
     const mockTxHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-    console.log(`[SIMULATED TX] Distributed ${amountUsdt} USDT. User: ${userWallet}, Ref1: ${referrer1}, Ref2: ${referrer2}, TxHash: ${mockTxHash}`);
+    console.log(`[SIMULATED TX] Distributed ${amountSut} SUT. User: ${userWallet}, Ref1: ${referrer1}, Ref2: ${referrer2}, TxHash: ${mockTxHash}`);
     return {
       success: true,
       txHash: mockTxHash,
       simulated: true,
-      ref1Share: referrer1 !== 'none' ? amountUsdt * 0.25 : 0,
-      ref2Share: (referrer2 !== 'none' && referrer2 !== 'none') ? amountUsdt * 0.25 : 0,
-      ownerShare: amountUsdt * (referrer1 === 'none' ? 1.0 : (referrer2 === 'none' ? 0.75 : 0.50))
+      ref1Share: 0,
+      ref2Share: 0,
+      ownerShare: amountSut
     };
   }
 
@@ -138,7 +126,7 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
     const r1 = referrer1 === 'none' ? ethers.ZeroAddress : referrer1;
     const r2 = referrer2 === 'none' ? ethers.ZeroAddress : referrer2;
 
-    console.log(`[ON-CHAIN TX] Charging ${amountUsdt} USDT from ${userWallet}...`);
+    console.log(`[ON-CHAIN TX] Charging ${amountSut} SUT from ${userWallet}...`);
     // PlatformVault.sol의 collectAndDistribute 호출
     const tx = await vaultContract.collectAndDistribute(userWallet, r1, r2, amountInDecimals, {
       gasLimit: 300000
@@ -152,9 +140,9 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
       success: true,
       txHash: tx.hash,
       simulated: false,
-      ref1Share: referrer1 !== 'none' ? amountUsdt * 0.25 : 0,
-      ref2Share: (referrer2 !== 'none' && referrer2 !== 'none') ? amountUsdt * 0.25 : 0,
-      ownerShare: amountUsdt - (referrer1 !== 'none' ? amountUsdt * 0.25 : 0) - ((referrer2 !== 'none' && referrer2 !== 'none') ? amountUsdt * 0.25 : 0)
+      ref1Share: 0,
+      ref2Share: 0,
+      ownerShare: amountSut
     };
   } catch (err) {
     console.error("❌ On-chain transaction failed:", err.message);

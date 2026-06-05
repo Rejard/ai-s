@@ -42,7 +42,7 @@ const upload = multer({
  */
 router.get('/check-limit', async (req, res) => {
   try {
-    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x015B8fA9aE51Dbebe7301a0A3F725Bf8811E5818'");
+    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'");
     const totalCount = countRow ? countRow.total : 0;
     
     res.json({
@@ -56,19 +56,28 @@ router.get('/check-limit', async (req, res) => {
   }
 });
 
+
 /**
- * @route GET /api/auth/verify-referrer/:address
- * @desc 추천인 지갑 주소가 유효한(APPROVED) 상태인지 실시간 검증
+ * @route GET /api/auth/verify-manager/:walletAddress
+ * @desc 담당 매니저 지갑 주소 검증
  */
-router.get('/verify-referrer/:address', async (req, res) => {
-  const address = req.params.address.trim();
+router.get('/verify-manager/:walletAddress', async (req, res) => {
+  const cleanWallet = req.params.walletAddress.toLowerCase().trim();
   try {
-    const referrer = await queries.get("SELECT name, wallet_address FROM users WHERE wallet_address = ? AND status = 'APPROVED'", [address]);
-    if (referrer) {
-      res.json({ success: true, name: referrer.name });
-    } else {
-      res.json({ success: false, message: '유효한 추천인 지갑 주소가 아닙니다. 승인된 회원만 추천이 가능합니다.' });
+    const user = await queries.get(
+      "SELECT name, status FROM users WHERE LOWER(wallet_address) = ?", 
+      [cleanWallet]
+    );
+
+    if (!user) {
+      return res.json({ success: false, message: '등록되지 않은 지갑 주소입니다.' });
     }
+
+    if (user.status !== 'APPROVED') {
+      return res.json({ success: false, message: '아직 시스템 사용 승인이 완료되지 않은 매니저 계정입니다.' });
+    }
+
+    res.json({ success: true, name: user.name });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -80,36 +89,17 @@ router.get('/verify-referrer/:address', async (req, res) => {
  */
 router.post('/register', upload.single('idCard'), async (req, res) => {
   try {
-    const { walletAddress, email, name, phone, country, referrerAddress } = req.body;
+    const { walletAddress, email, name, phone, country, managerAddress } = req.body;
     
-    if (!walletAddress || !email || !name || !phone || !country || !referrerAddress) {
+    if (!walletAddress || !email || !name || !phone || !country) {
       return res.status(400).json({ success: false, message: '모든 필수 입력 필드를 기입해 주세요.' });
     }
 
     const cleanWallet = walletAddress.trim();
     const cleanEmail = email.toLowerCase().trim();
-    const cleanReferrer = referrerAddress.trim();
-
-    // 시연용 모의 가입자 지갑(0x3c44...로 시작) 또는 구글 이메일로 가입 신청이 들어온 경우,
-    // 매번 완벽하고 원활한 신규 가입 시연을 위해 기존에 등록되어 있던 해당 유저의 정보 및 추천 트리, 결제 이력을 깨끗이 삭제하고 
-    // 언제나 100% 새로운 가입 신청이 성공할 수 있도록 자동 초기화(Reset) 처리합니다!
-    const isDemoWallet = cleanWallet.startsWith('0x3c44');
-    const DEMO_USER_EMAIL = 'rejard.member@gmail.com'.toLowerCase();
-
-    if (isDemoWallet || cleanEmail === DEMO_USER_EMAIL) {
-      console.log(`[DEMO AUTO-RESET] Resetting existing data for demo user (${cleanWallet} / ${cleanEmail}) to ensure 100% successful new registration.`);
-      // 기존에 동일 지갑이나 동일 이메일을 쓰고 있던 유저 조회 및 완벽 청소
-      const duplicateUser = await queries.get("SELECT wallet_address FROM users WHERE wallet_address = ? OR email = ?", [cleanWallet, cleanEmail]);
-      if (duplicateUser) {
-        const dupWallet = duplicateUser.wallet_address;
-        await queries.run("DELETE FROM users WHERE wallet_address = ?", [dupWallet]);
-        await queries.run("DELETE FROM referrals WHERE user_address = ?", [dupWallet]);
-        await queries.run("DELETE FROM payments WHERE wallet_address = ?", [dupWallet]);
-      }
-    }
 
     // 1. 500명 정원 초과 여부 검증 (마스터 계정 제외)
-    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x015B8fA9aE51Dbebe7301a0A3F725Bf8811E5818'");
+    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'");
     const totalCount = countRow ? countRow.total : 0;
     if (totalCount >= 500) {
       return res.status(400).json({ success: false, message: '1차 한정 모집 인원 500명이 마감되었습니다.' });
@@ -121,11 +111,7 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
       return res.status(400).json({ success: false, message: '이미 가입 신청 또는 승인된 지갑 주소이거나 구글 계정입니다.' });
     }
 
-    // 3. 초대인 유효성 검증
-    const referrer = await queries.get("SELECT wallet_address FROM users WHERE wallet_address = ? AND status = 'APPROVED'", [cleanReferrer]);
-    if (!referrer) {
-      return res.status(400).json({ success: false, message: '입력하신 추천인 주소가 승인된 회원이 아니거나 유효하지 않습니다.' });
-    }
+
 
     // 4. 업로드된 신분증 서류 확인
     if (!req.file) {
@@ -134,22 +120,15 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
     const idCardPath = `/uploads/${req.file.filename}`;
 
     // 5. 회원 가입 처리 (PENDING_KYC 상태로 등록)
+    const assignedManager = managerAddress ? managerAddress.trim().toLowerCase() : 'none';
+    
     await queries.run(`
       INSERT INTO users (
-        wallet_address, email, name, phone, country, id_card_path, referrer_address, status, tier
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING_KYC', 'TRIAL')
-    `, [cleanWallet, cleanEmail, name, phone, country, idCardPath, cleanReferrer]);
+        wallet_address, email, name, phone, country, id_card_path, status, tier, manager_address, referrer_address
+      ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING_KYC', 'TRIAL', ?, 'none')
+    `, [cleanWallet, cleanEmail, name, phone, country, idCardPath, assignedManager]);
 
-    // 6. 추천 관계 트리 구축 (2단계)
-    // 1차 추천인 (parent): cleanReferrer
-    // 2차 추천인 (grandparent): cleanReferrer의 parent_address
-    const parentReferrer = await queries.get("SELECT parent_address FROM referrals WHERE user_address = ?", [cleanReferrer]);
-    const grandparentAddress = parentReferrer ? parentReferrer.parent_address : 'none';
 
-    await queries.run(`
-      INSERT INTO referrals (user_address, parent_address, grandparent_address)
-      VALUES (?, ?, ?)
-    `, [cleanWallet, cleanReferrer, grandparentAddress]);
 
     res.json({
       success: true,
@@ -171,12 +150,23 @@ router.get('/status/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, tier, joined_at, approved_at, trial_ends_at, selected_coins
+      SELECT wallet_address, email, name, status, tier, joined_at, approved_at, trial_ends_at, selected_coins, manager_address
       FROM users WHERE wallet_address = ?
     `, [walletAddress]);
 
     if (!user) {
       return res.json({ success: true, registered: false });
+    }
+
+    let managerEmail = 'lemaiiisk@gmail.com';
+    let managerPhone = '010-2020-6447';
+
+    if (user.manager_address && user.manager_address !== 'none') {
+      const manager = await queries.get(`SELECT email, phone FROM users WHERE wallet_address = ?`, [user.manager_address]);
+      if (manager) {
+        managerEmail = manager.email;
+        managerPhone = manager.phone;
+      }
     }
 
     res.json({
@@ -191,7 +181,9 @@ router.get('/status/:walletAddress', async (req, res) => {
         joinedAt: user.joined_at,
         approvedAt: user.approved_at,
         trialEndsAt: user.trial_ends_at,
-        selectedCoins: JSON.parse(user.selected_coins)
+        selectedCoins: JSON.parse(user.selected_coins),
+        managerEmail,
+        managerPhone
       }
     });
 
@@ -237,57 +229,7 @@ router.get('/status-by-email/:email', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/auth/referral-stats/:walletAddress
- * @desc 일반 회원의 추천 파이프라인 통계 조회 (1차, 2차 회원 수 및 누적 보상금)
- */
-router.get('/referral-stats/:walletAddress', async (req, res) => {
-  const walletAddress = req.params.walletAddress.trim();
-  try {
-    // 1차 추천 회원 전체 (가입 대기/완료 상관없이 수집)
-    const ref1Row = await queries.get(`
-      SELECT COUNT(*) as count FROM referrals WHERE parent_address = ?
-    `, [walletAddress]);
-    const totalReferrals1 = ref1Row ? ref1Row.count : 0;
 
-    // 2차 추천 회원 전체
-    const ref2Row = await queries.get(`
-      SELECT COUNT(*) as count FROM referrals WHERE grandparent_address = ?
-    `, [walletAddress]);
-    const totalReferrals2 = ref2Row ? ref2Row.count : 0;
-
-    // 1차 추천 중 정식 가입 승인(APPROVED)을 완료한 액티브 회원 수
-    const activeRef1Row = await queries.get(`
-      SELECT COUNT(*) as count FROM referrals r
-      JOIN users u ON r.user_address = u.wallet_address
-      WHERE r.parent_address = ? AND u.status = 'APPROVED'
-    `, [walletAddress]);
-    const activeReferrals1 = activeRef1Row ? activeRef1Row.count : 0;
-
-    // 2차 추천 중 정식 가입 승인(APPROVED)을 완료한 액티브 회원 수
-    const activeRef2Row = await queries.get(`
-      SELECT COUNT(*) as count FROM referrals r
-      JOIN users u ON r.user_address = u.wallet_address
-      WHERE r.grandparent_address = ? AND u.status = 'APPROVED'
-    `, [walletAddress]);
-    const activeReferrals2 = activeRef2Row ? activeRef2Row.count : 0;
-
-    // 총 누적 획득 보상금 계산 (실제 승인된 1차/2차 액티브 인원수 * 25 USDT)
-    const totalRewards = (activeReferrals1 * 25) + (activeReferrals2 * 25);
-
-    res.json({
-      success: true,
-      referralCount1: totalReferrals1,
-      referralCount2: totalReferrals2,
-      activeReferralCount1: activeReferrals1,
-      activeReferralCount2: activeReferrals2,
-      totalRewards
-    });
-
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 
 /**
  * @route GET /api/auth/payments/:walletAddress

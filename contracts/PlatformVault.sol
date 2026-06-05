@@ -13,7 +13,7 @@ interface IERC20 {
  */
 contract PlatformVault {
     address public owner;
-    IERC20 public usdtToken;
+    IERC20 public paymentToken;
 
     event CollectedAndDistributed(
         address indexed user,
@@ -31,9 +31,9 @@ contract PlatformVault {
         _;
     }
 
-    constructor(address _usdtTokenAddress) {
+    constructor(address _paymentTokenAddress) {
         owner = msg.sender;
-        usdtToken = IERC20(_usdtTokenAddress);
+        paymentToken = IERC20(_paymentTokenAddress);
     }
 
     /**
@@ -52,9 +52,9 @@ contract PlatformVault {
         require(user != address(0), "PlatformVault: invalid user address");
         require(amount > 0, "PlatformVault: amount must be greater than zero");
 
-        // 1. 사용자로부터 플랫폼 금고(Vault)로 USDT를 인출 (Approve 필요)
-        bool pulled = usdtToken.transferFrom(user, address(this), amount);
-        require(pulled, "PlatformVault: USDT pull failed");
+        // 1. 사용자로부터 플랫폼 금고(Vault)로 금액을 인출 (Approve 필요)
+        bool pulled = paymentToken.transferFrom(user, address(this), amount);
+        require(pulled, "PlatformVault: Token pull failed");
 
         uint256 ref1Share = 0;
         uint256 ref2Share = 0;
@@ -62,21 +62,21 @@ contract PlatformVault {
         // 2. 1차 추천인 배분 (25%)
         if (referrer1 != address(0) && referrer1 != user) {
             ref1Share = (amount * 25) / 100;
-            bool success1 = usdtToken.transfer(referrer1, ref1Share);
+            bool success1 = paymentToken.transfer(referrer1, ref1Share);
             require(success1, "PlatformVault: distribution to referrer1 failed");
         }
 
         // 3. 2차 추천인 배분 (25%)
         if (referrer2 != address(0) && referrer2 != user && referrer2 != referrer1) {
             ref2Share = (amount * 25) / 100;
-            bool success2 = usdtToken.transfer(referrer2, ref2Share);
+            bool success2 = paymentToken.transfer(referrer2, ref2Share);
             require(success2, "PlatformVault: distribution to referrer2 failed");
         }
 
         // 4. 본사(Owner) 정산 (나머지 금액 전체)
         uint256 ownerShare = amount - ref1Share - ref2Share;
         if (ownerShare > 0) {
-            bool successOwner = usdtToken.transfer(owner, ownerShare);
+            bool successOwner = paymentToken.transfer(owner, ownerShare);
             require(successOwner, "PlatformVault: distribution to owner failed");
         }
 

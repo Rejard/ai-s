@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { API_BASE } from '../App';
 
 function WaitingPage({ walletAddress, onApproved }) {
+  const navigate = useNavigate();
 
   // 어드민 승인 여부를 실시간 폴링 (5초 간격)
   useEffect(() => {
@@ -28,6 +30,39 @@ function WaitingPage({ walletAddress, onApproved }) {
   return (
     <div style={{ margin: 'auto 20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
+      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
+        (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
+        <div 
+          className="glass-card glow-active" 
+          onClick={() => navigate('/manager')}
+          style={{ 
+            padding: '12px 16px', 
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>👑</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 연동 중</div>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
+            </div>
+          </div>
+          <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
+            메니져 모드 가기
+          </button>
+        </div>
+      )}
+
       {/* 화려한 로딩 글라스 카드 */}
       <div className="glass-card glow-active" style={{ padding: '40px 20px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         
@@ -67,7 +102,7 @@ function WaitingPage({ walletAddress, onApproved }) {
 
         <h2 style={{ fontSize: '20px', color: '#F3F4F6', marginBottom: '10px' }}>본사 KYC 신원 심사 중</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.6', marginBottom: '20px' }}>
-          회원님의 구글 인증 정보, 국가 식별 명칭, 신분증(ID Card) 이미지 대조 심사가 본사 관리자 측에 안전하게 접수되었습니다.
+          회원님의 구글 인증 정보, 국가 식별 명칭, 신분증(ID Card) 이미지 대조 심사가 본사 매니저 측에 안전하게 접수되었습니다.
         </p>
 
         <div style={{
@@ -86,10 +121,12 @@ function WaitingPage({ walletAddress, onApproved }) {
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
             <span>구글 OAuth 계정 데이터베이스 등록 완료</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
-            <span>USDT 수납 스마트 컨트랙트(Approve) 승인 완료</span>
-          </div>
+          <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></div>
+            </div>
+            <span>SUT 수납 스마트 컨트랙트(Approve) 승인 완료</span>
+          </li>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--warning-color)' }}></div>
             <span style={{ color: '#F3F4F6' }}>외국인 및 데이터 수동 배심단 정밀 신원 심사 진행 중</span>
