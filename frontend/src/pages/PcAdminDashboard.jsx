@@ -29,7 +29,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     handleSaveAiConfig
   } = useAdminLogic(managerEmail);
 
-  // 비인증 사용자 접근 차단 가드 뷰
+  // Guard view blocking unauthenticated user access
   if (!isAdmin) {
     return (
       <div className="pc-layout-wrapper" style={{ justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -37,7 +37,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
           <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', marginBottom: '20px' }}>
             <ShieldAlert size={48} color="var(--danger-color)" />
           </div>
-          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>접근 권한 보안 제한</h2>
+          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>Access Permission Security Restriction</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '24px' }}>
             본 화면은 플랫폼 총괄 관리자(Admin)만 진입할 수 있는 통제구역입니다. 등록된 관리자 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.
           </p>
@@ -52,14 +52,14 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
   return (
     <div className="pc-layout-wrapper admin-layout-wrapper" style={{ padding: '40px 50px', flexDirection: 'column', gap: '30px', alignItems: 'stretch' }}>
       
-      {/* 1. 상단 타이틀 바 */}
+      {/* 1. Top Title Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '22px' }}>
             👑
           </div>
           <div style={{ textAlign: 'left' }}>
-            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>최상위 관리자(Admin) 관제 센터</h1>
+            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>Top-level Admin Control Center</h1>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🔑 플랫폼 전체 매니저 자산 현황 조회 및 승격/삭제 통제소</span>
           </div>
         </div>
@@ -74,20 +74,20 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
         </button>
       </div>
 
-      {/* 2. 대시보드 메인 레이아웃 */}
+      {/* 2. Dashboard Main Layout */}
       <div className="admin-content-row" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
         
-        {/* [좌측 컬럼] 매니저 승격 관리 & 누적 통계 */}
+        {/* [Left Column] Manager Promotion Management & Cumulative Statistics */}
         <div className="admin-col-left" style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '24px', flexShrink: 0 }}>
           
-          {/* 어드민 계정 정보 카드 */}
+          {/* Admin Account Information Card */}
           <div className="glass-card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>
                 A
               </div>
               <div style={{ textAlign: 'left' }}>
-                <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>이명학 총괄 관리자</h4>
+                <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>Lee Myung-hak General Manager</h4>
                 <span style={{ fontSize: '11px', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: '700' }}>
                   <ShieldCheck size={12} /> 최고 보안 인증 가동 중
                 </span>
@@ -99,7 +99,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
-          {/* 🤖 글로벌 AI 엔진 제어 카드 */}
+          {/* 🤖 Global AI Engine Control Card */}
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
             <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>🤖</span> 글로벌 AI 엔진 제어
@@ -116,10 +116,10 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                   onChange={(e) => setGlobalAiModel(e.target.value)}
                   style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                 >
-                  <option value="Gemini 3.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.5 Flash (최신/초고속)</option>
-                  <option value="Gemini 2.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Pro (초고성능/추론)</option>
-                  <option value="Gemini 2.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Flash (기본/고속)</option>
-                  <option value="Gemini 3.1 Flash Lite" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.1 Flash Lite (경량/초고속)</option>
+                  <option value="Gemini 3.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.5 Flash (Latest/Ultra-fast)</option>
+                  <option value="Gemini 2.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Pro (Ultra-high Performance/Inference)</option>
+                  <option value="Gemini 2.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Flash (Basic/Fast)</option>
+                  <option value="Gemini 3.1 Flash Lite" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.1 Flash Lite (Lightweight/Ultra-fast)</option>
                 </select>
               </div>
 
@@ -171,7 +171,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             </form>
           </div>
 
-          {/* 🌟 신규 매니저 승격 폼 카드 */}
+          {/* 🌟 New Manager Promotion Form Card */}
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
             <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserPlus size={20} color="#8B5CF6" />
@@ -204,7 +204,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             </form>
           </div>
 
-          {/* 정보 박스 */}
+          {/* Information Box */}
           <div className="glass-card" style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.02)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <ShieldAlert size={16} color="var(--danger-color)" /> 매니저 통제 안전 가이드
@@ -216,7 +216,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
 
         </div>
 
-        {/* [우측 컬럼] 전체 매니저 리스트 (메인 뷰) */}
+        {/* [Right Column] All Manager List (Main View) */}
         <div className="admin-col-right" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
           
           <div className="glass-card" style={{ padding: '24px' }}>

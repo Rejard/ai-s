@@ -117,7 +117,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
       {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
         (walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
@@ -141,7 +141,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 모드</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>메니져 페이지 바로 가기</div>
             </div>
           </div>
@@ -151,7 +151,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       )}
 
-      {/* 👑 마스터 관리자 전용 '관리자 모드 진입' 단축 바 */}
+      {/* 👑 Master Admin exclusive 'Enter Admin Mode' shortcut bar */}
       {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -175,7 +175,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>🔑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#F87171' }}>관리자 모드</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#F87171' }}>Admin Mode</div>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>관리자 페이지 바로 가기</div>
             </div>
           </div>
@@ -185,7 +185,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       )}
 
-      {/* 가입 사용자 환영 배너 */}
+      {/* Registered User Welcome Banner */}
       <div className="glass-card" style={{ 
         padding: '15px 18px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)'
       }}>
@@ -197,12 +197,12 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           {(userData && userData.name ? userData.name.substring(0, 1).toUpperCase() : '👤')}
         </div>
         <div>
-          <h3 style={{ fontSize: '16px', color: '#F3F4F6' }}>{userData ? userData.name : '테스트 회원'} 님</h3>
+          <h3 style={{ fontSize: '16px', color: '#F3F4F6' }}>{userData ? userData.name : 'Test Member'}</h3>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{userData ? userData.email : '이메일 정보 없음'}</span>
         </div>
       </div>
 
-      {/* 1. 실시간 SUT 토큰 시세 차트 */}
+      {/* 1. Real-time SUT Token Price Chart */}
       {portfolio ? (
         <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -213,7 +213,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                   ${sutPrice.toFixed(4)} <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
                 </span>
 
-                {/* 🌟 24h 변동률 배지 */}
+                {/* 🌟 24h Fluctuation Rate Badge */}
                 <span style={{
                   fontSize: '11px',
                   fontWeight: '700',
@@ -304,7 +304,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
       )}
 
-      {/* 2. 나의 총 자산 및 예치 현황 */}
+      {/* 2. My Total Assets and Deposit Status */}
       <div className="glass-card" style={{ padding: '20px' }}>
         <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Wallet size={18} color="#8B5CF6" />
@@ -341,19 +341,19 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                 </div>
 
                 <div style={{ marginTop: '10px', marginBottom: '20px', width: '100%', height: '14px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '10px', overflow: 'hidden', display: 'flex' }}>
-                  {/* 지갑 잔고 비율 바 (보라색) */}
+                  {/* Wallet Balance Ratio Bar (Purple) */}
                   <div style={{ width: `${walletPercent}%`, height: '100%', background: 'var(--primary-gradient)', transition: 'width 0.5s ease' }}></div>
-                  {/* 예치금 비율 바 (초록색) */}
+                  {/* Deposit Ratio Bar (Green) */}
                   <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
                 </div>
               </>
             );
           })()}
 
-          {/* 입출금 버튼 */}
+          {/* Deposit/Withdrawal Button */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>자금 예치하기</button>
-            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>자금 인출하기</button>
+            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>Withdraw Funds</button>
           </div>
         </div>
       </div>
@@ -362,7 +362,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
 
 
 
-      {/* 가상 입출금 모달 */}
+      {/* Virtual Deposit/Withdrawal Modal */}
       {showTxModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className="glass-card" style={{ width: '90%', maxWidth: '380px', background: 'var(--bg-app)', border: '1px solid rgba(255,255,255,0.1)', padding: '24px' }}>
@@ -387,9 +387,9 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
       )}
-      {/* 가상 입출금 모달 생략(위쪽에 있음) */}
+      {/* Virtual Deposit/Withdrawal Modal omitted (located above) */}
 
-      {/* 최근 3건 거래 내역 미리보기 */}
+      {/* Preview of Last 3 Transactions */}
       <div className="glass-card" style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
           <h3 style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: '#F3F4F6' }}>
@@ -436,7 +436,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         )}
       </div>
 
-      {/* 안전하게 로그아웃 버튼 */}
+      {/* Secure Logout Button */}
       <button 
         type="button" 
         className="btn-secondary" 
@@ -446,7 +446,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         🔌 안전하게 로그아웃 (지갑 연결 해제)
       </button>
 
-      {/* 매니저 연락처 (고객 센터) */}
+      {/* Manager Contact (Customer Center) */}
       <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', color: 'var(--text-dark)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
           <div>💬 담당 매니저 문의</div>

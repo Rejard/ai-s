@@ -7,7 +7,7 @@ import { API_BASE } from '../App';
 function PcWaitingPage({ walletAddress, onApproved }) {
   const navigate = useNavigate();
 
-  // 어드민 승인 여부를 실시간 폴링 (5초 간격)
+  // Polling Admin approval status in real-time (5-second interval)
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -16,7 +16,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
           if (res.data.user.status === 'APPROVED') {
             clearInterval(checkInterval);
             alert('🎉 회원님의 KYC 심사가 최종 통과되었습니다! 플랫폼 메인 대시보드로 진입합니다.');
-            onApproved(); // 상위 컴포넌트 상태 갱신 -> 대시보드로 자동 리다이렉트
+            onApproved(); // Parent component state update -> Automatic redirect to dashboard
           }
         }
       } catch (err) {
@@ -30,7 +30,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
   return (
     <div className="pc-layout-wrapper" style={{ justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
       
-      {/* 👑 마스터 매니저 '메니져 모드 복귀' 단축 바 */}
+      {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -55,7 +55,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 모드</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>메니져 페이지 바로 가기 (터치 시 복귀)</div>
             </div>
           </div>
@@ -67,10 +67,10 @@ function PcWaitingPage({ walletAddress, onApproved }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '640px' }}>
         
-        {/* 화려한 로딩 글라스 카드 */}
+        {/* Fancy Loading Glass Card */}
         <div className="glass-card glow-active" style={{ padding: '50px 30px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
           
-          {/* 장식용 그라데이션 광원 */}
+          {/* Decorative Gradient Light Source */}
           <div style={{
             position: 'absolute',
             top: '-20px',
@@ -83,7 +83,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
             borderRadius: '50%'
           }}></div>
 
-          {/* 로딩 인디케이터 애니메이션 */}
+          {/* Loading Indicator Animation */}
           <div style={{ display: 'inline-flex', position: 'relative', marginBottom: '30px' }}>
             <div className="shimmer-loading" style={{
               width: '100px',
@@ -104,7 +104,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
             </div>
           </div>
 
-          <h2 style={{ fontSize: '24px', color: '#F3F4F6', marginBottom: '14px', fontWeight: '700' }}>본사 KYC 신원 심사 중</h2>
+          <h2 style={{ fontSize: '24px', color: '#F3F4F6', marginBottom: '14px', fontWeight: '700' }}>Platform Owner KYC Identity Verification in Progress</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.7', marginBottom: '35px', padding: '0 20px' }}>
             회원님의 구글 인증 정보, 국가 식별 명칭, 신분증(ID Card) 이미지 대조 심사가 본사 매니저 측에 안전하게 접수되었습니다. 보안 검토가 끝나는 대로 즉시 대시보드가 활성화됩니다.
           </p>
@@ -131,13 +131,13 @@ function PcWaitingPage({ walletAddress, onApproved }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--warning-color)', animation: 'pulseAlpha 1.5s infinite' }}></div>
-              <span style={{ color: '#F3F4F6', fontWeight: '600' }}>외국인 및 데이터 수동 배심단 정밀 신원 심사 진행 중</span>
+              <span style={{ color: '#F3F4F6', fontWeight: '600' }}>Precise identity verification in progress for foreigners and manual data review panel</span>
             </div>
           </div>
 
         </div>
 
-        {/* 실시간 감지용 알림 배너 */}
+        {/* Real-time detection notification banner */}
         <div className="glass-card" style={{
           padding: '20px',
           display: 'flex',
@@ -155,7 +155,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
 
       </div>
 
-      {/* 스핀 및 펄스 키프레임 인라인 스타일 정의 */}
+      {/* Spin and Pulse Keyframe Inline Style Definition */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }

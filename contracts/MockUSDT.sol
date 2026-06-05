@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title MockUSDT
- * @dev Polygon Amoy Testnet에서 테스트 목적으로 사용될 가상 USDT 토큰 (6 decimals)
+ * @dev Virtual USDT Token (6 decimals) for testing on Polygon Amoy Testnet
  */
 contract MockUSDT {
     string public name = "Mock Tether USD";
@@ -18,7 +18,7 @@ contract MockUSDT {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     constructor() {
-        // 최초 배포 시 배포자에게 1,000,000 USDT 발행
+        // Upon initial deployment, issue 1,000,000 USDT to deployer
         _mint(msg.sender, 1000000 * 10**decimals);
     }
 
@@ -48,7 +48,7 @@ contract MockUSDT {
     }
 
     /**
-     * @dev 테스트용 Faucet: 누구나 본인의 주소로 1,000 USDT를 무료로 발행받아 테스트할 수 있게 함
+     * @dev Faucet for testing: Allows anyone to receive 1,000 USDT for free to their address for testing
      */
     function mint(address to, uint256 amount) public {
         _mint(to, amount);

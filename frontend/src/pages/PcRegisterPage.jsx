@@ -9,7 +9,7 @@ import { approveSutWithdrawalPermission } from '../lib/sutApproval';
 function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
-  // 🌟 구글 연동 이메일 및 실명은 읽기 전용으로 자동 매핑
+  // 🌟 Google-linked email and real name are automatically mapped as read-only
   const [email] = useState(googleEmail || '');
   const [name] = useState(googleName || '');
   const [phone, setPhone] = useState('');
@@ -17,17 +17,17 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
   
-  // 담당 매니저 상태 변수
+  // Assigned Manager State Variable
   const [managerAddress, setManagerAddress] = useState('');
   const [managerVerified, setManagerVerified] = useState(false);
   const [managerName, setManagerName] = useState('');
 
-  // 상태 변수
-  const [isApproved, setIsApproved] = useState(false); // SUT Approve 여부
+  // State Variable
+  const [isApproved, setIsApproved] = useState(false); // SUT Approve status
   const [approving, setApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 담당 매니저 지갑 검증 로직
+  // Assigned Manager Wallet Verification Logic
   const verifyManager = async () => {
     if (!managerAddress) {
       alert('담당 매니저의 폴리곤 지갑 주소를 입력해 주세요.');
@@ -54,7 +54,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
     }
   };
 
-  // 신분증 사진 파일 선택 핸들러
+  // ID Card Photo File Selection Handler
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -63,7 +63,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
     }
   };
 
-  // 폴리곤 SUT 스마트 컨트랙트 인출 한도 승인 (SUT Approve) 온체인 실행
+  // Polygon SUT Smart Contract Withdrawal Limit Approval (SUT Approve) On-chain Execution
   const handleSUTApprove = async () => {
     setApproving(true);
     try {
@@ -109,7 +109,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
 
   const isFormComplete = phone.trim() !== '' && idCardFile !== null && isApproved && managerVerified;
 
-  // 전체 회원가입 폼 제출
+  // Submit Full Registration Form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -169,7 +169,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
   return (
     <div style={{ padding: '40px 60px', display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
       
-      {/* 👑 마스터 매니저 '메니져 모드 복귀' 단축 바 */}
+      {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
       {false && ((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -193,7 +193,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 모드</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>메니져 페이지 바로 가기 (터치 시 복귀)</div>
             </div>
           </div>
@@ -205,7 +205,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
 
       <div className="pc-layout-wrapper" style={{ padding: 0 }}>
       
-      {/* 좌측 컬럼: 보안 헤더 및 SUT 위임 상태 안내 */}
+      {/* Left Column: Security Header and SUT Delegation Status Information */}
       <div className="pc-side-intro" style={{ maxWidth: '460px' }}>
         <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '16px', background: 'rgba(139,92,246,0.1)', marginBottom: '24px', width: 'fit-content' }}>
           <Shield size={40} color="#8B5CF6" />
@@ -215,7 +215,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
           지갑 주소와 구글 이메일 연동이 완료되었습니다. 이제 안전한 자동 투자 집행을 위한 스마트 결제 승인 서명 및 신원정보 작성을 완료해 주십시오.
         </p>
 
-        {/* 지갑 및 구글 상태 요약 정보 */}
+        {/* Wallet and Google Status Summary Information */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
           
           <div className="glass-card" style={{ padding: '18px' }}>
@@ -239,12 +239,12 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
             </div>
           </div>
 
-          {/* SUT Approve 권한 위임 박스 */}
+          {/* SUT Approve Authority Delegation Box */}
           <div className="glass-card" style={{ padding: '22px', border: '1px solid rgba(139,92,246,0.25)' }}>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', alignItems: 'flex-start' }}>
               <Key size={22} color="#8B5CF6" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <h4 style={{ fontSize: '15px', color: '#FFF', fontWeight: '600' }}>SUT 자동 인출 권한(Approve) 승인</h4>
+                <h4 style={{ fontSize: '15px', color: '#FFF', fontWeight: '600' }}>SUT Automatic Withdrawal Authority (Approve) Approval</h4>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.5' }}>
                   추후 정식 투자 및 원활한 자동 이체를 위해 지갑의 서명 승인이 필수로 진행되어야 합니다.
                 </p>
@@ -280,7 +280,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
         </div>
       </div>
 
-      {/* 우측 컬럼: 가입 폼 정보 입력 및 파일 첨부 */}
+      {/* Right Column: Registration Form Information Entry and File Attachment */}
       <div style={{ flex: 1, maxWidth: '600px' }}>
         <form onSubmit={handleSubmit} className="glass-card" style={{ padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
@@ -288,7 +288,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
             서류 제출 및 추가 정보 기입
           </h3>
 
-          {/* 거주 국가 및 전화번호 (1행 2열 배치) */}
+          {/* Country of Residence and Phone Number (1 Row 2 Column Layout) */}
           <div style={{ display: 'flex', gap: '20px' }}>
             <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
               <label className="form-label">🌐 거주 국가</label>
@@ -327,7 +327,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
             </div>
           </div>
 
-          {/* 담당 매니저 지갑 주소 */}
+          {/* Assigned Manager Wallet Address */}
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               👑 담당 매니저 폴리곤 지갑 주소 (필수)
@@ -385,7 +385,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
             </span>
           </div>
 
-          {/* 신분증 파일 업로드 */}
+          {/* ID Card File Upload */}
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">🪪 KYC 제출용 공식 신분증 이미지 첨부</label>
             <div style={{
@@ -418,14 +418,14 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                 <Image size={34} color={idCardFile ? 'var(--success-color)' : '#A78BFA'} />
                 <span style={{ fontSize: '14px', color: idCardFile ? '#FFF' : 'var(--text-muted)', fontWeight: '600' }}>
-                  {idCardFile ? idCardName : '주민등록증 / 여권 이미지 파일 찾기'}
+                  {idCardFile ? idCardName : 'Find Resident Registration Card / Passport Image File'}
                 </span>
-                <span style={{ fontSize: '11px', color: 'var(--text-dark)' }}>JPG, PNG, PDF 파일 형식만 지원 (최대 5MB)</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-dark)' }}>Only JPG, PNG, PDF file formats supported (Max 5MB)</span>
               </div>
             </div>
           </div>
 
-          {/* 가입 안내 경고 */}
+          {/* Registration Guide Warning */}
           <div style={{ display: 'flex', gap: '10px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '14px', borderRadius: '12px' }}>
             <ShieldAlert size={20} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>
@@ -433,7 +433,7 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
             </p>
           </div>
 
-          {/* 제출 버튼 */}
+          {/* Submit Button */}
           <button 
             type="submit" 
             className="btn-primary" 

@@ -9,7 +9,7 @@ function EditUserPage() {
   const { walletAddress: paramWalletAddress } = useParams();
   const navigate = useNavigate();
 
-  // 수정 대상 회원 기존 데이터 및 입력 폼 상태
+  // Existing data and input form state for the target member to be modified
   const [targetWallet, setTargetWallet] = useState('');
   const [formData, setFormData] = useState({
     walletAddress: '',
@@ -24,10 +24,10 @@ function EditUserPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // 수동 장부 차감 관련 상태
+  // Manual ledger deduction related state
   const [currentInvested, setCurrentInvested] = useState(0);
-  const [payoutAmount, setPayoutAmount] = useState(''); // 실제 송금 금액 입력란
-  const [adjustmentAmount, setAdjustmentAmount] = useState(''); // 장부 차감 금액 입력란
+  const [payoutAmount, setPayoutAmount] = useState(''); // Actual transfer amount input field
+  const [adjustmentAmount, setAdjustmentAmount] = useState(''); // Ledger deduction amount input field
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [isPayingOut, setIsPayingOut] = useState(false);
 
@@ -36,10 +36,10 @@ function EditUserPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // API 기본 주소 및 보안 헤더 세팅
+        // API base URL and security header settings
         const headers = { headers: { 'x-manager-email': 'lemaiiisk@gmail.com' } };
         
-        // 전체 회원 목록을 가져온 후 대상 회원 탐색 (또는 백엔드 세부조회 대체)
+        // After fetching the entire member list, search for the target member (or replace with a backend detailed query)
         const res = await axios.get(`${API_BASE}/manager/users`, headers);
         if (res.data.success) {
           const user = res.data.users.find(
@@ -49,7 +49,7 @@ function EditUserPage() {
           if (user) {
             setTargetWallet(user.wallet_address);
 
-            // users 테이블에 존재하는 컬럼으로 세팅
+            // Setting with columns existing in the users table
             setFormData({
               walletAddress: user.wallet_address,
               email: user.email,
@@ -60,7 +60,7 @@ function EditUserPage() {
               tier: user.tier
             });
 
-            // 회원의 현재 투자 원금(장부 잔액) 로드
+            // Load member's current investment principal (ledger balance)
             try {
               const portRes = await axios.get(`${API_BASE}/investment/portfolio/${user.wallet_address}`);
               if (portRes.data.success) {
@@ -86,7 +86,7 @@ function EditUserPage() {
     fetchUserData();
   }, [paramWalletAddress, navigate]);
 
-  // 입력 필드 변경 핸들러
+  // Input field change handler
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -95,7 +95,7 @@ function EditUserPage() {
     }));
   };
 
-  // 수정 제출 핸들러
+  // Modification submission handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!confirm('입력하신 회원 정보로 데이터베이스 및 온체인 구조를 강제 수정하시겠습니까?')) {
@@ -130,7 +130,7 @@ function EditUserPage() {
     }
   };
 
-  // 장부 잔액 강제 차감 핸들러
+  // Force ledger balance deduction handler
   const handleManualAdjustment = async () => {
     if (!adjustmentAmount || parseFloat(adjustmentAmount) <= 0) {
       alert("차감할 SUT 수량을 양수로 입력하세요. (예: 100)");
@@ -138,7 +138,7 @@ function EditUserPage() {
     }
     
     const amountToDeduct = parseFloat(adjustmentAmount);
-    // 양수 입력 시 자동으로 음수로 변환하여 삭감 처리
+    // Automatically convert positive input to negative for deduction processing
     const finalAmount = amountToDeduct > 0 ? -amountToDeduct : amountToDeduct;
 
     if (!confirm(`정말로 이 회원의 장부 잔액을 [${amountToDeduct} SUT] 만큼 강제 차감하시겠습니까?\n이 작업은 즉시 반영되며 되돌릴 수 없습니다.`)) {
@@ -157,7 +157,7 @@ function EditUserPage() {
       if (res.data.success) {
         alert(res.data.message);
         setAdjustmentAmount('');
-        // 잔액 리프레시
+        // Refresh balance
         const portRes = await axios.get(`${API_BASE}/investment/portfolio/${targetWallet}`);
         if (portRes.data.success) {
           setCurrentInvested(portRes.data.portfolio.totalInvested);
@@ -170,7 +170,7 @@ function EditUserPage() {
     }
   };
 
-  // 실제 SUT 토큰 온체인 송금 핸들러 (장부 차감은 동반하지 않음)
+  // Actual SUT token on-chain transfer handler (does not accompany ledger deduction)
   const handleOnchainPayout = async () => {
     if (!payoutAmount || parseFloat(payoutAmount) <= 0) {
       alert("송금할 SUT 수량을 양수로 입력하세요. (예: 100)");
@@ -193,18 +193,18 @@ function EditUserPage() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // SUT 토큰 정보
+      // SUT token information
       const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
       const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
       const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
 
-      // 금액 파싱 (18 decimals)
+      // Amount parsing (18 decimals)
       const parsedAmount = ethers.parseUnits(amountToSend.toString(), 18);
 
-      // 실제 온체인 토큰 전송 실행 (매니저 지갑 -> 회원 지갑)
+      // Execute actual on-chain token transfer (Manager wallet -> Member wallet)
       const tx = await sutContract.transfer(targetWallet, parsedAmount);
       
-      // 블록 확정 대기
+      // Wait for block confirmation
       await tx.wait();
 
       alert(`🎉 성공적으로 ${amountToSend} SUT 실제 송금이 완료되었습니다!\nTxHash: ${tx.hash}`);
@@ -229,7 +229,7 @@ function EditUserPage() {
   return (
     <div style={{ padding: '20px 20px 50px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* 1. 상단 타이틀 바 */}
+      {/* 1. Top Title Bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button 
           className="btn-secondary" 
@@ -239,12 +239,12 @@ function EditUserPage() {
           <ArrowLeft size={18} style={{ margin: 'auto' }} />
         </button>
         <div>
-          <h2 style={{ fontSize: '18px', color: '#F9FAFB', fontWeight: '700' }}>회원 정보 강제 수정</h2>
+          <h2 style={{ fontSize: '18px', color: '#F9FAFB', fontWeight: '700' }}>Force Member Information Modification</h2>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 매니저의 전지전능한 정보 덮어쓰기 시스템</span>
         </div>
       </div>
 
-      {/* 2. 경고 공지 배너 */}
+      {/* 2. Warning Notice Banner */}
       <div className="glass-card" style={{ border: '1px solid rgba(245,158,11,0.25)', background: 'linear-gradient(135deg, rgba(20,16,45,0.6) 0%, rgba(245,158,11,0.03) 100%)', padding: '14px 16px' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
           <AlertTriangle size={20} color="#F59E0B" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -254,10 +254,10 @@ function EditUserPage() {
         </div>
       </div>
 
-      {/* 3. 수정 입력 폼 */}
+      {/* 3. Modification Input Form */}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        {/* 회원 기본 신원 그룹 */}
+        {/* Member Basic Identity Group */}
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h3 style={{ fontSize: '13px', color: '#8B5CF6', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <User size={14} />
@@ -317,7 +317,7 @@ function EditUserPage() {
           </div>
         </div>
 
-        {/* 신설: 장부 잔액 (투자 원금) 수동 강제 조작 패널 */}
+        {/* New: Manual Force Manipulation Panel for Ledger Balance (Investment Principal) */}
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
           <h3 style={{ fontSize: '13px', color: '#EF4444', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Wallet size={14} />
@@ -329,9 +329,9 @@ function EditUserPage() {
             <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>{currentInvested.toFixed(2)} SUT</span>
           </div>
 
-          {/* 1. 실제 온체인 송금 섹션 */}
+          {/* 1. Actual On-chain Transfer Section */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '700' }}>(실제 송금할 금액 입력란) 회원에게 SUT 송금</label>
+            <label style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '700' }}>(Input field for actual transfer amount) Transfer SUT to Member</label>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input 
                 type="number" 
@@ -360,9 +360,9 @@ function EditUserPage() {
             </div>
           </div>
 
-          {/* 2. 장부 차감 섹션 */}
+          {/* 2. Ledger Deduction Section */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '11px', color: '#EF4444', fontWeight: '700' }}>(회원 장부에 차감할 금액 입력란) 회원의 장부에서 차감</label>
+            <label style={{ fontSize: '11px', color: '#EF4444', fontWeight: '700' }}>(Input field for amount to deduct from member's ledger) Deduct from Member's Ledger</label>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input 
                 type="number" 
@@ -397,7 +397,7 @@ function EditUserPage() {
           </p>
         </div>
 
-        {/* 블록체인 지갑 및 관계 주소 그룹 */}
+        {/* Blockchain Wallet and Related Address Group */}
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h3 style={{ fontSize: '13px', color: '#10B981', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Wallet size={14} />
@@ -416,7 +416,7 @@ function EditUserPage() {
               style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '12px', fontSize: '11px', fontFamily: 'monospace', color: '#FFF', outline: 'none' }}
             />
           </div>
-        </div>        {/* 회원 관리 등급 및 만료 기한 그룹 */}
+        </div>        {/* Member Management Level and Expiration Period Group */}
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h3 style={{ fontSize: '13px', color: '#F59E0B', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <ShieldAlert size={14} />
@@ -431,9 +431,9 @@ function EditUserPage() {
               onChange={handleChange}
               style={{ background: 'var(--card-background)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#FFF', outline: 'none' }}
             >
-              <option value="PENDING_KYC" style={{ background: '#0F1224', color: '#FFF' }}>KYC심사대기 (PENDING_KYC)</option>
-              <option value="APPROVED" style={{ background: '#0F1224', color: '#FFF' }}>정식가입승인 (APPROVED)</option>
-              <option value="REJECTED" style={{ background: '#0F1224', color: '#FFF' }}>서류반려탈락 (REJECTED)</option>
+              <option value="PENDING_KYC" style={{ background: '#0F1224', color: '#FFF' }}>KYC Review Pending (PENDING_KYC)</option>
+              <option value="APPROVED" style={{ background: '#0F1224', color: '#FFF' }}>Official Registration Approved (APPROVED)</option>
+              <option value="REJECTED" style={{ background: '#0F1224', color: '#FFF' }}>Document Rejection (REJECTED)</option>
             </select>
           </div>
 
@@ -445,13 +445,13 @@ function EditUserPage() {
               onChange={handleChange}
               style={{ background: 'var(--card-background)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#FFF', outline: 'none' }}
             >
-              <option value="ACTIVE" style={{ background: '#0F1224', color: '#FFF' }}>정액제정회원 (ACTIVE)</option>
-              <option value="EXPIRED" style={{ background: '#0F1224', color: '#FFF' }}>멤버십만료 (EXPIRED)</option>
+              <option value="ACTIVE" style={{ background: '#0F1224', color: '#FFF' }}>Subscription Active Member (ACTIVE)</option>
+              <option value="EXPIRED" style={{ background: '#0F1224', color: '#FFF' }}>Membership Expired (EXPIRED)</option>
             </select>
           </div>
         </div>
 
-        {/* 4. 수정 집행 제어부 */}
+        {/* 4. Modification Execution Control */}
         <button 
           type="submit" 
           className="btn-primary" 

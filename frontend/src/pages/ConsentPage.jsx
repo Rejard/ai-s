@@ -16,7 +16,7 @@ function ConsentPage({ walletAddress, onLogout }) {
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // 500명 모집 정원 실시간 사전 체크
+  // Real-time pre-check for 500-person recruitment capacity
   useEffect(() => {
     const fetchLimit = async () => {
       try {
@@ -53,7 +53,7 @@ function ConsentPage({ walletAddress, onLogout }) {
     );
   }
 
-  // 500명 정원이 초과된 경우 가입 불가 화면 차단
+  // Block registration screen if 500-person capacity is exceeded
   if (!isAvailable) {
     return (
       <div className="glass-card" style={{ margin: 'auto 20px', border: '1px solid var(--danger-color)', padding: '30px 20px', textAlign: 'center' }}>
@@ -84,7 +84,7 @@ function ConsentPage({ walletAddress, onLogout }) {
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -107,7 +107,7 @@ function ConsentPage({ walletAddress, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 연동 중</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Connected</div>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
             </div>
           </div>
@@ -117,7 +117,7 @@ function ConsentPage({ walletAddress, onLogout }) {
         </div>
       )}
       
-      {/* 선착순 정원 게이지 바 */}
+      {/* First-come, first-served capacity gauge bar */}
       <div className="glass-card" style={{ padding: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '8px', color: 'var(--text-muted)' }}>
           <span>🔥 1차 500명 선착순 특별 모집</span>
@@ -133,9 +133,9 @@ function ConsentPage({ walletAddress, onLogout }) {
         </div>
       </div>
 
-      {/* 동의서 타이틀 및 로그아웃 버튼 */}
+      {/* Consent Form Title and Logout Button */}
       <div style={{ textAlign: 'center', margin: '10px 0', position: 'relative' }}>
-        <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>투자의사 및 약관 동의</h2>
+        <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>Investment Intent and Terms of Service Agreement</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
           안전하고 원활한 자동 투자 플랫폼 이용을 위해 아래 사항을 자세히 읽고 동의해 주십시오.
         </p>
@@ -155,10 +155,10 @@ function ConsentPage({ walletAddress, onLogout }) {
         </button>
       </div>
 
-      {/* 약관 리스트 */}
+      {/* Terms and Conditions List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        {/* 약관 1 */}
+        {/* Term 1 */}
         <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
             <input 
@@ -186,7 +186,7 @@ function ConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* 약관 2 */}
+        {/* Term 2 */}
         <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
             <input 
@@ -214,7 +214,7 @@ function ConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* 약관 3 */}
+        {/* Term 3 */}
         <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
             <input 
@@ -244,7 +244,7 @@ function ConsentPage({ walletAddress, onLogout }) {
 
       </div>
 
-      {/* 다음 단계 진행 버튼 */}
+      {/* Proceed to Next Step Button */}
       <button 
         className="btn-primary" 
         style={{ marginTop: '10px', padding: '16px' }}

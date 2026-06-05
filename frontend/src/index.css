@@ -39,7 +39,7 @@ body {
   overflow-x: hidden;
 }
 
-/* PC 뷰포트에서 모바일 디바이스 모양 프레임 강제 적용 */
+/* Force application of mobile device shape frame in PC viewport */
 .app-frame {
   width: 100%;
   max-width: 480px;
@@ -285,7 +285,7 @@ h1, h2, h3, h4, h5 {
   color: var(--accent-color);
 }
 
-/* PC 전용 듀얼 레이아웃 스타일 */
+/* PC exclusive dual layout style */
 .pc-layout-wrapper {
   display: flex;
   justify-content: center;
@@ -301,7 +301,7 @@ h1, h2, h3, h4, h5 {
   position: relative;
 }
 
-/* PC 우주 느낌 그라디언트 구체 애니메이션용 */
+/* For PC space-feel gradient sphere animation */
 .pc-layout-wrapper::before {
   content: '';
   position: absolute;
@@ -333,7 +333,7 @@ h1, h2, h3, h4, h5 {
   100% { transform: translate(5%, 5%) scale(1.1); }
 }
 
-/* PC 전용 왼쪽 소개 패널 */
+/* PC exclusive left introduction panel */
 .pc-side-intro {
   display: flex;
   flex-direction: column;
@@ -408,7 +408,7 @@ h1, h2, h3, h4, h5 {
   line-height: 1.4;
 }
 
-/* PC 중앙 모바일 폰 시뮬레이터 프레임 */
+/* PC center mobile phone simulator frame */
 .mobile-simulator-frame {
   width: 400px;
   height: 820px;
@@ -426,7 +426,7 @@ h1, h2, h3, h4, h5 {
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 스크롤바 숨기기 */
+/* Hide scrollbar */
 .mobile-simulator-frame main {
   scrollbar-width: none;
   overflow-y: auto;

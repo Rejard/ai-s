@@ -3,14 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// .env 로드
+// Load .env
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const RPC_URL = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-// MockUSDT & PlatformVault의 ABI 및 Bytecode (자동 배포 및 상호작용용)
-// Solidity 컴파일 표준에 따른 간소화된 버전
+// ABI and Bytecode for MockUSDT & PlatformVault (for automatic deployment and interaction)
+// Simplified version according to Solidity compilation standards
 const MockUSDT_ABI = [
   "constructor()",
   "function name() view returns (string)",
@@ -27,9 +27,9 @@ const MockUSDT_ABI = [
   "event Approval(address indexed owner, address indexed spender, uint256 value)"
 ];
 
-// MockUSDT 컴파일된 Bytecode (이더스에서 자동 배포 시 필요)
-// 아주 심플한 ERC20 토큰의 배포용 최소 바이너리 바이트코드 (ethers.js 배포 테스트를 위한 간이 스텁 또는 배포 생략 시 모의 기능 대응)
-const MockUSDT_BYTECODE = "0x608060405234801561001057600080fd5b506103e86000540160005530600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282540192505081905550506103e8306001600033"; // 실제 배포가 안되는 환경에서는 Mock 모드로 대응
+// MockUSDT compiled Bytecode (required for automatic deployment in ethers)
+// Minimum binary bytecode for deploying a very simple ERC20 token (simple stub for ethers.js deployment testing or mock functionality for skipped deployment)
+const MockUSDT_BYTECODE = "0x608060405234801561001057600080fd5b506103e86000540160005530600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282540192505081905550506103e8306001600033"; // In environments where actual deployment is not possible, respond with Mock mode
 
 const PlatformVault_ABI = [
   "constructor(address _usdtTokenAddress)",
@@ -46,7 +46,7 @@ let provider;
 let wallet;
 let isSimulationMode = false;
 
-// 활성화된 스마트 컨트랙트 캐시
+// Active smart contract cache
 let usdtAddress = process.env.USDT_CONTRACT_ADDRESS;
 let vaultAddress = process.env.VAULT_CONTRACT_ADDRESS;
 
@@ -60,21 +60,21 @@ try {
 }
 
 /**
- * @dev 스마트 컨트랙트 배포 오토메이션 함수
- * 실제 RPC 연결 및 테스트넷 가스비가 있고 배포 주소가 없을 때 실행됩니다.
- * 연결에 실패하거나 가스비가 부족하면 자동으로 "시뮬레이션 모드(가상 온체인)"로 기동됩니다.
+ * @dev Smart contract deployment automation function
+ * Executed when there is a real RPC connection and testnet gas fee and no deployment address.
+ * If connection fails or gas fee is insufficient, it automatically starts in "Simulation Mode (Virtual On-chain)".
  */
 async function autoDeployContracts() {
   if (isSimulationMode) return { usdtAddress: 'MOCK_USDT_ADDR', vaultAddress: 'MOCK_VAULT_ADDR', simulated: true };
 
-  // 만약 이미 환경변수에 주소가 존재한다면 배포 건너뜀
+  // If an address already exists in the environment variable, skip deployment
   if (usdtAddress && vaultAddress) {
     console.log(`✔ Smart Contracts already deployed at:\n  USDT: ${usdtAddress}\n  Vault: ${vaultAddress}`);
     return { usdtAddress, vaultAddress, simulated: false };
   }
 
   try {
-    // 가스비 잔액 체크 (with 3-second timeout to prevent server hang on RPC failure)
+    // Gas fee balance check (with 3-second timeout to prevent server hang on RPC failure)
     const balance = await Promise.race([
       provider.getBalance(wallet.address),
       new Promise((_, reject) => setTimeout(() => reject(new Error("RPC Timeout")), 3000))
@@ -91,23 +91,23 @@ async function autoDeployContracts() {
     }
 
       console.log(`🚀 Starting deployment on Polygon Mainnet...`);
-      // 수동 관리 모드: 볼트 컨트랙트 에러 체크 건너뜀
+      // Manual management mode: skip vault contract error check
       console.log(`✔ 수동 지급 관리형 아키텍처로 인해 스마트 컨트랙트 볼트 확인 절차를 생략합니다.`);
   } catch (err) {
     console.error("⚠ Error checking contracts on Mainnet:", err.message);
-    // throw err; // 서버 부트스트랩을 막지 않도록 주석 처리
+    // throw err; // Commented out to prevent blocking server bootstrap
   }
 }
 
 /**
- * @dev 사용자 지갑으로부터 USDT를 인출하고 2단계 균등 분배(각 25 USDT)를 온체인으로 실행
+ * @dev Withdraw USDT from user wallet and execute 2-step equal distribution (25 USDT each) on-chain
  */
 async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amountSut) {
   // SUT Token is 18 decimals
   const amountInDecimals = ethers.parseUnits(amountSut.toString(), 18);
 
   if (isSimulationMode) {
-    // 시뮬레이션 모드일 때 가상의 트랜잭션 해시를 반환하며 정상 작동 확인
+    // In simulation mode, return a virtual transaction hash and confirm normal operation
     const mockTxHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
     console.log(`[SIMULATED TX] Distributed ${amountSut} SUT. User: ${userWallet}, Ref1: ${referrer1}, Ref2: ${referrer2}, TxHash: ${mockTxHash}`);
     return {
@@ -127,7 +127,7 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
     const r2 = referrer2 === 'none' ? ethers.ZeroAddress : referrer2;
 
     console.log(`[ON-CHAIN TX] Charging ${amountSut} SUT from ${userWallet}...`);
-    // PlatformVault.sol의 collectAndDistribute 호출
+    // Call collectAndDistribute of PlatformVault.sol
     const tx = await vaultContract.collectAndDistribute(userWallet, r1, r2, amountInDecimals, {
       gasLimit: 300000
     });
@@ -146,8 +146,8 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
     };
   } catch (err) {
     console.error("❌ On-chain transaction failed:", err.message);
-    // 실제 RPC 가스비 또는 Approve 한도 부족 등의 원인으로 실패하면, 
-    // 사용자 시연의 연속성을 위해 폴백(Fallback) 처리하여 경고와 함께 로직을 성공으로 모의 처리해줄 수 있습니다.
+    // If it fails due to actual RPC gas fees or insufficient Approve limit, 
+    // For user demo continuity, perform fallback processing and mock the logic as successful with a warning.
     throw new Error(`On-chain transaction execution failed: ${err.message}`);
   }
 }

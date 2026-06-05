@@ -24,16 +24,16 @@ import {
 function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
 
-  // 대기 유저 및 전체 회원, 통계 데이터 상태
+  // Waiting users, all members, and statistical data state
   const [pendingUsers, setPendingUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  // 신규: 출금 대기 상태
+  // New: Withdrawal pending state
   const [withdrawals, setWithdrawals] = useState([]);
 
-  // AI 그리드 봇 설정 상태
+  // AI Grid Bot configuration state
   const [gridSettings, setGridSettings] = useState({
     ai_grid_status: 'OFF',
     ai_grid_lower: '0.15',
@@ -42,7 +42,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     ai_grid_frequency: '5'
   });
 
-  // 매니저 본인 AI 투자 현황 및 지갑 잔고 상태
+  // Manager's own AI investment status and wallet balance state
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [showTxModal, setShowTxModal] = useState(false);
@@ -54,29 +54,29 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [yieldHistory, setYieldHistory] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
   
-  // 신규: 중복 실행 방지용 전략 ID 레퍼런스
+  // New: Strategy ID reference for preventing duplicate execution
   const lastExecutedStrategyIdRef = useRef(null);
 
-  // 모달 이미지 뷰어 상태
+  // Modal image viewer status
   const [selectedIdCard, setSelectedIdCard] = useState(null);
   const [submittingId, setSubmittingId] = useState(null);
 
-  // Gate.io 실거래 주문 전용 상태
+  // Gate.io live trade order-only status
   const [orderAmount, setOrderAmount] = useState('');
   const [orderPrice, setOrderPrice] = useState('');
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
-  // 로컬 기기 보관용 Gate.io API 키 및 입금 주소 상태
+  // Gate.io API key and Deposit address status for local device storage
   const [localApiKey, setLocalApiKey] = useState(localStorage.getItem('gateio_api_key') || '');
   const [localApiSecret, setLocalApiSecret] = useState(localStorage.getItem('gateio_api_secret') || '');
   const [localDepositAddress, setLocalDepositAddress] = useState(localStorage.getItem('gateio_deposit_address') || '');
 
-  // 온체인 Gate.io 송금 모달 상태
+  // On-chain Gate.io transfer modal status
   const [showSendSutModal, setShowSendSutModal] = useState(false);
   const [sendSutAmount, setSendSutAmount] = useState('');
   const [sendingSut, setSendingSut] = useState(false);
 
-  // 시연 편의성 및 외부인 무단 침입 철저 방어를 위한 매니저 비밀번호 보호 상태
+  // Manager password protection status for demonstration convenience and thorough prevention of unauthorized external access
   const [managerAuth, setManagerAuth] = useState(false);
   const [managerPassword, setManagerPassword] = useState('');
   
@@ -88,7 +88,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     });
   };
 
-  // Gate.io 실제 지정가 주문 격발 핸들러
+  // Gate.io actual limit order trigger handler
   const handleGateIoOrder = async (side) => {
     if (!orderAmount || parseFloat(orderAmount) <= 0) {
       alert("주문 수량을 입력하세요.");
@@ -119,7 +119,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         alert(`🎉 ${res.data.message}\n주문 ID: ${res.data.order.id}`);
         setOrderAmount('');
         setOrderPrice('');
-        fetchManagerData(); // 잔고 갱신
+        fetchManagerData(); // Balance update
       }
     } catch (err) {
       const errMsg = err.response && err.response.data && err.response.data.message
@@ -131,7 +131,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // Gate.io API 키 및 입금 주소 로컬 기기 및 서버 저장 핸들러
+  // Gate.io API key and Deposit address local device and server save handler
   const handleSaveApiKeys = async () => {
     if (!localApiKey.trim() || !localApiSecret.trim() || !localDepositAddress.trim()) {
       alert('⚠️ 모든 API 키 및 입금 주소를 정확하게 입력해 주세요.');
@@ -154,10 +154,10 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       console.error(err);
       alert('경고: 로컬 저장은 성공했으나 서버 DB 저장에 실패했습니다: ' + (err.response?.data?.message || err.message));
     }
-    fetchManagerData(); // 잔고 정보 즉시 갱신
+    fetchManagerData(); // Immediately update balance information
   };
 
-  // Gate.io API 키 및 입금 주소 로컬 기기 및 서버 삭제 핸들러
+  // Gate.io API key and Deposit address local device and server delete handler
   const handleClearApiKeys = async () => {
     setLocalApiKey('');
     setLocalApiSecret('');
@@ -176,10 +176,10 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       console.error(err);
       alert('경고: 로컬 삭제는 성공했으나 서버 DB 삭제에 실패했습니다: ' + (err.response?.data?.message || err.message));
     }
-    fetchManagerData(); // 데모 모드로 전환 확인
+    fetchManagerData(); // Confirm switch to demo mode
   };
 
-  // 내 지갑에서 Gate.io로 SUT 송금 핸들러
+  // SUT transfer handler from my wallet to Gate.io
   const handleSendSutToGateIo = async (e) => {
     if (e) e.preventDefault();
     
@@ -223,7 +223,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 1. 메니져 통합 데이터 로드
+  // 1. Load Manager integrated data
   const fetchManagerData = async () => {
     try {
       const managerData = await loadManagerDashboardData({
@@ -267,7 +267,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     return () => clearInterval(interval);
   }, []);
 
-  // 신규: 로컬 자동매매 실행 루프
+  // New: Local automated trading execution loop
   useEffect(() => {
     if (gridSettings.ai_grid_status !== 'ON' || !aiLogs || aiLogs.length === 0) return;
 
@@ -276,7 +276,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     lastExecutedStrategyIdRef.current = latestStrategy.id;
   }, [aiLogs, gridSettings.ai_grid_status]);
 
-  // 2. KYC 승인 처리
+  // 2. Process KYC approval
   const handleApprove = async (walletAddressToApprove) => {
     if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) {
       return;
@@ -304,7 +304,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 3. KYC 반려 처리
+  // 3. Process KYC rejection
   const handleReject = async (walletAddressToReject) => {
     if (!confirm('해당 회원의 신원 서류가 부적합하여 가입 신청을 반려하시겠습니까?')) {
       return;
@@ -329,12 +329,12 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 4. 출금(지급) 수동 승인 처리
+  // 4. Process manual Withdrawal (payout) approval
   const handleApproveWithdrawal = async (id, requestedAmount, name) => {
-    // 매니저가 실제 트러스트월렛에서 얼마를 보냈든 상관없이, 회원의 장부에서는 신청한 원래 금액만큼만 삭감시킵니다.
+    // Regardless of how much the Manager actually sent from Trust Wallet, only the originally requested amount will be deducted from the member's ledger.
     const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 실제로 트러스트월렛을 통해 송금하신 실제 금액을 메모용으로 입력해주세요.\n(참고: 회원의 장부에서는 무조건 신청 원금인 ${requestedAmount} SUT가 소멸됩니다.)`, requestedAmount);
     
-    if (actualPayoutStr === null) return; // 취소
+    if (actualPayoutStr === null) return; // Cancel
 
     try {
       const res = await approveManagerWithdrawal({
@@ -354,7 +354,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 5. AI 트레이딩 그리드 봇 설정 변경 및 면책 조항
+  // 5. AI Trading Grid Bot settings change and disclaimer
   const handleToggleAiStatus = async () => {
     const newStatus = gridSettings.ai_grid_status === 'ON' ? 'OFF' : 'ON';
     
@@ -409,7 +409,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 매니저 전용 온체인 입금(Deposit) 및 출금(Withdrawal) 처리
+  // Manager-exclusive on-chain Deposit and Withdrawal processing
   const handleTxSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!txAmount || parseFloat(txAmount) <= 0) {
@@ -432,20 +432,20 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           throw new Error(`지갑 주소 불일치: 현재 로그인된 계정 주소(${walletAddress})와 메타마스크에 활성화된 주소(${signerAddress})가 다릅니다. 지갑 계정을 확인해 주세요.`);
         }
 
-        // SUT 토큰 정보
+        // SUT token information
         const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
         const vaultAddress = "0x855c880D538892fD899eECb72D4b1Ac5B46089eA";
         const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
         
         const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
 
-        // 금액 파싱 (18 decimals)
+        // Amount parsing (18 decimals)
         const parsedAmount = ethers.parseUnits(txAmount.toString(), 18);
 
-        // 실제 온체인 토큰 전송 실행
+        // Execute actual on-chain token transfer
         const tx = await sutContract.transfer(vaultAddress, parsedAmount);
         
-        // 블록 확정 대기
+        // Wait for block confirmation
         await tx.wait();
 
         const res = await axios.post(`${API_BASE}/investment/deposit`, {
@@ -480,7 +480,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 6. 기존 수동 분배 기능 (유지)
+  // 6. Existing manual Distribution function (maintain)
   const handleTriggerAIProfit = async () => {
     const profitPercentage = prompt(`[AI 트레이딩 시뮬레이션 수익 분배]\n\n현재 가입된 정식(ACTIVE) 회원들에게 배분할 'SUT 수익률(%)'을 숫자로 입력해 주세요.\n(예: 0.5 입력 시, 회원의 SUT 총액 기준 0.5%의 SUT가 추가로 분배됩니다.)`, "0.5");
     
@@ -516,7 +516,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   return (
     <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* 1. 메니져 상단 내비게이션 바 */}
+      {/* 1. Manager top navigation bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button 
           className="btn-secondary" 
@@ -531,7 +531,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </span>
       </div>
 
-      {/* 📈 Gate.io 실시간 투자 수익률 차트 카드 */}
+      {/* 📈 Gate.io Real-time Investment Yield Chart Card */}
       <div className="glass-card" style={{ padding: '0', overflow: 'hidden', position: 'relative', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <div style={{ padding: '16px 16px 10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -559,7 +559,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
         </div>
 
-        {/* SVG 차트 영역 */}
+        {/* SVG Chart Area */}
         <div style={{ width: '100%', height: '100px', position: 'relative', display: 'block', padding: '10px 16px 12px 16px' }}>
           <svg width="100%" height="80" viewBox="0 0 500 80" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible' }}>
             <defs>
@@ -616,7 +616,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </svg>
         </div>
 
-        {/* API 키 미설정 또는 거래 내역이 없을 시 폴백 안내 오버레이 */}
+        {/* Fallback guidance overlay when API key is not set or there is no transaction history */}
         {!performance && (
           <div style={{
             position: 'absolute',
@@ -633,24 +633,24 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             textAlign: 'center'
           }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px', fontSize: '11px' }}>⚠️ 수익률 차트 비활성화</span>
+              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px', fontSize: '11px' }}>⚠️ Yield chart disabled</span>
               로컬 Gate.io API 키를 등록하고 거래소에서 SUT를 실제 매수하면 수익률 차트가 여기에 표기됩니다.
             </div>
           </div>
         )}
       </div>
 
-      {/* 🤖 완전 자동화 AI 그리드 트레이딩 봇 카드 */}
+      {/* 🤖 Fully Automated AI Grid Trading Bot Card */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
         
-        {/* 상단 타이틀 & 토글 */}
+        {/* Top Title & Toggle */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)' }}>
               <BarChart3 size={20} color="var(--success-color)" />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <h4 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>🤖 완전 자동화 AI 그리드 트레이딩 봇</h4>
+              <h4 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>🤖 Fully Automated AI Grid Trading Bot</h4>
               <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>상/하한가 범위를 설정하면 매일 봇이 수익을 발생시킵니다.</p>
             </div>
           </div>
@@ -675,12 +675,12 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
         </div>
 
-        {/* 🤖 실시간 AI 엔진 의사결정 브리핑 영역 (카드 상단 위치) */}
+        {/* 🤖 Real-time AI Engine Decision Briefing Area (located at the top of the card) */}
         <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(59, 130, 246, 0.02)', border: '1px solid rgba(59, 130, 246, 0.15)', margin: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '14px' }}>🤖</span>
-              <h4 style={{ fontSize: '12px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
+              <h4 style={{ fontSize: '12px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>Real-time AI Engine Decision Briefing</h4>
             </div>
             <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#3B82F6', fontWeight: '700' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 6px #3B82F6' }}></span>
@@ -764,7 +764,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           )}
         </div>
 
-        {/* 봇 파라미터 설정 폼 (하단) */}
+        {/* Bot Parameter Settings Form (bottom) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
           <div>
             <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>하한가 (Lower Price)</label>
@@ -816,7 +816,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
         </div>
 
-        {/* 🛡️ 거래소 API 안전 가이드 경고문 */}
+        {/* 🛡️ Exchange API Safety Guide Warning */}
         <div style={{ 
           background: 'rgba(239, 68, 68, 0.05)', 
           border: '1px solid rgba(239, 68, 68, 0.2)', 
@@ -835,7 +835,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
         </div>
 
-        {/* 조작 버튼 */}
+        {/* Operation Buttons */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button 
             className="btn-secondary" 
@@ -855,7 +855,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       </div>
 
-      {/* Gate.io 거래소 API 연동 모니터링 카드 */}
+      {/* Gate.io Exchange API Integration Monitoring Card */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}>
         <div>
           <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -878,7 +878,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             </div>
           ) : (
             <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
-              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
+              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px' }}>⚠️ API key unregistered (Virtual Demo Mode)</span>
               <p style={{ color: 'var(--text-muted)', margin: 0 }}>
                 아래 로컬 설정을 통해 API 키를 등록하면, 실제 거래소 SUT/USDT 자금 조회 및 소액 자동매매 실거래 연동이 활성화됩니다.
               </p>
@@ -905,7 +905,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       </div>
 
-      {/* 💰 SUT 자산 통합 관리 요약 카드 (모바일) */}
+      {/* 💰 SUT Asset Integrated Management Summary Card (Mobile) */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
         <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '14px' }}>💰</span> SUT 자산 통합 관리 현황
@@ -934,7 +934,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       </div>
 
-      {/* 🌟 로컬 Gate.io API 키 설정 카드 */}
+      {/* 🌟 Local Gate.io API Key Configuration Card */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Settings size={18} color="#A78BFA" />
@@ -986,7 +986,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       </div>
 
-      {/* 👑 마스터 매니저 본인 Gate.io 실거래 주문 관리 패널 */}
+      {/* 👑 Master Manager Own Gate.io Real-time Trading Order Management Panel */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, rgba(20, 16, 45, 0.4) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ArrowUpDown size={18} color="#8B5CF6" />
@@ -1028,7 +1028,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          {/* 매수 버튼 */}
+          {/* Buy Button */}
           <button 
             type="button"
             className="btn-primary" 
@@ -1039,7 +1039,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             {submittingOrder ? '전송 중...' : '🟢 SUT 매수 (BUY)'}
           </button>
           
-          {/* 매도 버튼 */}
+          {/* Sell Button */}
           <button 
             type="button"
             className="btn-primary" 
@@ -1052,7 +1052,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       </div>
 
-      {/* 2. 대시보드 핵심 지표 통계 (글라스 2열 레이아웃) */}
+      {/* 2. Dashboard Core Metrics Statistics (Glass 2-column Layout) */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
           
@@ -1079,7 +1079,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       )}
 
-      {/* 3. KYC 가입 승인 대기 심사 리스트 */}
+      {/* 3. KYC Registration Approval Pending Review List */}
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShieldAlert size={18} color="#F59E0B" />
@@ -1105,7 +1105,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                   gap: '10px'
                 }}
               >
-                {/* 상단 회원 기본 요약 */}
+                {/* Top Member Basic Summary */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>{user.name} ({user.country})</h4>
@@ -1121,7 +1121,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                   <div>전화번호: {user.phone}</div>
                 </div>
 
-                {/* 첨부 서류 (신분증 보기 및 심사 승인 단축바) */}
+                {/* Attached Documents (ID view and screening approval shortcut bar) */}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   <button 
                     type="button" 
@@ -1162,7 +1162,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 3.5 출금 심사 보드 */}
+      {/* 3.5 Withdrawal Review Board */}
       <div className="glass-card" style={{ border: '1px solid rgba(245, 158, 11, 0.3)' }}>
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Receipt size={18} color="#F59E0B" />
@@ -1178,7 +1178,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             {withdrawals.map((req) => (
               <div key={req.id} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name} 회원님의 출금 요청</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name}'s Withdrawal Request</div>
                   <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>{new Date(req.created_at).toLocaleString()}</span>
                 </div>
                 
@@ -1207,7 +1207,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 4. 최근 결제 및 온체인 분배 히스토리 리스트 */}
+      {/* 4. Recent Payment and On-chain Distribution History List */}
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Receipt size={18} color="#8B5CF6" />
@@ -1261,7 +1261,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 5. 전체 등록 회원 명부 패널 */}
+      {/* 5. All Registered Members Roster Panel */}
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Users size={18} color="#10B981" />
@@ -1307,7 +1307,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                         <span style={{ color: isMaster ? '#C084FC' : '#FFF' }}>{user.name}</span>
                         <span style={{ fontSize: '9px', color: 'var(--text-muted)', marginLeft: '4px' }}>({user.country})</span>
                         {isMaster && (
-                          <span style={{ marginLeft: '6px', background: 'rgba(139,92,246,0.2)', color: '#C084FC', padding: '2px 6px', borderRadius: '4px', fontSize: '8px', fontWeight: '800' }}>마스터</span>
+                          <span style={{ marginLeft: '6px', background: 'rgba(139,92,246,0.2)', color: '#C084FC', padding: '2px 6px', borderRadius: '4px', fontSize: '8px', fontWeight: '800' }}>Master</span>
                         )}
                       </td>
                       <td style={{ padding: '12px 8px' }}>
@@ -1353,7 +1353,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 6. 신분증 확대 보기 라이트박스 모달 */}
+      {/* 6. ID Magnified View Lightbox Modal */}
       {selectedIdCard && (
         <div style={{
           position: 'fixed',
@@ -1391,7 +1391,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       )}
 
-      {/* 👑 매니저용 실제 입출금 모달 팝업 */}
+      {/* 👑 For Manager Real Deposit/Withdrawal Modal Popup */}
       {showTxModal && (
         <div style={{ 
           position: 'fixed', 
@@ -1457,7 +1457,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       )}
 
-      {/* 👑 Gate.io 온체인 SUT 송금 모달 팝업 (모바일) */}
+      {/* 👑 Gate.io On-chain SUT Transfer Modal Popup (Mobile) */}
       {showSendSutModal && (
         <div style={{ 
           position: 'fixed', 
@@ -1482,7 +1482,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '10px', padding: '12px', fontSize: '11px', color: '#FFF' }}>
                 <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>수신 Gate.io 입금 주소 (Polygon):</div>
                 <div style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontWeight: '700' }}>{localStorage.getItem('gateio_deposit_address')}</div>
-                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ 반드시 Gate.io의 SUT (Polygon) 입금 주소인지 더블체크하세요!</div>
+                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ Please double-check if it's Gate.io's SUT (Polygon) deposit address!</div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>

@@ -9,7 +9,7 @@ interface IERC20 {
 
 /**
  * @title PlatformVault
- * @dev 회원 가입비 및 월정액을 수납하여 1차/2차 추천인에게 균등 분배(각 25%)하고 나머지는 본사(Owner)로 전송하는 플랫폼 금고 스마트 컨트랙트
+ * @dev Platform vault smart contract that collects member Registration Fee and monthly fees, evenly distributes (25% each) to 1st/2nd referrers, and transfers the rest to the Platform Owner
  */
 contract PlatformVault {
     address public owner;
@@ -37,11 +37,11 @@ contract PlatformVault {
     }
 
     /**
-     * @dev 사용자의 Approve 권한을 이용해 금액을 인출하고, 2단계 균등 분배를 실행
-     * @param user 가입비를 납부할 회원 지갑 주소
-     * @param referrer1 1차 직접 추천인 지갑 주소 (없으면 address(0))
-     * @param referrer2 2차 상위 추천인 지갑 주소 (없으면 address(0))
-     * @param amount 청구할 금액 (USDT 단위, 6 decimals)
+     * @dev Uses user's Approve permission to Withdrawal funds and execute 2-step even Distribution
+     * @param user Member wallet address to pay Registration Fee
+     * @param referrer1 1st direct referrer wallet address (address(0) if none)
+     * @param referrer2 2nd upper referrer wallet address (address(0) if none)
+     * @param amount Amount to be charged (in USDT, 6 decimals)
      */
     function collectAndDistribute(
         address user,
@@ -52,28 +52,28 @@ contract PlatformVault {
         require(user != address(0), "PlatformVault: invalid user address");
         require(amount > 0, "PlatformVault: amount must be greater than zero");
 
-        // 1. 사용자로부터 플랫폼 금고(Vault)로 금액을 인출 (Approve 필요)
+        // 1. Withdrawal funds from user to platform vault (Approve required)
         bool pulled = paymentToken.transferFrom(user, address(this), amount);
         require(pulled, "PlatformVault: Token pull failed");
 
         uint256 ref1Share = 0;
         uint256 ref2Share = 0;
 
-        // 2. 1차 추천인 배분 (25%)
+        // 2. 1st referrer Distribution (25%)
         if (referrer1 != address(0) && referrer1 != user) {
             ref1Share = (amount * 25) / 100;
             bool success1 = paymentToken.transfer(referrer1, ref1Share);
             require(success1, "PlatformVault: distribution to referrer1 failed");
         }
 
-        // 3. 2차 추천인 배분 (25%)
+        // 3. 2nd referrer Distribution (25%)
         if (referrer2 != address(0) && referrer2 != user && referrer2 != referrer1) {
             ref2Share = (amount * 25) / 100;
             bool success2 = paymentToken.transfer(referrer2, ref2Share);
             require(success2, "PlatformVault: distribution to referrer2 failed");
         }
 
-        // 4. 본사(Owner) 정산 (나머지 금액 전체)
+        // 4. Platform Owner settlement (entire remaining amount)
         uint256 ownerShare = amount - ref1Share - ref2Share;
         if (ownerShare > 0) {
             bool successOwner = paymentToken.transfer(owner, ownerShare);
@@ -94,7 +94,7 @@ contract PlatformVault {
     }
 
     /**
-     * @dev 본사 관리자(Owner) 주소 변경
+     * @dev Change Platform Owner address
      */
     function changeOwner(address _newOwner) external onlyOwner {
         require(_newOwner != address(0), "PlatformVault: invalid new owner address");
@@ -103,7 +103,7 @@ contract PlatformVault {
     }
 
     /**
-     * @dev 금고 계약에 오입금된 다른 토큰이나 수수료가 남았을 때 소유주가 긴급 인출
+     * @dev Emergency withdrawal by the owner when other tokens or fees incorrectly deposited remain in the vault contract
      */
     function emergencyWithdrawToken(address tokenAddress, uint256 amount) external onlyOwner {
         require(tokenAddress != address(0), "PlatformVault: invalid token address");

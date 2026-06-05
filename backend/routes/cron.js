@@ -4,7 +4,7 @@ const { queries } = require('../database');
 const { triggerOnChainDistribution } = require('../contractHelper');
 
 /**
- * @desc 회원의 가입비/월정액을 청구하고 상위 2단계 추천인에게 온체인 분배를 수행하는 핵심 내부 헬퍼 함수
+ * @desc Core internal helper function that charges the member's Registration Fee/monthly fee and performs on-chain Distribution to the top 2-tier referrers
  */
 async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
   const userWallet = user.wallet_address.toLowerCase();
@@ -15,17 +15,17 @@ async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
   console.log(`[PAYMENT PROCESS] Charging ${user.name} (${userWallet}). Type: ${paymentType}`);
 
   try {
-    // 2. 스마트 컨트랙트 인출 & 2단계 배분 온체인 실행 (또는 시뮬레이션)
+    // 2. Smart contract Withdrawal & 2-tier Distribution on-chain execution (or simulation)
     const result = await triggerOnChainDistribution(userWallet, ref1, ref2, chargeAmountUsdt);
 
     if (result.success) {
-      // 3. payments 결제 내역 등록 (SUCCESS)
+      // 3. Register payments transaction history (SUCCESS)
       await queries.run(`
         INSERT INTO payments (wallet_address, amount, type, status, tx_hash, distributed_amount)
         VALUES (?, ?, ?, 'SUCCESS', ?, ?)
       `, [userWallet, chargeAmountUsdt, paymentType, result.txHash, result.ref1Share + result.ref2Share]);
 
-      // 4. 회원의 등급 상태를 ACTIVE(정식 활성)로 격상 및 무료체험 종료
+      // 4. Upgrade member's status to ACTIVE (officially active) and end free trial
       await queries.run(`
         UPDATE users 
         SET tier = 'ACTIVE'
@@ -38,13 +38,13 @@ async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
   } catch (err) {
     console.error(`❌ [PAYMENT FAILED] Failed to charge ${userWallet}:`, err.message);
     
-    // 결제 실패 내역 등록
+    // Register payment failure history
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash, distributed_amount)
       VALUES (?, ?, ?, 'FAILED', NULL, 0)
     `, [userWallet, chargeAmountUsdt, paymentType]);
 
-    // 결제가 안되면 혜택 일시 정지 (EXPIRED)
+    // If payment fails, benefits are temporarily suspended (EXPIRED)
     await queries.run(`
       UPDATE users SET tier = 'EXPIRED' WHERE wallet_address = ?
     `, [userWallet]);
@@ -55,11 +55,11 @@ async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
 
 /**
  * @route GET /api/cron/check-subscriptions
- * @desc [배치 시스템] 무료 체험 10일 만료 회원 자동 가입비 청구 및 월정액 스케줄러 배치
+ * @desc [Batch System] Automatic Registration Fee billing and monthly fee scheduler batch for members whose 10-day free trial has expired
  */
 router.get('/check-subscriptions', async (req, res) => {
   try {
-    // 1. 가입 승인 후 10일이 경과(trial_ends_at < now)했으나 아직 TRIAL 등급인 회원들을 추출
+    // 1. Extract members who are still in TRIAL status even though 10 days have passed since registration approval (trial_ends_at < now)
     const expiredTrials = await queries.all(`
       SELECT wallet_address, name, email FROM users
       WHERE status = 'APPROVED' AND tier = 'TRIAL' AND datetime(trial_ends_at) < datetime('now', 'localtime')
@@ -92,7 +92,7 @@ router.get('/check-subscriptions', async (req, res) => {
 
 /**
  * @route POST /api/cron/trigger-charge-manually
- * @desc [테스트 격발용 API] 10일 대기 없이 특정 회원의 가입비 즉시 수납 및 2단계 온체인 분배 강제 실행!
+ * @desc [Test Trigger API] Immediate receipt of a specific member's Registration Fee and forced execution of 2-tier on-chain Distribution without a 10-day waiting period!
  */
 router.post('/trigger-charge-manually', async (req, res) => {
   const { walletAddress } = req.body;
@@ -114,7 +114,7 @@ router.post('/trigger-charge-manually', async (req, res) => {
       return res.status(400).json({ success: false, message: 'KYC 승인이 선행되지 않은 회원입니다. 본사 어드민에서 먼저 승인해 주세요.' });
     }
 
-    // 이미 가입비를 성공적으로 낸 이력이 있는지 검증 (중복 가입비 청구 방지)
+    // Verify if registration fee has been successfully paid (prevent duplicate fee billing)
     const existingMembershipFee = await queries.get(`
       SELECT id FROM payments WHERE wallet_address = ? AND type = 'MEMBERSHIP_FEE' AND status = 'SUCCESS'
     `, [cleanWallet]);
@@ -123,12 +123,12 @@ router.post('/trigger-charge-manually', async (req, res) => {
     let chargeAmount = 100.0;
 
     if (existingMembershipFee) {
-      // 이미 가입비를 냈다면 매월 청구하는 월정액 요금으로 부과 처리하여 중복 테스트 지원
+      // If registration fee has already been paid, process as a monthly subscription fee to support duplicate testing
       paymentType = 'MONTHLY_SUBSCRIPTION';
       console.log(`[TEST TRIGGER] Membership fee already paid. Charging monthly subscription instead.`);
     }
 
-    // 결제 프로세스 강제 기동
+    // Force payment process initiation
     const paymentResult = await processSubscriptionPayment(user, chargeAmount, paymentType);
 
     res.json({

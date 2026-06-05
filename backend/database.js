@@ -9,7 +9,7 @@ const db = new sqlite3.Database(dbPath);
 function initializeDatabase() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
-      // 1. users 테이블 생성
+      // 1. Create users table
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +32,7 @@ function initializeDatabase() {
 
 
 
-      // 3. payments 테이블 생성
+      // 3. Create payments table
       db.run(`
         CREATE TABLE IF NOT EXISTS payments (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +47,7 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
-      // 3.5 platform_settings 테이블 생성
+      // 3.5 Create platform_settings table
       db.run(`
         CREATE TABLE IF NOT EXISTS platform_settings (
           key TEXT PRIMARY KEY,
@@ -55,11 +55,11 @@ function initializeDatabase() {
         )
       `, (err) => { 
         if (err) return reject(err); 
-        // 기본 모의 수익률 삽입 (초기값 0.0)
+        // Insert default mock yield (initial value 0.0)
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
       });
 
-      // 3.8 manager_yield_history 테이블 생성 (수익률 시계열 차트 데이터 보존용)
+      // 3.8 Create manager_yield_history table (for preserving yield time series chart data)
       db.run(`
         CREATE TABLE IF NOT EXISTS manager_yield_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +68,7 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
-      // 3.9 manager_ai_logs 테이블 생성 (AI 의사결정 브리핑 보존용)
+      // 3.9 Create manager_ai_logs table (for preserving AI decision-making briefings)
       db.run(`
         CREATE TABLE IF NOT EXISTS manager_ai_logs (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,8 +157,8 @@ function initializeDatabase() {
         });
       });
 
-      // 4. 최초 가입 활성화를 위한 마스터 추천인(Root Referrer) 데이터 삽입
-      // Rejard님의 진짜 지갑 주소와 이메일, 성명을 마스터 매니저로 영구 등록!
+      // 4. For initial registration activation, insert Master Referrer (Root Referrer) data
+      // Rejard's real wallet address, email, and name permanently registered as Master Manager!
       const rootReferrerAddress = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'; 
       
       db.run(`
@@ -169,9 +169,9 @@ function initializeDatabase() {
         )
       `, [rootReferrerAddress]);
 
-      // 이미 생성된 기존 DB 파일이 있을 경우에도 강제로 이메일 컬럼과 이름을 이명학 마스터 정보로 무결성 보정 교정
+      // Even if an existing DB file is already created, force integrity correction and rectification of email column and name with Lee Myung-hak's Master information
       db.run("ALTER TABLE users ADD COLUMN is_manager INTEGER DEFAULT 0", (err) => {
-        // duplicate column name 에러 발생 시 이미 존재하므로 패스
+        // If 'duplicate column name' error occurs, pass as it already exists
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ users 테이블 is_manager 컬럼 마이그레이션 실패:", err.message);
         }
@@ -189,14 +189,14 @@ function initializeDatabase() {
 
 
 
-      // 🌟 마스터 매니저 이명학 지갑 계정 등록 처리 완료
+      // 🌟 Master Manager Lee Myung-hak wallet account registration process completed
       console.log('✔ SQLite Database initialized successfully with Root Referrers.');
       resolve();
     });
   });
 }
 
-// 헬퍼 쿼리 함수 제공
+// Provide helper query function
 const queries = {
   run(sql, params = []) {
     return new Promise((resolve, reject) => {

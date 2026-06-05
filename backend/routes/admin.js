@@ -3,16 +3,16 @@ const router = express.Router();
 const { queries } = require('../database');
 const { ethers } = require('ethers');
 
-// 플랫폼 최초 마스터 매니저 지갑 고정
+// Fix platform's first Master Manager wallet
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
-// 폴리곤 RPC 및 SUT 토큰 정보 설정
+// Configure Polygon RPC and SUT token information
 const provider = new ethers.JsonRpcProvider('https://polygon-bor-rpc.publicnode.com');
 const sutAddress = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
 const sutAbi = ["function balanceOf(address account) external view returns (uint256)"];
 const sutContract = new ethers.Contract(sutAddress, sutAbi, provider);
 
-// 🌟 Multicall3 컨트랙트 설정 (500명 이상 대량의 SUT 온체인 잔고 조회를 0.1초 만에 1회의 통신으로 일괄 질의하기 위함)
+// 🌟 Multicall3 contract setup (To query large amounts of SUT on-chain balances for 500+ people in a single communication within 0.1 seconds)
 const MULTICALL_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11';
 const multicallAbi = [
   "function aggregate(tuple(address target, bytes callData)[] calls) external view returns (uint256 blockNumber, bytes[] returnData)"
@@ -22,7 +22,7 @@ const sutInterface = new ethers.Interface([
   "function balanceOf(address account) external view returns (uint256)"
 ]);
 
-// 어드민(관리자) 권한 검증 철통 미들웨어
+// Admin permission verification strict middleware
 const adminAuthMiddleware = (req, res, next) => {
   const adminEmail = req.headers['x-admin-email'] || req.headers['x-manager-email'];
   if (!adminEmail || adminEmail.toLowerCase().trim() !== 'lemaiiisk@gmail.com'.toLowerCase()) {
@@ -34,16 +34,16 @@ const adminAuthMiddleware = (req, res, next) => {
   next();
 };
 
-// 어드민 전용 API 라우트 전체에 보안 미들웨어 마운트
+// Mount security middleware on all Admin-specific API routes
 router.use(adminAuthMiddleware);
 
 /**
  * @route GET /api/admin/managers
- * @desc 전체 매니저 목록 및 실적 현황 조회 (온체인 실시간 잔고 조회 포함)
+ * @desc Retrieve list of all Managers and their performance status (Includes on-chain real-time balance lookup)
  */
 router.get('/managers', async (req, res) => {
   try {
-    // 1. users 테이블에서 is_manager = 1인 모든 매니저 조회
+    // 1. Retrieve all Managers where is_manager = 1 from the users table
     const managers = await queries.all(`
       SELECT id, wallet_address, email, name, phone, country, joined_at
       FROM users
@@ -51,9 +51,9 @@ router.get('/managers', async (req, res) => {
       ORDER BY joined_at ASC
     `);
 
-    // 2. 각 매니저별 실적 및 온체인 잔고 병렬 연산 처리
+    // 2. Parallel computation of performance and on-chain balance for each Manager
     const enrichedManagers = await Promise.all(managers.map(async (m) => {
-      // 2-1. 소속 정회원 수 카운트 (status가 APPROVED인 회원만)
+      // 2-1. Count the number of affiliated Approved Users (only members with status APPROVED)
       const subUsersRow = await queries.get(`
         SELECT COUNT(*) as count 
         FROM users 
@@ -61,7 +61,7 @@ router.get('/managers', async (req, res) => {
       `, [m.wallet_address]);
       const userCount = subUsersRow ? subUsersRow.count : 0;
 
-      // 2-2. 소속 회원들의 실제 온체인 SUT 잔고 총액 연산 (Multicall3를 이용한 0.1초 단일 블록 일괄 조회 기법)
+      // 2-2. Compute the total actual on-chain SUT balance of affiliated members (0.1-second single block batch query technique using Multicall3)
       const subUsers = await queries.all(`
         SELECT wallet_address 
         FROM users 
@@ -71,16 +71,16 @@ router.get('/managers', async (req, res) => {
       let performance = 0;
       if (subUsers && subUsers.length > 0) {
         try {
-          // Multicall3 Call Data 구조체 빌드
+          // Build Multicall3 Call Data struct
           const calls = subUsers.map(u => ({
             target: sutAddress,
             callData: sutInterface.encodeFunctionData("balanceOf", [u.wallet_address])
           }));
 
-          // 단 1회의 JSON-RPC call로 500명 지갑의 SUT 잔고를 동시에 일괄 조회 (0.1초 소요)
+          // Query SUT token balances of 500 wallets at once in a single JSON-RPC call (0.1 second)
           const [blockNumber, returnData] = await multicallContract.aggregate(calls);
           
-          // 결과 바이트 데이터 파싱 및 합산
+          // Parse and sum result byte data
           const balances = returnData.map(data => {
             try {
               const [balance] = sutInterface.decodeFunctionResult("balanceOf", data);
@@ -98,7 +98,7 @@ router.get('/managers', async (req, res) => {
         }
       }
 
-      // 2-3. 실제 SUT 온체인 지갑 잔고 조회 (Polygon Network)
+      // 2-3. Query actual SUT on-chain wallet balance (Polygon Network)
       let onchainBalance = "0.00";
       try {
         const balanceWei = await sutContract.balanceOf(m.wallet_address);
@@ -124,7 +124,7 @@ router.get('/managers', async (req, res) => {
 
 /**
  * @route POST /api/admin/promote-manager
- * @desc 기존 회원을 매니저로 승격 처리
+ * @desc Promote an existing member to Manager
  */
 router.post('/promote-manager', async (req, res) => {
   const { walletAddress } = req.body;
@@ -135,7 +135,7 @@ router.post('/promote-manager', async (req, res) => {
   const cleanWallet = walletAddress.trim();
 
   try {
-    // 1. 대상 회원이 존재하는지, 그리고 정회원(APPROVED) 상태인지 검증
+    // 1. Verify if the target member exists and is in Approved User (APPROVED) status
     const user = await queries.get("SELECT id, status, is_manager FROM users WHERE wallet_address = ?", [cleanWallet]);
     if (!user) {
       return res.status(444).json({ success: false, message: '등록되지 않은 회원 지갑 주소입니다. 가입을 먼저 완료해 주십시오.' });
@@ -147,7 +147,7 @@ router.post('/promote-manager', async (req, res) => {
       return res.status(400).json({ success: false, message: '이미 매니저 등급인 회원입니다.' });
     }
 
-    // 2. 매니저로 승격 및 기존 추천인 매니저 지갑 매핑 제거(독립 체제 구축)
+    // 2. Promote to Manager and remove existing referrer Manager wallet mapping (establish independent system)
     await queries.run(`
       UPDATE users
       SET is_manager = 1,
@@ -168,7 +168,7 @@ router.post('/promote-manager', async (req, res) => {
 
 /**
  * @route POST /api/admin/delete-manager
- * @desc 매니저 계정 영구 삭제 및 하위 소속 회원들을 마스터 매니저로 강제 이관
+ * @desc Permanently delete Manager account and forcibly transfer subordinate affiliated members to Master Manager
  */
 router.post('/delete-manager', async (req, res) => {
   const { walletAddress } = req.body;
@@ -178,19 +178,19 @@ router.post('/delete-manager', async (req, res) => {
 
   const cleanWallet = walletAddress.trim();
 
-  // 최초 마스터 매니저는 관리자이자 최상위 지갑이므로 절대 삭제할 수 없음
+  // The initial Master Manager is the Admin and top-level wallet, so it can never be deleted
   if (cleanWallet.toLowerCase() === MASTER_MANAGER_WALLET.toLowerCase()) {
     return res.status(400).json({ success: false, message: '경고: 최초 마스터 매니저 지갑 계정은 관리 목적상 삭제가 불가능합니다.' });
   }
 
   try {
-    // 1. 해당 매니저가 존재하는지 검증
+    // 1. Verify if the Manager exists
     const user = await queries.get("SELECT id, is_manager FROM users WHERE wallet_address = ?", [cleanWallet]);
     if (!user || user.is_manager !== 1) {
       return res.status(404).json({ success: false, message: '해당 매니저 계정을 찾을 수 없거나 이미 강등/삭제되었습니다.' });
     }
 
-    // 2. 해당 매니저 산하에 소속되어 있던 모든 회원들의 manager_address를 마스터 매니저 지갑 주소로 강제 이관
+    // 2. Forcibly transfer the manager_address of all members affiliated under that Manager to the Master Manager wallet address
     const migrateRes = await queries.run(`
       UPDATE users
       SET manager_address = ?
@@ -199,10 +199,10 @@ router.post('/delete-manager', async (req, res) => {
 
     console.log(`[Admin Account Cleanup] Migrated ${migrateRes.changes} users under ${cleanWallet} to Master Manager ${MASTER_MANAGER_WALLET}.`);
 
-    // 3. 매니저의 장부 결제(payments) 내역도 데이터 무결성을 위해 삭제
+    // 3. The Manager's ledger payment (payments) history is also deleted for data integrity
     await queries.run("DELETE FROM payments WHERE wallet_address = ?", [cleanWallet]);
 
-    // 4. users 테이블에서 해당 매니저 계정 영구 삭제 (강등은 지원하지 않음)
+    // 4. Permanently delete the Manager account from the users table (demotion is not supported)
     await queries.run("DELETE FROM users WHERE wallet_address = ?", [cleanWallet]);
 
     res.json({
@@ -218,7 +218,7 @@ router.post('/delete-manager', async (req, res) => {
 
 /**
  * @route POST /api/admin/save-ai-config
- * @desc 글로벌 AI 모델 정보 및 Gemini API Key를 서버 DB에 영구 저장
+ * @desc Permanently save Global AI model information and Gemini API Key to server DB
  */
 router.post('/save-ai-config', async (req, res) => {
   const { model, apiKey, interval } = req.body;
@@ -235,7 +235,7 @@ router.post('/save-ai-config', async (req, res) => {
 
 /**
  * @route GET /api/admin/ai-config
- * @desc 글로벌 AI 모델명과 API Key 등록 여부 조회
+ * @desc Query Global AI model name and API Key registration status
  */
 router.get('/ai-config', async (req, res) => {
   try {

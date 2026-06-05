@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavig
 import axios from 'axios';
 import { Shield, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
 
-// 페이지 컴포넌트 로드
+// Page component load
 import ConsentPage from './pages/ConsentPage';
 import RegisterPage from './pages/RegisterPage';
 import WaitingPage from './pages/WaitingPage';
@@ -13,7 +13,7 @@ import EditUserPage from './pages/EditUserPage';
 import HistoryPage from './pages/HistoryPage';
 import AdminDashboard from './pages/AdminDashboard';
 
-// 💻 PC 전용 프리미엄 페이지 컴포넌트 추가
+// 💻 PC exclusive: Add premium page component
 import PcConsentPage from './pages/PcConsentPage';
 import PcRegisterPage from './pages/PcRegisterPage';
 import PcWaitingPage from './pages/PcWaitingPage';
@@ -22,10 +22,10 @@ import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
 import { buildTrustWalletOpenUrl } from './lib/walletProvider';
 
-// 백엔드 API 기본 주소 설정
+// Backend API base URL setting
 export const API_BASE = 'https://edenai.alonics.com/api';
 
-// 🌟 Rejard님이 발급해주신 웹 애플리케이션 전용 진짜 구글 OAuth2 클라이언트 ID 적용 완료!
+// 🌟 Rejard's actual Google OAuth2 Client ID for web application applied successfully!
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
 const GOOGLE_OAUTH_SCOPE = 'openid email profile';
 
@@ -38,15 +38,15 @@ function AppContent() {
   const [loading, setLoading] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
 
-  // 진짜 구글 로그인 연동 상태
+  // Real Google login integration status
   const [googleLoggedIn, setGoogleLoggedIn] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
 
-  // DApp 브라우저 구글 퀵패스 모달 상태
+  // DApp browser Google Quick Pass modal status
   const [showGPassModal, setShowGPassModal] = useState(false);
 
-  // 사용자 요청: 웹 시작 시 화면 너비 동적 파악 알고리즘
+  // User request: Dynamic screen width detection algorithm on web start
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -55,11 +55,11 @@ function AppContent() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🌟 [PC 전용 메니져 보안] 모바일 기기(스마트폰/태블릿) 접속 판정
+  // 🌟 [PC Exclusive Manager Security] Mobile device (smartphone/tablet) connection judgment
   const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const shouldUseGoogleRedirectLogin = isMobileDevice;
 
-  // 🌟 [모바일 인앱 브라우저 감지 엔진] 구글 로그인 웹뷰 백화 현상 사전 감지 차단용
+  // 🌟 [Mobile In-App Browser Detection Engine] For pre-detecting and blocking Google login webview white screen phenomenon
   const isInAppBrowser = /Telegram|KAKAOTALK|Line|Instagram|FB_IAB|FBAN|FBIOS|TrustWallet/i.test(navigator.userAgent) || 
     (window.ethereum && /Android|iPhone|iPad/i.test(navigator.userAgent)) ||
     (navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView'));
@@ -136,7 +136,7 @@ function AppContent() {
     return true;
   };
 
-  // 컴포넌트 마운트 시 통합 세션 복원 및 초기화 로직 수행
+  // On component mount, perform integrated session restoration and initialization logic
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -178,7 +178,7 @@ function AppContent() {
       const promises = [];
       let emailWalletAddress = null;
 
-      // 1. 이메일 기반 가입 정보 조회 및 세션 복원
+      // 1. Email-based registration information lookup and session restoration
       if (_googleLoggedIn && currentEmail) {
         promises.push(
           restoreSessionByEmail(currentEmail).then(addr => {
@@ -187,7 +187,7 @@ function AppContent() {
         );
       }
 
-      // 2. Web3 지갑 연동 확인 (딜레이 부여)
+      // 2. Web3 wallet integration confirmation (with delay)
       promises.push(
         new Promise(resolve => setTimeout(async () => {
           if (window.ethereum) {
@@ -222,7 +222,7 @@ function AppContent() {
     initializeApp();
   }, []);
 
-  // 구글 로그인 성공 콜백 핸들러
+  // Google login success callback handler
   const handleGoogleCredentialResponse = async (response) => {
     try {
       const token = response.credential;
@@ -801,7 +801,7 @@ function AppContent() {
         )}
       </main>
 
-      {/* DApp 브라우저용 구글 간편 연동 (퀵패스) 모달 */}
+      {/* For DApp browser: Google quick integration (Quick Pass) modal */}
       {showGPassModal && (
         <div style={{
           position: 'fixed',
@@ -818,13 +818,13 @@ function AppContent() {
           padding: '20px'
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '30px', background: '#111827' }}>
-            <h3 style={{ fontSize: '18px', color: '#FFF', marginBottom: '10px' }}>⚡ DApp 퀵패스 간편 연동</h3>
+            <h3 style={{ fontSize: '18px', color: '#FFF', marginBottom: '10px' }}>⚡ DApp Quick Pass Easy Integration</h3>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
               현재 보안을 위해 인앱 브라우저로 접속하셨습니다.<br/>
               구글 팝업 오류 방지를 위해, 사용하실 <strong>구글 이메일 주소</strong>와 성함을 직접 입력하시면 즉시 연동됩니다.
             </p>
             <div className="form-group" style={{ marginBottom: '15px' }}>
-              <label className="form-label" style={{ color: '#A78BFA' }}>구글 이메일 주소</label>
+              <label className="form-label" style={{ color: '#A78BFA' }}>Google Email Address</label>
               <input 
                 type="email" 
                 className="form-input" 
@@ -833,7 +833,7 @@ function AppContent() {
               />
             </div>
             <div className="form-group" style={{ marginBottom: '25px' }}>
-              <label className="form-label" style={{ color: '#A78BFA' }}>성함 (본명)</label>
+              <label className="form-label" style={{ color: '#A78BFA' }}>Name (Full Name)</label>
               <input 
                 type="text" 
                 className="form-input" 

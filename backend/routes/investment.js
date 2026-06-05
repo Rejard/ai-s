@@ -3,7 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const { queries } = require('../database');
 
-// SUT 가격 메모리 캐시 (시뮬레이션용 디폴트 시세)
+// SUT price memory cache (default market price for simulation)
 let cachedPrices = {
   sut: { usd: 1.0, usd_24h_change: 0.0 }
 };
@@ -12,11 +12,11 @@ let cachedHistory = [];
 let lastHistoryFetchTime = 0;
 
 /**
- * @desc Gate.io API를 통한 SUT(SuperTrust) 진짜 실시간 시세 연동
+ * @desc Link SUT (SuperTrust) real-time market price via Gate.io API
  */
 async function getLivePrices() {
   const now = Date.now();
-  // Gate.io API Rate Limit 방지를 위해 10초 캐시 유지 (대시보드 5초 폴링 대비)
+  // Maintain 10-second cache to prevent Gate.io API Rate Limit (compared to dashboard 5-second polling)
   if (now - lastPriceFetchTime < 10000) {
     return cachedPrices;
   }
@@ -40,11 +40,11 @@ async function getLivePrices() {
 }
 
 /**
- * @desc SUT 과거 차트 히스토리 조회 (최대 20개)
+ * @desc Retrieve SUT historical chart data (max 20)
  */
 async function getSutHistory() {
   const now = Date.now();
-  // 히스토리는 1분 간격이므로 30초 정도 캐시
+  // History has 1-minute intervals, so cache for about 30 seconds
   if (now - lastHistoryFetchTime < 30000 && cachedHistory.length > 0) {
     return cachedHistory;
   }
@@ -68,7 +68,7 @@ let cachedKrwRate = 1400;
 let lastKrwFetchTime = 0;
 
 /**
- * @desc 실시간 USD/KRW 환율 조회 (1시간 캐시)
+ * @desc Retrieve real-time USD/KRW exchange rate (1-hour cache)
  */
 async function getKrwRate() {
   const now = Date.now();
@@ -89,7 +89,7 @@ async function getKrwRate() {
 
 /**
  * @route GET /api/investment/prices
- * @desc 실시간 코인 시세 정보 반환
+ * @desc Return real-time coin market price information
  */
 router.get('/prices', async (req, res) => {
   try {
@@ -102,7 +102,7 @@ router.get('/prices', async (req, res) => {
 
 /**
  * @route GET /api/investment/portfolio/:walletAddress
- * @desc 사용자의 가상 투자금 포트폴리오 및 수익률 연동 조회
+ * @desc Retrieve user's virtual investment portfolio and return rate
  */
 router.get('/portfolio/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.toLowerCase().trim();
@@ -113,60 +113,60 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
       return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
     }
 
-    // 단일 SUT 풀
+    // Single SUT pool
     const ratios = { SUT: 100 };
 
-    // 1. 사용자의 순수 투자 원금(SUT) 계산
+    // 1. Calculate user's net investment principal (SUT)
     const deposits = await queries.get(`
       SELECT SUM(amount) as total FROM payments 
       WHERE LOWER(wallet_address) = ? AND type = 'MONTHLY_SUBSCRIPTION' AND status = 'SUCCESS'
     `, [walletAddress]);
     
     const addedDeposits = deposits.total || 0;
-    const totalInvested = addedDeposits; // SUT 기준
+    const totalInvested = addedDeposits; // Based on SUT
 
-    // 🌟 AI 트레이딩 수익 (SUT 수량 자체 증가분)
+    // 🌟 AI Trading Profit (SUT quantity self-increase)
     const aiProfits = await queries.get(`
       SELECT SUM(amount) as total FROM payments 
       WHERE LOWER(wallet_address) = ? AND type = 'AI_TRADING_PROFIT' AND status = 'SUCCESS'
     `, [walletAddress]);
     const aiTradingProfitSut = aiProfits.total || 0;
 
-    // 2. 총 보유 SUT 및 가치 평가
+    // 2. Total SUT held and valuation
     const sutQuantity = totalInvested + aiTradingProfitSut;
 
     const prices = await getLivePrices();
     const sutPrice = prices.sut.usd;
 
-    // 실시간 시세를 적용한 현재 평가가치 (달러)
+    // Current valuation applying real-time market price (USD)
     const totalValuation = sutQuantity * sutPrice;
 
-    // 원금의 달러 가치 (단가 0.20$ 기준)
+    // Principal's dollar value (based on unit price $0.20)
     const baseSutPrice = 0.20;
     const originalUsdValue = totalInvested * baseSutPrice;
 
     const totalProfitUsd = totalValuation - originalUsdValue;
     const profitPercent = originalUsdValue > 0 ? (totalProfitUsd / originalUsdValue) * 100 : 0;
 
-    // 차트 초기값을 위한 히스토리 배열 로드
+    // Load history array for chart initial values
     const sutHistory = await getSutHistory();
 
-    // 실시간 환율
+    // Real-time exchange rate
     const krwRate = await getKrwRate();
 
     res.json({
       success: true,
       portfolio: {
-        totalInvested,          // 투자 원금 (SUT)
-        aiTradingProfitSut,     // AI 매매 수익 (SUT)
-        sutQuantity,            // 총 보유량 (SUT)
-        totalValuation,         // 현재 평가금 ($)
-        totalProfitUsd,         // 평가 손익 ($)
-        profitPercent,          // 수익률 (%)
-        ratios,                 // 설정 비율
-        sutHistory,             // 실시간 SUT 최근 가격 히스토리 (20개)
-        krwRate,                // 실시간 달러/원 환율
-        sutChange24h: prices.sut.usd_24h_change, // 🌟 24시간 변동률 추가
+        totalInvested,          // Investment Principal (SUT)
+        aiTradingProfitSut,     // AI Trading Profit (SUT)
+        sutQuantity,            // Total Holdings (SUT)
+        totalValuation,         // Current Valuation ($)
+        totalProfitUsd,         // Unrealized P&L ($)
+        profitPercent,          // Profit Rate (%)
+        ratios,                 // Set Ratios
+        sutHistory,             // Real-time SUT recent price history (20 entries)
+        krwRate,                // Real-time USD/KRW Exchange Rate
+        sutChange24h: prices.sut.usd_24h_change, // 🌟 Add 24-hour change rate
         assets: {
           SUT: {
             ratio: 100,
@@ -174,7 +174,7 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
             quantity: sutQuantity,
             currentValue: totalValuation,
             price: sutPrice,
-            change24h: prices.sut.usd_24h_change // 🌟 자산별 노드에도 추가
+            change24h: prices.sut.usd_24h_change // 🌟 Also add to asset-specific nodes
           }
         }
       }
@@ -187,7 +187,7 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
 
 /**
  * @route POST /api/investment/update-ratio
- * @desc 투자 비율 변경 및 손실 책임 면책 약관 업데이트
+ * @desc Update investment ratio changes and loss liability waiver terms
  */
 router.post('/update-ratio', async (req, res) => {
   const { walletAddress, ratioPol, ratioUsdt, confirmed } = req.body;
@@ -223,7 +223,7 @@ router.post('/update-ratio', async (req, res) => {
 
 /**
  * @route POST /api/investment/deposit
- * @desc 추가 자금 예치 (Deposit) 모의 거래 등록
+ * @desc Register additional fund Deposit mock transaction
  */
 router.post('/deposit', async (req, res) => {
   const { walletAddress, amount, txHash } = req.body;
@@ -233,7 +233,7 @@ router.post('/deposit', async (req, res) => {
   const cleanWallet = walletAddress.toLowerCase().trim();
 
   try {
-    // 결제 성공 이력 인서트 (MONTHLY_SUBSCRIPTION의 누적값으로 투자풀 증가)
+    // Insert successful payment history (investment pool increases with cumulative value of MONTHLY_SUBSCRIPTION)
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
       VALUES (?, ?, 'MONTHLY_SUBSCRIPTION', 'SUCCESS', ?)
@@ -247,7 +247,7 @@ router.post('/deposit', async (req, res) => {
 
 /**
  * @route POST /api/investment/withdraw
- * @desc 자금 출금 (Withdrawal) 거래 실행
+ * @desc Execute fund Withdrawal transaction
  */
 router.post('/withdraw', async (req, res) => {
   const { walletAddress, amount } = req.body;
@@ -257,7 +257,7 @@ router.post('/withdraw', async (req, res) => {
   const cleanWallet = walletAddress.toLowerCase().trim();
 
   try {
-    // 출금은 즉시 잔고 삭감이 아니라 관리자 승인 대기 상태(PENDING_REQUEST)로 들어감
+    // Withdrawal does not immediately reduce balance but enters Admin approval pending state (PENDING_REQUEST)
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
       VALUES (?, ?, 'WITHDRAW_REQUEST', 'PENDING', '0xPendingManualPayout')
@@ -270,7 +270,7 @@ router.post('/withdraw', async (req, res) => {
 
 /**
  * @route GET /api/investment/history/:walletAddress
- * @desc 회원의 과거 예치 및 인출 거래 내역 조회
+ * @desc Retrieve member's past Deposit and Withdrawal transaction history
  */
 router.get('/history/:walletAddress', async (req, res) => {
   const cleanWallet = req.params.walletAddress.toLowerCase().trim();

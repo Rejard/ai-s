@@ -4,13 +4,13 @@ const { createGateIoOrder, getGateIoBalances } = require('./gateioHelper');
 const { decryptText } = require('./secureCredentials');
 const { buildTradePlan } = require('./autoTradeMath');
 
-// 실시간 SUT 가격 히스토리 메모리 저장소 (최근 10개 가격 보유)
+// Real-time SUT price history memory storage (Holds last 10 prices)
 if (!global.priceHistory) {
   global.priceHistory = [];
 }
 
 /**
- * Gate.io Public API를 사용해 SUT 실시간 가격 조회
+ * Retrieve SUT real-time price using Gate.io Public API
  */
 async function getSutCurrentPrice() {
   try {
@@ -21,11 +21,11 @@ async function getSutCurrentPrice() {
   } catch (err) {
     console.error("[AI Bot Price Fetch Error]:", err.message);
   }
-  return 0.158; // 조회 실패 시 기본 폴백 가격
+  return 0.158; // Default fallback price on lookup failure
 }
 
 /**
- * Gemini API를 사용하여 글로벌 시황 전략 판단 요청
+ * Request global market strategy judgment using Gemini API
  */
 async function getAiTradingDecision(apiKey, modelName, marketData) {
   let modelId = 'gemini-2.5-flash';
@@ -236,14 +236,14 @@ async function executeServerAutoTrades(aiLogId, aiResult) {
 }
 
 /**
- * AI 그리드 봇 코어 실행 루프 함수 (중앙화 분석 엔진)
+ * AI Grid Bot core execution loop function (Centralized analysis engine)
  */
 async function runAiGridBot() {
   console.log(`[🤖 AI GRID BOT] =======================================`);
   console.log(`[🤖 AI GRID BOT] 글로벌 시황 분석 스케줄러 실행 중... (시간: ${new Date().toLocaleString()})`);
 
   try {
-    // 1. 글로벌 어드민 AI 설정 로드
+    // 1. Load global Admin AI settings
     const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'ai_grid_status')");
     let globalModel = 'Gemini 1.5 Pro';
     let globalApiKey = '';
@@ -268,14 +268,14 @@ async function runAiGridBot() {
       return;
     }
 
-    // 2. 실시간 SUT 현재가 조회 및 히스토리 업데이트
+    // 2. Retrieve real-time SUT current price and update history
     const currentSutPrice = await getSutCurrentPrice();
     global.priceHistory.push(currentSutPrice);
     if (global.priceHistory.length > 10) {
       global.priceHistory.shift();
     }
 
-    // 3. 글로벌 수익률 계산 (참고용 기준 수익률)
+    // 3. Calculate global profitability (Reference standard profitability)
     let yieldPercent = ((currentSutPrice - 0.15) / 0.15) * 100;
     try {
       const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
@@ -300,7 +300,7 @@ async function runAiGridBot() {
       // ignore
     }
 
-    // 4. Gemini 의사결정 호출
+    // 4. Call Gemini decision-making
     const marketData = {
       priceHistory: global.priceHistory,
       currentPrice: currentSutPrice
@@ -318,7 +318,7 @@ async function runAiGridBot() {
     console.log(`[🤖 AI GRID BOT] 근거: ${aiResult.reason}`);
     console.log(`[🤖 AI GRID BOT] 타겟 가격: ${aiResult.price} USDT / 추천 비중: ${aiResult.amount_ratio}`);
 
-    // 5. AI 판단 로그 DB 저장 (매니저 로컬에서 이 데이터를 가져가서 개별 실행)
+    // 5. Save AI judgment log to DB (Manager locally retrieves and executes this data individually)
     try {
       const logInsert = await queries.run(`
         INSERT INTO manager_ai_logs (decision, reason, proposed_price, proposed_amount)
@@ -327,7 +327,7 @@ async function runAiGridBot() {
         aiResult.decision,
         aiResult.reason || '판단 근거 없음',
         parseFloat(aiResult.price) || 0,
-        parseFloat(aiResult.amount_ratio) || 0.1  // amount_ratio를 proposed_amount 컬럼에 저장
+        parseFloat(aiResult.amount_ratio) || 0.1  // Save amount_ratio to proposed_amount column
       ]);
       
       await queries.run(`
@@ -350,12 +350,12 @@ async function runAiGridBot() {
 }
 
 /**
- * 봇 스케줄러 타이머 마운트 모듈 (동적 간격 적용)
+ * Bot scheduler timer mount module (Dynamic interval applied)
  */
 function initGridBotScheduler() {
   console.log(`[🤖 AI GRID BOT] AI 엔진 중앙 스케줄러 마운트 완료 (동적 주기 적용)`);
   
-  // 최초 1회 실행 후, 스스로 다음 실행 시간을 예약하는 재귀 함수
+  // After initial execution, a recursive function that schedules its next execution time
   const scheduleNext = async () => {
     try {
       await runAiGridBot();
@@ -363,8 +363,8 @@ function initGridBotScheduler() {
       console.error("[🤖 AI GRID BOT] 실행 중 에러:", e);
     }
 
-    // 실행 완료 후 DB에서 설정된 인터벌(분) 읽어오기
-    let intervalMinutes = 5; // 기본값 5분
+    // After execution completion, read the configured interval (minutes) from DB
+    let intervalMinutes = 5; // Default value 5 minutes
     try {
       const setting = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_interval'");
       if (setting && !isNaN(parseInt(setting.value))) {
@@ -374,15 +374,15 @@ function initGridBotScheduler() {
       console.error("[🤖 AI GRID BOT] 인터벌 설정 읽기 실패:", dbErr.message);
     }
 
-    // 최소 1분, 최대 60분으로 제한
+    // Limited to a minimum of 1 minute and a maximum of 60 minutes
     intervalMinutes = Math.max(1, Math.min(60, intervalMinutes));
     const nextTickMs = intervalMinutes * 60 * 1000;
     
-    // console.log(`[🤖 AI GRID BOT] 다음 분석은 ${intervalMinutes}분 뒤에 실행됩니다.`);
+    // console.log(`[🤖 AI Grid Bot] The next analysis will be executed ${intervalMinutes} minutes later.`);
     setTimeout(scheduleNext, nextTickMs);
   };
 
-  // 서버 부트 후 5초 뒤에 첫 실행 시작
+  // Start first execution 5 seconds after server boot
   setTimeout(scheduleNext, 5000);
 }
 

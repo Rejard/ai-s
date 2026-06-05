@@ -30,7 +30,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     handleSaveAiConfig
   } = useAdminLogic(managerEmail);
 
-  // 비인증 사용자 접근 차단 가드 뷰
+  // Guard view blocking unauthenticated user access
   if (!isAdmin) {
     return (
       <div className="app-frame" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
@@ -38,7 +38,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
           <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', marginBottom: '20px' }}>
             <ShieldAlert size={48} color="var(--danger-color)" />
           </div>
-          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>접근 권한 보안 제한</h2>
+          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>Access Permission Security Restriction</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '24px' }}>
             본 화면은 플랫폼 총괄 관리자(Admin)만 진입할 수 있는 통제구역입니다. 등록된 관리자 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.
           </p>
@@ -52,7 +52,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
   return (
     <div className="app-frame">
-      {/* 상단 헤더 */}
+      {/* Top Header */}
       <header style={{ 
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
         padding: '20px 24px', borderBottom: '1px solid var(--glass-border)' 
@@ -67,17 +67,17 @@ function AdminDashboard({ walletAddress, managerEmail }) {
         </div>
       </header>
 
-      {/* 메인 콘텐츠 스크롤 영역 */}
+      {/* Main Content Scroll Area */}
       <main style={{ flex: 1, padding: '20px', paddingBottom: '85px', overflowY: 'auto' }}>
         
-        {/* 어드민 프로필 요약 */}
+        {/* Admin Profile Summary */}
         <div className="glass-card" style={{ padding: '16px', marginBottom: '20px', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>
               A
             </div>
             <div>
-              <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>총괄 관리자</h4>
+              <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>Platform Owner</h4>
               <span style={{ fontSize: '11px', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontWeight: '700' }}>
                 <ShieldCheck size={12} /> 보안 인증 가동 중
               </span>
@@ -88,7 +88,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
         {activeTab === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            {/* 전체 매니저 통계 요약 */}
+            {/* Overall Manager Statistics Summary */}
             <div className="glass-card" style={{ padding: '20px' }}>
               <h3 style={{ fontSize: '15px', color: '#FFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
                 <BarChart3 size={18} color="#EF4444" />
@@ -149,7 +149,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               )}
             </div>
 
-            {/* 신규 매니저 승격 폼 */}
+            {/* New Manager Promotion Form */}
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
               <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus size={18} color="#8B5CF6" />
@@ -185,7 +185,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            {/* 글로벌 AI 엔진 제어 카드 */}
+            {/* Global AI Engine Control Card */}
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
               <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>🤖</span> 글로벌 AI 엔진 제어
@@ -266,7 +266,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
       </main>
 
-      {/* 하단 내비게이션 바 */}
+      {/* Bottom Navigation Bar */}
       <div style={{
         position: 'fixed',
         bottom: 0,

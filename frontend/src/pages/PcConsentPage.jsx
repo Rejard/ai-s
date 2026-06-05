@@ -16,7 +16,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // 500명 모집 정원 실시간 사전 체크
+  // Real-time pre-check for 500-person recruitment capacity
   useEffect(() => {
     const fetchLimit = async () => {
       try {
@@ -55,7 +55,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
     );
   }
 
-  // 500명 정원이 초과된 경우 가입 불가 화면 차단
+  // Block registration screen if 500-person capacity is exceeded
   if (!isAvailable) {
     return (
       <div className="pc-layout-wrapper" style={{ justifyContent: 'center' }}>
@@ -88,7 +88,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
   return (
     <div style={{ padding: '40px 60px', display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
       
-      {/* 👑 마스터 매니저 '메니져 모드 복귀' 단축 바 */}
+      {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -112,7 +112,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 모드</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>메니져 페이지 바로 가기 (터치 시 복귀)</div>
             </div>
           </div>
@@ -123,7 +123,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
       )}
 
       <div className="pc-layout-wrapper" style={{ padding: 0 }}>
-      {/* 1컬럼: 좌측 플랫폼 안내 및 정원 카운터 */}
+      {/* 1 Column: Left Platform Guide and Capacity Counter */}
       <div className="pc-side-intro" style={{ maxWidth: '480px' }}>
         <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '16px', background: 'rgba(139,92,246,0.1)', marginBottom: '24px', width: 'fit-content' }}>
           <Shield size={40} color="#8B5CF6" />
@@ -133,7 +133,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
           Ai S 플랫폼에 가입하시기 전에 고위험 자동 트레이딩 서비스의 면책 범위 및 가입 조건 약관에 동의하셔야 온체인 시뮬레이션 지갑 개통이 가능합니다.
         </p>
 
-        {/* 선착순 정원 게이지 바 */}
+        {/* First-come, first-served capacity gauge bar */}
         <div className="glass-card" style={{ padding: '24px', marginTop: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '12px', color: '#FFF', fontWeight: '600' }}>
             <span>🔥 1차 특별 모집 현황</span>
@@ -174,10 +174,10 @@ function PcConsentPage({ walletAddress, onLogout }) {
         </button>
       </div>
 
-      {/* 2컬럼: 우측 약관 리스트 및 확인 박스 */}
+      {/* 2 Column: Right Terms List and Confirmation Box */}
       <div style={{ flex: 1, maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
-        {/* 약관 1 */}
+        {/* Term 1 */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div 
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
@@ -206,7 +206,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* 약관 2 */}
+        {/* Term 2 */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div 
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
@@ -235,7 +235,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* 약관 3 */}
+        {/* Term 3 */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div 
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
@@ -264,7 +264,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* 다음 단계 진행 버튼 */}
+        {/* Proceed to Next Step Button */}
         <button 
           className="btn-primary" 
           style={{ padding: '18px 24px', fontSize: '16px', marginTop: '10px' }}

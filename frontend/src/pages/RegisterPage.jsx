@@ -9,7 +9,7 @@ import { approveSutWithdrawalPermission } from '../lib/sutApproval';
 function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
-  // 🌟 구글 연동 이메일 및 실명은 읽기 전용으로 자동 매핑
+  // 🌟 Google-linked email and real name are automatically mapped as read-only
   const [email] = useState(googleEmail || '');
   const [name, setName] = useState(googleName || '');
   const [phone, setPhone] = useState('');
@@ -17,17 +17,17 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
   
-  // 담당 매니저 상태 변수
+  // Assigned Manager State Variable
   const [managerAddress, setManagerAddress] = useState('');
   const [managerVerified, setManagerVerified] = useState(false);
   const [managerName, setManagerName] = useState('');
 
-  // 상태 변수
-  const [isApproved, setIsApproved] = useState(false); // SUT Approve 여부
+  // State Variable
+  const [isApproved, setIsApproved] = useState(false); // SUT Approve status
   const [approving, setApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 담당 매니저 지갑 검증 로직
+  // Assigned Manager Wallet Verification Logic
   const verifyManager = async () => {
     if (!managerAddress) {
       alert('담당 매니저의 폴리곤 지갑 주소를 입력해 주세요.');
@@ -54,7 +54,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  // 신분증 사진 파일 선택 핸들러
+  // ID Card Photo File Selection Handler
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -63,7 +63,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  // 폴리곤 SUT 스마트 컨트랙트 인출 한도 승인 (SUT Approve) 온체인 실행
+  // Polygon SUT Smart Contract Withdrawal Limit Approval (SUT Approve) On-chain Execution
   const handleSUTApprove = async () => {
     setApproving(true);
     try {
@@ -107,14 +107,14 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  // 모든 폼 항목이 정상 입력 완료되었는지 판단하는 완성도 계산값
+  // Completeness calculation value to determine if all form items are entered correctly
   const isFormComplete = phone.trim() !== '' && idCardFile !== null && isApproved && managerVerified;
 
-  // 전체 회원가입 폼 제출 (모던 폼 유효성 검사로 개편)
+  // Submit Full Registration Form (Reorganized with Modern Form Validation)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. 전화번호 미기입 검증 및 포커스 이동
+    // 1. Phone number omission verification and focus shift
     if (!phone || !phone.trim()) {
       alert('📱 [미기입 사항] 전화번호를 입력해 주십시오.');
       const phoneInput = document.querySelector('input[type="tel"]');
@@ -122,20 +122,20 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       return;
     }
 
-    // 2. KYC 신분증 업로드 누락 검증
+    // 2. KYC ID card upload omission verification
     if (!idCardFile) {
       alert('🪪 [누락 사항] 신원 확인 및 KYC 심사 통과를 위해 주민등록증 / 여권 사진을 첨부해 주십시오.');
       return;
     }
 
 
-    // 3. 담당 매니저 검증 상태 확인
+    // 3. Check Assigned Manager verification status
     if (!managerVerified) {
       alert('👑 [검증 필요] 담당 매니저 지갑 주소를 입력하고 [검증] 버튼을 눌러 승인받으셔야 가입이 가능합니다.');
       return;
     }
 
-    // 5. SUT Approve 권한 미승인 상태 검증
+    // 5. SUT Approve permission unapproved status verification
     if (!isApproved) {
       alert('🔑 [승인 필요] 가입비 자동 수납 및 시스템 활성화를 위해 [SUT 자동 인출 권한(Approve) 승인]을 완료해 주십시오.');
       return;
@@ -161,7 +161,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       });
       if (res.data.success) {
         alert(res.data.message);
-        onRegisterComplete(); // 부모 앱 상태 리프레시 -> WaitingPage 리다이렉팅
+        onRegisterComplete(); // Parent app state refresh -> Redirecting to WaitingPage
         navigate('/waiting');
       }
     } catch (err) {
@@ -177,7 +177,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
   return (
     <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
       {false && ((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -200,7 +200,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 연동 중</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Connected</div>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
             </div>
           </div>
@@ -210,9 +210,9 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
         </div>
       )}
       
-      {/* 타이틀 */}
+      {/* Title */}
       <div style={{ textAlign: 'center', marginTop: '10px' }}>
-        <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>신규 회원 KYC 등록</h2>
+        <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>New Member KYC Registration</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
           구글 인증 및 지갑 연결이 무사히 완료되었습니다. 나머지 가입 정보를 정확하게 입력해 주십시오.
         </p>
@@ -220,7 +220,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
         
-        {/* 1. 지갑 주소 (읽기 전용) */}
+        {/* 1. Wallet Address (Read-Only) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">
             {(() => {
@@ -256,7 +256,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 2. 구글 연동 로그인 정보 (읽기 전용 확인 창) */}
+        {/* 2. Google Linked Login Information (Read-Only Confirmation Window) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">📧 연동된 구글 계정 이메일</label>
           <div style={{
@@ -277,7 +277,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 3. 이름 입력 (구글 프로필 정보 자동 노출) */}
+        {/* 3. Name Input (Google Profile Information Auto-Display) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">👤 회원 실명 (구글 계정 자동 매핑)</label>
           <div style={{ position: 'relative' }}>
@@ -288,7 +288,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
               style={{ paddingLeft: '45px', background: 'rgba(0,0,0,0.2)', color: '#F3F4F6' }}
               placeholder="구글 연동 실명"
               value={name}
-              readOnly // 구글 계정과 이름이 완전히 일치하도록 readOnly 설정
+              readOnly // Set readOnly to ensure Google account and name match exactly
               required
             />
           </div>
@@ -297,7 +297,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </span>
         </div>
 
-        {/* 4. 전화번호 입력 */}
+        {/* 4. Phone Number Input */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">📱 전화번호 (국가 코드 포함)</label>
           <div style={{ position: 'relative' }}>
@@ -314,7 +314,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 5. 국가 선택 */}
+        {/* 5. Country Selection */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">🌐 거주 국가</label>
           <div style={{ position: 'relative' }}>
@@ -335,7 +335,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 6. 담당 매니저 입력 (필수) */}
+        {/* 6. Assigned Manager Input (Required) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">
             👑 담당 메니져 폴리곤 지갑 주소 (필수)
@@ -393,7 +393,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </span>
         </div>
 
-        {/* 7. 신분증 파일 업로드 */}
+        {/* 7. ID Card File Upload */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">🪪 KYC 제출용 신분증 첨부</label>
           <div style={{
@@ -422,21 +422,21 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
               <Image size={28} color={idCardFile ? 'var(--success-color)' : 'var(--text-muted)'} />
               <span style={{ fontSize: '13px', color: idCardFile ? '#F3F4F6' : 'var(--text-muted)' }}>
-                {idCardFile ? idCardName : '주민등록증 / 여권 사진 업로드'}
+                {idCardFile ? idCardName : 'ID Card / Passport Photo Upload'}
               </span>
-              <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>JPG, PNG, PDF (최대 5MB)</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>JPG, PNG, PDF (Max 5MB)</span>
             </div>
           </div>
         </div>
 
 
 
-        {/* 8. 스마트 컨트랙트 자동 수납 권한 위임 (Approve) */}
+        {/* 8. Delegate Smart Contract Auto Collection Permission (Approve) */}
         <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(139,92,246,0.2)' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-start' }}>
             <Key size={20} color="#8B5CF6" style={{ marginTop: '2px', flexShrink: 0 }} />
             <div>
-              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT 자동 인출 권한(Approve) 승인</h4>
+              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT Auto Withdrawal Permission (Approve) Approval</h4>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.4' }}>
                 추후 정식 투자 및 원활한 자동 이체를 위해 지갑의 서명 승인이 필수로 진행되어야 합니다.
               </p>
@@ -473,7 +473,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           )}
         </div>
 
-        {/* 9. 제출 안내 경고 */}
+        {/* 9. Submission Guide Warning */}
         <div style={{ display: 'flex', gap: '8px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', padding: '12px', borderRadius: '10px' }}>
           <ShieldAlert size={18} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
@@ -481,7 +481,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </p>
         </div>
 
-        {/* 제출 버튼 (언제나 활성화하여 클릭 시 미기입 지적 기능 탑재, 모든 조건 충족 시에만 선명한 색상으로 활성화!) */}
+        {/* Submit Button (Always enabled to provide feedback on missing fields when clicked, only fully activated with a vivid color when all conditions are met!) */}
         <button 
           type="submit" 
           className="btn-primary" 

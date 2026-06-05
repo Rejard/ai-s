@@ -114,10 +114,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
   return (
     <div className="pc-layout-wrapper" style={{ alignItems: 'stretch', gap: '30px', padding: '40px 60px' }}>
       
-      {/* 1컬럼: 좌측 네비게이션 및 프로필 카드 */}
+      {/* 1 Column: Left Navigation and Profile Card */}
       <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
         
-        {/* 회원 프로필 카드 */}
+        {/* Member Profile Card */}
         <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
           <div style={{ 
             width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-gradient)', 
@@ -149,7 +149,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {/* 지갑 주소 카드 */}
+        {/* Wallet Address Card */}
         <div className="glass-card" style={{ padding: '20px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: '600' }}>
             🔑 내 연동 지갑 주소
@@ -168,7 +168,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {/* 👑 마스터 매니저 '메니져 모드 복귀' 단축 바 */}
+        {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
         {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
           (walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
           (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
@@ -191,7 +191,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '20px' }}>👑</span>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 모드</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>메니져 페이지 바로 가기</div>
               </div>
             </div>
@@ -201,7 +201,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         )}
 
-        {/* 👑 마스터 관리자 전용 '관리자 모드 진입' 단축 바 */}
+        {/* 👑 Master Admin exclusive 'Enter Admin Mode' shortcut bar */}
         {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
           (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
           <div 
@@ -224,7 +224,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '20px' }}>🔑</span>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#F87171' }}>관리자 모드</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#F87171' }}>Admin Mode</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>관리자 페이지 바로 가기</div>
               </div>
             </div>
@@ -234,7 +234,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         )}
 
-        {/* 안전 로그아웃 */}
+        {/* Secure Logout */}
         <button 
           type="button" 
           className="btn-secondary" 
@@ -257,10 +257,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       </div>
 
-      {/* 2컬럼: 중앙 메인 대시보드 정보 */}
+      {/* 2 Columns: Central Main Dashboard Information */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
-        {/* 실시간 SUT 시세 차트 */}
+        {/* Real-time SUT Market Price Chart */}
         {portfolio ? (
           <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
             <div style={{ padding: '24px 24px 10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -271,7 +271,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                     ${sutPrice.toFixed(4)} <span style={{ fontSize: '16px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
                   </span>
 
-                  {/* 🌟 24h 변동률 배지 */}
+                  {/* 🌟 24h Fluctuation Rate Badge */}
                   <span style={{
                     fontSize: '13px',
                     fontWeight: '700',
@@ -358,7 +358,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           <div className="shimmer-loading" style={{ height: '230px', borderRadius: '20px' }}></div>
         )}
 
-        {/* 자산 관리 & 입출금 실행 콘솔 */}
+        {/* Asset Management & Deposit/Withdrawal Execution Console */}
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
             <Wallet size={18} color="#8B5CF6" />
@@ -416,7 +416,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                     </div>
                   </div>
 
-                  {/* 게이지 바 */}
+                  {/* Gauge Bar */}
                   <div style={{ height: '16px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '10px', overflow: 'hidden', display: 'flex', marginBottom: '24px' }}>
                     <div style={{ width: `${walletPercent}%`, height: '100%', background: 'var(--primary-gradient)', transition: 'width 0.5s ease' }}></div>
                     <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
@@ -425,7 +425,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
               );
             })()}
 
-            {/* 입출금 실행 버튼 */}
+            {/* Deposit/Withdrawal Execution Button */}
             <div style={{ display: 'flex', gap: '16px' }}>
               <button 
                 className="btn-primary" 
@@ -454,10 +454,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       </div>
 
-      {/* 3컬럼: 우측 거래 내역 및 고객센터 */}
+      {/* 3 Columns: Right Transaction History and Customer Service */}
       <div style={{ width: '380px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
         
-        {/* 거래 내역 박스 */}
+        {/* Transaction History Box */}
         <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '400px' }}>
           <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
             📜 전체 거래 히스토리
@@ -511,7 +511,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {/* 텔레그램 매니저 고객센터 안내 */}
+        {/* Telegram Manager Customer Service Guide */}
         <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.25)' }}>
           <h4 style={{ fontSize: '13px', color: '#A78BFA', fontWeight: '700', marginBottom: '10px' }}>
             💬 실시간 매니저 고객센터
@@ -537,7 +537,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       </div>
 
-      {/* 가상 입출금 모달 팝업 */}
+      {/* Virtual Deposit/Withdrawal Modal Popup */}
       {showTxModal && (
         <div style={{ 
           position: 'fixed', 

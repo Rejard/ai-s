@@ -74,7 +74,7 @@ async function main() {
   const vaultAddress = await vault.getAddress();
   console.log(`✅ PlatformVault deployed at: ${vaultAddress}`);
 
-  // .env 파일 자동 업데이트
+  // .env file auto-update
   const envPath = path.resolve(__dirname, '.env');
   let envContent = fs.readFileSync(envPath, 'utf8');
   

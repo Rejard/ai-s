@@ -7,7 +7,7 @@ import { API_BASE } from '../App';
 function WaitingPage({ walletAddress, onApproved }) {
   const navigate = useNavigate();
 
-  // 어드민 승인 여부를 실시간 폴링 (5초 간격)
+  // Polling Admin approval status in real-time (5-second interval)
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -16,7 +16,7 @@ function WaitingPage({ walletAddress, onApproved }) {
           if (res.data.user.status === 'APPROVED') {
             clearInterval(checkInterval);
             alert('🎉 회원님의 KYC 심사가 최종 통과되었습니다! 플랫폼 메인 대시보드로 진입합니다.');
-            onApproved(); // 상위 컴포넌트 상태 갱신 -> 대시보드로 자동 리다이렉트
+            onApproved(); // Parent component state update -> Automatic redirect to dashboard
           }
         }
       } catch (err) {
@@ -30,7 +30,7 @@ function WaitingPage({ walletAddress, onApproved }) {
   return (
     <div style={{ margin: 'auto 20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
+      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
@@ -53,7 +53,7 @@ function WaitingPage({ walletAddress, onApproved }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>마스터 메니져 연동 중</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Connected</div>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
             </div>
           </div>
@@ -63,10 +63,10 @@ function WaitingPage({ walletAddress, onApproved }) {
         </div>
       )}
 
-      {/* 화려한 로딩 글라스 카드 */}
+      {/* Fancy Loading Glass Card */}
       <div className="glass-card glow-active" style={{ padding: '40px 20px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         
-        {/* 장식용 그라데이션 광원 */}
+        {/* Decorative Gradient Light Source */}
         <div style={{
           position: 'absolute',
           top: '-20px',
@@ -79,7 +79,7 @@ function WaitingPage({ walletAddress, onApproved }) {
           borderRadius: '50%'
         }}></div>
 
-        {/* 로딩 인디케이터 애니메이션 */}
+        {/* Loading Indicator Animation */}
         <div style={{ display: 'inline-flex', position: 'relative', marginBottom: '24px' }}>
           <div className="shimmer-loading" style={{
             width: '80px',
@@ -100,7 +100,7 @@ function WaitingPage({ walletAddress, onApproved }) {
           </div>
         </div>
 
-        <h2 style={{ fontSize: '20px', color: '#F3F4F6', marginBottom: '10px' }}>본사 KYC 신원 심사 중</h2>
+        <h2 style={{ fontSize: '20px', color: '#F3F4F6', marginBottom: '10px' }}>Platform Owner KYC Identity Review in Progress</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.6', marginBottom: '20px' }}>
           회원님의 구글 인증 정보, 국가 식별 명칭, 신분증(ID Card) 이미지 대조 심사가 본사 매니저 측에 안전하게 접수되었습니다.
         </p>
@@ -129,13 +129,13 @@ function WaitingPage({ walletAddress, onApproved }) {
           </li>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--warning-color)' }}></div>
-            <span style={{ color: '#F3F4F6' }}>외국인 및 데이터 수동 배심단 정밀 신원 심사 진행 중</span>
+            <span style={{ color: '#F3F4F6' }}>Precise identity review for foreigners and manual data jury in progress</span>
           </div>
         </div>
 
       </div>
 
-      {/* 실시간 감지용 알림 배너 */}
+      {/* Real-time detection notification banner */}
       <div className="glass-card" style={{
         padding: '16px',
         display: 'flex',
@@ -151,7 +151,7 @@ function WaitingPage({ walletAddress, onApproved }) {
         </div>
       </div>
 
-      {/* 스핀 키프레임 인라인 스타일 정의 */}
+      {/* Define spin keyframe inline style */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
