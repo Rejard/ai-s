@@ -267,22 +267,35 @@ function AdminDashboard({ walletAddress, managerEmail }) {
       </main>
 
       {/* 하단 내비게이션 바 */}
-      <nav className="bottom-nav">
-        <div 
-          className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        background: 'rgba(17, 24, 39, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        justifyContent: 'space-around',
+        padding: '12px 0 24px 0',
+        zIndex: 100
+      }}>
+        <button 
           onClick={() => setActiveTab('home')}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'home' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none' }}
         >
           <Home size={22} />
-          <span>자산관제</span>
-        </div>
-        <div 
-          className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>자산관제</span>
+        </button>
+        
+        <button 
           onClick={() => setActiveTab('settings')}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'settings' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none' }}
         >
           <Settings size={22} />
-          <span>AI 제어</span>
-        </div>
-      </nav>
+          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 제어</span>
+        </button>
+      </div>
     </div>
   );
 }
