@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
-import { isFreshAiStrategy } from '../lib/aiTrading';
 import {
   approveManagerUser,
   approveManagerWithdrawal,
@@ -209,64 +208,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         depositAddress: depositAddr,
         amount: sendSutAmount,
       });
-
-      alert(`?럦 ?깃났?곸쑝濡?${sendSutAmount} SUT媛 吏?뺥븯??Gate.io ?낃툑 二쇱냼濡??꾩넚?섏뿀?듬땲??\nTxHash: ${transferTx.hash}`);
-      setShowSendSutModal(false);
-      setSendSutAmount('');
-      return;
-      // 1. 폴리곤 체인 ID(137 = 0x89) 검증 및 네트워크 전환 요청
-      const tempProvider = new ethers.BrowserProvider(window.ethereum);
-      const network = await tempProvider.getNetwork();
-      
-      if (network.chainId !== 137n) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x89' }],
-          });
-        } catch (switchError) {
-          // 4902: 해당 체인이 지갑에 등록되어 있지 않은 경우
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: '0x89',
-                chainName: 'Polygon Mainnet',
-                nativeCurrency: {
-                  name: 'POL',
-                  symbol: 'POL',
-                  decimals: 18
-                },
-                rpcUrls: ['https://polygon-rpc.com'],
-                blockExplorerUrls: ['https://polygonscan.com'],
-              }],
-            });
-          } else {
-            throw switchError;
-          }
-        }
-      }
-
-      // 2. 네트워크 전환이 완료된 후 최종 provider와 signer 획득
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      
-      // SUT 토큰 정보
-      const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
-      const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
-      
-      const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
-
-      // 금액 파싱 (18 decimals)
-      const parsedAmount = ethers.parseUnits(sendSutAmount.toString(), 18);
-
-      // 실제 온체인 토큰 전송 실행 (Gate.io 입금 주소로 전송)
-      const tx = await sutContract.transfer(depositAddr, parsedAmount);
-      
-      // 블록 확정 대기
-      await tx.wait();
-
-      alert(`🎉 성공적으로 ${sendSutAmount} SUT가 지정하신 Gate.io 입금 주소로 전송되었습니다.\nTxHash: ${tx.hash}`);
+      alert(`SUT transfer completed to Gate.io deposit address.\nTxHash: ${transferTx.hash}`);
       setShowSendSutModal(false);
       setSendSutAmount('');
     } catch (err) {
@@ -449,83 +391,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   // 신규: 로컬 자동매매 실행 루프
   useEffect(() => {
     if (gridSettings.ai_grid_status !== 'ON' || !aiLogs || aiLogs.length === 0) return;
-    if (!gateioBalance) return; // 잔고가 아직 로드되지 않은 상태에서 전략이 '실행됨'으로 마킹되는 버그(Race Condition) 방지
 
     const latestStrategy = aiLogs[0];
-    if (lastExecutedStrategyIdRef.current === latestStrategy.id) return; // 이미 실행한 전략
+    if (lastExecutedStrategyIdRef.current === latestStrategy.id) return;
     lastExecutedStrategyIdRef.current = latestStrategy.id;
-    return;
-
-    // 15분 이상 지난 전략은 무시
-    if (!isFreshAiStrategy(latestStrategy.created_at)) {
-      lastExecutedStrategyIdRef.current = latestStrategy.id;
-      return;
-    }
-
-    // 조건 검사
-    const lower = parseFloat(gridSettings.ai_grid_lower);
-    const upper = parseFloat(gridSettings.ai_grid_upper);
-    const decision = latestStrategy.decision;
-    const proposedPrice = parseFloat(latestStrategy.proposed_price);
-    const amountRatio = parseFloat(latestStrategy.proposed_amount) || 0.1; 
-
-    let tradeSide = null;
-    let tradeAmount = 0;
-    let tradePrice = proposedPrice;
-
-    if (decision === 'BUY') {
-      if (proposedPrice <= upper) {
-        tradeSide = 'buy';
-        const usdtBalance = gateioBalance ? gateioBalance.USDT : 0;
-        tradeAmount = (usdtBalance * amountRatio) / proposedPrice;
-      }
-    } else if (decision === 'SELL') {
-      if (proposedPrice >= lower) {
-        tradeSide = 'sell';
-        const sutBalance = gateioBalance ? gateioBalance.SUT : 0;
-        tradeAmount = sutBalance * amountRatio;
-      }
-    }
-
-    if (tradeSide && tradeAmount > 0) {
-      console.log(`[🤖 로컬 AI 실행] ${tradeSide} ${tradeAmount} SUT @ ${tradePrice} USDT`);
-      
-      const apiKey = localStorage.getItem('gateio_api_key') || '';
-      const apiSecret = localStorage.getItem('gateio_api_secret') || '';
-
-      // 백그라운드 매매 실행 함수
-      const executeAutoTrade = async () => {
-        try {
-          const headers = {
-            'x-manager-email': managerEmail
-          };
-          if (apiKey && apiSecret && !isMaskedCredential(apiKey) && !isMaskedCredential(apiSecret)) {
-            headers['x-gateio-api-key'] = apiKey;
-            headers['x-gateio-api-secret'] = apiSecret;
-          }
-
-          const res = await axios.post(`${API_BASE}/manager/gateio-order`, {
-            side: tradeSide,
-            amount: parseFloat(tradeAmount.toFixed(4)),
-            price: parseFloat(tradePrice)
-          }, {
-            headers
-          });
-          if (res.data.success) {
-            console.log('🤖 AI 자동 매매 체결 성공!', res.data);
-          }
-        } catch (e) {
-          console.error('🤖 AI 자동 매매 실패:', e);
-        }
-      };
-
-      executeAutoTrade();
-    }
-
-    // 어찌되었든 이 전략은 처리(또는 패스)했으므로 마킹
-    lastExecutedStrategyIdRef.current = latestStrategy.id;
-    
-  }, [aiLogs, gridSettings.ai_grid_status, gridSettings.ai_grid_lower, gridSettings.ai_grid_upper, gateioBalance, managerEmail]);
+  }, [aiLogs, gridSettings.ai_grid_status]);
 
   // 2. KYC 승인 처리
   const handleApprove = async (walletAddressToApprove) => {
