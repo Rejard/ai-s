@@ -885,6 +885,219 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             )}
           </div>
 
+          {/* AI 그리드 트레이딩 오토 봇 패널 */}
+          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <BarChart3 size={24} color="var(--success-color)" />
+                <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>AI 그리드 트레이딩 봇 설정</h4>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: gridSettings.ai_grid_status === 'ON' ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                  {gridSettings.ai_grid_status === 'ON' ? 'LIVE 가동' : '중지'}
+                </span>
+                <button 
+                  onClick={handleToggleAiStatus}
+                  style={{
+                    width: '48px', height: '26px', borderRadius: '13px', border: 'none', cursor: 'pointer',
+                    background: gridSettings.ai_grid_status === 'ON' ? 'var(--success-color)' : 'rgba(255,255,255,0.15)',
+                    position: 'relative', transition: 'background 0.3s'
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%', background: '#FFF', position: 'absolute', top: '2px',
+                    left: gridSettings.ai_grid_status === 'ON' ? '24px' : '2px', transition: 'left 0.3s'
+                  }}></div>
+                </button>
+              </div>
+            </div>
+
+            {/* 🤖 실시간 AI 엔진 의사결정 브리핑 카드 */}
+            <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '20px' }}>🤖</span>
+                  <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
+                </div>
+                <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#3B82F6', fontWeight: '700' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 8px #3B82F6' }}></span>
+                  LIVE MONITORING
+                </span>
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, textAlign: 'left' }}>
+                글로벌 AI 두뇌가 5분마다 실시간 가격 추이와 매니저 잔고를 독자적으로 분석하여 의사결정을 내린 결과 보고서입니다.
+              </p>
+
+              {aiLogs.length === 0 ? (
+                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
+                  📡 AI 엔진이 시장 데이터를 분석 중입니다. 최초 실행 완료까지 약 5분 정도 소요됩니다.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {aiLogs.map((log, index) => {
+                    let badgeColor = 'var(--text-muted)';
+                    let badgeBg = 'rgba(255,255,255,0.05)';
+                    let borderCol = 'rgba(255,255,255,0.05)';
+                    
+                    if (log.decision === 'BUY') {
+                      badgeColor = 'var(--success-color)';
+                      badgeBg = 'rgba(16, 185, 129, 0.1)';
+                      borderCol = 'rgba(16, 185, 129, 0.15)';
+                    } else if (log.decision === 'SELL') {
+                      badgeColor = 'var(--danger-color)';
+                      badgeBg = 'rgba(239, 68, 68, 0.1)';
+                      borderCol = 'rgba(239, 68, 68, 0.15)';
+                    } else if (log.decision === 'HOLD') {
+                      badgeColor = '#F59E0B';
+                      badgeBg = 'rgba(245, 158, 11, 0.1)';
+                      borderCol = 'rgba(245, 158, 11, 0.15)';
+                    }
+
+                    return (
+                      <div 
+                        key={log.id || index}
+                        style={{
+                          background: 'rgba(0,0,0,0.3)',
+                          border: `1px solid ${borderCol}`,
+                          borderRadius: '14px',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ 
+                              fontSize: '11px', 
+                              fontWeight: '900', 
+                              color: badgeColor, 
+                              background: badgeBg, 
+                              padding: '3px 10px', 
+                              borderRadius: '8px',
+                              letterSpacing: '0.5px'
+                            }}>
+                              {log.decision}
+                            </span>
+                            {log.decision !== 'HOLD' && (
+                              <span style={{ fontSize: '11px', color: '#E5E7EB', fontWeight: 'bold' }}>
+                                추천가: {log.proposed_price} USDT / 수량: {log.proposed_amount} SUT
+                              </span>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
+                            {new Date(log.created_at).toLocaleString('ko-KR', { hour12: false })}
+                          </span>
+                        </div>
+                        
+                        <div style={{ fontSize: '12px', color: '#D1D5DB', lineHeight: '1.6', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '10px', wordBreak: 'break-all' }}>
+                          <b>💡 판단 근거:</b> {log.reason}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>
+              설정한 상/하한가 범위 내에서 자동 매매 시뮬레이션을 수행하고 매일 정해진 주기마다 회원 이자를 분배합니다.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(0,0,0,0.25)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (Min)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
+                    <input 
+                      type="number" 
+                      value={gridSettings.ai_grid_lower}
+                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_lower: e.target.value})}
+                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>상한가 (Max)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
+                    <input 
+                      type="number" 
+                      value={gridSettings.ai_grid_upper}
+                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_upper: e.target.value})}
+                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 수 (Count)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <input 
+                      type="number" 
+                      value={gridSettings.ai_grid_count}
+                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_count: e.target.value})}
+                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
+                    />
+                    <span style={{ color: 'var(--text-dark)', fontSize: '12px', marginLeft: '4px' }}>개</span>
+                  </div>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>일일 빈도 (Frequency)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <input 
+                      type="number" 
+                      value={gridSettings.ai_grid_frequency}
+                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_frequency: e.target.value})}
+                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
+                    />
+                    <span style={{ color: 'var(--text-dark)', fontSize: '12px', marginLeft: '4px' }}>회</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* API 제한 경고 */}
+            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '12px', borderRadius: '10px', display: 'flex', gap: '8px' }}>
+              <ShieldAlert size={16} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', textAlign: 'left' }}>
+                <strong style={{ color: 'var(--danger-color)' }}>거래소 API 밴 주의</strong><br />
+                과도한 요청(하루 20회 초과)은 거래소 보안 정책 위반으로 차단될 수 있습니다. 기본 빈도를 유지해 주십시오.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                onClick={handleSaveGridSettings}
+                style={{ flex: 1, padding: '12px', fontSize: '13px' }}
+              >
+                💾 봇 파라미터 저장
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={handleTriggerAIProfit}
+                style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(255,255,255,0.04)' }}
+              >
+                ⚡ 수동 수익금 배분
+              </button>
+            </div>
+
+          </div>
+
           {/* Gate.io API 상태 및 수동 주문 패널 가로 배치 */}
           <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
             
@@ -991,219 +1204,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   {submittingOrder ? '...' : '🔴 매도'}
                 </button>
               </div>
-            </div>
-
-          </div>
-
-          {/* AI 그리드 트레이딩 오토 봇 패널 */}
-          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <BarChart3 size={24} color="var(--success-color)" />
-                <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>AI 그리드 트레이딩 봇 설정</h4>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '12px', fontWeight: '800', color: gridSettings.ai_grid_status === 'ON' ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                  {gridSettings.ai_grid_status === 'ON' ? 'LIVE 가동' : '중지'}
-                </span>
-                <button 
-                  onClick={handleToggleAiStatus}
-                  style={{
-                    width: '48px', height: '26px', borderRadius: '13px', border: 'none', cursor: 'pointer',
-                    background: gridSettings.ai_grid_status === 'ON' ? 'var(--success-color)' : 'rgba(255,255,255,0.15)',
-                    position: 'relative', transition: 'background 0.3s'
-                  }}
-                >
-                  <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%', background: '#FFF', position: 'absolute', top: '2px',
-                    left: gridSettings.ai_grid_status === 'ON' ? '24px' : '2px', transition: 'left 0.3s'
-                  }}></div>
-                </button>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>
-              설정한 상/하한가 범위 내에서 자동 매매 시뮬레이션을 수행하고 매일 정해진 주기마다 회원 이자를 분배합니다.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(0,0,0,0.25)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
-              
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (Min)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
-                    <input 
-                      type="number" 
-                      value={gridSettings.ai_grid_lower}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_lower: e.target.value})}
-                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>상한가 (Max)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
-                    <input 
-                      type="number" 
-                      value={gridSettings.ai_grid_upper}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_upper: e.target.value})}
-                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 수 (Count)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <input 
-                      type="number" 
-                      value={gridSettings.ai_grid_count}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_count: e.target.value})}
-                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
-                    />
-                    <span style={{ color: 'var(--text-dark)', fontSize: '12px', marginLeft: '4px' }}>개</span>
-                  </div>
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>일일 빈도 (Frequency)</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <input 
-                      type="number" 
-                      value={gridSettings.ai_grid_frequency}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_frequency: e.target.value})}
-                      style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
-                    />
-                    <span style={{ color: 'var(--text-dark)', fontSize: '12px', marginLeft: '4px' }}>회</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* API 제한 경고 */}
-            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '12px', borderRadius: '10px', display: 'flex', gap: '8px' }}>
-              <ShieldAlert size={16} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', textAlign: 'left' }}>
-                <strong style={{ color: 'var(--danger-color)' }}>거래소 API 밴 주의</strong><br />
-                과도한 요청(하루 20회 초과)은 거래소 보안 정책 위반으로 차단될 수 있습니다. 기본 빈도를 유지해 주십시오.
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                type="button" 
-                className="btn-primary" 
-                onClick={handleSaveGridSettings}
-                style={{ flex: 1, padding: '12px', fontSize: '13px' }}
-              >
-                💾 봇 파라미터 저장
-              </button>
-              <button 
-                type="button" 
-                className="btn-secondary" 
-                onClick={handleTriggerAIProfit}
-                style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(255,255,255,0.04)' }}
-              >
-                ⚡ 수동 수익금 배분
-              </button>
-            </div>
-
-            {/* 🤖 실시간 AI 엔진 의사결정 브리핑 카드 */}
-            <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '20px' }}>🤖</span>
-                  <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
-                </div>
-                <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#3B82F6', fontWeight: '700' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 8px #3B82F6' }}></span>
-                  LIVE MONITORING
-                </span>
-              </div>
-
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, textAlign: 'left' }}>
-                글로벌 AI 두뇌가 5분마다 실시간 가격 추이와 매니저 잔고를 독자적으로 분석하여 의사결정을 내린 결과 보고서입니다.
-              </p>
-
-              {aiLogs.length === 0 ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
-                  📡 AI 엔진이 시장 데이터를 분석 중입니다. 최초 실행 완료까지 약 5분 정도 소요됩니다.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
-                  {aiLogs.map((log, index) => {
-                    let badgeColor = 'var(--text-muted)';
-                    let badgeBg = 'rgba(255,255,255,0.05)';
-                    let borderCol = 'rgba(255,255,255,0.05)';
-                    
-                    if (log.decision === 'BUY') {
-                      badgeColor = 'var(--success-color)';
-                      badgeBg = 'rgba(16, 185, 129, 0.1)';
-                      borderCol = 'rgba(16, 185, 129, 0.15)';
-                    } else if (log.decision === 'SELL') {
-                      badgeColor = 'var(--danger-color)';
-                      badgeBg = 'rgba(239, 68, 68, 0.1)';
-                      borderCol = 'rgba(239, 68, 68, 0.15)';
-                    } else if (log.decision === 'HOLD') {
-                      badgeColor = '#F59E0B';
-                      badgeBg = 'rgba(245, 158, 11, 0.1)';
-                      borderCol = 'rgba(245, 158, 11, 0.15)';
-                    }
-
-                    return (
-                      <div 
-                        key={log.id || index}
-                        style={{
-                          background: 'rgba(0,0,0,0.3)',
-                          border: `1px solid ${borderCol}`,
-                          borderRadius: '14px',
-                          padding: '16px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px',
-                          textAlign: 'left'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ 
-                              fontSize: '11px', 
-                              fontWeight: '900', 
-                              color: badgeColor, 
-                              background: badgeBg, 
-                              padding: '3px 10px', 
-                              borderRadius: '8px',
-                              letterSpacing: '0.5px'
-                            }}>
-                              {log.decision}
-                            </span>
-                            {log.decision !== 'HOLD' && (
-                              <span style={{ fontSize: '11px', color: '#E5E7EB', fontWeight: 'bold' }}>
-                                추천가: {log.proposed_price} USDT / 수량: {log.proposed_amount} SUT
-                              </span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
-                            {new Date(log.created_at).toLocaleString('ko-KR', { hour12: false })}
-                          </span>
-                        </div>
-                        
-                        <div style={{ fontSize: '12px', color: '#D1D5DB', lineHeight: '1.6', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '10px', wordBreak: 'break-all' }}>
-                          <b>💡 판단 근거:</b> {log.reason}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
           </div>
