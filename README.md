@@ -141,3 +141,12 @@ When updating the frontend, rebuild `frontend/dist`. The backend serves the buil
 - Preferred Trust Wallet provider when multiple wallet extensions are injected.
 - Added Google OAuth redirect fallback for mobile Chrome to avoid the GSI transform blank page.
 - Fixed SQLite schema compatibility for new registrations and `AI_TRADING_PROFIT` payments.
+
+## AI Agent Coding Guidelines
+
+To ensure seamless collaboration with AI coding assistants, this project enforces the following constitution:
+
+1. **AI-First Commenting Philosophy**: Comments are written exclusively for AI context recovery and reasoning. Keep them minimal, non-redundant, and technical. Do not comment on self-explanatory code.
+2. **Standard Terminology**: Always use standard English business terms (Manager, Platform Owner/Admin, Active Member/Approved User, Distribution, Registration Fee/Deposit, Withdrawal, Grid Bot) in all new comments.
+3. **Safety Policies**: Never modify global system configuration templates (like `ai_models.json`), never run `pm2 delete all`, and never auto-commit to git without human supervision. Refer to [.cursorrules](file:///c:/home/ai-s/.cursorrules) for full details.
+

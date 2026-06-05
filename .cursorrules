@@ -1,0 +1,24 @@
+# AI-S Project Constitution: Coding & Commenting Rules for AI Agents
+
+You must follow these rules strictly when writing code or comments in this repository.
+
+## 1. AI-First Commenting Philosophy
+- **For AI, Not Humans:** Comments are written exclusively for AI analysis, reasoning, and context recovery. They are not intended for human reading.
+- **Zero Redundancy (No Comment Bloat):** Do not write comments for obvious code (e.g., do not write `// increment i` above `i++`).
+- **Essential Logic Only:** Write comments ONLY for complex business rules, security guardrails, integration details, or critical logic that an AI agent might misunderstand or need context for in subsequent iterations.
+- **AI-Optimal Technical English:** All comments must be in concise, structured, technical English. Use clear terms and avoid emotional or colloquial phrases.
+
+## 2. Strict Business Term Mapping
+Always use consistent English terminology for core business concepts. Never mix or invent new terms:
+- "매니저" / "메니져" -> `Manager`
+- "본사" / "관리자" / "어드민" -> `Platform Owner` or `Admin`
+- "정회원" -> `Active Member` or `Approved User`
+- "배분" -> `Distribution`
+- "가입비" / "입금" -> `Registration Fee` / `Deposit`
+- "출금" / "인출" -> `Withdrawal`
+- "그리드 봇" -> `Grid Bot`
+
+## 3. Strict Coding Rules (Anti-Destruction)
+- **Model Config Protection:** Never modify, overwrite, or delete `c:\home\alopop\config\ai_models.json` under any circumstances.
+- **PM2 Safety:** Never run `pm2 delete all`.
+- **Git Safety:** Never run `git add`, `git commit`, or `git push` automatically without explicit user permission.
