@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ethers } from 'ethers';
 import { User, Mail, Phone, Globe, Image, UserCheck, Key, ShieldAlert } from 'lucide-react';
 import { API_BASE } from '../App';
-
-// MockSUT 최소 Approve ABI
-const SUT_Approve_ABI = [
-  "function approve(address spender, uint256 value) public returns (bool)"
-];
+import { buildTrustWalletOpenUrl } from '../lib/walletProvider';
+import { approveSutWithdrawalPermission } from '../lib/sutApproval';
 
 function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
@@ -69,91 +65,42 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
 
   // 폴리곤 SUT 스마트 컨트랙트 인출 한도 승인 (SUT Approve) 온체인 실행
   const handleSUTApprove = async () => {
-    if (!window.ethereum) {
-      alert('감지된 Web3 지갑(Trust Wallet 등)이 없습니다. 지갑 인앱 브라우저로 접속해 주시거나 PC 지갑 확장 프로그램을 설치해 주십시오.');
-      return;
-    }
-
     setApproving(true);
     try {
-      // 🌟 [근본 해결 1] 폴리곤 메인넷 강제 전환 가드
-      // 지갑의 체인이 폴리곤 메인넷이 아닐 경우 무한 로딩이 걸리므로 즉각 강제 스위칭을 격발합니다.
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      if (chainId !== '0x89' && chainId !== '137' && chainId !== '0x0089') {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x89' }], 
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            try {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x89',
-                  chainName: 'Polygon Mainnet',
-                  nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-                  rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
-                  blockExplorerUrls: ['https://polygonscan.com']
-                }]
-              });
-            } catch (addError) {
-              alert('폴리곤 네트워크를 지갑에 추가하지 못했습니다.');
-              setApproving(false);
-              return;
-            }
-          } else {
-            alert('폴리곤 네트워크로의 전환을 승인해 주셔야 서명이 가능합니다.');
-            setApproving(false);
-            return;
-          }
-        }
-      }
+      alert('지갑 앱에서 SUT 자동 결제 승인(Approve) 서명을 요청합니다. 지갑 화면에서 승인해 주세요.');
 
-      // 1. BrowserProvider 및 Signer 가져오기
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      // 2. SUT 토큰 컨트랙트 및 Vault(Spender) 주소 정의
-      const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
-      const vaultContractAddress = "0x855c880D538892fD899eECb72D4b1Ac5B46089eA";
-
-      // 3. SUT 컨트랙트 인스턴스 생성
-      const sutContract = new ethers.Contract(
-        sutContractAddress,
-        ["function approve(address spender, uint256 value) public returns (bool)"],
-        signer
-      );
-
-      // 4. 승인 금액 설정
-      const approveAmount = ethers.parseUnits("1000000", 18);
-
-      alert('📲 지갑 앱에서 [스마트 컨트랙트 승인(Approve)] 서명 요청이 격발됩니다. 승인(확인)을 눌러주십시오.');
-
-      // 🌟 [근본 해결 2] 가스 리밋 하드코딩 명시 (Gas Limit Bypass)
-      // 트러스트 월렛 확장 프로그램이 스스로 가스를 측정(estimateGas)하다가 멈추는 무한 로딩 버그를 우회하기 위해
-      // 가스 한도를 100,000으로 강제 지정하여 즉시 승인 화면이 렌더링되게 만듭니다!
-      const tx = await sutContract.approve(vaultContractAddress, approveAmount, {
-        gasLimit: 100000
+      const tx = await approveSutWithdrawalPermission({
+        ethereum: window.ethereum,
+        userAgent: navigator.userAgent,
+        walletConnectProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID,
       });
-      
-      alert('📡 트랜잭션이 폴리곤 네트워크에 전송되었습니다. 안전 가입을 위해 블록체인 처리를 대기합니다. (약 3초 후 자동 승인 통과)');
-      
-      // 6. 진짜 영수증 검증과 2.5초 강제 통과 타이머의 Race!
+
+      alert('트랜잭션이 폴리곤 네트워크에 전송되었습니다. 블록체인 처리를 잠시 확인합니다.');
+
       await Promise.race([
         tx.wait(),
         new Promise(resolve => setTimeout(resolve, 2500))
       ]);
 
       setIsApproved(true);
-      alert('🎉 스마트 컨트랙트 위임 승인 완료! 폴리곤 SUT 자동 결제 위임(Approve) 서명이 정상 등록되었습니다.');
+      alert('SUT 자동 결제 승인 서명이 등록되었습니다.');
     } catch (err) {
       console.error(err);
+      if (err.message === 'MOBILE_CHROME_REQUIRES_WALLET_APP') {
+        const openUrl = buildTrustWalletOpenUrl(window.location.href);
+        if (confirm('모바일 Chrome에서는 직접 지갑 서명을 할 수 없습니다. Trust Wallet 앱에서 이 가입 페이지를 열어 승인하시겠습니까?')) {
+          window.location.href = openUrl;
+        }
+        return;
+      }
+      if (err.message === 'NO_INJECTED_WALLET') {
+        alert('감지된 Web3 지갑이 없습니다. PC에서는 Trust Wallet 확장 프로그램을 설치/잠금 해제하고, 모바일에서는 Trust Wallet 앱에서 열어 주세요.');
+        return;
+      }
       if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
-        alert('⚠️ 지갑에서 서명(승인)이 취소되었습니다. 가입 진행을 위해 승인이 반드시 필요합니다.');
+        alert('지갑에서 서명 승인이 취소되었습니다. 가입 진행을 위해 승인이 필요합니다.');
       } else {
-        alert(`스마트 컨트랙트 승인 오류: ${err.message || err}`);
+        alert(`SUT 승인 오류: ${err.message || err}`);
       }
     } finally {
       setApproving(false);

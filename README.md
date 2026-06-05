@@ -1,38 +1,143 @@
-# AI-S (Polygon-based Referral & Investment Platform)
+# AI-S
 
-Polygon 네트워크 기반의 레퍼럴(추천인) 및 투자 모의 플랫폼입니다.
+AI-S is a Polygon-based membership, KYC, referral, and simulated SUT trading platform.
 
-## 🚀 프로젝트 스택
+The production service is served from:
 
-- **Frontend:** React, Vite
-- **Backend:** Node.js, Express
-- **Database:** SQLite
-- **Smart Contracts:** Solidity (Polygon Network)
+```text
+https://edenai.alonics.com/
+```
 
-## 📁 프로젝트 구조
+## Stack
 
-- `/frontend` : 사용자 인터페이스를 담당하는 React 기반 프론트엔드 코드
-- `/backend` : 비즈니스 로직과 데이터베이스 연동을 담당하는 Express 백엔드 서버
-- `/contracts` : 플랫폼 내에서 사용되는 스마트 컨트랙트 코드 (MockUSDT 등)
-- `/cfg` : 설정 및 환경 변수 파일 (보안을 위해 `.gitignore`에 추가되어 저장소에 업로드되지 않음)
+- Frontend: React, Vite, ethers
+- Backend: Node.js, Express
+- Database: SQLite
+- Wallet: Trust Wallet injected provider, WalletConnect
+- Network: Polygon mainnet
 
-## 🛠️ 설치 및 실행 방법
+## Project Structure
 
-1. **전체 패키지 설치**
-   프로젝트 루트 디렉토리에서 다음 명령어를 실행하여 모든 의존성 패키지를 설치합니다.
-   ```bash
-   npm run install-all
-   ```
+```text
+frontend/   React/Vite client
+backend/    Express API server and SQLite database setup
+contracts/  Solidity contract sources
+cfg/        Local configuration files, ignored from git
+```
 
-2. **서버 및 클라이언트 실행**
-   다음 명령어를 통해 백엔드 서버와 프론트엔드 개발 서버를 동시에 실행합니다.
-   ```bash
-   npm start
-   ```
-   - **Frontend:** 기본적으로 `http://localhost:5173` 에서 접근 가능합니다.
-   - **Backend:** `package.json` 설정 및 환경 변수에 정의된 포트(예: 3000번 대)에서 API 서버가 구동됩니다.
+## Important Runtime Settings
 
-## 🔐 보안 및 환경 변수
+Create `frontend/.env` for frontend-only environment variables:
 
-- 중요 키 파일(`cfg/ai-s_key.json`)이나 `.env` 파일은 깃허브에 공유되지 않도록 `.gitignore`에 등록되어 있습니다.
-- 백엔드와 프론트엔드의 정상 작동을 위해서는 각 폴더 내에 적절한 `.env` 설정이 필요할 수 있습니다.
+```env
+VITE_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+```
+
+Do not commit `.env`, private keys, wallet seed phrases, wallet passwords, Google account passwords, or uploaded KYC documents.
+
+## Google Login Configuration
+
+The frontend uses Google OAuth/Identity Services.
+
+For the OAuth client ID used by the app, Google Cloud Console must include:
+
+Authorized JavaScript origins:
+
+```text
+https://edenai.alonics.com
+```
+
+Authorized redirect URIs:
+
+```text
+https://edenai.alonics.com/
+https://edenai.alonics.com/login
+```
+
+Mobile Chrome uses the redirect flow to avoid the `accounts.google.com/gsi/transform` blank-page issue. The root redirect URI with the trailing slash is required.
+
+## Wallet Behavior
+
+The app supports:
+
+- PC Chrome with Trust Wallet extension
+- Mobile Chrome through WalletConnect
+- Trust Wallet app deep link fallback
+
+When multiple injected wallets exist, the frontend prefers Trust Wallet over other injected providers. SUT approve is executed against Polygon mainnet.
+
+Key frontend wallet modules:
+
+```text
+frontend/src/lib/walletProvider.js
+frontend/src/lib/sutApproval.js
+```
+
+## Backend Schema Repair
+
+If an existing SQLite database is missing newer schema fields or payment types, run:
+
+```bash
+cd backend
+npm run fix:schema
+```
+
+This repairs:
+
+- `users.referrer_address`
+- `payments` support for `AI_TRADING_PROFIT`
+
+Always back up `backend/platform.db` before running schema repair on production data.
+
+## Development
+
+Install dependencies:
+
+```bash
+npm run install-all
+```
+
+Run the full app in development:
+
+```bash
+npm start
+```
+
+Run frontend checks:
+
+```bash
+cd frontend
+npm run test:wallet
+npm run build
+```
+
+Run backend:
+
+```bash
+cd backend
+npm start
+```
+
+## Production Notes
+
+The PM2 ecosystem file used on the host is:
+
+```text
+C:/home/master_ecosystem.config.js
+```
+
+The `ai-s` app runs from:
+
+```text
+C:/home/ai-s/backend/server.js
+```
+
+When updating the frontend, rebuild `frontend/dist`. The backend serves the built frontend assets.
+
+## Recent Fixes
+
+- Added WalletConnect support for mobile Chrome.
+- Replaced Trust Wallet mobile deep link handling with a universal open URL.
+- Preferred Trust Wallet provider when multiple wallet extensions are injected.
+- Added Google OAuth redirect fallback for mobile Chrome to avoid the GSI transform blank page.
+- Fixed SQLite schema compatibility for new registrations and `AI_TRADING_PROFIT` payments.

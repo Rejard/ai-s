@@ -19,12 +19,14 @@ import PcRegisterPage from './pages/PcRegisterPage';
 import PcWaitingPage from './pages/PcWaitingPage';
 import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
+import { buildTrustWalletOpenUrl } from './lib/walletProvider';
 
 // 백엔드 API 기본 주소 설정
 export const API_BASE = 'https://edenai.alonics.com/api';
 
 // 🌟 Rejard님이 발급해주신 웹 애플리케이션 전용 진짜 구글 OAuth2 클라이언트 ID 적용 완료!
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
+const GOOGLE_OAUTH_SCOPE = 'openid email profile';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -53,6 +55,7 @@ function AppContent() {
 
   // 🌟 [PC 전용 메니져 보안] 모바일 기기(스마트폰/태블릿) 접속 판정
   const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const shouldUseGoogleRedirectLogin = isMobileDevice;
 
   // 🌟 [모바일 인앱 브라우저 감지 엔진] 구글 로그인 웹뷰 백화 현상 사전 감지 차단용
   const isInAppBrowser = /Telegram|KAKAOTALK|Line|Instagram|FB_IAB|FBAN|FBIOS|TrustWallet/i.test(navigator.userAgent) || 
@@ -63,8 +66,58 @@ function AppContent() {
   const isManagerRoute = location.pathname.startsWith('/manager');
   const isPcView = !isMobileDevice && screenWidth > 768;
 
+  const buildGoogleOAuthRedirectUrl = () => {
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: `${window.location.origin}/`,
+      response_type: 'token',
+      scope: GOOGLE_OAUTH_SCOPE,
+      prompt: 'select_account',
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  };
+
+  const startGoogleRedirectLogin = () => {
+    window.location.href = buildGoogleOAuthRedirectUrl();
+  };
+
+  const applyGoogleProfile = (profile) => {
+    const email = profile.email?.toLowerCase().trim();
+    if (!email) throw new Error('Google profile did not include an email address.');
+
+    const name = profile.name || profile.given_name || email;
+    setGoogleEmail(email);
+    setGoogleName(name);
+    setGoogleLoggedIn(true);
+    localStorage.setItem('google_email', email);
+    localStorage.setItem('google_name', name);
+  };
+
+  const restoreGoogleOAuthRedirect = async () => {
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+    if (!hash) return false;
+
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    if (!accessToken) return false;
+
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) throw new Error(`Google userinfo failed with ${res.status}`);
+
+    applyGoogleProfile(await res.json());
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    return true;
+  };
+
   // 컴포넌트 마운트 시 로컬 스토리지에서 가상 지갑 히스토리 및 세션, 쿼리 매개변수 로드
   useEffect(() => {
+    restoreGoogleOAuthRedirect().catch((err) => {
+      console.error('Google OAuth redirect restore failed:', err);
+      alert('Google 로그인 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
+    });
+
     const params = new URLSearchParams(window.location.search);
     const paramEmail = params.get('google_email');
     const paramName = params.get('google_name');
@@ -153,7 +206,7 @@ function AppContent() {
   // 동적으로 Google Identity Service SDK 로드 및 연동
   useEffect(() => {
     // 🌟 모바일 인앱 브라우저 내부일 때 구글 OAuth SDK의 강제 리다이렉트 및 백화 현상을 원천 방어하기 위해 로드를 바이패스합니다!
-    if (isInAppBrowser) {
+    if (isInAppBrowser || shouldUseGoogleRedirectLogin) {
       console.log("[STEALTH CONTROL] Bypassed Google Identity SDK dynamic load for mobile In-App browser.");
       return;
     }
@@ -208,6 +261,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!googleLoggedIn) {
+      if (shouldUseGoogleRedirectLogin) return;
       renderGoogleSignInButton();
     }
   }, [googleLoggedIn]);
@@ -294,8 +348,7 @@ function AppContent() {
         }
         
         const finalUrl = `${baseUrl}?${queryParams.toString()}`;
-        const targetUrl = encodeURIComponent(finalUrl);
-        const trustDeepLink = `trust://open_url?url=${targetUrl}`;
+        const trustDeepLink = buildTrustWalletOpenUrl(finalUrl);
         
         alert('📲 모바일 Trust Wallet 앱과 다이렉트 온체인 연동을 격발합니다. 확인을 누르시면 트러스트 월렛 앱이 자동으로 열리며 안전 연결이 개통됩니다.');
         window.location.href = trustDeepLink;
@@ -316,8 +369,30 @@ function AppContent() {
   // [버그 픽스] 구글 버튼이 DOM에서 파괴되었다가 다시 생성될 때를 대비한 전용 컴포넌트
   const GoogleSignInBtn = () => {
     useEffect(() => {
+      if (shouldUseGoogleRedirectLogin) return;
       renderGoogleSignInButton();
     }, []);
+    if (shouldUseGoogleRedirectLogin) {
+      return (
+        <button
+          className="btn-primary"
+          onClick={startGoogleRedirectLogin}
+          style={{
+            width: '280px',
+            minHeight: '44px',
+            borderRadius: '22px',
+            background: '#ffffff',
+            color: '#1f2937',
+            border: '1px solid #dadce0',
+            fontWeight: 700,
+            justifyContent: 'center',
+          }}
+        >
+          Google 계정으로 로그인
+        </button>
+      );
+    }
+
     return <div id="google-signin-btn" style={{ minHeight: '44px', width: '280px', display: 'flex', justifyContent: 'center' }}></div>;
   };
 

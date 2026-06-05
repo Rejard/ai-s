@@ -1,0 +1,104 @@
+import { ethers } from 'ethers';
+
+import {
+  getPreferredInjectedProvider,
+  isMobileChromeWithoutInjectedWallet,
+  normalizeChainId,
+} from './walletProvider.js';
+
+export const POLYGON_MAINNET_CHAIN_ID = '0x89';
+export const SUT_TOKEN_ADDRESS = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
+export const VAULT_CONTRACT_ADDRESS = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
+export const SUT_APPROVE_UNITS = '1000000';
+export const SUT_APPROVE_DECIMALS = 18;
+
+const POLYGON_CHAIN_PARAMS = {
+  chainId: POLYGON_MAINNET_CHAIN_ID,
+  chainName: 'Polygon Mainnet',
+  nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+  rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
+  blockExplorerUrls: ['https://polygonscan.com'],
+};
+
+export function isPolygonMainnetChain(chainId) {
+  return normalizeChainId(chainId) === POLYGON_MAINNET_CHAIN_ID;
+}
+
+export function toSutApprovalAmount(amount = SUT_APPROVE_UNITS) {
+  return ethers.parseUnits(String(amount), SUT_APPROVE_DECIMALS);
+}
+
+export function getWalletConnectProjectId(env = {}) {
+  return (env.VITE_WALLETCONNECT_PROJECT_ID || '').trim();
+}
+
+async function createWalletConnectProvider(projectId) {
+  const { EthereumProvider } = await import('@walletconnect/ethereum-provider');
+  const provider = await EthereumProvider.init({
+    projectId,
+    optionalChains: [137],
+    showQrModal: true,
+    methods: ['eth_requestAccounts', 'wallet_switchEthereumChain', 'wallet_addEthereumChain', 'eth_sendTransaction'],
+    events: ['chainChanged', 'accountsChanged', 'disconnect'],
+    rpcMap: {
+      137: 'https://polygon-bor-rpc.publicnode.com',
+    },
+    metadata: {
+      name: 'Ai S',
+      description: 'Ai S Polygon SUT approval',
+      url: window.location.origin,
+      icons: [`${window.location.origin}/favicon.svg`],
+    },
+  });
+  await provider.enable();
+  return provider;
+}
+
+async function ensurePolygonMainnet(provider) {
+  const chainId = await provider.request({ method: 'eth_chainId' });
+  if (isPolygonMainnetChain(chainId)) return;
+
+  try {
+    await provider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: POLYGON_MAINNET_CHAIN_ID }],
+    });
+  } catch (switchError) {
+    if (switchError?.code !== 4902) throw switchError;
+    await provider.request({
+      method: 'wallet_addEthereumChain',
+      params: [POLYGON_CHAIN_PARAMS],
+    });
+  }
+}
+
+export async function approveSutWithdrawalPermission({ ethereum, userAgent, walletConnectProjectId = '' }) {
+  if (isMobileChromeWithoutInjectedWallet(userAgent, ethereum)) {
+    if (!walletConnectProjectId) {
+      throw new Error('MOBILE_CHROME_REQUIRES_WALLET_APP');
+    }
+    ethereum = await createWalletConnectProvider(walletConnectProjectId);
+  }
+
+  const injectedProvider = getPreferredInjectedProvider(ethereum);
+  if (!injectedProvider) {
+    throw new Error('NO_INJECTED_WALLET');
+  }
+
+  await injectedProvider.request({ method: 'eth_requestAccounts' });
+  await ensurePolygonMainnet(injectedProvider);
+
+  const provider = new ethers.BrowserProvider(injectedProvider);
+  const signer = await provider.getSigner();
+  const sutContract = new ethers.Contract(
+    SUT_TOKEN_ADDRESS,
+    ['function approve(address spender, uint256 value) public returns (bool)'],
+    signer
+  );
+
+  const tx = await sutContract.approve(VAULT_CONTRACT_ADDRESS, toSutApprovalAmount(), {
+    gasLimit: 100000,
+  });
+
+  return tx;
+}
