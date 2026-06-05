@@ -162,6 +162,40 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
     setSendingSut(true);
     try {
+      // 1. 폴리곤 체인 ID(137 = 0x89) 검증 및 네트워크 전환 요청
+      const tempProvider = new ethers.BrowserProvider(window.ethereum);
+      const network = await tempProvider.getNetwork();
+      
+      if (network.chainId !== 137n) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }],
+          });
+        } catch (switchError) {
+          // 4902: 해당 체인이 지갑에 등록되어 있지 않은 경우
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x89',
+                chainName: 'Polygon Mainnet',
+                nativeCurrency: {
+                  name: 'POL',
+                  symbol: 'POL',
+                  decimals: 18
+                },
+                rpcUrls: ['https://polygon-rpc.com'],
+                blockExplorerUrls: ['https://polygonscan.com'],
+              }],
+            });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+
+      // 2. 네트워크 전환이 완료된 후 최종 provider와 signer 획득
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
@@ -551,6 +585,59 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div><b>연동 구글 계정:</b> {managerEmail}</div>
               <div style={{ wordBreak: 'break-all' }}><b>지갑 주소:</b> <span style={{ fontFamily: 'monospace' }}>{walletAddress}</span></div>
+            </div>
+          </div>
+
+          {/* 💰 SUT 자산 통합 관리 요약 카드 */}
+          <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+            <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px' }}>💰</span> SUT 자산 통합 관리 현황
+            </h4>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* 1. 매니저 개인 지갑 (온체인) */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>매니저 개인 지갑 (온체인)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#60A5FA', marginTop: '2px' }}>
+                    {walletSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>지갑 잔고</span>
+              </div>
+
+              {/* 2. 회원들이 맡긴 총 SUT (총수납) */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원들이 맡긴 총 SUT (총 수납액)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#A78BFA', marginTop: '2px' }}>
+                    {stats ? stats.totalRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>회원 총액</span>
+              </div>
+
+              {/* 3. 본사 보유 SUT (자기 돈) */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 SUT (실수익)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#10B981', marginTop: '2px' }}>
+                    {stats ? stats.companyRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>본사 보유</span>
+              </div>
+
+              {/* 4. 회원 배분 SUT */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 배분 SUT (배분 완료)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#F59E0B', marginTop: '2px' }}>
+                    {stats ? stats.totalDistributed.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>지급 총액</span>
+              </div>
             </div>
           </div>
 

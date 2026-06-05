@@ -167,6 +167,40 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
     setSendingSut(true);
     try {
+      // 1. 폴리곤 체인 ID(137 = 0x89) 검증 및 네트워크 전환 요청
+      const tempProvider = new ethers.BrowserProvider(window.ethereum);
+      const network = await tempProvider.getNetwork();
+      
+      if (network.chainId !== 137n) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }],
+          });
+        } catch (switchError) {
+          // 4902: 해당 체인이 지갑에 등록되어 있지 않은 경우
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x89',
+                chainName: 'Polygon Mainnet',
+                nativeCurrency: {
+                  name: 'POL',
+                  symbol: 'POL',
+                  decimals: 18
+                },
+                rpcUrls: ['https://polygon-rpc.com'],
+                blockExplorerUrls: ['https://polygonscan.com'],
+              }],
+            });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+
+      // 2. 네트워크 전환이 완료된 후 최종 provider와 signer 획득
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
@@ -684,6 +718,35 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           >
             <ArrowUpDown size={12} /> 내 지갑에서 Gate.io로 SUT 송금
           </button>
+        </div>
+      </div>
+
+      {/* 💰 SUT 자산 통합 관리 요약 카드 (모바일) */}
+      <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+        <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '14px' }}>💰</span> SUT 자산 통합 관리 현황
+        </h4>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>매니저 개인 지갑 (온체인):</span>
+            <span style={{ color: '#60A5FA', fontWeight: '700' }}>{walletSutBalance.toFixed(2)} SUT</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>회원들이 맡긴 총 SUT (수납):</span>
+            <span style={{ color: '#A78BFA', fontWeight: '700' }}>{stats ? stats.totalRevenue.toFixed(2) : '0.00'} SUT</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>본사 보유 SUT (자기 돈):</span>
+            <span style={{ color: '#10B981', fontWeight: '700' }}>{stats ? stats.companyRevenue.toFixed(2) : '0.00'} SUT</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>회원 배분 SUT:</span>
+            <span style={{ color: '#F59E0B', fontWeight: '700' }}>{stats ? stats.totalDistributed.toFixed(2) : '0.00'} SUT</span>
+          </div>
         </div>
       </div>
 
