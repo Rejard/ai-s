@@ -150,6 +150,11 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       return;
     }
 
+    if (!/^0x[a-fA-F0-9]{40}$/.test(depositAddr.trim())) {
+      alert('올바른 폴리곤 지갑 주소 형식(0x...로 시작하는 42자리)이 아닙니다. 로컬 설정을 확인해 주세요.');
+      return;
+    }
+
     if (!sendSutAmount || parseFloat(sendSutAmount) <= 0) {
       alert('유효한 수량을 입력해 주세요.');
       return;
