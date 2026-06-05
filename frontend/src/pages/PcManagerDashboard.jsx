@@ -318,16 +318,35 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       // 1-8. Gate.io 실시간 수익률 성과 로드
       try {
         const perfRes = await axios.get(`${API_BASE}/manager/gateio-performance`, getManagerHeaders());
-        if (perfRes.data.success && perfRes.data.isConfigured && perfRes.data.totalBuyUsdt > 0) {
+        if (perfRes.data.success && perfRes.data.isConfigured) {
           setPerformance(perfRes.data);
-          const curYield = perfRes.data.yieldPercent;
-          setYieldHistory(prev => {
-            let nextHistory = [...prev, curYield];
-            if (nextHistory.length > 30) {
-              nextHistory.shift();
-            }
-            return nextHistory;
-          });
+          
+          // 다른 기기 접속 시 로컬 스토리지 및 UI State에 동기화 폴백
+          if (!localStorage.getItem('gateio_api_key') && perfRes.data.maskedApiKey) {
+            localStorage.setItem('gateio_api_key', perfRes.data.maskedApiKey);
+            setLocalApiKey(perfRes.data.maskedApiKey);
+          }
+          if (!localStorage.getItem('gateio_api_secret') && perfRes.data.maskedApiSecret) {
+            localStorage.setItem('gateio_api_secret', perfRes.data.maskedApiSecret);
+            setLocalApiSecret(perfRes.data.maskedApiSecret);
+          }
+          if (!localStorage.getItem('gateio_deposit_address') && perfRes.data.depositAddress) {
+            localStorage.setItem('gateio_deposit_address', perfRes.data.depositAddress);
+            setLocalDepositAddress(perfRes.data.depositAddress);
+          }
+
+          if (perfRes.data.yieldHistory && perfRes.data.yieldHistory.length > 0) {
+            setYieldHistory(perfRes.data.yieldHistory);
+          } else if (perfRes.data.totalBuyUsdt > 0) {
+            const curYield = perfRes.data.yieldPercent;
+            setYieldHistory(prev => {
+              let nextHistory = [...prev, curYield];
+              if (nextHistory.length > 30) {
+                nextHistory.shift();
+              }
+              return nextHistory;
+            });
+          }
         } else {
           setPerformance(null);
           setYieldHistory([]);

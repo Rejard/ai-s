@@ -29,8 +29,18 @@ router.use(managerAuthMiddleware);
  */
 router.get('/gateio-balance', async (req, res) => {
   try {
-    const apiKey = req.headers['x-gateio-api-key'];
-    const apiSecret = req.headers['x-gateio-api-secret'];
+    let apiKey = req.headers['x-gateio-api-key'];
+    let apiSecret = req.headers['x-gateio-api-secret'];
+
+    // 헤더에 없으면 서버 DB에서 로드 (다른 기기 접속 폴백 지원)
+    if (!apiKey || !apiSecret) {
+      const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('gateio_api_key', 'gateio_api_secret')");
+      dbSettings.forEach(s => {
+        if (s.key === 'gateio_api_key') apiKey = s.value;
+        if (s.key === 'gateio_api_secret') apiSecret = s.value;
+      });
+    }
+
     const balanceRes = await getGateIoBalances(apiKey, apiSecret);
     res.json(balanceRes);
   } catch (err) {
@@ -553,8 +563,17 @@ router.post('/gateio-order', async (req, res) => {
  */
 router.get('/gateio-performance', async (req, res) => {
   try {
-    const apiKey = req.headers['x-gateio-api-key'];
-    const apiSecret = req.headers['x-gateio-api-secret'];
+    let apiKey = req.headers['x-gateio-api-key'];
+    let apiSecret = req.headers['x-gateio-api-secret'];
+
+    // 헤더에 없으면 서버 DB에서 로드 (다른 기기 접속 폴백 지원)
+    if (!apiKey || !apiSecret) {
+      const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('gateio_api_key', 'gateio_api_secret')");
+      dbSettings.forEach(s => {
+        if (s.key === 'gateio_api_key') apiKey = s.value;
+        if (s.key === 'gateio_api_secret') apiSecret = s.value;
+      });
+    }
 
     if (!apiKey || !apiSecret) {
       return res.json({ 
@@ -604,6 +623,45 @@ router.get('/gateio-performance', async (req, res) => {
     let yieldPercent = 0;
     if (totalBuyUsdt > 0) {
       yieldPercent = ((currentValue - totalBuyUsdt) / totalBuyUsdt) * 100;
+    } else {
+      // 거래 이력이 없거나 원금이 0인 경우 ➡️ SUT의 24h 변동률 또는 기준가(0.15) 대비 등락률 폴백
+      try {
+        const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
+        if (tickerRes.data && tickerRes.data.length > 0 && tickerRes.data[0].change_percentage !== undefined) {
+          yieldPercent = parseFloat(tickerRes.data[0].change_percentage);
+        } else {
+          yieldPercent = ((sutPrice - 0.15) / 0.15) * 100;
+        }
+      } catch (tickErr) {
+        yieldPercent = ((sutPrice - 0.15) / 0.15) * 100;
+      }
+    }
+
+    // 6. DB에 저장된 주소 정보 조회
+    let depositAddress = '';
+    const depositRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'gateio_deposit_address'");
+    if (depositRow) {
+      depositAddress = depositRow.value;
+    }
+
+    // 7. 최근 30개의 수익률 히스토리 조회
+    let yieldHistory = [];
+    try {
+      const historyRows = await queries.all(`
+        SELECT yield_percent 
+        FROM manager_yield_history 
+        ORDER BY recorded_at DESC 
+        LIMIT 30
+      `);
+      // 오래된 것 -> 최신 순으로 배열 반전
+      yieldHistory = historyRows.map(h => h.yield_percent).reverse();
+    } catch (histErr) {
+      console.error("[Performance API] 히스토리 조회 실패:", histErr.message);
+    }
+
+    // 만약 데이터가 아예 없다면 임의로 실시간 수익률이라도 넣어줍니다
+    if (yieldHistory.length === 0) {
+      yieldHistory = [yieldPercent];
     }
 
     res.json({
@@ -614,7 +672,12 @@ router.get('/gateio-performance', async (req, res) => {
       sutPrice,
       currentValue,
       yieldPercent,
-      tradesCount: trades.length
+      tradesCount: trades.length,
+      // 보안을 위해 마스킹된 정보 제공 (다른 로컬 기기 UI에 락 표시 방지용)
+      maskedApiKey: apiKey ? `${apiKey.substring(0, 6)}******` : '',
+      maskedApiSecret: apiSecret ? `${apiSecret.substring(0, 6)}******` : '',
+      depositAddress: depositAddress,
+      yieldHistory: yieldHistory
     });
   } catch (err) {
     console.error("[Performance API Error]:", err);

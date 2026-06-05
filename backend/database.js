@@ -58,6 +58,15 @@ function initializeDatabase() {
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
       });
 
+      // 3.8 manager_yield_history 테이블 생성 (수익률 시계열 차트 데이터 보존용)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_yield_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          yield_percent REAL NOT NULL,
+          recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => { if (err) return reject(err); });
+
       // 4. 최초 가입 활성화를 위한 마스터 추천인(Root Referrer) 데이터 삽입
       // Rejard님의 진짜 지갑 주소와 이메일, 성명을 마스터 매니저로 영구 등록!
       const rootReferrerAddress = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'; 

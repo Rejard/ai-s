@@ -176,6 +176,57 @@ async function runAiGridBot() {
     const { SUT: sutBalance, USDT: usdtBalance } = balanceRes.balances;
     console.log(`[🤖 AI GRID BOT] 가용 자산 상태 -> SUT: ${sutBalance.toFixed(2)} SUT / USDT: ${usdtBalance.toFixed(2)} USDT`);
 
+    // 4-1. 투자 원금(매수 누적 USDT) 및 수익률 계산 및 DB 누적
+    const { getGateIoMyTrades } = require('./gateioHelper');
+    let yieldPercent = 0;
+    try {
+      const tradesRes = await getGateIoMyTrades(botConfig.apiKey, botConfig.apiSecret);
+      let totalBuyUsdt = 0;
+      if (tradesRes.success && Array.isArray(tradesRes.data)) {
+        tradesRes.data.forEach(t => {
+          if (t.side === 'buy') {
+            const deal = t.deal ? parseFloat(t.deal) : (parseFloat(t.price) * parseFloat(t.amount));
+            totalBuyUsdt += deal;
+          }
+        });
+      }
+      const currentValue = sutBalance * currentSutPrice;
+      if (totalBuyUsdt > 0) {
+        yieldPercent = ((currentValue - totalBuyUsdt) / totalBuyUsdt) * 100;
+      } else {
+        // 거래 이력이 없거나 원금이 0인 경우 ➡️ SUT의 24h 변동률 또는 기준가(0.15) 대비 등락률 폴백
+        try {
+          const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
+          if (tickerRes.data && tickerRes.data.length > 0 && tickerRes.data[0].change_percentage !== undefined) {
+            yieldPercent = parseFloat(tickerRes.data[0].change_percentage);
+          } else {
+            yieldPercent = ((currentSutPrice - 0.15) / 0.15) * 100;
+          }
+        } catch (tickErr) {
+          yieldPercent = ((currentSutPrice - 0.15) / 0.15) * 100;
+        }
+      }
+      
+      // manager_yield_history DB에 누적 기록
+      await queries.run(`
+        INSERT INTO manager_yield_history (yield_percent)
+        VALUES (?)
+      `, [parseFloat(yieldPercent.toFixed(2))]);
+      
+      // 최근 200개 초과 데이터 정리
+      await queries.run(`
+        DELETE FROM manager_yield_history 
+        WHERE id NOT IN (
+          SELECT id FROM manager_yield_history 
+          ORDER BY recorded_at DESC 
+          LIMIT 200
+        )
+      `);
+      console.log(`[🤖 AI GRID BOT] 실시간 수익률 DB 누적 기록 완료: ${yieldPercent.toFixed(2)}%`);
+    } catch (yieldErr) {
+      console.error("[🤖 AI GRID BOT] 수익률 DB 기록 실패:", yieldErr.message);
+    }
+
     // 5. Gemini 의사결정 호출
     const marketData = {
       priceHistory: global.priceHistory,
