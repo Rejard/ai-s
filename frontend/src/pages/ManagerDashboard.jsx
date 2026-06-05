@@ -9,6 +9,17 @@ import {
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
 import { isFreshAiStrategy } from '../lib/aiTrading';
+import {
+  approveManagerUser,
+  approveManagerWithdrawal,
+  buildManagerHeaders,
+  clearManagerGateIoCredentials,
+  isMaskedCredential,
+  loadManagerDashboardData,
+  rejectManagerUser,
+  saveManagerAiSettings,
+  saveManagerGateIoCredentials,
+} from '../lib/managerDashboard';
 
 function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -69,21 +80,12 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [managerAuth, setManagerAuth] = useState(false);
   const [managerPassword, setManagerPassword] = useState('');
   
-  // 🌟 이명학 마스터 매니저 구글 이메일 고정 정의
-  const managerIdentityEmail = (managerEmail || 'lemaiiisk@gmail.com').toLowerCase().trim();
-  const isMaskedCredential = (value) => typeof value === 'string' && value.includes('******');
-  
-  // 백엔드 보안 미들웨어를 통과하기 위한 x-manager-email 헤더 빌드 및 로컬 Gate.io API 키 적재
+  // Build manager auth headers and attach local Gate.io credentials when available.
   const getManagerHeaders = () => {
-    const apiKey = localStorage.getItem('gateio_api_key') || '';
-    const apiSecret = localStorage.getItem('gateio_api_secret') || '';
-    return {
-      headers: {
-        'x-manager-email': managerIdentityEmail,
-        'x-gateio-api-key': isMaskedCredential(apiKey) ? '' : apiKey,
-        'x-gateio-api-secret': isMaskedCredential(apiSecret) ? '' : apiSecret
-      }
-    };
+    return buildManagerHeaders({
+      managerEmail,
+      getStorageItem: (key) => localStorage.getItem(key),
+    });
   };
 
   // Gate.io 실제 지정가 주문 격발 핸들러
@@ -132,16 +134,17 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       return;
     }
     
-    localStorage.setItem('gateio_api_key', localApiKey.trim());
-    localStorage.setItem('gateio_api_secret', localApiSecret.trim());
-    localStorage.setItem('gateio_deposit_address', localDepositAddress.trim());
-    
     try {
-      await axios.post(`${API_BASE}/manager/save-gateio-keys`, {
-        apiKey: localApiKey.trim(),
-        apiSecret: localApiSecret.trim(),
-        depositAddress: localDepositAddress.trim()
-      }, getManagerHeaders());
+      await saveManagerGateIoCredentials({
+        apiBase: API_BASE,
+        managerEmail,
+        apiKey: localApiKey,
+        apiSecret: localApiSecret,
+        depositAddress: localDepositAddress,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+        setStorageItem: (key, value) => localStorage.setItem(key, value),
+      });
       alert('💾 Gate.io API 키 및 입금 주소가 기기 및 서버 DB에 안전하게 저장되었습니다.');
     } catch (err) {
       console.error(err);
@@ -152,15 +155,18 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
   // Gate.io API 키 및 입금 주소 로컬 기기 및 서버 삭제 핸들러
   const handleClearApiKeys = async () => {
-    localStorage.removeItem('gateio_api_key');
-    localStorage.removeItem('gateio_api_secret');
-    localStorage.removeItem('gateio_deposit_address');
     setLocalApiKey('');
     setLocalApiSecret('');
     setLocalDepositAddress('');
     
     try {
-      await axios.post(`${API_BASE}/manager/clear-gateio-keys`, {}, getManagerHeaders());
+      await clearManagerGateIoCredentials({
+        apiBase: API_BASE,
+        managerEmail,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+        removeStorageItem: (key) => localStorage.removeItem(key),
+      });
       alert('🗑️ 저장된 API 키 및 입금 주소가 기기 및 서버에서 정상 삭제되었습니다.');
     } catch (err) {
       console.error(err);
@@ -261,6 +267,43 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
   // 1. 메니져 통합 데이터 로드
   const fetchManagerData = async () => {
+    try {
+      const managerData = await loadManagerDashboardData({
+        apiBase: API_BASE,
+        managerEmail,
+        walletAddress,
+        axiosClient: axios,
+        ethersLib: ethers,
+        getStorageItem: (key) => localStorage.getItem(key),
+        setStorageItem: (key, value) => localStorage.setItem(key, value),
+        removeStorageItem: (key) => localStorage.removeItem(key),
+        previousYieldHistory: yieldHistory,
+      });
+
+      if (managerData.pendingUsers !== undefined) setPendingUsers(managerData.pendingUsers);
+      if (managerData.stats !== undefined) setStats(managerData.stats);
+      if (managerData.recentPayments !== undefined) setRecentPayments(managerData.recentPayments);
+      if (managerData.allUsers !== undefined) setAllUsers(managerData.allUsers);
+      if (managerData.withdrawals !== undefined) setWithdrawals(managerData.withdrawals);
+      if (managerData.gridSettings !== undefined) setGridSettings(managerData.gridSettings);
+      if (managerData.portfolio !== undefined) setPortfolio(managerData.portfolio);
+      if (managerData.walletSutBalance !== undefined) setWalletSutBalance(managerData.walletSutBalance);
+      if (managerData.gateioBalance !== undefined) setGateioBalance(managerData.gateioBalance);
+      if (managerData.performance !== undefined) setPerformance(managerData.performance);
+      if (managerData.yieldHistory !== undefined) setYieldHistory(managerData.yieldHistory);
+      if (managerData.aiLogs !== undefined) setAiLogs(managerData.aiLogs);
+
+      if (managerData.credentialUpdates.clearApiKey) setLocalApiKey('');
+      if (managerData.credentialUpdates.clearApiSecret) setLocalApiSecret('');
+      if (managerData.credentialUpdates.depositAddress) setLocalDepositAddress(managerData.credentialUpdates.depositAddress);
+      return;
+    } catch (err) {
+      console.error('Manager data load failed:', err);
+      return;
+    } finally {
+      setLoading(false);
+    }
+
     try {
       // 1-1. KYC 승인 대기 목록
       const pendingRes = await axios.get(`${API_BASE}/manager/pending-users`, getManagerHeaders());
@@ -481,7 +524,13 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
     setSubmittingId(walletAddressToApprove);
     try {
-      const res = await axios.post(`${API_BASE}/manager/approve-user`, { walletAddress: walletAddressToApprove }, getManagerHeaders());
+      const res = await approveManagerUser({
+        apiBase: API_BASE,
+        managerEmail,
+        walletAddress: walletAddressToApprove,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
       if (res.data.success) {
         alert(res.data.message);
         fetchManagerData();
@@ -503,7 +552,13 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
     setSubmittingId(walletAddressToReject);
     try {
-      const res = await axios.post(`${API_BASE}/manager/reject-user`, { walletAddress: walletAddressToReject }, getManagerHeaders());
+      const res = await rejectManagerUser({
+        apiBase: API_BASE,
+        managerEmail,
+        walletAddress: walletAddressToReject,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
       if (res.data.success) {
         alert(res.data.message);
         fetchManagerData();
@@ -523,9 +578,14 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     if (actualPayoutStr === null) return; // 취소
 
     try {
-      const res = await axios.post(`${API_BASE}/manager/withdrawals/${id}/approve`, {
-        actualPayoutAmount: parseFloat(actualPayoutStr)
-      }, getManagerHeaders());
+      const res = await approveManagerWithdrawal({
+        apiBase: API_BASE,
+        managerEmail,
+        withdrawalId: id,
+        actualPayoutAmount: actualPayoutStr,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
       if (res.data.success) {
         alert(res.data.message);
         fetchManagerData();
@@ -549,9 +609,13 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
 
     try {
-      const res = await axios.post(`${API_BASE}/manager/ai-settings`, {
-        status: newStatus
-      }, getManagerHeaders());
+      const res = await saveManagerAiSettings({
+        apiBase: API_BASE,
+        managerEmail,
+        settings: { status: newStatus },
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
       
       if (res.data.success) {
         setGridSettings(prev => ({ ...prev, ai_grid_status: newStatus }));
@@ -564,13 +628,19 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
   const handleSaveGridSettings = async () => {
     try {
-      const res = await axios.post(`${API_BASE}/manager/ai-settings`, {
-        status: gridSettings.ai_grid_status,
-        lower: gridSettings.ai_grid_lower,
-        upper: gridSettings.ai_grid_upper,
-        count: gridSettings.ai_grid_count,
-        frequency: gridSettings.ai_grid_frequency
-      }, getManagerHeaders());
+      const res = await saveManagerAiSettings({
+        apiBase: API_BASE,
+        managerEmail,
+        settings: {
+          status: gridSettings.ai_grid_status,
+          lower: gridSettings.ai_grid_lower,
+          upper: gridSettings.ai_grid_upper,
+          count: gridSettings.ai_grid_count,
+          frequency: gridSettings.ai_grid_frequency,
+        },
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
       
       if (res.data.success) {
         alert('그리드 봇 파라미터가 안전하게 저장되었습니다.');
