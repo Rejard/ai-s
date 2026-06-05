@@ -56,7 +56,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     try {
       const res = await axios.get(`${API_BASE}/admin/ai-config`, getAdminHeaders());
       if (res.data.success && res.data.config) {
-        setGlobalAiModel(res.data.config.model || 'Gemini 1.5 Pro');
+        setGlobalAiModel(res.data.config.model || 'Gemini 3.5 Flash');
         setGlobalGeminiApiKey(res.data.config.apiKey || '');
       }
     } catch (err) {
@@ -247,9 +247,10 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                   onChange={(e) => setGlobalAiModel(e.target.value)}
                   style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                 >
-                  <option value="Gemini 2.0 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.0 Flash (최신/고속)</option>
-                  <option value="Gemini 1.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 1.5 Pro (고성능)</option>
-                  <option value="Gemini 1.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 1.5 Flash (기본/고속)</option>
+                  <option value="Gemini 3.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.5 Flash (최신/초고속)</option>
+                  <option value="Gemini 2.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Pro (초고성능/추론)</option>
+                  <option value="Gemini 2.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Flash (기본/고속)</option>
+                  <option value="Gemini 3.1 Flash Lite" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.1 Flash Lite (경량/초고속)</option>
                 </select>
               </div>
 

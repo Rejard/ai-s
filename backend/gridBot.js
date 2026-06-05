@@ -34,12 +34,16 @@ async function getSutCurrentPrice() {
  * @param {object} marketData 시황 데이터 및 가이드라인
  */
 async function getAiTradingDecision(apiKey, modelName, marketData) {
-  let modelId = 'gemini-1.5-flash';
+  let modelId = 'gemini-2.5-flash';
   const lowerName = modelName.toLowerCase();
-  if (lowerName.includes('pro')) {
-    modelId = 'gemini-1.5-pro';
-  } else if (lowerName.includes('2.0')) {
-    modelId = 'gemini-2.0-flash';
+  if (lowerName.includes('3.5')) {
+    modelId = 'gemini-3.5-flash';
+  } else if (lowerName.includes('2.5 pro') || lowerName.includes('pro')) {
+    modelId = 'gemini-2.5-pro';
+  } else if (lowerName.includes('2.5 flash')) {
+    modelId = 'gemini-2.5-flash';
+  } else if (lowerName.includes('3.1') || lowerName.includes('lite')) {
+    modelId = 'gemini-3.1-flash-lite';
   }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 

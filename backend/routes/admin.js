@@ -240,7 +240,7 @@ router.get('/ai-config', async (req, res) => {
   try {
     const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key')");
     const config = {
-      model: 'Gemini 1.5 Pro',
+      model: 'Gemini 3.5 Flash',
       hasApiKey: false,
       apiKey: ''
     };
