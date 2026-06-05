@@ -119,24 +119,47 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // Gate.io API 키 및 입금 주소 로컬 기기 저장 핸들러
-  const handleSaveApiKeys = () => {
+  // Gate.io API 키 및 입금 주소 로컬 기기 및 서버 저장 핸들러
+  const handleSaveApiKeys = async () => {
+    if (!localApiKey.trim() || !localApiSecret.trim() || !localDepositAddress.trim()) {
+      alert('⚠️ 모든 API 키 및 입금 주소를 정확하게 입력해 주세요.');
+      return;
+    }
+    
     localStorage.setItem('gateio_api_key', localApiKey.trim());
     localStorage.setItem('gateio_api_secret', localApiSecret.trim());
     localStorage.setItem('gateio_deposit_address', localDepositAddress.trim());
-    alert('💾 Gate.io API 키 및 입금 주소가 브라우저 로컬 스토리지에 저장되었습니다. (서버에는 전송/저장되지 않음)');
+    
+    try {
+      await axios.post(`${API_BASE}/manager/save-gateio-keys`, {
+        apiKey: localApiKey.trim(),
+        apiSecret: localApiSecret.trim(),
+        depositAddress: localDepositAddress.trim()
+      }, getManagerHeaders());
+      alert('💾 Gate.io API 키 및 입금 주소가 기기 및 서버 DB에 안전하게 저장되었습니다.');
+    } catch (err) {
+      console.error(err);
+      alert('경고: 로컬 저장은 성공했으나 서버 DB 저장에 실패했습니다: ' + (err.response?.data?.message || err.message));
+    }
     fetchManagerData(); // 잔고 정보 즉시 갱신
   };
 
-  // Gate.io API 키 및 입금 주소 로컬 기기 삭제 핸들러
-  const handleClearApiKeys = () => {
+  // Gate.io API 키 및 입금 주소 로컬 기기 및 서버 삭제 핸들러
+  const handleClearApiKeys = async () => {
     localStorage.removeItem('gateio_api_key');
     localStorage.removeItem('gateio_api_secret');
     localStorage.removeItem('gateio_deposit_address');
     setLocalApiKey('');
     setLocalApiSecret('');
     setLocalDepositAddress('');
-    alert('🗑️ 저장된 API 키 및 입금 주소가 브라우저 로컬 스토리지에서 삭제되었습니다.');
+    
+    try {
+      await axios.post(`${API_BASE}/manager/clear-gateio-keys`, {}, getManagerHeaders());
+      alert('🗑️ 저장된 API 키 및 입금 주소가 기기 및 서버에서 정상 삭제되었습니다.');
+    } catch (err) {
+      console.error(err);
+      alert('경고: 로컬 삭제는 성공했으나 서버 DB 삭제에 실패했습니다: ' + (err.response?.data?.message || err.message));
+    }
     fetchManagerData(); // 데모 모드로 전환 확인
   };
 

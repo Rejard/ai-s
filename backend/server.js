@@ -4,6 +4,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const { initializeDatabase } = require('./database');
 const { autoDeployContracts } = require('./contractHelper');
+const { initGridBotScheduler } = require('./gridBot');
 
 // .env 로드
 dotenv.config();
@@ -65,6 +66,9 @@ async function bootstrap() {
       console.log(`📁 KYC Upload Path: ${path.join(__dirname, 'uploads')}`);
       console.log(`==================================================================`);
     });
+
+    // 4. AI 그리드 오토 봇 스케줄러 기동
+    initGridBotScheduler();
   } catch (err) {
     console.error('❌ Failed to bootstrap the backend server:', err);
     process.exit(1);

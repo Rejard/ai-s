@@ -122,10 +122,28 @@ async function getGateIoMyTrades(apiKey = null, apiSecret = null) {
   return await callGateIoApi('GET', '/api/v4/spot/my_trades', queryString, null, apiKey, apiSecret);
 }
 
+/**
+ * 4. SUT_USDT 미체결 주문(Open Orders) 조회
+ */
+async function getGateIoOpenOrders(apiKey = null, apiSecret = null) {
+  const queryString = 'status=open&currency_pair=SUT_USDT';
+  return await callGateIoApi('GET', '/api/v4/spot/orders', queryString, null, apiKey, apiSecret);
+}
+
+/**
+ * 5. 특정 SUT_USDT 주문 취소 (Cancel Order)
+ */
+async function cancelGateIoOrder(apiKey = null, apiSecret = null, orderId) {
+  const queryString = 'currency_pair=SUT_USDT';
+  return await callGateIoApi('DELETE', `/api/v4/spot/orders/${orderId}`, queryString, null, apiKey, apiSecret);
+}
+
 module.exports = {
   getGateIoBalances,
   createGateIoOrder,
-  getGateIoMyTrades
+  getGateIoMyTrades,
+  getGateIoOpenOrders,
+  cancelGateIoOrder
 };
 
 

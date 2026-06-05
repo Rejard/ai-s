@@ -434,20 +434,27 @@ router.post('/trigger-ai-profit', async (req, res) => {
 
 /**
  * @route GET /api/manager/ai-settings
- * @desc AI 그리드 봇 설정 불러오기
+ * @desc AI 그리드 봇 설정 및 API 키 등록 상태 불러오기
  */
 router.get('/ai-settings', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key LIKE 'ai_grid_%'");
+    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key LIKE 'ai_grid_%' OR key LIKE 'gateio_%'");
     const config = {
       ai_grid_status: 'OFF',
       ai_grid_lower: '0.15',
       ai_grid_upper: '0.30',
       ai_grid_count: '10',
-      ai_grid_frequency: '5'
+      ai_grid_frequency: '5',
+      hasApiKey: false,
+      hasApiSecret: false,
+      hasDepositAddress: false
     };
     
     settings.forEach(s => {
+      if (s.key === 'gateio_api_key' && s.value) config.hasApiKey = true;
+      if (s.key === 'gateio_api_secret' && s.value) config.hasApiSecret = true;
+      if (s.key === 'gateio_deposit_address' && s.value) config.hasDepositAddress = true;
+      
       if (config.hasOwnProperty(s.key)) {
         config[s.key] = s.value;
       }
@@ -473,6 +480,36 @@ router.post('/ai-settings', async (req, res) => {
     if (frequency) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ai_grid_frequency', ?)`, [frequency]);
     
     res.json({ success: true, message: 'AI 그리드 봇 설정이 성공적으로 저장되었습니다.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * @route POST /api/manager/save-gateio-keys
+ * @desc 24시간 오토 봇 가동을 위해 Gate.io API 키 및 입금 주소를 서버 DB에 암호화/저장
+ */
+router.post('/save-gateio-keys', async (req, res) => {
+  const { apiKey, apiSecret, depositAddress } = req.body;
+  try {
+    if (apiKey) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('gateio_api_key', ?)`, [apiKey.trim()]);
+    if (apiSecret) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('gateio_api_secret', ?)`, [apiSecret.trim()]);
+    if (depositAddress) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('gateio_deposit_address', ?)`, [depositAddress.trim()]);
+    
+    res.json({ success: true, message: 'Gate.io API 키 및 주소가 서버 DB에 안전하게 저장되었습니다.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * @route POST /api/manager/clear-gateio-keys
+ * @desc 서버 DB에서 Gate.io API 키 및 주소 삭제
+ */
+router.post('/clear-gateio-keys', async (req, res) => {
+  try {
+    await queries.run(`DELETE FROM platform_settings WHERE key IN ('gateio_api_key', 'gateio_api_secret', 'gateio_deposit_address')`);
+    res.json({ success: true, message: '서버 DB에서 Gate.io API 키가 삭제되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

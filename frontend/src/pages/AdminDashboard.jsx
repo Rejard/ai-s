@@ -16,6 +16,11 @@ function AdminDashboard({ walletAddress, managerEmail }) {
   const [promoteWallet, setPromoteWallet] = useState('');
   const [submittingPromote, setSubmittingPromote] = useState(false);
   const [submittingDelete, setSubmittingDelete] = useState(null);
+  
+  // 글로벌 AI 설정 상태 관리
+  const [globalAiModel, setGlobalAiModel] = useState('Gemini 2.0 Flash');
+  const [globalGeminiApiKey, setGlobalGeminiApiKey] = useState('');
+  const [savingAiConfig, setSavingAiConfig] = useState(false);
 
   // 최종 어드민 권한 고정 계정 정의
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
@@ -45,8 +50,52 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     }
   };
 
+  // 글로벌 AI 설정 조회
+  const fetchAiConfig = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE}/admin/ai-config`, getAdminHeaders());
+      if (res.data.success && res.data.config) {
+        setGlobalAiModel(res.data.config.model || 'Gemini 1.5 Pro');
+        setGlobalGeminiApiKey(res.data.config.apiKey || '');
+      }
+    } catch (err) {
+      console.error('글로벌 AI 설정 로드 실패:', err);
+    }
+  };
+
+  // 글로벌 AI 설정 저장
+  const handleSaveAiConfig = async (e) => {
+    if (e) e.preventDefault();
+    if (!globalGeminiApiKey.trim()) {
+      alert("Gemini API Key를 입력해 주십시오.");
+      return;
+    }
+
+    setSavingAiConfig(true);
+    try {
+      const res = await axios.post(`${API_BASE}/admin/save-ai-config`, {
+        model: globalAiModel,
+        apiKey: globalGeminiApiKey.trim()
+      }, getAdminHeaders());
+
+      if (res.data.success) {
+        alert("🎉 글로벌 AI 설정이 서버 DB에 정상적으로 저장되었습니다. 이제 모든 매니저 봇이 이 AI 두뇌를 사용해 오토 봇 매매를 실행합니다.");
+        fetchAiConfig();
+      }
+    } catch (err) {
+      const errMsg = err.response && err.response.data && err.response.data.message
+        ? err.response.data.message
+        : err.message;
+      alert(`❌ 설정 저장 실패: ${errMsg}`);
+    } finally {
+      setSavingAiConfig(false);
+    }
+  };
+
   useEffect(() => {
     fetchManagers();
+    fetchAiConfig();
     // 5초 간격 실시간 갱신
     const interval = setInterval(fetchManagers, 5000);
     return () => clearInterval(interval);
@@ -179,6 +228,51 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               <div><b>어드민 이메일:</b> {managerEmail}</div>
               <div style={{ wordBreak: 'break-all' }}><b>지갑 주소:</b> <span style={{ fontFamily: 'monospace' }}>{walletAddress}</span></div>
             </div>
+          </div>
+
+          {/* 🤖 글로벌 AI 엔진 제어 카드 */}
+          <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+            <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🤖</span> 글로벌 AI 엔진 제어
+            </h4>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+              플랫폼에 가입된 모든 매니저 오토 봇의 공동 판단 두뇌가 되는 AI 모델의 API Key를 설정합니다. 이 키는 안전하게 서버 DB에 영구 저장됩니다.
+            </p>
+
+            <form onSubmit={handleSaveAiConfig} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>사용할 AI 모델</label>
+                <select 
+                  value={globalAiModel} 
+                  onChange={(e) => setGlobalAiModel(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
+                >
+                  <option value="Gemini 2.0 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.0 Flash (최신/고속)</option>
+                  <option value="Gemini 1.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 1.5 Pro (고성능)</option>
+                  <option value="Gemini 1.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 1.5 Flash (기본/고속)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>Gemini API Key</label>
+                <input 
+                  type="password" 
+                  value={globalGeminiApiKey}
+                  onChange={(e) => setGlobalGeminiApiKey(e.target.value)}
+                  placeholder="AIzaSy로 시작하는 구글 API Key 입력"
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#FFF', outline: 'none' }}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                disabled={savingAiConfig}
+                style={{ width: '100%', padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', border: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+              >
+                {savingAiConfig ? <Loader2 size={16} className="spin" /> : '💾 글로벌 AI 설정 저장'}
+              </button>
+            </form>
           </div>
 
           {/* 🌟 신규 매니저 승격 폼 카드 */}
