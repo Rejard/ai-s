@@ -3,12 +3,9 @@ const router = express.Router();
 const { queries } = require('../database');
 const { triggerOnChainDistribution } = require('../contractHelper');
 
-/**
- * @desc Core internal helper function that charges the member's Registration Fee/monthly fee and performs on-chain Distribution to the top 2-tier referrers
- */
 async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
   const userWallet = user.wallet_address.toLowerCase();
-  
+
   const ref1 = 'none';
   const ref2 = 'none';
 
@@ -19,15 +16,14 @@ async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
     const result = await triggerOnChainDistribution(userWallet, ref1, ref2, chargeAmountUsdt);
 
     if (result.success) {
-      // 3. Register payments transaction history (SUCCESS)
+
       await queries.run(`
         INSERT INTO payments (wallet_address, amount, type, status, tx_hash, distributed_amount)
         VALUES (?, ?, ?, 'SUCCESS', ?, ?)
       `, [userWallet, chargeAmountUsdt, paymentType, result.txHash, result.ref1Share + result.ref2Share]);
 
-      // 4. Upgrade member's status to ACTIVE (officially active) and end free trial
       await queries.run(`
-        UPDATE users 
+        UPDATE users
         SET tier = 'ACTIVE'
         WHERE wallet_address = ?
       `, [userWallet]);
@@ -37,14 +33,12 @@ async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
     }
   } catch (err) {
     console.error(`❌ [PAYMENT FAILED] Failed to charge ${userWallet}:`, err.message);
-    
-    // Register payment failure history
+
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash, distributed_amount)
       VALUES (?, ?, ?, 'FAILED', NULL, 0)
     `, [userWallet, chargeAmountUsdt, paymentType]);
 
-    // If payment fails, benefits are temporarily suspended (EXPIRED)
     await queries.run(`
       UPDATE users SET tier = 'EXPIRED' WHERE wallet_address = ?
     `, [userWallet]);
@@ -53,13 +47,9 @@ async function processSubscriptionPayment(user, chargeAmountUsdt, paymentType) {
   }
 }
 
-/**
- * @route GET /api/cron/check-subscriptions
- * @desc [Batch System] Automatic Registration Fee billing and monthly fee scheduler batch for members whose 10-day free trial has expired
- */
 router.get('/check-subscriptions', async (req, res) => {
   try {
-    // 1. Extract members who are still in TRIAL status even though 10 days have passed since registration approval (trial_ends_at < now)
+
     const expiredTrials = await queries.all(`
       SELECT wallet_address, name, email FROM users
       WHERE status = 'APPROVED' AND tier = 'TRIAL' AND datetime(trial_ends_at) < datetime('now', 'localtime')
@@ -90,10 +80,6 @@ router.get('/check-subscriptions', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/cron/trigger-charge-manually
- * @desc [Test Trigger API] Immediate receipt of a specific member's Registration Fee and forced execution of 2-tier on-chain Distribution without a 10-day waiting period!
- */
 router.post('/trigger-charge-manually', async (req, res) => {
   const { walletAddress } = req.body;
   if (!walletAddress) {
@@ -123,12 +109,11 @@ router.post('/trigger-charge-manually', async (req, res) => {
     let chargeAmount = 100.0;
 
     if (existingMembershipFee) {
-      // If registration fee has already been paid, process as a monthly subscription fee to support duplicate testing
+
       paymentType = 'MONTHLY_SUBSCRIPTION';
       console.log(`[TEST TRIGGER] Membership fee already paid. Charging monthly subscription instead.`);
     }
 
-    // Force payment process initiation
     const paymentResult = await processSubscriptionPayment(user, chargeAmount, paymentType);
 
     res.json({

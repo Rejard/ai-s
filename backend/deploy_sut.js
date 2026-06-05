@@ -59,7 +59,7 @@ async function main() {
   console.log(`💰 Deployer Balance: ${ethers.formatEther(balance)} POL`);
 
   const vaultBuild = await compileContract('PlatformVault.sol', 'PlatformVault');
-  
+
   fs.writeFileSync(
     path.resolve(__dirname, 'PlatformVaultBuild.json'),
     JSON.stringify(vaultBuild, null, 2)
@@ -67,17 +67,16 @@ async function main() {
 
   const SUT_ADDRESS = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
   console.log(`🚀 Deploying PlatformVault using SUT Token: ${SUT_ADDRESS}`);
-  
+
   const VaultFactory = new ethers.ContractFactory(vaultBuild.abi, vaultBuild.bytecode, wallet);
   const vault = await VaultFactory.deploy(SUT_ADDRESS);
   await vault.waitForDeployment();
   const vaultAddress = await vault.getAddress();
   console.log(`✅ PlatformVault deployed at: ${vaultAddress}`);
 
-  // .env file auto-update
   const envPath = path.resolve(__dirname, '.env');
   let envContent = fs.readFileSync(envPath, 'utf8');
-  
+
   if (envContent.includes('VAULT_CONTRACT_ADDRESS=')) {
     envContent = envContent.replace(/VAULT_CONTRACT_ADDRESS=.*/, `VAULT_CONTRACT_ADDRESS=${vaultAddress}`);
   } else {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus, 
+import {
+  ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus,
   ArrowLeft, BarChart3, HelpCircle, Loader2
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
@@ -29,7 +29,6 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     handleSaveAiConfig
   } = useAdminLogic(managerEmail);
 
-  // Guard view blocking unauthenticated user access
   if (!isAdmin) {
     return (
       <div className="pc-layout-wrapper" style={{ justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -51,8 +50,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
 
   return (
     <div className="pc-layout-wrapper admin-layout-wrapper" style={{ padding: '40px 50px', flexDirection: 'column', gap: '30px', alignItems: 'stretch' }}>
-      
-      {/* 1. Top Title Bar */}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '22px' }}>
@@ -64,8 +62,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
           </div>
         </div>
 
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           onClick={() => navigate('/dashboard')}
           style={{ width: 'auto', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', gap: '8px', fontWeight: '700' }}
         >
@@ -74,13 +72,10 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
         </button>
       </div>
 
-      {/* 2. Dashboard Main Layout */}
       <div className="admin-content-row" style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
-        
-        {/* [Left Column] Manager Promotion Management & Cumulative Statistics */}
+
         <div className="admin-col-left" style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '24px', flexShrink: 0 }}>
-          
-          {/* Admin Account Information Card */}
+
           <div className="glass-card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>
@@ -99,7 +94,6 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
-          {/* 🤖 Global AI Engine Control Card */}
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
             <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>🤖</span> 글로벌 AI 엔진 제어
@@ -111,8 +105,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             <form onSubmit={handleSaveAiConfig} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>사용할 AI 모델</label>
-                <select 
-                  value={globalAiModel} 
+                <select
+                  value={globalAiModel}
                   onChange={(e) => setGlobalAiModel(e.target.value)}
                   style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                 >
@@ -125,7 +119,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
 
               <div>
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>Gemini API Key</label>
-                <input 
+                <input
                   type="password"
                   value={globalGeminiApiKey}
                   onChange={(e) => setGlobalGeminiApiKey(e.target.value)}
@@ -160,9 +154,9 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                className="btn-primary" 
+              <button
+                type="submit"
+                className="btn-primary"
                 disabled={savingAiConfig}
                 style={{ width: '100%', padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', border: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
               >
@@ -171,7 +165,6 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             </form>
           </div>
 
-          {/* 🌟 New Manager Promotion Form Card */}
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
             <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserPlus size={20} color="#8B5CF6" />
@@ -184,8 +177,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             <form onSubmit={handlePromoteManager} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>회원 지갑 주소 (Wallet Address)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={promoteWallet}
                   onChange={(e) => setPromoteWallet(e.target.value)}
                   placeholder="0x로 시작하는 지갑 주소 입력"
@@ -193,9 +186,9 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 />
               </div>
 
-              <button 
-                type="submit" 
-                className="btn-primary" 
+              <button
+                type="submit"
+                className="btn-primary"
                 disabled={submittingPromote}
                 style={{ width: '100%', padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
               >
@@ -204,7 +197,6 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             </form>
           </div>
 
-          {/* Information Box */}
           <div className="glass-card" style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.02)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <ShieldAlert size={16} color="var(--danger-color)" /> 매니저 통제 안전 가이드
@@ -216,9 +208,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
 
         </div>
 
-        {/* [Right Column] All Manager List (Main View) */}
         <div className="admin-col-right" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
-          
+
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '18px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '800' }}>
               <BarChart3 size={20} color="#EF4444" />
@@ -272,7 +263,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                             {isMaster ? (
                               <span style={{ fontSize: '11px', color: 'var(--text-dark)' }}>삭제 불가</span>
                             ) : (
-                              <button 
+                              <button
                                 className="btn-secondary"
                                 onClick={() => handleDeleteManager(m.wallet_address, m.name)}
                                 disabled={submittingDelete === m.wallet_address}

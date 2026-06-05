@@ -9,7 +9,6 @@ function EditUserPage() {
   const { walletAddress: paramWalletAddress } = useParams();
   const navigate = useNavigate();
 
-  // Existing data and input form state for the target member to be modified
   const [targetWallet, setTargetWallet] = useState('');
   const [formData, setFormData] = useState({
     walletAddress: '',
@@ -24,22 +23,18 @@ function EditUserPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Manual ledger deduction related state
   const [currentInvested, setCurrentInvested] = useState(0);
-  const [payoutAmount, setPayoutAmount] = useState(''); // Actual transfer amount input field
-  const [adjustmentAmount, setAdjustmentAmount] = useState(''); // Ledger deduction amount input field
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [isPayingOut, setIsPayingOut] = useState(false);
-
-
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         // API base URL and security header settings
         const headers = { headers: { 'x-manager-email': 'lemaiiisk@gmail.com' } };
-        
-        // After fetching the entire member list, search for the target member (or replace with a backend detailed query)
+
         const res = await axios.get(`${API_BASE}/manager/users`, headers);
         if (res.data.success) {
           const user = res.data.users.find(
@@ -49,7 +44,6 @@ function EditUserPage() {
           if (user) {
             setTargetWallet(user.wallet_address);
 
-            // Setting with columns existing in the users table
             setFormData({
               walletAddress: user.wallet_address,
               email: user.email,
@@ -60,7 +54,6 @@ function EditUserPage() {
               tier: user.tier
             });
 
-            // Load member's current investment principal (ledger balance)
             try {
               const portRes = await axios.get(`${API_BASE}/investment/portfolio/${user.wallet_address}`);
               if (portRes.data.success) {
@@ -86,7 +79,6 @@ function EditUserPage() {
     fetchUserData();
   }, [paramWalletAddress, navigate]);
 
-  // Input field change handler
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -95,7 +87,6 @@ function EditUserPage() {
     }));
   };
 
-  // Modification submission handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!confirm('입력하신 회원 정보로 데이터베이스 및 온체인 구조를 강제 수정하시겠습니까?')) {
@@ -130,15 +121,14 @@ function EditUserPage() {
     }
   };
 
-  // Force ledger balance deduction handler
   const handleManualAdjustment = async () => {
     if (!adjustmentAmount || parseFloat(adjustmentAmount) <= 0) {
       alert("차감할 SUT 수량을 양수로 입력하세요. (예: 100)");
       return;
     }
-    
+
     const amountToDeduct = parseFloat(adjustmentAmount);
-    // Automatically convert positive input to negative for deduction processing
+
     const finalAmount = amountToDeduct > 0 ? -amountToDeduct : amountToDeduct;
 
     if (!confirm(`정말로 이 회원의 장부 잔액을 [${amountToDeduct} SUT] 만큼 강제 차감하시겠습니까?\n이 작업은 즉시 반영되며 되돌릴 수 없습니다.`)) {
@@ -157,7 +147,7 @@ function EditUserPage() {
       if (res.data.success) {
         alert(res.data.message);
         setAdjustmentAmount('');
-        // Refresh balance
+
         const portRes = await axios.get(`${API_BASE}/investment/portfolio/${targetWallet}`);
         if (portRes.data.success) {
           setCurrentInvested(portRes.data.portfolio.totalInvested);
@@ -170,7 +160,6 @@ function EditUserPage() {
     }
   };
 
-  // Actual SUT token on-chain transfer handler (does not accompany ledger deduction)
   const handleOnchainPayout = async () => {
     if (!payoutAmount || parseFloat(payoutAmount) <= 0) {
       alert("송금할 SUT 수량을 양수로 입력하세요. (예: 100)");
@@ -193,18 +182,14 @@ function EditUserPage() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // SUT token information
       const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
       const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
       const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
 
-      // Amount parsing (18 decimals)
       const parsedAmount = ethers.parseUnits(amountToSend.toString(), 18);
 
-      // Execute actual on-chain token transfer (Manager wallet -> Member wallet)
       const tx = await sutContract.transfer(targetWallet, parsedAmount);
-      
-      // Wait for block confirmation
+
       await tx.wait();
 
       alert(`🎉 성공적으로 ${amountToSend} SUT 실제 송금이 완료되었습니다!\nTxHash: ${tx.hash}`);
@@ -228,11 +213,10 @@ function EditUserPage() {
 
   return (
     <div style={{ padding: '20px 20px 50px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      
-      {/* 1. Top Title Bar */}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           onClick={() => navigate('/manager')}
           style={{ width: '40px', height: '40px', padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContext: 'center' }}
         >
@@ -244,7 +228,6 @@ function EditUserPage() {
         </div>
       </div>
 
-      {/* 2. Warning Notice Banner */}
       <div className="glass-card" style={{ border: '1px solid rgba(245,158,11,0.25)', background: 'linear-gradient(135deg, rgba(20,16,45,0.6) 0%, rgba(245,158,11,0.03) 100%)', padding: '14px 16px' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
           <AlertTriangle size={20} color="#F59E0B" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -254,10 +237,8 @@ function EditUserPage() {
         </div>
       </div>
 
-      {/* 3. Modification Input Form */}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
-        {/* Member Basic Identity Group */}
+
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h3 style={{ fontSize: '13px', color: '#8B5CF6', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <User size={14} />
@@ -266,8 +247,8 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>성명</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
@@ -279,8 +260,8 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>국가</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="country"
               value={formData.country}
               onChange={handleChange}
@@ -292,8 +273,8 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>전화번호</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
@@ -305,8 +286,8 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>구글 연동 이메일</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
@@ -317,40 +298,38 @@ function EditUserPage() {
           </div>
         </div>
 
-        {/* New: Manual Force Manipulation Panel for Ledger Balance (Investment Principal) */}
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
           <h3 style={{ fontSize: '13px', color: '#EF4444', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Wallet size={14} />
             장부 잔액 수동 관리 (송금 및 지급 조작)
           </h3>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(239,68,68,0.05)', padding: '12px', borderRadius: '8px' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>현재 회원의 투자 원금 잔액</span>
             <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>{currentInvested.toFixed(2)} SUT</span>
           </div>
 
-          {/* 1. Actual On-chain Transfer Section */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '700' }}>(Input field for actual transfer amount) Transfer SUT to Member</label>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
                 placeholder="송금할 SUT 수량 (예: 100)"
-                style={{ 
-                  flex: 1, 
-                  padding: '12px', 
-                  background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
-                  borderRadius: '8px', 
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'rgba(0,0,0,0.3)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
                   color: '#FFF',
-                  fontSize: '13px' 
-                }} 
+                  fontSize: '13px'
+                }}
               />
-              <button 
+              <button
                 type="button"
-                className="btn-primary" 
+                className="btn-primary"
                 onClick={handleOnchainPayout}
                 disabled={isPayingOut || isAdjusting}
                 style={{ width: 'auto', padding: '12px 20px', borderRadius: '8px', background: 'var(--primary-gradient)', fontSize: '12px', fontWeight: 'bold' }}
@@ -360,28 +339,27 @@ function EditUserPage() {
             </div>
           </div>
 
-          {/* 2. Ledger Deduction Section */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '11px', color: '#EF4444', fontWeight: '700' }}>(Input field for amount to deduct from member's ledger) Deduct from Member's Ledger</label>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 value={adjustmentAmount}
                 onChange={(e) => setAdjustmentAmount(e.target.value)}
                 placeholder="차감할 SUT 수량 (예: 100)"
-                style={{ 
-                  flex: 1, 
-                  padding: '12px', 
-                  background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
-                  borderRadius: '8px', 
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'rgba(0,0,0,0.3)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
                   color: '#FFF',
-                  fontSize: '13px' 
-                }} 
+                  fontSize: '13px'
+                }}
               />
-              <button 
+              <button
                 type="button"
-                className="btn-primary" 
+                className="btn-primary"
                 onClick={handleManualAdjustment}
                 disabled={isPayingOut || isAdjusting}
                 style={{ width: 'auto', padding: '12px 20px', borderRadius: '8px', background: 'var(--danger-color)', fontSize: '12px', fontWeight: 'bold' }}
@@ -397,7 +375,6 @@ function EditUserPage() {
           </p>
         </div>
 
-        {/* Blockchain Wallet and Related Address Group */}
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h3 style={{ fontSize: '13px', color: '#10B981', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Wallet size={14} />
@@ -406,8 +383,8 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Polygon 지갑 주소 (42자리)</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="walletAddress"
               value={formData.walletAddress}
               onChange={handleChange}
@@ -416,7 +393,7 @@ function EditUserPage() {
               style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '12px', fontSize: '11px', fontFamily: 'monospace', color: '#FFF', outline: 'none' }}
             />
           </div>
-        </div>        {/* Member Management Level and Expiration Period Group */}
+        </div>
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h3 style={{ fontSize: '13px', color: '#F59E0B', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <ShieldAlert size={14} />
@@ -425,7 +402,7 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>KYC 심사 상태</label>
-            <select 
+            <select
               name="status"
               value={formData.status}
               onChange={handleChange}
@@ -439,7 +416,7 @@ function EditUserPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>멤버십 등급</label>
-            <select 
+            <select
               name="tier"
               value={formData.tier}
               onChange={handleChange}
@@ -451,10 +428,9 @@ function EditUserPage() {
           </div>
         </div>
 
-        {/* 4. Modification Execution Control */}
-        <button 
-          type="submit" 
-          className="btn-primary" 
+        <button
+          type="submit"
+          className="btn-primary"
           disabled={submitting}
           style={{ background: 'var(--primary-gradient)', fontSize: '14px', fontWeight: '700', padding: '14px', borderRadius: '12px', boxShadow: '0 0 15px rgba(139,92,246,0.3)', marginTop: '8px', gap: '6px' }}
         >

@@ -15,8 +15,8 @@ async function checkHistory() {
 
     const latestBlock = await provider.getBlockNumber();
     const range = 9500;
-    const totalBlocks = 300000; // Query last ~300,000 blocks (~6 days)
-    let startBlock = latestBlock - totalBlocks; 
+    const totalBlocks = 300000;
+    let startBlock = latestBlock - totalBlocks;
 
     console.log(`Querying SUT logs from block ${startBlock} to ${latestBlock}...`);
 

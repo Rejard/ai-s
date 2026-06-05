@@ -6,13 +6,11 @@ const { initializeDatabase } = require('./database');
 const { autoDeployContracts } = require('./contractHelper');
 const { initGridBotScheduler } = require('./gridBot');
 
-// Load .env
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS settings (Ensures local test convenience by allowing all origins including frontend port)
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -21,13 +19,10 @@ app.use(cors({
 
 app.use(express.json());
 
-// Static folder mapping for serving uploaded ID images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Frontend build static file mapping (Single Server Deployment)
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-// Mount routers
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/manager', require('./routes/manager'));
 app.use('/api/admin', require('./routes/admin'));
@@ -40,7 +35,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
-// Error handler middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server Error Middleware Catch:', err.stack);
   res.status(500).json({
@@ -49,16 +43,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Database initialization and server startup
 async function bootstrap() {
   try {
-    // 1. Initialize SQLite database and master referrer
+
     await initializeDatabase();
-    
+
     // 2. Smart contract deployment automation (includes automatic Mock mode switching based on network balance)
     await autoDeployContracts();
-    
-    // 3. Start server listening
+
     app.listen(PORT, () => {
       console.log(`==================================================================`);
       console.log(`🔥 SERVER STARTED SUCCESSFULLY AT http://localhost:${PORT}`);
@@ -67,7 +59,6 @@ async function bootstrap() {
       console.log(`==================================================================`);
     });
 
-    // 4. Start AI Grid Auto Bot scheduler
     initGridBotScheduler();
   } catch (err) {
     console.error('❌ Failed to bootstrap the backend server:', err);

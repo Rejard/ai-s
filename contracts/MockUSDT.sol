@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.20;
 
 /**
@@ -18,7 +18,7 @@ contract MockUSDT {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     constructor() {
-        // Upon initial deployment, issue 1,000,000 USDT to deployer
+
         _mint(msg.sender, 1000000 * 10**decimals);
     }
 
@@ -39,7 +39,7 @@ contract MockUSDT {
     function transferFrom(address from, address to, uint256 value) public returns (bool success) {
         require(balanceOf[from] >= value, "ERC20: transferFrom amount exceeds balance");
         require(allowance[from][msg.sender] >= value, "ERC20: transferFrom amount exceeds allowance");
-        
+
         allowance[from][msg.sender] -= value;
         balanceOf[from] -= value;
         balanceOf[to] += value;

@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const { queries } = require('../database');
 
-// Multer configuration for KYC ID upload
 const uploadDir = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -16,7 +15,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename
+
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, 'kyc-' + uniqueSuffix + path.extname(file.originalname));
   }
@@ -33,18 +32,14 @@ const upload = multer({
     }
     cb(new Error('신분증 이미지는 JPG, JPEG, PNG, PDF 형식만 업로드 가능합니다.'));
   },
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-/**
- * @route POST /api/auth/check-limit
- * @desc Pre-check if current subscriber count is under 500
- */
 router.get('/check-limit', async (req, res) => {
   try {
     const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'");
     const totalCount = countRow ? countRow.total : 0;
-    
+
     res.json({
       success: true,
       totalCount,
@@ -56,16 +51,11 @@ router.get('/check-limit', async (req, res) => {
   }
 });
 
-
-/**
- * @route GET /api/auth/verify-manager/:walletAddress
- * @desc Verify responsible Manager wallet address
- */
 router.get('/verify-manager/:walletAddress', async (req, res) => {
   const cleanWallet = req.params.walletAddress.toLowerCase().trim();
   try {
     const user = await queries.get(
-      "SELECT name, status FROM users WHERE LOWER(wallet_address) = ?", 
+      "SELECT name, status FROM users WHERE LOWER(wallet_address) = ?",
       [cleanWallet]
     );
 
@@ -83,14 +73,10 @@ router.get('/verify-manager/:walletAddress', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/auth/register
- * @desc Member registration application and KYC document submission
- */
 router.post('/register', upload.single('idCard'), async (req, res) => {
   try {
     const { walletAddress, email, name, phone, country, managerAddress } = req.body;
-    
+
     if (!walletAddress || !email || !name || !phone || !country) {
       return res.status(400).json({ success: false, message: '모든 필수 입력 필드를 기입해 주세요.' });
     }
@@ -98,37 +84,29 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
     const cleanWallet = walletAddress.trim();
     const cleanEmail = email.toLowerCase().trim();
 
-    // 1. Verify if the 500-member capacity is exceeded (excluding master account)
     const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'");
     const totalCount = countRow ? countRow.total : 0;
     if (totalCount >= 500) {
       return res.status(400).json({ success: false, message: '1차 한정 모집 인원 500명이 마감되었습니다.' });
     }
 
-    // 2. Verify if the member already exists
     const existingUser = await queries.get("SELECT id FROM users WHERE wallet_address = ? OR email = ?", [cleanWallet, cleanEmail]);
     if (existingUser) {
       return res.status(400).json({ success: false, message: '이미 가입 신청 또는 승인된 지갑 주소이거나 구글 계정입니다.' });
     }
 
-
-
-    // 4. Confirm uploaded ID documents
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'KYC 진행을 위해 신분증 사진을 업로드해 주세요.' });
     }
     const idCardPath = `/uploads/${req.file.filename}`;
 
-    // 5. Process member registration (register with PENDING_KYC status)
     const assignedManager = managerAddress ? managerAddress.trim().toLowerCase() : 'none';
-    
+
     await queries.run(`
       INSERT INTO users (
         wallet_address, email, name, phone, country, id_card_path, status, tier, manager_address, referrer_address
       ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING_KYC', 'TRIAL', ?, 'none')
     `, [cleanWallet, cleanEmail, name, phone, country, idCardPath, assignedManager]);
-
-
 
     res.json({
       success: true,
@@ -142,10 +120,6 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/auth/status/:walletAddress
- * @desc Return current member's registration and review status based on wallet address
- */
 router.get('/status/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {
@@ -192,10 +166,6 @@ router.get('/status/:walletAddress', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/auth/status-by-email/:email
- * @desc Return current member's registration and review status based on Google login email (for email session auto-login)
- */
 router.get('/status-by-email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase().trim();
   try {
@@ -229,12 +199,6 @@ router.get('/status-by-email/:email', async (req, res) => {
   }
 });
 
-
-
-/**
- * @route GET /api/auth/payments/:walletAddress
- * @desc Query real-time payment and registration receipt history of the member (for general dashboard signals)
- */
 router.get('/payments/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {

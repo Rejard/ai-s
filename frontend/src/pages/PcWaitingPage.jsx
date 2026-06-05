@@ -7,7 +7,6 @@ import { API_BASE } from '../App';
 function PcWaitingPage({ walletAddress, onApproved }) {
   const navigate = useNavigate();
 
-  // Polling Admin approval status in real-time (5-second interval)
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -16,7 +15,7 @@ function PcWaitingPage({ walletAddress, onApproved }) {
           if (res.data.user.status === 'APPROVED') {
             clearInterval(checkInterval);
             alert('🎉 회원님의 KYC 심사가 최종 통과되었습니다! 플랫폼 메인 대시보드로 진입합니다.');
-            onApproved(); // Parent component state update -> Automatic redirect to dashboard
+            onApproved();
           }
         }
       } catch (err) {
@@ -29,15 +28,14 @@ function PcWaitingPage({ walletAddress, onApproved }) {
 
   return (
     <div className="pc-layout-wrapper" style={{ justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
-      
-      {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
+
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div 
-          className="glass-card glow-active" 
+        <div
+          className="glass-card glow-active"
           onClick={() => navigate('/manager')}
-          style={{ 
-            padding: '16px', 
+          style={{
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             cursor: 'pointer',
@@ -66,11 +64,9 @@ function PcWaitingPage({ walletAddress, onApproved }) {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '640px' }}>
-        
-        {/* Fancy Loading Glass Card */}
+
         <div className="glass-card glow-active" style={{ padding: '50px 30px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-          
-          {/* Decorative Gradient Light Source */}
+
           <div style={{
             position: 'absolute',
             top: '-20px',
@@ -83,7 +79,6 @@ function PcWaitingPage({ walletAddress, onApproved }) {
             borderRadius: '50%'
           }}></div>
 
-          {/* Loading Indicator Animation */}
           <div style={{ display: 'inline-flex', position: 'relative', marginBottom: '30px' }}>
             <div className="shimmer-loading" style={{
               width: '100px',
@@ -137,7 +132,6 @@ function PcWaitingPage({ walletAddress, onApproved }) {
 
         </div>
 
-        {/* Real-time detection notification banner */}
         <div className="glass-card" style={{
           padding: '20px',
           display: 'flex',
@@ -155,7 +149,6 @@ function PcWaitingPage({ walletAddress, onApproved }) {
 
       </div>
 
-      {/* Spin and Pulse Keyframe Inline Style Definition */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }

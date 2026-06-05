@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  TrendingUp, TrendingDown, Wallet, Users, AlertTriangle, 
+import {
+  TrendingUp, TrendingDown, Wallet, Users, AlertTriangle,
   ArrowUpRight, ArrowDownLeft, ShieldCheck, Play, Sparkles, StopCircle, LogOut, Mail, Phone
 } from 'lucide-react';
 import { API_BASE } from '../App';
@@ -16,11 +16,10 @@ import {
 
 function PcDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
-  
+
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [depositPercent, setDepositPercent] = useState(0);
-
 
   const [priceHistory, setPriceHistory] = useState([]);
   const [sutPrice, setSutPrice] = useState(0.19);
@@ -113,14 +112,12 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
   return (
     <div className="pc-layout-wrapper" style={{ alignItems: 'stretch', gap: '30px', padding: '40px 60px' }}>
-      
-      {/* 1 Column: Left Navigation and Profile Card */}
+
       <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
-        
-        {/* Member Profile Card */}
+
         <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
-          <div style={{ 
-            width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-gradient)', 
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-gradient)',
             display: 'flex', justifyContent: 'center', alignItems: 'center',
             fontSize: '26px', fontWeight: '700', color: '#FFFFFF', margin: '0 auto 16px'
           }}>
@@ -149,15 +146,14 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {/* Wallet Address Card */}
         <div className="glass-card" style={{ padding: '20px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: '600' }}>
             🔑 내 연동 지갑 주소
           </span>
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#FFF', 
-            fontFamily: 'monospace', 
+          <div style={{
+            fontSize: '12px',
+            color: '#FFF',
+            fontFamily: 'monospace',
             wordBreak: 'break-all',
             background: 'rgba(0,0,0,0.2)',
             padding: '10px',
@@ -168,15 +164,14 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
         {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
           (walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
           (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-          <div 
-            className="glass-card glow-active" 
+          <div
+            className="glass-card glow-active"
             onClick={() => navigate('/manager')}
-            style={{ 
-              padding: '16px', 
+            style={{
+              padding: '16px',
               background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
               border: '1px solid rgba(139, 92, 246, 0.3)',
               cursor: 'pointer',
@@ -201,14 +196,13 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         )}
 
-        {/* 👑 Master Admin exclusive 'Enter Admin Mode' shortcut bar */}
         {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
           (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-          <div 
-            className="glass-card glow-active" 
+          <div
+            className="glass-card glow-active"
             onClick={() => navigate('/admin')}
-            style={{ 
-              padding: '16px', 
+            style={{
+              padding: '16px',
               background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               cursor: 'pointer',
@@ -234,16 +228,15 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         )}
 
-        {/* Secure Logout */}
-        <button 
-          type="button" 
-          className="btn-secondary" 
-          style={{ 
-            padding: '14px', 
-            fontSize: '13px', 
-            color: 'var(--danger-color)', 
-            borderColor: 'rgba(239, 68, 68, 0.15)', 
-            background: 'rgba(239, 68, 68, 0.02)', 
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{
+            padding: '14px',
+            fontSize: '13px',
+            color: 'var(--danger-color)',
+            borderColor: 'rgba(239, 68, 68, 0.15)',
+            background: 'rgba(239, 68, 68, 0.02)',
             marginTop: 'auto',
             display: 'flex',
             justifyContent: 'center',
@@ -257,10 +250,8 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       </div>
 
-      {/* 2 Columns: Central Main Dashboard Information */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        
-        {/* Real-time SUT Market Price Chart */}
+
         {portfolio ? (
           <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
             <div style={{ padding: '24px 24px 10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -271,7 +262,6 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                     ${sutPrice.toFixed(4)} <span style={{ fontSize: '16px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
                   </span>
 
-                  {/* 🌟 24h Fluctuation Rate Badge */}
                   <span style={{
                     fontSize: '13px',
                     fontWeight: '700',
@@ -322,7 +312,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                   const maxVal = Math.max(...data) * 1.001;
                   const valRange = maxVal - minVal || 0.01;
                   const points = data.map((val, idx) => {
-                    const x = data.length > 1 ? (idx / (data.length - 1)) * 500 : 250; 
+                    const x = data.length > 1 ? (idx / (data.length - 1)) * 500 : 250;
                     const y = height - 20 - ((val - minVal) / valRange) * (height - 40);
                     return { x, y, val };
                   });
@@ -358,13 +348,12 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           <div className="shimmer-loading" style={{ height: '230px', borderRadius: '20px' }}></div>
         )}
 
-        {/* Asset Management & Deposit/Withdrawal Execution Console */}
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
             <Wallet size={18} color="#8B5CF6" />
             나의 자산 및 봇 예치금 현황
           </h3>
-          
+
           <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
             {(() => {
               const totalAssets = walletSutBalance + (portfolio ? portfolio.totalInvested : 0);
@@ -416,7 +405,6 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                     </div>
                   </div>
 
-                  {/* Gauge Bar */}
                   <div style={{ height: '16px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '10px', overflow: 'hidden', display: 'flex', marginBottom: '24px' }}>
                     <div style={{ width: `${walletPercent}%`, height: '100%', background: 'var(--primary-gradient)', transition: 'width 0.5s ease' }}></div>
                     <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
@@ -425,25 +413,24 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
               );
             })()}
 
-            {/* Deposit/Withdrawal Execution Button */}
             <div style={{ display: 'flex', gap: '16px' }}>
-              <button 
-                className="btn-primary" 
-                style={{ flex: 1, padding: '15px', fontSize: '14px' }} 
+              <button
+                className="btn-primary"
+                style={{ flex: 1, padding: '15px', fontSize: '14px' }}
                 onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}
               >
                 📥 봇 자본금 수동 예치하기
               </button>
-              <button 
-                className="btn-secondary" 
-                style={{ 
-                  flex: 1, 
-                  padding: '15px', 
-                  fontSize: '14px', 
-                  background: 'rgba(239, 68, 68, 0.08)', 
-                  color: '#FCA5A5', 
-                  borderColor: 'rgba(239, 68, 68, 0.2)' 
-                }} 
+              <button
+                className="btn-secondary"
+                style={{
+                  flex: 1,
+                  padding: '15px',
+                  fontSize: '14px',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  color: '#FCA5A5',
+                  borderColor: 'rgba(239, 68, 68, 0.2)'
+                }}
                 onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}
               >
                 📤 예치 자본금 인출 신청
@@ -454,10 +441,8 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       </div>
 
-      {/* 3 Columns: Right Transaction History and Customer Service */}
       <div style={{ width: '380px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
-        
-        {/* Transaction History Box */}
+
         <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '400px' }}>
           <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
             📜 전체 거래 히스토리
@@ -469,13 +454,13 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                 {txHistory.map(tx => {
                   const isDeposit = tx.type !== 'WITHDRAW_REQUEST';
                   return (
-                    <div 
-                      key={tx.id} 
-                      style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        padding: '12px 14px', 
+                    <div
+                      key={tx.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 14px',
                         background: 'rgba(0,0,0,0.15)',
                         border: '1px solid var(--glass-border)',
                         borderRadius: '12px'
@@ -490,11 +475,11 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ 
-                          fontSize: '15px', 
-                          fontWeight: '800', 
-                          fontFamily: 'var(--font-title)', 
-                          color: isDeposit ? 'var(--success-color)' : 'var(--warning-color)' 
+                        <div style={{
+                          fontSize: '15px',
+                          fontWeight: '800',
+                          fontFamily: 'var(--font-title)',
+                          color: isDeposit ? 'var(--success-color)' : 'var(--warning-color)'
                         }}>
                           {isDeposit ? '+' : '-'}{parseFloat(tx.amount).toFixed(2)} SUT
                         </div>
@@ -511,7 +496,6 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {/* Telegram Manager Customer Service Guide */}
         <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.25)' }}>
           <h4 style={{ fontSize: '13px', color: '#A78BFA', fontWeight: '700', marginBottom: '10px' }}>
             💬 실시간 매니저 고객센터
@@ -537,45 +521,44 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       </div>
 
-      {/* Virtual Deposit/Withdrawal Modal Popup */}
       {showTxModal && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%', 
-          background: 'rgba(0,0,0,0.85)', 
-          backdropFilter: 'blur(10px)', 
-          zIndex: 9999, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center' 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '420px', background: '#111827', padding: '30px' }}>
             <h3 style={{ fontSize: '20px', marginBottom: '14px', color: '#FFF', fontWeight: '700' }}>
               {txType === 'DEPOSIT' ? '💸 투자 봇 자본금 수동 예치' : '📤 투자 봇 자본금 출금 신청'}
             </h3>
-            
+
             <form onSubmit={handleTxSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#A78BFA' }}>
                   {txType === 'DEPOSIT' ? '예치할 SUT 수량 입력' : '인출할 SUT 수량 입력'}
                 </label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  placeholder="예: 500" 
-                  value={txAmount} 
-                  onChange={(e) => setTxAmount(e.target.value)} 
-                  min="1" 
-                  required 
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="예: 500"
+                  value={txAmount}
+                  onChange={(e) => setTxAmount(e.target.value)}
+                  min="1"
+                  required
                 />
               </div>
 
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px' }}>
-                {txType === 'DEPOSIT' 
-                  ? '💡 폴리곤 SUT 입금 시뮬레이션입니다. 가스비나 실제 잔고 소모 없이 즉각 봇 자본금 장부에 반영됩니다.' 
+                {txType === 'DEPOSIT'
+                  ? '💡 폴리곤 SUT 입금 시뮬레이션입니다. 가스비나 실제 잔고 소모 없이 즉각 봇 자본금 장부에 반영됩니다.'
                   : '💡 출금 요청 시 봇 거래 정산이 수동으로 진행되며, 본사 매니저 최종 승인 후 입력하신 가상 지갑 주소로 SUT가 전달됩니다.'}
               </div>
 
@@ -583,10 +566,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                 <button type="button" className="btn-secondary" onClick={() => setShowTxModal(false)} style={{ flex: 1 }}>
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
-                  style={{ flex: 1, background: txType === 'DEPOSIT' ? 'var(--primary-gradient)' : 'var(--danger-color)' }} 
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ flex: 1, background: txType === 'DEPOSIT' ? 'var(--primary-gradient)' : 'var(--danger-color)' }}
                   disabled={processingTx}
                 >
                   {processingTx ? '처리 진행 중...' : '신청 승인'}

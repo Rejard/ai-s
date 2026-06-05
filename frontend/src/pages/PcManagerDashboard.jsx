@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Users, DollarSign, Award, ArrowLeft, Check, X, 
+import {
+  Users, DollarSign, Award, ArrowLeft, Check, X,
   Eye, ShieldAlert, BarChart3, Receipt, ExternalLink, HelpCircle, ShieldCheck, Wallet, Settings,
   ArrowUpDown
 } from 'lucide-react';
@@ -24,7 +24,6 @@ import {
 function PcManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
 
-  // Waiting users, all members, and statistical data state
   const [pendingUsers, setPendingUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [stats, setStats] = useState(null);
@@ -32,7 +31,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
 
-  // AI Grid Bot configuration state
   const [gridSettings, setGridSettings] = useState({
     ai_grid_status: 'OFF',
     ai_grid_lower: '0.15',
@@ -41,7 +39,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     ai_grid_frequency: '5'
   });
 
-  // Manager's own AI investment status and wallet balance state
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [showTxModal, setShowTxModal] = useState(false);
@@ -56,26 +53,21 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   // New: Strategy ID reference for preventing duplicate execution
   const lastExecutedStrategyIdRef = useRef(null);
 
-  // Gate.io live trade order-only status
   const [orderAmount, setOrderAmount] = useState('');
   const [orderPrice, setOrderPrice] = useState('');
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
-  // Gate.io API key and Deposit address status for local device storage
   const [localApiKey, setLocalApiKey] = useState(localStorage.getItem('gateio_api_key') || '');
   const [localApiSecret, setLocalApiSecret] = useState(localStorage.getItem('gateio_api_secret') || '');
   const [localDepositAddress, setLocalDepositAddress] = useState(localStorage.getItem('gateio_deposit_address') || '');
 
-  // On-chain Gate.io transfer modal status
   const [showSendSutModal, setShowSendSutModal] = useState(false);
   const [sendSutAmount, setSendSutAmount] = useState('');
   const [sendingSut, setSendingSut] = useState(false);
 
-  // Modal image viewer status
   const [selectedIdCard, setSelectedIdCard] = useState(null);
   const [submittingId, setSubmittingId] = useState(null);
 
-  // Build manager auth headers and attach local Gate.io credentials when available.
   const getManagerHeaders = () => {
     return buildManagerHeaders({
       managerEmail,
@@ -83,7 +75,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     });
   };
 
-  // Gate.io actual limit order trigger handler
   const handleGateIoOrder = async (side) => {
     if (!orderAmount || parseFloat(orderAmount) <= 0) {
       alert("주문 수량을 입력하세요.");
@@ -114,7 +105,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         alert(`🎉 ${res.data.message}\n주문 ID: ${res.data.order.id}`);
         setOrderAmount('');
         setOrderPrice('');
-        fetchManagerData(); // Balance update
+        fetchManagerData();
       }
     } catch (err) {
       const errMsg = err.response && err.response.data && err.response.data.message
@@ -126,13 +117,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // Gate.io API key and Deposit address local device and server save handler
   const handleSaveApiKeys = async () => {
     if (!localApiKey.trim() || !localApiSecret.trim() || !localDepositAddress.trim()) {
       alert('⚠️ 모든 API 키 및 입금 주소를 정확하게 입력해 주세요.');
       return;
     }
-    
+
     try {
       await saveManagerGateIoCredentials({
         apiBase: API_BASE,
@@ -149,15 +139,14 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       console.error(err);
       alert('경고: 로컬 저장은 성공했으나 서버 DB 저장에 실패했습니다: ' + (err.response?.data?.message || err.message));
     }
-    fetchManagerData(); // Immediately update balance information
+    fetchManagerData();
   };
 
-  // Gate.io API key and Deposit address local device and server delete handler
   const handleClearApiKeys = async () => {
     setLocalApiKey('');
     setLocalApiSecret('');
     setLocalDepositAddress('');
-    
+
     try {
       await clearManagerGateIoCredentials({
         apiBase: API_BASE,
@@ -171,13 +160,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       console.error(err);
       alert('경고: 로컬 삭제는 성공했으나 서버 DB 삭제에 실패했습니다: ' + (err.response?.data?.message || err.message));
     }
-    fetchManagerData(); // Confirm switch to demo mode
+    fetchManagerData();
   };
 
-  // SUT transfer handler from my wallet to Gate.io
   const handleSendSutToGateIo = async (e) => {
     if (e) e.preventDefault();
-    
+
     const depositAddr = localStorage.getItem('gateio_deposit_address') || '';
     if (!depositAddr) {
       alert('Gate.io SUT 입금 주소를 로컬 설정에서 먼저 입력하고 저장해 주세요.');
@@ -218,7 +206,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 1. Load Manager integrated data
   const fetchManagerData = async () => {
     try {
       const managerData = await loadManagerDashboardData({
@@ -262,7 +249,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     return () => clearInterval(interval);
   }, []);
 
-  // New: Local automated trading execution loop
   useEffect(() => {
     if (gridSettings.ai_grid_status !== 'ON' || !aiLogs || aiLogs.length === 0) return;
 
@@ -271,7 +257,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     lastExecutedStrategyIdRef.current = latestStrategy.id;
   }, [aiLogs, gridSettings.ai_grid_status]);
 
-  // 2. Process KYC approval
   const handleApprove = async (walletAddressToApprove) => {
     if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) {
       return;
@@ -299,7 +284,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 3. Process KYC rejection
   const handleReject = async (walletAddressToReject) => {
     if (!confirm('해당 회원의 신원 서류가 부적합하여 가입 신청을 반려하시겠습니까?')) {
       return;
@@ -324,11 +308,10 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 4. Process manual Withdrawal (payout) approval
   const handleApproveWithdrawal = async (id, requestedAmount, name) => {
     const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 실제로 트러스트월렛을 통해 송금하신 실제 금액을 메모용으로 입력해주세요.\n(참고: 회원의 장부에서는 무조건 신청 원금인 ${requestedAmount} SUT가 소멸됩니다.)`, requestedAmount);
-    
-    if (actualPayoutStr === null) return; // Cancel
+
+    if (actualPayoutStr === null) return;
 
     try {
       const res = await approveManagerWithdrawal({
@@ -348,13 +331,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 5. AI Trading Grid Bot settings change and disclaimer
   const handleToggleAiStatus = async () => {
     const newStatus = gridSettings.ai_grid_status === 'ON' ? 'OFF' : 'ON';
-    
+
     if (newStatus === 'ON') {
       const typed = prompt(`[⚠️ 법적 책임 면책 동의서 ⚠️]\n\n본 AI 자동 매매(Grid Trading) 기능의 가동으로 인해 발생하는 회원의 자산 손실 및 모든 민형사상 법적 책임은 해당 기능을 활성화한 '매니저 본인'에게 귀속됩니다. 플랫폼 개발팀은 어떠한 책임도 지지 않습니다.\n\n위 내용에 동의하시면 아래 입력창에 정확히 "동의합니다" 라고 입력해 주세요.`);
-      
+
       if (typed !== "동의합니다") {
         alert("동의 문구가 일치하지 않아 AI 오토 트레이딩이 가동되지 않았습니다.");
         return;
@@ -369,7 +351,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         axiosClient: axios,
         getStorageItem: (key) => localStorage.getItem(key),
       });
-      
+
       if (res.data.success) {
         setGridSettings(prev => ({ ...prev, ai_grid_status: newStatus }));
         alert(newStatus === 'ON' ? '🤖 완전 자동화 AI 트레이딩 봇이 가동되었습니다!' : 'AI 트레이딩 봇이 정지되었습니다.');
@@ -394,7 +376,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         axiosClient: axios,
         getStorageItem: (key) => localStorage.getItem(key),
       });
-      
+
       if (res.data.success) {
         alert('그리드 봇 파라미터가 안전하게 저장되었습니다.');
       }
@@ -403,7 +385,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // Manager-exclusive on-chain Deposit and Withdrawal processing
   const handleTxSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!txAmount || parseFloat(txAmount) <= 0) {
@@ -426,20 +407,16 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           throw new Error(`지갑 주소 불일치: 현재 로그인된 계정 주소(${walletAddress})와 메타마스크에 활성화된 주소(${signerAddress})가 다릅니다. 지갑 계정을 확인해 주세요.`);
         }
 
-        // SUT token information
         const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
         const vaultAddress = "0x855c880D538892fD899eECb72D4b1Ac5B46089eA";
         const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
-        
+
         const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
 
-        // Amount parsing (18 decimals)
         const parsedAmount = ethers.parseUnits(txAmount.toString(), 18);
 
-        // Execute actual on-chain token transfer
         const tx = await sutContract.transfer(vaultAddress, parsedAmount);
-        
-        // Wait for block confirmation
+
         await tx.wait();
 
         const res = await axios.post(`${API_BASE}/investment/deposit`, {
@@ -474,10 +451,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // 6. Manual Distribution Function
   const handleTriggerAIProfit = async () => {
     const profitPercentage = prompt(`[AI 트레이딩 시뮬레이션 수익 분배]\n\n현재 가입된 정식(ACTIVE) 회원들에게 배분할 'SUT 수익률(%)'을 숫자로 입력해 주세요.\n(예: 0.5 입력 시, 회원의 SUT 총액 기준 0.5%의 SUT가 추가로 분배됩니다.)`, "0.5");
-    
+
     if (profitPercentage === null || isNaN(parseFloat(profitPercentage))) return;
 
     if (!confirm(`전체 정회원을 대상으로 ${profitPercentage}%의 AI 수익률을 강제 배분하시겠습니까? (이 작업은 취소할 수 없으며 즉시 각 회원의 SUT 잔고가 증가합니다.)`)) {
@@ -488,7 +464,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       const res = await axios.post(`${API_BASE}/manager/trigger-ai-profit`, {
         profitPercentage
       }, getManagerHeaders());
-      
+
       if (res.data.success) {
         alert(res.data.message);
         fetchManagerData();
@@ -511,8 +487,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
   return (
     <div className="pc-layout-wrapper" style={{ alignItems: 'stretch', gap: '30px', padding: '40px 50px', flexDirection: 'column' }}>
-      
-      {/* Top Integrated Header */}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '28px' }}>👑</span>
@@ -521,8 +496,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🏢 본사 전용 회원 관리 및 AI 시뮬레이션 제어 시스템</span>
           </div>
         </div>
-        <button 
-          className="btn-secondary" 
+        <button
+          className="btn-secondary"
           onClick={() => navigate('/dashboard')}
           style={{ width: 'auto', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', gap: '8px', fontWeight: '700' }}
         >
@@ -531,13 +506,10 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         </button>
       </div>
 
-      {/* 3 Column Layout */}
       <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', width: '100%' }}>
-        
-        {/* [1 Column] Left: Manager Profile, API Settings, Summary */}
+
         <div style={{ width: '350px', display: 'flex', flexDirection: 'column', gap: '24px', flexShrink: 0 }}>
-          
-          {/* Manager Connected Account Information */}
+
           <div className="glass-card" style={{ padding: '24px', position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', fontWeight: 'bold', color: '#FFF' }}>
@@ -550,21 +522,20 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 </span>
               </div>
             </div>
-            
+
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div><b>연동 구글 계정:</b> {managerEmail}</div>
               <div style={{ wordBreak: 'break-all' }}><b>지갑 주소:</b> <span style={{ fontFamily: 'monospace' }}>{walletAddress}</span></div>
             </div>
           </div>
 
-          {/* 💰 SUT Asset Integrated Management Summary Card */}
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '16px' }}>💰</span> SUT 자산 통합 관리 현황
             </h4>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* 1. Manager Personal Wallet (On-chain) */}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>매니저 개인 지갑 (온체인)</div>
@@ -575,7 +546,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Wallet Balance</span>
               </div>
 
-              {/* 2. Total SUT Deposited by Members (Total Receipts) */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원들이 맡긴 총 SUT (총 수납액)</div>
@@ -586,7 +556,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Total Member Amount</span>
               </div>
 
-              {/* 3. Platform Owner's SUT Holdings (Own Funds) */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 SUT (실수익)</div>
@@ -597,7 +566,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Platform Owner Holdings</span>
               </div>
 
-              {/* 4. Member Distribution SUT */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 배분 SUT (배분 완료)</div>
@@ -610,7 +578,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
-          {/* 🌟 Local Gate.io API Key Configuration Card */}
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Settings size={18} color="#A78BFA" />
@@ -620,22 +587,22 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               보안 유지를 위해 입력 정보는 <strong>현재 기기 브라우저에만 저장</strong>되며 서버 DB나 설정 파일에 등록되지 않습니다.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={localApiKey}
                 onChange={(e) => setLocalApiKey(e.target.value)}
                 placeholder="Gate.io API Key 입력"
                 style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
               />
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={localApiSecret}
                 onChange={(e) => setLocalApiSecret(e.target.value)}
                 placeholder="Gate.io API Secret Key 입력"
                 style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
               />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={localDepositAddress}
                 onChange={(e) => setLocalDepositAddress(e.target.value)}
                 placeholder="Gate.io SUT 입금 주소 (Polygon) 입력"
@@ -643,17 +610,17 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               />
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
+              <button
                 type="button"
-                className="btn-primary" 
+                className="btn-primary"
                 onClick={handleSaveApiKeys}
                 style={{ flex: 1, padding: '10px', fontSize: '11px', background: 'var(--primary-gradient)', fontWeight: 'bold' }}
               >
                 💾 기기 저장
               </button>
-              <button 
+              <button
                 type="button"
-                className="btn-secondary" 
+                className="btn-secondary"
                 onClick={handleClearApiKeys}
                 style={{ flex: 1, padding: '10px', fontSize: '11px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)', fontWeight: 'bold' }}
               >
@@ -662,7 +629,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
-          {/* Key Metrics Summary Card */}
           {stats && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="glass-card" style={{ padding: '20px', textAlign: 'center' }}>
@@ -689,20 +655,18 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
         </div>
 
-        {/* [2 Column] Center: Real-time Chart & Trading Management */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* 📈 Gate.io Real-time Investment Yield Chart Card */}
+
           <div className="glass-card" style={{ padding: '0', overflow: 'hidden', position: 'relative', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <div style={{ padding: '24px 24px 10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>📈 Gate.io 실시간 투자 수익률 (원금 대비)</span>
                 <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ 
-                    fontSize: '26px', 
-                    fontWeight: '800', 
-                    color: performance ? (performance.yieldPercent >= 0 ? 'var(--success-color)' : 'var(--danger-color)') : '#FFF', 
-                    fontFamily: 'var(--font-title)' 
+                  <span style={{
+                    fontSize: '26px',
+                    fontWeight: '800',
+                    color: performance ? (performance.yieldPercent >= 0 ? 'var(--success-color)' : 'var(--danger-color)') : '#FFF',
+                    fontFamily: 'var(--font-title)'
                   }}>
                     {performance ? `${performance.yieldPercent >= 0 ? '+' : ''}${performance.yieldPercent.toFixed(2)}%` : '0.00%'}
                   </span>
@@ -720,7 +684,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* SVG Chart Area */}
             <div style={{ width: '100%', height: '170px', position: 'relative', display: 'block', padding: '10px 24px 20px 24px' }}>
               <svg width="100%" height="150" viewBox="0 0 500 150" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible' }}>
                 <defs>
@@ -745,7 +708,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   const maxVal = Math.max(...data) + 0.5;
                   const valRange = maxVal - minVal || 1;
                   const points = data.map((val, idx) => {
-                    const x = data.length > 1 ? (idx / (data.length - 1)) * 500 : 250; 
+                    const x = data.length > 1 ? (idx / (data.length - 1)) * 500 : 250;
                     const y = height - 15 - ((val - minVal) / valRange) * (height - 30);
                     return { x, y, val };
                   });
@@ -801,20 +764,19 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             )}
           </div>
 
-          {/* AI Grid Trading Auto Bot Panel */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <BarChart3 size={24} color="var(--success-color)" />
                 <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>AI Grid Trading Bot Settings</h4>
               </div>
-              
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontSize: '12px', fontWeight: '800', color: gridSettings.ai_grid_status === 'ON' ? 'var(--success-color)' : 'var(--text-muted)' }}>
                   {gridSettings.ai_grid_status === 'ON' ? 'LIVE 가동' : '중지'}
                 </span>
-                <button 
+                <button
                   onClick={handleToggleAiStatus}
                   style={{
                     width: '48px', height: '26px', borderRadius: '13px', border: 'none', cursor: 'pointer',
@@ -830,7 +792,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 🤖 Real-time AI Engine Decision Briefing Card */}
             <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -857,7 +818,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     let badgeColor = 'var(--text-muted)';
                     let badgeBg = 'rgba(255,255,255,0.05)';
                     let borderCol = 'rgba(255,255,255,0.05)';
-                    
+
                     if (log.decision === 'BUY') {
                       badgeColor = 'var(--success-color)';
                       badgeBg = 'rgba(16, 185, 129, 0.1)';
@@ -873,7 +834,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     }
 
                     return (
-                      <div 
+                      <div
                         key={log.id || index}
                         style={{
                           background: 'rgba(0,0,0,0.3)',
@@ -888,12 +849,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ 
-                              fontSize: '11px', 
-                              fontWeight: '900', 
-                              color: badgeColor, 
-                              background: badgeBg, 
-                              padding: '3px 10px', 
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: '900',
+                              color: badgeColor,
+                              background: badgeBg,
+                              padding: '3px 10px',
                               borderRadius: '8px',
                               letterSpacing: '0.5px'
                             }}>
@@ -909,7 +870,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                             {new Date(log.created_at).toLocaleString('ko-KR', { hour12: false })}
                           </span>
                         </div>
-                        
+
                         <div style={{ fontSize: '12px', color: '#D1D5DB', lineHeight: '1.6', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '10px', wordBreak: 'break-all' }}>
                           <b>💡 판단 근거:</b> {log.reason}
                         </div>
@@ -925,14 +886,14 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(0,0,0,0.25)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
-              
+
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (Min)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={gridSettings.ai_grid_lower}
                       onChange={(e) => setGridSettings({...gridSettings, ai_grid_lower: e.target.value})}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -944,8 +905,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>상한가 (Max)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={gridSettings.ai_grid_upper}
                       onChange={(e) => setGridSettings({...gridSettings, ai_grid_upper: e.target.value})}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -958,8 +919,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 수 (Count)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={gridSettings.ai_grid_count}
                       onChange={(e) => setGridSettings({...gridSettings, ai_grid_count: e.target.value})}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -971,8 +932,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>일일 빈도 (Frequency)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={gridSettings.ai_grid_frequency}
                       onChange={(e) => setGridSettings({...gridSettings, ai_grid_frequency: e.target.value})}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -984,7 +945,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
             </div>
 
-            {/* API Limit Warning */}
             <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '12px', borderRadius: '10px', display: 'flex', gap: '8px' }}>
               <ShieldAlert size={16} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', textAlign: 'left' }}>
@@ -994,17 +954,17 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                type="button" 
-                className="btn-primary" 
+              <button
+                type="button"
+                className="btn-primary"
                 onClick={handleSaveGridSettings}
                 style={{ flex: 1, padding: '12px', fontSize: '13px' }}
               >
                 💾 봇 파라미터 저장
               </button>
-              <button 
-                type="button" 
-                className="btn-secondary" 
+              <button
+                type="button"
+                className="btn-secondary"
                 onClick={handleTriggerAIProfit}
                 style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(255,255,255,0.04)' }}
               >
@@ -1014,10 +974,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
           </div>
 
-          {/* Gate.io API Status and Manual Order Panel Horizontal Layout */}
           <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
-            
-            {/* Gate.io API Live Trading Integration Status Card */}
+
             <div className="glass-card" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)', margin: 0 }}>
               <div>
                 <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1047,11 +1005,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   </div>
                 )}
               </div>
-              
+
               <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <button 
+                <button
                   type="button"
-                  className="btn-primary" 
+                  className="btn-primary"
                   onClick={() => {
                     const addr = localStorage.getItem('gateio_deposit_address');
                     if (!addr) {
@@ -1067,18 +1025,17 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 👑 Master Manager Own Gate.io Real-time Trading Order Management Panel */}
             <div className="glass-card" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, rgba(20, 16, 45, 0.4) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)', margin: 0 }}>
               <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <ArrowUpDown size={16} color="#8B5CF6" />
                 SUT 실거래 수동 주문
               </h4>
-              
+
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '6px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={orderAmount}
                       onChange={(e) => setOrderAmount(e.target.value)}
                       placeholder="수량 (SUT)"
@@ -1089,8 +1046,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '6px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={orderPrice}
                       onChange={(e) => setOrderPrice(e.target.value)}
                       placeholder="가격 (USDT)"
@@ -1101,18 +1058,18 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
+                <button
                   type="button"
-                  className="btn-primary" 
+                  className="btn-primary"
                   disabled={submittingOrder}
                   style={{ flex: 1, padding: '8px', fontSize: '11px', fontWeight: 'bold', background: 'linear-gradient(90deg, #10B981, #059669)', border: 'none', boxShadow: 'none' }}
                   onClick={() => handleGateIoOrder('buy')}
                 >
                   {submittingOrder ? '...' : '🟢 매수'}
                 </button>
-                <button 
+                <button
                   type="button"
-                  className="btn-primary" 
+                  className="btn-primary"
                   disabled={submittingOrder}
                   style={{ flex: 1, padding: '8px', fontSize: '11px', fontWeight: 'bold', background: 'linear-gradient(90deg, #EF4444, #DC2626)', border: 'none', boxShadow: 'none' }}
                   onClick={() => handleGateIoOrder('sell')}
@@ -1126,10 +1083,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
         </div>
 
-        {/* [3 Column] Right: Registration Review, Withdrawal Review, and Member Roster (Operation Center) */}
         <div style={{ width: '480px', display: 'flex', flexDirection: 'column', gap: '24px', flexShrink: 0 }}>
-          
-          {/* KYC Review Board */}
+
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <ShieldAlert size={18} color="#F59E0B" />
@@ -1143,12 +1098,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
                 {pendingUsers.map((user) => (
-                  <div 
-                    key={user.id} 
-                    style={{ 
-                      background: 'rgba(0,0,0,0.2)', 
-                      border: '1px solid rgba(255,255,255,0.04)', 
-                      borderRadius: '12px', 
+                  <div
+                    key={user.id}
+                    style={{
+                      background: 'rgba(0,0,0,0.2)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      borderRadius: '12px',
                       padding: '14px',
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -1168,9 +1123,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100px', flexShrink: 0 }}>
-                      <button 
-                        type="button" 
-                        className="btn-secondary" 
+                      <button
+                        type="button"
+                        className="btn-secondary"
                         style={{ padding: '6px', fontSize: '10px', gap: '4px', borderRadius: '6px' }}
                         onClick={() => {
                           const backendOrigin = API_BASE.replace('/api', '');
@@ -1180,18 +1135,18 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                         신분증 확인
                       </button>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <button 
-                          type="button" 
-                          className="btn-primary" 
+                        <button
+                          type="button"
+                          className="btn-primary"
                           style={{ flex: 1, padding: '6px', fontSize: '10px', background: 'var(--success-color)', borderRadius: '6px', boxShadow: 'none' }}
                           onClick={() => handleApprove(user.wallet_address)}
                           disabled={submittingId === user.wallet_address}
                         >
                           승인
                         </button>
-                        <button 
-                          type="button" 
-                          className="btn-primary" 
+                        <button
+                          type="button"
+                          className="btn-primary"
                           style={{ flex: 1, padding: '6px', fontSize: '10px', background: 'var(--danger-color)', borderRadius: '6px', boxShadow: 'none' }}
                           onClick={() => handleReject(user.wallet_address)}
                           disabled={submittingId === user.wallet_address}
@@ -1206,7 +1161,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             )}
           </div>
 
-          {/* Withdrawal Review Board */}
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <Receipt size={18} color="#F59E0B" />
@@ -1220,12 +1174,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
                 {withdrawals.map((req) => (
-                  <div 
-                    key={req.id} 
-                    style={{ 
-                      background: 'rgba(0,0,0,0.2)', 
-                      border: '1px solid rgba(255,255,255,0.04)', 
-                      borderRadius: '12px', 
+                  <div
+                    key={req.id}
+                    style={{
+                      background: 'rgba(0,0,0,0.2)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      borderRadius: '12px',
                       padding: '14px',
                       display: 'flex',
                       flexDirection: 'column',
@@ -1236,7 +1190,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       <div style={{ textAlign: 'left' }}>
                         <span style={{ fontSize: '13px', fontWeight: '700', color: '#FFF' }}>{req.name} Member</span>
                       </div>
-                      
+
                       <div style={{ background: 'rgba(16,185,129,0.08)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)', color: 'var(--success-color)', fontSize: '13px', fontWeight: 'bold' }}>
                         {req.requested_amount} SUT
                       </div>
@@ -1246,9 +1200,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       <b>송금 주소:</b> <span style={{ color: '#A78BFA', fontFamily: 'monospace' }}>{req.wallet_address}</span>
                     </div>
 
-                    <button 
-                      type="button" 
-                      className="btn-primary" 
+                    <button
+                      type="button"
+                      className="btn-primary"
                       style={{ background: 'var(--success-color)', padding: '8px', fontSize: '11px', fontWeight: '700', borderRadius: '8px', boxShadow: 'none' }}
                       onClick={() => handleApproveWithdrawal(req.id, req.requested_amount, req.name)}
                     >
@@ -1260,7 +1214,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             )}
           </div>
 
-          {/* Full Member Roster */}
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <Users size={18} color="#10B981" />
@@ -1271,10 +1224,10 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               {allUsers.map((user) => {
                 const isMaster = user.wallet_address.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase();
                 return (
-                  <div 
+                  <div
                     key={user.id}
                     onClick={() => navigate(`/manager/edit-user/${user.wallet_address}`)}
-                    style={{ 
+                    style={{
                       background: isMaster ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.01)',
                       border: '1px solid rgba(255,255,255,0.04)',
                       borderRadius: '12px',
@@ -1300,14 +1253,14 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                      <span style={{ 
+                      <span style={{
                         padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '700',
                         background: user.status === 'APPROVED' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
                         color: user.status === 'APPROVED' ? 'var(--success-color)' : '#F59E0B'
                       }}>
                         {user.status === 'APPROVED' ? '승인' : '대기'}
                       </span>
-                      <span style={{ 
+                      <span style={{
                         padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '700',
                         background: user.tier === 'ACTIVE' ? 'rgba(139,92,246,0.12)' : 'rgba(59,130,246,0.12)',
                         color: user.tier === 'ACTIVE' ? '#C084FC' : '#60A5FA'
@@ -1321,7 +1274,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
-          {/* Recent On-chain Payment History */}
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <Receipt size={18} color="#8B5CF6" />
@@ -1335,12 +1287,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', scrollbarWidth: 'none' }}>
                 {recentPayments.map((pay) => (
-                  <div 
-                    key={pay.id} 
-                    style={{ 
-                      background: 'rgba(0,0,0,0.15)', 
-                      border: '1px solid rgba(255,255,255,0.02)', 
-                      borderRadius: '10px', 
+                  <div
+                    key={pay.id}
+                    style={{
+                      background: 'rgba(0,0,0,0.15)',
+                      border: '1px solid rgba(255,255,255,0.02)',
+                      borderRadius: '10px',
                       padding: '12px 14px',
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -1351,16 +1303,16 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       <div style={{ fontSize: '12px', fontWeight: '700', color: '#FFF' }}>
                         {pay.name} ({pay.type === 'MEMBERSHIP_FEE' ? '가입비 수납' : '월정액 수납'})
                       </div>
-                      <a 
-                        href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`} 
-                        target="_blank" 
+                      <a
+                        href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`}
+                        target="_blank"
                         rel="noreferrer"
                         style={{ fontSize: '9px', color: 'var(--accent-color)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '4px' }}
                       >
                         TX: {pay.tx_hash.substring(0, 12)}... <ExternalLink size={10} />
                       </a>
                     </div>
-                    
+
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--success-color)' }}>
                         +{pay.amount} SUT
@@ -1379,8 +1331,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
       </div>
 
-
-      {/* ID Card Lightbox Modal */}
       {selectedIdCard && (
         <div style={{
           position: 'fixed',
@@ -1397,19 +1347,19 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           flexDirection: 'column',
           gap: '20px'
         }}>
-          <img 
-            src={selectedIdCard} 
-            alt="Submitted KYC ID Card" 
-            style={{ 
-              maxWidth: '90%', 
-              maxHeight: '80%', 
-              borderRadius: '16px', 
+          <img
+            src={selectedIdCard}
+            alt="Submitted KYC ID Card"
+            style={{
+              maxWidth: '90%',
+              maxHeight: '80%',
+              borderRadius: '16px',
               boxShadow: '0 0 50px rgba(0,0,0,0.9)',
               border: '2px solid rgba(255,255,255,0.15)'
-            }} 
+            }}
           />
-          <button 
-            className="btn-primary" 
+          <button
+            className="btn-primary"
             onClick={() => setSelectedIdCard(null)}
             style={{ width: 'auto', padding: '12px 36px', fontSize: '14px', borderRadius: '12px' }}
           >
@@ -1418,61 +1368,60 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       )}
 
-      {/* 👑 For Manager Real Deposit/Withdrawal Modal Popup */}
       {showTxModal && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%', 
-          background: 'rgba(0,0,0,0.85)', 
-          backdropFilter: 'blur(10px)', 
-          zIndex: 9999, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center' 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '420px', background: '#111827', padding: '30px' }}>
             <h3 style={{ fontSize: '20px', marginBottom: '14px', color: '#FFF', fontWeight: '700' }}>
               {txType === 'DEPOSIT' ? '💸 SUT 투자 봇 자본금 실제 예치' : '📤 SUT 투자 봇 자본금 출금 신청'}
             </h3>
-            
+
             <form onSubmit={handleTxSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#A78BFA' }}>
                   {txType === 'DEPOSIT' ? '예치할 SUT 수량 입력 (실제 온체인 전송)' : '인출할 SUT 수량 입력'}
                 </label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  placeholder="예: 10" 
-                  value={txAmount} 
-                  onChange={(e) => setTxAmount(e.target.value)} 
-                  min="1" 
-                  required 
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="예: 10"
+                  value={txAmount}
+                  onChange={(e) => setTxAmount(e.target.value)}
+                  min="1"
+                  required
                 />
               </div>
 
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px' }}>
-                {txType === 'DEPOSIT' 
-                  ? '💡 폴리곤 메인넷 상의 SUT 실제 온체인 전송입니다. 트러스트월렛/메타마스크 승인 창이 열리며 가스비(POL)와 토큰이 소모됩니다.' 
+                {txType === 'DEPOSIT'
+                  ? '💡 폴리곤 메인넷 상의 SUT 실제 온체인 전송입니다. 트러스트월렛/메타마스크 승인 창이 열리며 가스비(POL)와 토큰이 소모됩니다.'
                   : '💡 출금 요청 시 봇 거래 정산이 수동으로 진행되며, 매니저 최종 승인 후 입력하신 가상 지갑 주소로 SUT가 전달됩니다.'}
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-                <button 
-                  type="button" 
-                  className="btn-secondary" 
+                <button
+                  type="button"
+                  className="btn-secondary"
                   onClick={() => setShowTxModal(false)}
                   style={{ flex: 1, padding: '14px' }}
                   disabled={processingTx}
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
+                <button
+                  type="submit"
+                  className="btn-primary"
                   style={{ flex: 1, padding: '14px' }}
                   disabled={processingTx}
                 >
@@ -1484,27 +1433,26 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       )}
 
-      {/* 👑 Gate.io On-chain SUT Transfer Modal Popup */}
       {showSendSutModal && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%', 
-          background: 'rgba(0,0,0,0.85)', 
-          backdropFilter: 'blur(10px)', 
-          zIndex: 9999, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center' 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '440px', background: '#111827', padding: '30px' }}>
             <h3 style={{ fontSize: '18px', marginBottom: '14px', color: '#FFF', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ArrowUpDown size={20} color="#3B82F6" />
               Gate.io로 SUT 온체인 송금
             </h3>
-            
+
             <form onSubmit={handleSendSutToGateIo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '10px', padding: '12px', fontSize: '11px', color: '#FFF' }}>
                 <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>수신 Gate.io 입금 주소 (Polygon):</div>
@@ -1516,15 +1464,15 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <label className="form-label" style={{ color: '#A78BFA' }}>
                   송금할 SUT 수량 입력
                 </label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  placeholder="예: 50" 
-                  value={sendSutAmount} 
-                  onChange={(e) => setSendSutAmount(e.target.value)} 
-                  min="0.0001" 
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="예: 50"
+                  value={sendSutAmount}
+                  onChange={(e) => setSendSutAmount(e.target.value)}
+                  min="0.0001"
                   step="any"
-                  required 
+                  required
                 />
               </div>
 
@@ -1533,9 +1481,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-                <button 
-                  type="button" 
-                  className="btn-secondary" 
+                <button
+                  type="button"
+                  className="btn-secondary"
                   onClick={() => {
                     setShowSendSutModal(false);
                     setSendSutAmount('');
@@ -1545,9 +1493,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 >
                   취소
                 </button>
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
+                <button
+                  type="submit"
+                  className="btn-primary"
                   style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
                   disabled={sendingSut}
                 >

@@ -16,7 +16,6 @@ function ConsentPage({ walletAddress, onLogout }) {
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // Real-time pre-check for 500-person recruitment capacity
   useEffect(() => {
     const fetchLimit = async () => {
       try {
@@ -53,7 +52,6 @@ function ConsentPage({ walletAddress, onLogout }) {
     );
   }
 
-  // Block registration screen if 500-person capacity is exceeded
   if (!isAvailable) {
     return (
       <div className="glass-card" style={{ margin: 'auto 20px', border: '1px solid var(--danger-color)', padding: '30px 20px', textAlign: 'center' }}>
@@ -64,7 +62,7 @@ function ConsentPage({ walletAddress, onLogout }) {
           1차 선착순 모집 마감
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.6', marginBottom: '25px' }}>
-          죄송합니다. 본 플랫폼은 안정적인 시스템 투자 및 어드민 운영 관리를 위해 1차 모집 인원을 **{limit}명** 한정으로 제한하고 있습니다. 
+          죄송합니다. 본 플랫폼은 안정적인 시스템 투자 및 어드민 운영 관리를 위해 1차 모집 인원을 **{limit}명** 한정으로 제한하고 있습니다.
           현재 정원이 가득 찬 상태이므로 신규 회원 가입이 불가능합니다. 다음 모집 회차에 신청해 주시기 바랍니다.
         </p>
         <div style={{
@@ -83,15 +81,14 @@ function ConsentPage({ walletAddress, onLogout }) {
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      
-      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
+
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div 
-          className="glass-card glow-active" 
+        <div
+          className="glass-card glow-active"
           onClick={() => navigate('/manager')}
-          style={{ 
-            padding: '12px 16px', 
+          style={{
+            padding: '12px 16px',
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             borderRadius: '12px',
@@ -116,30 +113,28 @@ function ConsentPage({ walletAddress, onLogout }) {
           </button>
         </div>
       )}
-      
-      {/* First-come, first-served capacity gauge bar */}
+
       <div className="glass-card" style={{ padding: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '8px', color: 'var(--text-muted)' }}>
           <span>🔥 1차 500명 선착순 특별 모집</span>
           <span><strong>{totalCount}</strong> / {limit} 명</span>
         </div>
         <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-          <div style={{ 
-            width: `${(totalCount / limit) * 100}%`, 
-            height: '100%', 
+          <div style={{
+            width: `${(totalCount / limit) * 100}%`,
+            height: '100%',
             background: 'var(--primary-gradient)',
             boxShadow: '0 0 10px rgba(139,92,246,0.6)'
           }}></div>
         </div>
       </div>
 
-      {/* Consent Form Title and Logout Button */}
       <div style={{ textAlign: 'center', margin: '10px 0', position: 'relative' }}>
         <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>Investment Intent and Terms of Service Agreement</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
           안전하고 원활한 자동 투자 플랫폼 이용을 위해 아래 사항을 자세히 읽고 동의해 주십시오.
         </p>
-        <button 
+        <button
           onClick={onLogout}
           style={{
             background: 'none',
@@ -155,16 +150,14 @@ function ConsentPage({ walletAddress, onLogout }) {
         </button>
       </div>
 
-      {/* Terms and Conditions List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
-        {/* Term 1 */}
+
         <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-            <input 
-              type="checkbox" 
-              id="lossLiability" 
-              checked={agreements.lossLiability} 
+            <input
+              type="checkbox"
+              id="lossLiability"
+              checked={agreements.lossLiability}
               onChange={() => handleCheckboxChange('lossLiability')}
               style={{ width: '20px', height: '20px', accentColor: 'var(--accent-color)', cursor: 'pointer', marginTop: '2px' }}
             />
@@ -172,12 +165,12 @@ function ConsentPage({ walletAddress, onLogout }) {
               [필수] 고위험 자동 시스템 투자 손실 면책 및 원금 비보장 동의
             </label>
           </div>
-          <div style={{ 
-            fontSize: '11px', 
-            color: 'var(--text-muted)', 
-            background: 'rgba(0,0,0,0.2)', 
-            padding: '10px', 
-            borderRadius: '8px', 
+          <div style={{
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.2)',
+            padding: '10px',
+            borderRadius: '8px',
             lineHeight: '1.6',
             maxHeight: '80px',
             overflowY: 'auto'
@@ -186,13 +179,12 @@ function ConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* Term 2 */}
         <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-            <input 
-              type="checkbox" 
-              id="withdrawalAuth" 
-              checked={agreements.withdrawalAuth} 
+            <input
+              type="checkbox"
+              id="withdrawalAuth"
+              checked={agreements.withdrawalAuth}
               onChange={() => handleCheckboxChange('withdrawalAuth')}
               style={{ width: '20px', height: '20px', accentColor: 'var(--accent-color)', cursor: 'pointer', marginTop: '2px' }}
             />
@@ -200,12 +192,12 @@ function ConsentPage({ walletAddress, onLogout }) {
               [필수] 가입비 및 월정액 자동 인출 권한(SUT Approve) 위임 동의
             </label>
           </div>
-          <div style={{ 
-            fontSize: '11px', 
-            color: 'var(--text-muted)', 
-            background: 'rgba(0,0,0,0.2)', 
-            padding: '10px', 
-            borderRadius: '8px', 
+          <div style={{
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.2)',
+            padding: '10px',
+            borderRadius: '8px',
             lineHeight: '1.6',
             maxHeight: '80px',
             overflowY: 'auto'
@@ -214,13 +206,12 @@ function ConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* Term 3 */}
         <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-            <input 
-              type="checkbox" 
-              id="kycInfo" 
-              checked={agreements.kycInfo} 
+            <input
+              type="checkbox"
+              id="kycInfo"
+              checked={agreements.kycInfo}
               onChange={() => handleCheckboxChange('kycInfo')}
               style={{ width: '20px', height: '20px', accentColor: 'var(--accent-color)', cursor: 'pointer', marginTop: '2px' }}
             />
@@ -228,12 +219,12 @@ function ConsentPage({ walletAddress, onLogout }) {
               [필수] KYC 인증 절차 및 본사 수동 승인 약관 동의
             </label>
           </div>
-          <div style={{ 
-            fontSize: '11px', 
-            color: 'var(--text-muted)', 
-            background: 'rgba(0,0,0,0.2)', 
-            padding: '10px', 
-            borderRadius: '8px', 
+          <div style={{
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.2)',
+            padding: '10px',
+            borderRadius: '8px',
             lineHeight: '1.6',
             maxHeight: '80px',
             overflowY: 'auto'
@@ -244,9 +235,8 @@ function ConsentPage({ walletAddress, onLogout }) {
 
       </div>
 
-      {/* Proceed to Next Step Button */}
-      <button 
-        className="btn-primary" 
+      <button
+        className="btn-primary"
         style={{ marginTop: '10px', padding: '16px' }}
         disabled={!allAgreed}
         onClick={() => navigate('/register')}

@@ -1,10 +1,6 @@
-// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.20;
 
-/**
- * @title SUTToken
- * @dev A simple ERC20 token for SUT with 6 decimals. Mints 50 SUT to the deployer.
- */
 contract SUTToken {
     string public name = "SUT Token";
     string public symbol = "SUT";
@@ -18,7 +14,7 @@ contract SUTToken {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     constructor() {
-        // Mint exactly 50 SUT to the deployer
+
         uint256 initialSupply = 50 * (10 ** uint256(decimals));
         totalSupply = initialSupply;
         balanceOf[msg.sender] = initialSupply;
@@ -42,11 +38,11 @@ contract SUTToken {
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
         require(balanceOf[from] >= value, "SUTToken: insufficient balance");
         require(allowance[from][msg.sender] >= value, "SUTToken: insufficient allowance");
-        
+
         balanceOf[from] -= value;
         balanceOf[to] += value;
         allowance[from][msg.sender] -= value;
-        
+
         emit Transfer(from, to, value);
         return true;
     }

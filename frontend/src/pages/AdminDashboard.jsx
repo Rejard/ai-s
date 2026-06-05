@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus, 
+import {
+  ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus,
   ArrowLeft, BarChart3, Loader2, Home, Settings
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
@@ -30,7 +30,6 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     handleSaveAiConfig
   } = useAdminLogic(managerEmail);
 
-  // Guard view blocking unauthenticated user access
   if (!isAdmin) {
     return (
       <div className="app-frame" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
@@ -52,10 +51,10 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
   return (
     <div className="app-frame">
-      {/* Top Header */}
-      <header style={{ 
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-        padding: '20px 24px', borderBottom: '1px solid var(--glass-border)' 
+
+      <header style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 24px', borderBottom: '1px solid var(--glass-border)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0 }}>
@@ -67,10 +66,8 @@ function AdminDashboard({ walletAddress, managerEmail }) {
         </div>
       </header>
 
-      {/* Main Content Scroll Area */}
       <main style={{ flex: 1, padding: '20px', paddingBottom: '85px', overflowY: 'auto' }}>
-        
-        {/* Admin Profile Summary */}
+
         <div className="glass-card" style={{ padding: '16px', marginBottom: '20px', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: 'bold', color: '#FFF' }}>
@@ -87,8 +84,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
         {activeTab === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Overall Manager Statistics Summary */}
+
             <div className="glass-card" style={{ padding: '20px' }}>
               <h3 style={{ fontSize: '15px', color: '#FFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
                 <BarChart3 size={18} color="#EF4444" />
@@ -134,7 +130,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                         </div>
 
                         {!isMaster && (
-                          <button 
+                          <button
                             onClick={() => handleDeleteManager(m.wallet_address, m.name)}
                             disabled={submittingDelete === m.wallet_address}
                             style={{ marginTop: '12px', width: '100%', padding: '10px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
@@ -149,7 +145,6 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               )}
             </div>
 
-            {/* New Manager Promotion Form */}
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
               <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus size={18} color="#8B5CF6" />
@@ -160,17 +155,17 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               </p>
 
               <form onSubmit={handlePromoteManager} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={promoteWallet}
                   onChange={(e) => setPromoteWallet(e.target.value)}
                   placeholder="지갑 주소 (0x...)"
                   className="form-input"
                   style={{ padding: '14px', fontSize: '13px' }}
                 />
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
+                <button
+                  type="submit"
+                  className="btn-primary"
                   disabled={submittingPromote}
                   style={{ width: '100%', padding: '14px', fontSize: '14px' }}
                 >
@@ -178,14 +173,13 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                 </button>
               </form>
             </div>
-            
+
           </div>
         )}
 
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Global AI Engine Control Card */}
+
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
               <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>🤖</span> 글로벌 AI 엔진 제어
@@ -197,9 +191,9 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               <form onSubmit={handleSaveAiConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '12px' }}>사용할 AI 모델</label>
-                  <select 
+                  <select
                     className="form-select"
-                    value={globalAiModel} 
+                    value={globalAiModel}
                     onChange={(e) => setGlobalAiModel(e.target.value)}
                     style={{ padding: '14px', fontSize: '13px' }}
                   >
@@ -211,8 +205,8 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
                 <div>
                   <label className="form-label" style={{ fontSize: '12px' }}>Gemini API Key</label>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     value={globalGeminiApiKey}
                     onChange={(e) => setGlobalGeminiApiKey(e.target.value)}
                     placeholder="AI_..."
@@ -250,9 +244,9 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="btn-primary" 
+                <button
+                  type="submit"
+                  className="btn-primary"
                   disabled={savingAiConfig}
                   style={{ width: '100%', padding: '14px', fontSize: '14px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
                 >
@@ -260,13 +254,12 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                 </button>
               </form>
             </div>
-            
+
           </div>
         )}
 
       </main>
 
-      {/* Bottom Navigation Bar */}
       <div style={{
         position: 'fixed',
         bottom: 0,
@@ -280,15 +273,15 @@ function AdminDashboard({ walletAddress, managerEmail }) {
         padding: '12px 0 24px 0',
         zIndex: 100
       }}>
-        <button 
+        <button
           onClick={() => setActiveTab('home')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'home' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none' }}
         >
           <Home size={22} />
           <span style={{ fontSize: '10px', fontWeight: 'bold' }}>자산관제</span>
         </button>
-        
-        <button 
+
+        <button
           onClick={() => setActiveTab('settings')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'settings' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none' }}
         >

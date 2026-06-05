@@ -4,14 +4,10 @@ const { createGateIoOrder, getGateIoBalances } = require('./gateioHelper');
 const { decryptText } = require('./secureCredentials');
 const { buildTradePlan } = require('./autoTradeMath');
 
-// Real-time SUT price history memory storage (Holds last 10 prices)
 if (!global.priceHistory) {
   global.priceHistory = [];
 }
 
-/**
- * Retrieve SUT real-time price using Gate.io Public API
- */
 async function getSutCurrentPrice() {
   try {
     const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
@@ -24,9 +20,6 @@ async function getSutCurrentPrice() {
   return 0.158; // Default fallback price on lookup failure
 }
 
-/**
- * Request global market strategy judgment using Gemini API
- */
 async function getAiTradingDecision(apiKey, modelName, marketData) {
   let modelId = 'gemini-2.5-flash';
   const lowerName = modelName.toLowerCase();
@@ -235,15 +228,12 @@ async function executeServerAutoTrades(aiLogId, aiResult) {
   }
 }
 
-/**
- * AI Grid Bot core execution loop function (Centralized analysis engine)
- */
 async function runAiGridBot() {
   console.log(`[🤖 AI GRID BOT] =======================================`);
   console.log(`[🤖 AI GRID BOT] 글로벌 시황 분석 스케줄러 실행 중... (시간: ${new Date().toLocaleString()})`);
 
   try {
-    // 1. Load global Admin AI settings
+
     const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'ai_grid_status')");
     let globalModel = 'Gemini 1.5 Pro';
     let globalApiKey = '';
@@ -268,39 +258,36 @@ async function runAiGridBot() {
       return;
     }
 
-    // 2. Retrieve real-time SUT current price and update history
     const currentSutPrice = await getSutCurrentPrice();
     global.priceHistory.push(currentSutPrice);
     if (global.priceHistory.length > 10) {
       global.priceHistory.shift();
     }
 
-    // 3. Calculate global profitability (Reference standard profitability)
     let yieldPercent = ((currentSutPrice - 0.15) / 0.15) * 100;
     try {
       const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
       if (tickerRes.data && tickerRes.data.length > 0 && tickerRes.data[0].change_percentage !== undefined) {
         yieldPercent = parseFloat(tickerRes.data[0].change_percentage);
       }
-      
+
       await queries.run(`
         INSERT INTO manager_yield_history (yield_percent)
         VALUES (?)
       `, [parseFloat(yieldPercent.toFixed(2))]);
-      
+
       await queries.run(`
-        DELETE FROM manager_yield_history 
+        DELETE FROM manager_yield_history
         WHERE id NOT IN (
-          SELECT id FROM manager_yield_history 
-          ORDER BY recorded_at DESC 
+          SELECT id FROM manager_yield_history
+          ORDER BY recorded_at DESC
           LIMIT 200
         )
       `);
     } catch (yieldErr) {
-      // ignore
+
     }
 
-    // 4. Call Gemini decision-making
     const marketData = {
       priceHistory: global.priceHistory,
       currentPrice: currentSutPrice
@@ -308,7 +295,7 @@ async function runAiGridBot() {
 
     console.log(`[🤖 AI GRID BOT] Gemini (${globalModel}) 글로벌 시황 분석 요청 중...`);
     const aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData);
-    
+
     if (!aiResult.success) {
       console.error(`[🤖 AI GRID BOT] AI 의사결정 호출 실패:`, aiResult.error);
       return;
@@ -318,7 +305,6 @@ async function runAiGridBot() {
     console.log(`[🤖 AI GRID BOT] 근거: ${aiResult.reason}`);
     console.log(`[🤖 AI GRID BOT] 타겟 가격: ${aiResult.price} USDT / 추천 비중: ${aiResult.amount_ratio}`);
 
-    // 5. Save AI judgment log to DB (Manager locally retrieves and executes this data individually)
     try {
       const logInsert = await queries.run(`
         INSERT INTO manager_ai_logs (decision, reason, proposed_price, proposed_amount)
@@ -327,14 +313,14 @@ async function runAiGridBot() {
         aiResult.decision,
         aiResult.reason || '판단 근거 없음',
         parseFloat(aiResult.price) || 0,
-        parseFloat(aiResult.amount_ratio) || 0.1  // Save amount_ratio to proposed_amount column
+        parseFloat(aiResult.amount_ratio) || 0.1
       ]);
-      
+
       await queries.run(`
-        DELETE FROM manager_ai_logs 
+        DELETE FROM manager_ai_logs
         WHERE id NOT IN (
-          SELECT id FROM manager_ai_logs 
-          ORDER BY created_at DESC 
+          SELECT id FROM manager_ai_logs
+          ORDER BY created_at DESC
           LIMIT 50
         )
       `);
@@ -349,13 +335,9 @@ async function runAiGridBot() {
   }
 }
 
-/**
- * Bot scheduler timer mount module (Dynamic interval applied)
- */
 function initGridBotScheduler() {
   console.log(`[🤖 AI GRID BOT] AI 엔진 중앙 스케줄러 마운트 완료 (동적 주기 적용)`);
-  
-  // After initial execution, a recursive function that schedules its next execution time
+
   const scheduleNext = async () => {
     try {
       await runAiGridBot();
@@ -363,8 +345,7 @@ function initGridBotScheduler() {
       console.error("[🤖 AI GRID BOT] 실행 중 에러:", e);
     }
 
-    // After execution completion, read the configured interval (minutes) from DB
-    let intervalMinutes = 5; // Default value 5 minutes
+    let intervalMinutes = 5;
     try {
       const setting = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_interval'");
       if (setting && !isNaN(parseInt(setting.value))) {
@@ -374,15 +355,12 @@ function initGridBotScheduler() {
       console.error("[🤖 AI GRID BOT] 인터벌 설정 읽기 실패:", dbErr.message);
     }
 
-    // Limited to a minimum of 1 minute and a maximum of 60 minutes
     intervalMinutes = Math.max(1, Math.min(60, intervalMinutes));
     const nextTickMs = intervalMinutes * 60 * 1000;
-    
-    // console.log(`[🤖 AI Grid Bot] The next analysis will be executed ${intervalMinutes} minutes later.`);
+
     setTimeout(scheduleNext, nextTickMs);
   };
 
-  // Start first execution 5 seconds after server boot
   setTimeout(scheduleNext, 5000);
 }
 

@@ -39,7 +39,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Force application of mobile device shape frame in PC viewport */
 .app-frame {
   width: 100%;
   max-width: 480px;
@@ -54,11 +53,11 @@ body {
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
 
 .app-frame::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 @media (max-width: 768px) {
@@ -69,14 +68,12 @@ body {
   }
 }
 
-/* Typography */
 h1, h2, h3, h4, h5 {
   font-family: var(--font-title);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-/* Glassmorphism Card */
 .glass-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -94,7 +91,6 @@ h1, h2, h3, h4, h5 {
   box-shadow: 0 15px 35px -5px rgba(139, 92, 246, 0.15);
 }
 
-/* Buttons */
 .btn-primary {
   background: var(--primary-gradient);
   border: none;
@@ -154,7 +150,6 @@ h1, h2, h3, h4, h5 {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* Form Controls */
 .form-group {
   margin-bottom: 20px;
 }
@@ -199,7 +194,6 @@ h1, h2, h3, h4, h5 {
   cursor: pointer;
 }
 
-/* Animations */
 @keyframes pulseGlow {
   0% { box-shadow: 0 0 5px var(--accent-glow); }
   50% { box-shadow: 0 0 20px var(--accent-glow); }
@@ -221,7 +215,6 @@ h1, h2, h3, h4, h5 {
   animation: pulseGlow 2.5s infinite;
 }
 
-/* Status Badges */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -252,7 +245,6 @@ h1, h2, h3, h4, h5 {
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
-/* Navigation bar */
 .bottom-nav {
   position: absolute;
   bottom: 0;
@@ -285,7 +277,6 @@ h1, h2, h3, h4, h5 {
   color: var(--accent-color);
 }
 
-/* PC exclusive dual layout style */
 .pc-layout-wrapper {
   display: flex;
   justify-content: center;
@@ -301,7 +292,6 @@ h1, h2, h3, h4, h5 {
   position: relative;
 }
 
-/* For PC space-feel gradient sphere animation */
 .pc-layout-wrapper::before {
   content: '';
   position: absolute;
@@ -333,7 +323,6 @@ h1, h2, h3, h4, h5 {
   100% { transform: translate(5%, 5%) scale(1.1); }
 }
 
-/* PC exclusive left introduction panel */
 .pc-side-intro {
   display: flex;
   flex-direction: column;
@@ -408,7 +397,6 @@ h1, h2, h3, h4, h5 {
   line-height: 1.4;
 }
 
-/* PC center mobile phone simulator frame */
 .mobile-simulator-frame {
   width: 400px;
   height: 820px;
@@ -426,7 +414,6 @@ h1, h2, h3, h4, h5 {
   animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Hide scrollbar */
 .mobile-simulator-frame main {
   scrollbar-width: none;
   overflow-y: auto;

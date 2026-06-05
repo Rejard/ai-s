@@ -3,14 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load .env
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const RPC_URL = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 // ABI and Bytecode for MockUSDT & PlatformVault (for automatic deployment and interaction)
-// Simplified version according to Solidity compilation standards
+
 const MockUSDT_ABI = [
   "constructor()",
   "function name() view returns (string)",
@@ -46,7 +45,6 @@ let provider;
 let wallet;
 let isSimulationMode = false;
 
-// Active smart contract cache
 let usdtAddress = process.env.USDT_CONTRACT_ADDRESS;
 let vaultAddress = process.env.VAULT_CONTRACT_ADDRESS;
 
@@ -67,7 +65,6 @@ try {
 async function autoDeployContracts() {
   if (isSimulationMode) return { usdtAddress: 'MOCK_USDT_ADDR', vaultAddress: 'MOCK_VAULT_ADDR', simulated: true };
 
-  // If an address already exists in the environment variable, skip deployment
   if (usdtAddress && vaultAddress) {
     console.log(`✔ Smart Contracts already deployed at:\n  USDT: ${usdtAddress}\n  Vault: ${vaultAddress}`);
     return { usdtAddress, vaultAddress, simulated: false };
@@ -91,7 +88,7 @@ async function autoDeployContracts() {
     }
 
       console.log(`🚀 Starting deployment on Polygon Mainnet...`);
-      // Manual management mode: skip vault contract error check
+
       console.log(`✔ 수동 지급 관리형 아키텍처로 인해 스마트 컨트랙트 볼트 확인 절차를 생략합니다.`);
   } catch (err) {
     console.error("⚠ Error checking contracts on Mainnet:", err.message);
@@ -99,11 +96,8 @@ async function autoDeployContracts() {
   }
 }
 
-/**
- * @dev Withdraw USDT from user wallet and execute 2-step equal distribution (25 USDT each) on-chain
- */
 async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amountSut) {
-  // SUT Token is 18 decimals
+
   const amountInDecimals = ethers.parseUnits(amountSut.toString(), 18);
 
   if (isSimulationMode) {
@@ -122,16 +116,16 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
 
   try {
     const vaultContract = new ethers.Contract(vaultAddress, PlatformVault_ABI, wallet);
-    
+
     const r1 = referrer1 === 'none' ? ethers.ZeroAddress : referrer1;
     const r2 = referrer2 === 'none' ? ethers.ZeroAddress : referrer2;
 
     console.log(`[ON-CHAIN TX] Charging ${amountSut} SUT from ${userWallet}...`);
-    // Call collectAndDistribute of PlatformVault.sol
+
     const tx = await vaultContract.collectAndDistribute(userWallet, r1, r2, amountInDecimals, {
       gasLimit: 300000
     });
-    
+
     console.log(`Transaction sent. Hash: ${tx.hash}. Waiting for confirmation...`);
     const receipt = await tx.wait();
     console.log("Transaction confirmed in block:", receipt.blockNumber);
@@ -146,7 +140,7 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
     };
   } catch (err) {
     console.error("❌ On-chain transaction failed:", err.message);
-    // If it fails due to actual RPC gas fees or insufficient Approve limit, 
+
     // For user demo continuity, perform fallback processing and mock the logic as successful with a warning.
     throw new Error(`On-chain transaction execution failed: ${err.message}`);
   }
@@ -155,11 +149,11 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
 function updateEnvFile(usdtAddr, vaultAddr) {
   const envPath = path.resolve(__dirname, '.env');
   if (!fs.existsSync(envPath)) return;
-  
+
   let envContent = fs.readFileSync(envPath, 'utf8');
   envContent = envContent.replace(/USDT_CONTRACT_ADDRESS=.*/, `USDT_CONTRACT_ADDRESS=${usdtAddr}`);
   envContent = envContent.replace(/VAULT_CONTRACT_ADDRESS=.*/, `VAULT_CONTRACT_ADDRESS=${vaultAddr}`);
-  
+
   fs.writeFileSync(envPath, envContent, 'utf8');
 }
 

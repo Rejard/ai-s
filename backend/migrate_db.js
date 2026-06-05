@@ -4,7 +4,7 @@ const path = require('path');
 const db = new sqlite3.Database(path.resolve(__dirname, 'platform.db'));
 
 db.serialize(() => {
-  // Create platform_settings
+
   db.run(`
     CREATE TABLE IF NOT EXISTS platform_settings (
       key TEXT PRIMARY KEY,
@@ -13,7 +13,6 @@ db.serialize(() => {
   `);
   db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
 
-  // Migrate payments table to support WITHDRAW_REQUEST
   db.run(`CREATE TABLE IF NOT EXISTS payments_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet_address TEXT NOT NULL,

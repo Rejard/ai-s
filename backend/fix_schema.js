@@ -61,7 +61,7 @@ async function migratePaymentsCheck() {
     try {
       await run('ROLLBACK');
     } catch {
-      // No active transaction left to roll back.
+
     }
     throw err;
   }

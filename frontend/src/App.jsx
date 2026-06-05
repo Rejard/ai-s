@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavig
 import axios from 'axios';
 import { Shield, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
 
-// Page component load
 import ConsentPage from './pages/ConsentPage';
 import RegisterPage from './pages/RegisterPage';
 import WaitingPage from './pages/WaitingPage';
@@ -13,7 +12,6 @@ import EditUserPage from './pages/EditUserPage';
 import HistoryPage from './pages/HistoryPage';
 import AdminDashboard from './pages/AdminDashboard';
 
-// 💻 PC exclusive: Add premium page component
 import PcConsentPage from './pages/PcConsentPage';
 import PcRegisterPage from './pages/PcRegisterPage';
 import PcWaitingPage from './pages/PcWaitingPage';
@@ -22,10 +20,8 @@ import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
 import { buildTrustWalletOpenUrl } from './lib/walletProvider';
 
-// Backend API base URL setting
 export const API_BASE = 'https://edenai.alonics.com/api';
 
-// 🌟 Rejard's actual Google OAuth2 Client ID for web application applied successfully!
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
 const GOOGLE_OAUTH_SCOPE = 'openid email profile';
 
@@ -33,20 +29,17 @@ function AppContent() {
   const navigate = useNavigate();
   const [walletAddress, setWalletAddress] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
-  const [userStatus, setUserStatus] = useState(''); // PENDING_KYC, APPROVED, REJECTED
+  const [userStatus, setUserStatus] = useState('');
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
 
-  // Real Google login integration status
   const [googleLoggedIn, setGoogleLoggedIn] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
 
-  // DApp browser Google Quick Pass modal status
   const [showGPassModal, setShowGPassModal] = useState(false);
 
-  // User request: Dynamic screen width detection algorithm on web start
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -59,8 +52,7 @@ function AppContent() {
   const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const shouldUseGoogleRedirectLogin = isMobileDevice;
 
-  // 🌟 [Mobile In-App Browser Detection Engine] For pre-detecting and blocking Google login webview white screen phenomenon
-  const isInAppBrowser = /Telegram|KAKAOTALK|Line|Instagram|FB_IAB|FBAN|FBIOS|TrustWallet/i.test(navigator.userAgent) || 
+  const isInAppBrowser = /Telegram|KAKAOTALK|Line|Instagram|FB_IAB|FBAN|FBIOS|TrustWallet/i.test(navigator.userAgent) ||
     (window.ethereum && /Android|iPhone|iPad/i.test(navigator.userAgent)) ||
     (navigator.userAgent.includes('wv') || navigator.userAgent.includes('WebView'));
 
@@ -106,7 +98,7 @@ function AppContent() {
     if (!email) throw new Error('Google profile did not include an email address.');
 
     const name = profile.name || profile.given_name || email;
-    
+
     setLoading(true);
     await restoreSessionByEmail(email);
     setLoading(false);
@@ -136,7 +128,6 @@ function AppContent() {
     return true;
   };
 
-  // On component mount, perform integrated session restoration and initialization logic
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -149,7 +140,7 @@ function AppContent() {
       const params = new URLSearchParams(window.location.search);
       const paramEmail = params.get('google_email');
       const paramName = params.get('google_name');
-      
+
       let currentEmail = '';
       let currentName = '';
 
@@ -178,7 +169,6 @@ function AppContent() {
       const promises = [];
       let emailWalletAddress = null;
 
-      // 1. Email-based registration information lookup and session restoration
       if (_googleLoggedIn && currentEmail) {
         promises.push(
           restoreSessionByEmail(currentEmail).then(addr => {
@@ -187,7 +177,6 @@ function AppContent() {
         );
       }
 
-      // 2. Web3 wallet integration confirmation (with delay)
       promises.push(
         new Promise(resolve => setTimeout(async () => {
           if (window.ethereum) {
@@ -222,7 +211,6 @@ function AppContent() {
     initializeApp();
   }, []);
 
-  // Google login success callback handler
   const handleGoogleCredentialResponse = async (response) => {
     try {
       const token = response.credential;
@@ -231,23 +219,23 @@ function AppContent() {
       const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
-      
+
       const payload = JSON.parse(jsonPayload);
-      
+
       const email = payload.email.toLowerCase().trim();
       const name = payload.name || payload.given_name || '사용자';
-      
+
       localStorage.setItem('google_email', email);
       localStorage.setItem('google_name', name);
 
       setLoading(true);
       await restoreSessionByEmail(email);
       setLoading(false);
-      
+
       setGoogleEmail(email);
       setGoogleName(name);
       setGoogleLoggedIn(true);
-      
+
       alert(`🎉 Google 연동 성공: ${email} 계정으로 정상 연동되었습니다.`);
     } catch (e) {
       console.error("구글 JWT 디코딩 실패:", e);
@@ -275,7 +263,7 @@ function AppContent() {
           client_id: GOOGLE_CLIENT_ID,
           callback: handleGoogleCredentialResponse
         });
-        
+
         renderGoogleSignInButton();
       }
     };
@@ -292,7 +280,7 @@ function AppContent() {
       const btnElem = document.getElementById('google-signin-btn');
       if (btnElem && window.google) {
         if (btnElem.hasChildNodes()) return;
-        
+
         window.google.accounts.id.renderButton(btnElem, {
           theme: 'outline',
           size: 'large',
@@ -357,10 +345,10 @@ function AppContent() {
           queryParams.set('google_email', encodeURIComponent(googleEmail));
           queryParams.set('google_name', encodeURIComponent(googleName));
         }
-        
+
         const finalUrl = `${baseUrl}?${queryParams.toString()}`;
         const trustDeepLink = buildTrustWalletOpenUrl(finalUrl);
-        
+
         alert('📲 모바일 Trust Wallet 앱과 다이렉트 온체인 연동을 격발합니다. 확인을 누르시면 트러스트 월렛 앱이 자동으로 열리며 안전 연결이 개통됩니다.');
         window.location.href = trustDeepLink;
       } else {
@@ -414,14 +402,14 @@ function AppContent() {
           </div>
           <h2 style={{ fontSize: '24px', marginBottom: '10px' }}>Ai S</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.6', marginBottom: '24px' }}>
-            본 플랫폼은 폴리곤 네트워크 및 진짜 구글 OAuth 인증을 통합 연동합니다. 
+            본 플랫폼은 폴리곤 네트워크 및 진짜 구글 OAuth 인증을 통합 연동합니다.
             2단계 추천인 자동 분배 및 AI 자동 투자 시스템 시뮬레이션을 시작하십시오.
           </p>
 
           {!googleLoggedIn ? (
             isInAppBrowser ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-                <button 
+                <button
                   className="btn-primary glow-active"
                   style={{
                     background: 'var(--primary-gradient)',
@@ -450,10 +438,10 @@ function AppContent() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <div 
-                  style={{ 
-                    fontSize: '12px', 
-                    color: '#A78BFA', 
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: '#A78BFA',
                     fontWeight: '600',
                     userSelect: 'none'
                   }}
@@ -475,14 +463,14 @@ function AppContent() {
                 🟢 <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>Google 계정 연동됨:</span> {googleEmail}
               </div>
 
-              <button 
-                className="btn-primary" 
+              <button
+                className="btn-primary"
                 onClick={connectWallet}
               >
                 <Wallet size={20} />
                 {'트러스트 월렛 연결하기'}
               </button>
-              
+
               <button className="btn-secondary" style={{ color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={disconnectWallet}>
                 인증 계정 로그아웃
               </button>
@@ -573,18 +561,18 @@ function AppContent() {
                   📲 2단계: 폴리곤 지갑 연결
                 </div>
 
-                <button 
-                  className="btn-primary" 
+                <button
+                  className="btn-primary"
                   onClick={connectWallet}
                   style={{ padding: '16px', fontSize: '15px' }}
                 >
                   <Wallet size={20} />
                   트러스트 월렛 연결하기
                 </button>
-                
-                <button 
-                  className="btn-secondary" 
-                  style={{ color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)', padding: '12px' }} 
+
+                <button
+                  className="btn-secondary"
+                  style={{ color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)', padding: '12px' }}
                   onClick={disconnectWallet}
                 >
                   구글 연동 해제
@@ -598,9 +586,9 @@ function AppContent() {
   };
 
   return (
-    <div 
+    <div
       style={
-        isPcView 
+        isPcView
         ? {
             width: '100%',
             minHeight: '100vh',
@@ -741,18 +729,18 @@ function AppContent() {
             <Route path="/register" element={
               googleLoggedIn && walletAddress && !isRegistered ? (
                 isPcView ? (
-                  <PcRegisterPage 
-                    walletAddress={walletAddress} 
+                  <PcRegisterPage
+                    walletAddress={walletAddress}
                     googleEmail={googleEmail}
                     googleName={googleName}
-                    onRegisterComplete={() => checkUserStatus(walletAddress)} 
+                    onRegisterComplete={() => checkUserStatus(walletAddress)}
                   />
                 ) : (
-                  <RegisterPage 
-                    walletAddress={walletAddress} 
+                  <RegisterPage
+                    walletAddress={walletAddress}
                     googleEmail={googleEmail}
                     googleName={googleName}
-                    onRegisterComplete={() => checkUserStatus(walletAddress)} 
+                    onRegisterComplete={() => checkUserStatus(walletAddress)}
                   />
                 )
               ) : (
@@ -801,7 +789,6 @@ function AppContent() {
         )}
       </main>
 
-      {/* For DApp browser: Google quick integration (Quick Pass) modal */}
       {showGPassModal && (
         <div style={{
           position: 'fixed',
@@ -825,32 +812,32 @@ function AppContent() {
             </p>
             <div className="form-group" style={{ marginBottom: '15px' }}>
               <label className="form-label" style={{ color: '#A78BFA' }}>Google Email Address</label>
-              <input 
-                type="email" 
-                className="form-input" 
+              <input
+                type="email"
+                className="form-input"
                 id="gpass-email"
                 placeholder="예: email@gmail.com"
               />
             </div>
             <div className="form-group" style={{ marginBottom: '25px' }}>
               <label className="form-label" style={{ color: '#A78BFA' }}>Name (Full Name)</label>
-              <input 
-                type="text" 
-                className="form-input" 
+              <input
+                type="text"
+                className="form-input"
                 id="gpass-name"
                 placeholder="예: 홍길동"
               />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                className="btn-secondary" 
+              <button
+                className="btn-secondary"
                 style={{ flex: 1, padding: '12px' }}
                 onClick={() => setShowGPassModal(false)}
               >
                 취소
               </button>
-              <button 
-                className="btn-primary" 
+              <button
+                className="btn-primary"
                 style={{ flex: 1, padding: '12px', background: 'var(--primary-gradient)' }}
                 onClick={() => {
                   const email = document.getElementById('gpass-email').value.trim();

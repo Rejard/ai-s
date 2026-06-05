@@ -16,7 +16,6 @@ function PcConsentPage({ walletAddress, onLogout }) {
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // Real-time pre-check for 500-person recruitment capacity
   useEffect(() => {
     const fetchLimit = async () => {
       try {
@@ -55,7 +54,6 @@ function PcConsentPage({ walletAddress, onLogout }) {
     );
   }
 
-  // Block registration screen if 500-person capacity is exceeded
   if (!isAvailable) {
     return (
       <div className="pc-layout-wrapper" style={{ justifyContent: 'center' }}>
@@ -67,7 +65,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
             1차 선착순 모집 마감
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.7', marginBottom: '30px' }}>
-            죄송합니다. 본 플랫폼은 안정적인 시스템 투자 및 어드민 운영 관리를 위해 1차 모집 인원을 **{limit}명** 한정으로 제한하고 있습니다. 
+            죄송합니다. 본 플랫폼은 안정적인 시스템 투자 및 어드민 운영 관리를 위해 1차 모집 인원을 **{limit}명** 한정으로 제한하고 있습니다.
             현재 정원이 가득 찬 상태이므로 신규 회원 가입이 불가능합니다. 다음 모집 회차에 신청해 주시기 바랍니다.
           </p>
           <div style={{
@@ -87,15 +85,14 @@ function PcConsentPage({ walletAddress, onLogout }) {
 
   return (
     <div style={{ padding: '40px 60px', display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
-      
-      {/* 👑 Master Manager 'Return to Manager Mode' Shortcut Bar */}
+
       {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div 
-          className="glass-card glow-active" 
+        <div
+          className="glass-card glow-active"
           onClick={() => navigate('/manager')}
-          style={{ 
-            padding: '16px', 
+          style={{
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             cursor: 'pointer',
@@ -123,7 +120,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
       )}
 
       <div className="pc-layout-wrapper" style={{ padding: 0 }}>
-      {/* 1 Column: Left Platform Guide and Capacity Counter */}
+
       <div className="pc-side-intro" style={{ maxWidth: '480px' }}>
         <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '16px', background: 'rgba(139,92,246,0.1)', marginBottom: '24px', width: 'fit-content' }}>
           <Shield size={40} color="#8B5CF6" />
@@ -133,16 +130,15 @@ function PcConsentPage({ walletAddress, onLogout }) {
           Ai S 플랫폼에 가입하시기 전에 고위험 자동 트레이딩 서비스의 면책 범위 및 가입 조건 약관에 동의하셔야 온체인 시뮬레이션 지갑 개통이 가능합니다.
         </p>
 
-        {/* First-come, first-served capacity gauge bar */}
         <div className="glass-card" style={{ padding: '24px', marginTop: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '12px', color: '#FFF', fontWeight: '600' }}>
             <span>🔥 1차 특별 모집 현황</span>
             <span><strong>{totalCount}</strong> / {limit} 명</span>
           </div>
           <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden', marginBottom: '14px' }}>
-            <div style={{ 
-              width: `${(totalCount / limit) * 100}%`, 
-              height: '100%', 
+            <div style={{
+              width: `${(totalCount / limit) * 100}%`,
+              height: '100%',
               background: 'var(--primary-gradient)',
               boxShadow: '0 0 15px rgba(139,92,246,0.6)'
             }}></div>
@@ -152,7 +148,7 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={onLogout}
           style={{
             background: 'rgba(239, 68, 68, 0.08)',
@@ -174,12 +170,10 @@ function PcConsentPage({ walletAddress, onLogout }) {
         </button>
       </div>
 
-      {/* 2 Column: Right Terms List and Confirmation Box */}
       <div style={{ flex: 1, maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        
-        {/* Term 1 */}
+
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div 
+          <div
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => handleCheckboxChange('lossLiability')}
           >
@@ -192,12 +186,12 @@ function PcConsentPage({ walletAddress, onLogout }) {
               [필수] 고위험 자동 시스템 투자 손실 면책 및 원금 비보장 동의
             </span>
           </div>
-          <div style={{ 
-            fontSize: '12px', 
-            color: 'var(--text-muted)', 
-            background: 'rgba(0,0,0,0.25)', 
-            padding: '14px', 
-            borderRadius: '10px', 
+          <div style={{
+            fontSize: '12px',
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.25)',
+            padding: '14px',
+            borderRadius: '10px',
             lineHeight: '1.7',
             maxHeight: '110px',
             overflowY: 'auto'
@@ -206,9 +200,8 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* Term 2 */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div 
+          <div
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => handleCheckboxChange('withdrawalAuth')}
           >
@@ -221,12 +214,12 @@ function PcConsentPage({ walletAddress, onLogout }) {
               [필수] 가입비 및 월정액 자동 인출 권한(SUT Approve) 위임 동의
             </span>
           </div>
-          <div style={{ 
-            fontSize: '12px', 
-            color: 'var(--text-muted)', 
-            background: 'rgba(0,0,0,0.25)', 
-            padding: '14px', 
-            borderRadius: '10px', 
+          <div style={{
+            fontSize: '12px',
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.25)',
+            padding: '14px',
+            borderRadius: '10px',
             lineHeight: '1.7',
             maxHeight: '110px',
             overflowY: 'auto'
@@ -235,9 +228,8 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* Term 3 */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div 
+          <div
             style={{ display: 'flex', gap: '12px', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => handleCheckboxChange('kycInfo')}
           >
@@ -250,12 +242,12 @@ function PcConsentPage({ walletAddress, onLogout }) {
               [필수] KYC 인증 절차 및 본사 수동 승인 약관 동의
             </span>
           </div>
-          <div style={{ 
-            fontSize: '12px', 
-            color: 'var(--text-muted)', 
-            background: 'rgba(0,0,0,0.25)', 
-            padding: '14px', 
-            borderRadius: '10px', 
+          <div style={{
+            fontSize: '12px',
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.25)',
+            padding: '14px',
+            borderRadius: '10px',
             lineHeight: '1.7',
             maxHeight: '110px',
             overflowY: 'auto'
@@ -264,9 +256,8 @@ function PcConsentPage({ walletAddress, onLogout }) {
           </div>
         </div>
 
-        {/* Proceed to Next Step Button */}
-        <button 
-          className="btn-primary" 
+        <button
+          className="btn-primary"
           style={{ padding: '18px 24px', fontSize: '16px', marginTop: '10px' }}
           disabled={!allAgreed}
           onClick={() => navigate('/register')}

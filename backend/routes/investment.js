@@ -11,9 +11,6 @@ let lastPriceFetchTime = 0;
 let cachedHistory = [];
 let lastHistoryFetchTime = 0;
 
-/**
- * @desc Link SUT (SuperTrust) real-time market price via Gate.io API
- */
 async function getLivePrices() {
   const now = Date.now();
   // Maintain 10-second cache to prevent Gate.io API Rate Limit (compared to dashboard 5-second polling)
@@ -35,16 +32,13 @@ async function getLivePrices() {
   } catch (err) {
     console.error("Gate.io 진짜 SUT 시세 불러오기 실패 (캐시된 이전 시세 사용):", err.message);
   }
-  
+
   return cachedPrices;
 }
 
-/**
- * @desc Retrieve SUT historical chart data (max 20)
- */
 async function getSutHistory() {
   const now = Date.now();
-  // History has 1-minute intervals, so cache for about 30 seconds
+
   if (now - lastHistoryFetchTime < 30000 && cachedHistory.length > 0) {
     return cachedHistory;
   }
@@ -54,7 +48,7 @@ async function getSutHistory() {
       { timeout: 3000 }
     );
     if (res.data) {
-      // res.data: [timestamp, volume, close, high, low, open, ...]
+
       cachedHistory = res.data.map(k => parseFloat(k[2]));
       lastHistoryFetchTime = now;
     }
@@ -67,9 +61,6 @@ async function getSutHistory() {
 let cachedKrwRate = 1400;
 let lastKrwFetchTime = 0;
 
-/**
- * @desc Retrieve real-time USD/KRW exchange rate (1-hour cache)
- */
 async function getKrwRate() {
   const now = Date.now();
   if (now - lastKrwFetchTime < 3600000 && lastKrwFetchTime !== 0) {
@@ -87,10 +78,6 @@ async function getKrwRate() {
   return cachedKrwRate;
 }
 
-/**
- * @route GET /api/investment/prices
- * @desc Return real-time coin market price information
- */
 router.get('/prices', async (req, res) => {
   try {
     const prices = await getLivePrices();
@@ -100,10 +87,6 @@ router.get('/prices', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/investment/portfolio/:walletAddress
- * @desc Retrieve user's virtual investment portfolio and return rate
- */
 router.get('/portfolio/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.toLowerCase().trim();
 
@@ -113,60 +96,52 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
       return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
     }
 
-    // Single SUT pool
     const ratios = { SUT: 100 };
 
-    // 1. Calculate user's net investment principal (SUT)
     const deposits = await queries.get(`
-      SELECT SUM(amount) as total FROM payments 
+      SELECT SUM(amount) as total FROM payments
       WHERE LOWER(wallet_address) = ? AND type = 'MONTHLY_SUBSCRIPTION' AND status = 'SUCCESS'
     `, [walletAddress]);
-    
-    const addedDeposits = deposits.total || 0;
-    const totalInvested = addedDeposits; // Based on SUT
 
-    // 🌟 AI Trading Profit (SUT quantity self-increase)
+    const addedDeposits = deposits.total || 0;
+    const totalInvested = addedDeposits;
+
     const aiProfits = await queries.get(`
-      SELECT SUM(amount) as total FROM payments 
+      SELECT SUM(amount) as total FROM payments
       WHERE LOWER(wallet_address) = ? AND type = 'AI_TRADING_PROFIT' AND status = 'SUCCESS'
     `, [walletAddress]);
     const aiTradingProfitSut = aiProfits.total || 0;
 
-    // 2. Total SUT held and valuation
     const sutQuantity = totalInvested + aiTradingProfitSut;
 
     const prices = await getLivePrices();
     const sutPrice = prices.sut.usd;
 
-    // Current valuation applying real-time market price (USD)
     const totalValuation = sutQuantity * sutPrice;
 
-    // Principal's dollar value (based on unit price $0.20)
     const baseSutPrice = 0.20;
     const originalUsdValue = totalInvested * baseSutPrice;
 
     const totalProfitUsd = totalValuation - originalUsdValue;
     const profitPercent = originalUsdValue > 0 ? (totalProfitUsd / originalUsdValue) * 100 : 0;
 
-    // Load history array for chart initial values
     const sutHistory = await getSutHistory();
 
-    // Real-time exchange rate
     const krwRate = await getKrwRate();
 
     res.json({
       success: true,
       portfolio: {
-        totalInvested,          // Investment Principal (SUT)
-        aiTradingProfitSut,     // AI Trading Profit (SUT)
-        sutQuantity,            // Total Holdings (SUT)
-        totalValuation,         // Current Valuation ($)
-        totalProfitUsd,         // Unrealized P&L ($)
-        profitPercent,          // Profit Rate (%)
-        ratios,                 // Set Ratios
-        sutHistory,             // Real-time SUT recent price history (20 entries)
-        krwRate,                // Real-time USD/KRW Exchange Rate
-        sutChange24h: prices.sut.usd_24h_change, // 🌟 Add 24-hour change rate
+        totalInvested,
+        aiTradingProfitSut,
+        sutQuantity,
+        totalValuation,
+        totalProfitUsd,
+        profitPercent,
+        ratios,
+        sutHistory,
+        krwRate,
+        sutChange24h: prices.sut.usd_24h_change,
         assets: {
           SUT: {
             ratio: 100,
@@ -174,7 +149,7 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
             quantity: sutQuantity,
             currentValue: totalValuation,
             price: sutPrice,
-            change24h: prices.sut.usd_24h_change // 🌟 Also add to asset-specific nodes
+            change24h: prices.sut.usd_24h_change
           }
         }
       }
@@ -185,10 +160,6 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/investment/update-ratio
- * @desc Update investment ratio changes and loss liability waiver terms
- */
 router.post('/update-ratio', async (req, res) => {
   const { walletAddress, ratioPol, ratioUsdt, confirmed } = req.body;
 
@@ -233,7 +204,7 @@ router.post('/deposit', async (req, res) => {
   const cleanWallet = walletAddress.toLowerCase().trim();
 
   try {
-    // Insert successful payment history (investment pool increases with cumulative value of MONTHLY_SUBSCRIPTION)
+
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
       VALUES (?, ?, 'MONTHLY_SUBSCRIPTION', 'SUCCESS', ?)
@@ -245,10 +216,6 @@ router.post('/deposit', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/investment/withdraw
- * @desc Execute fund Withdrawal transaction
- */
 router.post('/withdraw', async (req, res) => {
   const { walletAddress, amount } = req.body;
   if (!walletAddress || !amount) {
@@ -257,7 +224,7 @@ router.post('/withdraw', async (req, res) => {
   const cleanWallet = walletAddress.toLowerCase().trim();
 
   try {
-    // Withdrawal does not immediately reduce balance but enters Admin approval pending state (PENDING_REQUEST)
+
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
       VALUES (?, ?, 'WITHDRAW_REQUEST', 'PENDING', '0xPendingManualPayout')
@@ -268,18 +235,14 @@ router.post('/withdraw', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/investment/history/:walletAddress
- * @desc Retrieve member's past Deposit and Withdrawal transaction history
- */
 router.get('/history/:walletAddress', async (req, res) => {
   const cleanWallet = req.params.walletAddress.toLowerCase().trim();
   try {
     const history = await queries.all(
-      `SELECT id, amount, type, status, created_at as createdAt 
-       FROM payments 
-       WHERE wallet_address = ? 
-       ORDER BY created_at DESC 
+      `SELECT id, amount, type, status, created_at as createdAt
+       FROM payments
+       WHERE wallet_address = ?
+       ORDER BY created_at DESC
        LIMIT 50`,
       [cleanWallet]
     );

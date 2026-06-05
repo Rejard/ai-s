@@ -9,25 +9,21 @@ import { approveSutWithdrawalPermission } from '../lib/sutApproval';
 function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
-  // 🌟 Google-linked email and real name are automatically mapped as read-only
   const [email] = useState(googleEmail || '');
   const [name, setName] = useState(googleName || '');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('Korea');
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
-  
-  // Assigned Manager State Variable
+
   const [managerAddress, setManagerAddress] = useState('');
   const [managerVerified, setManagerVerified] = useState(false);
   const [managerName, setManagerName] = useState('');
 
-  // State Variable
-  const [isApproved, setIsApproved] = useState(false); // SUT Approve status
+  const [isApproved, setIsApproved] = useState(false);
   const [approving, setApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Assigned Manager Wallet Verification Logic
   const verifyManager = async () => {
     if (!managerAddress) {
       alert('담당 매니저의 폴리곤 지갑 주소를 입력해 주세요.');
@@ -54,7 +50,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  // ID Card Photo File Selection Handler
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -63,7 +58,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  // Polygon SUT Smart Contract Withdrawal Limit Approval (SUT Approve) On-chain Execution
   const handleSUTApprove = async () => {
     setApproving(true);
     try {
@@ -107,14 +101,11 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  // Completeness calculation value to determine if all form items are entered correctly
   const isFormComplete = phone.trim() !== '' && idCardFile !== null && isApproved && managerVerified;
 
-  // Submit Full Registration Form (Reorganized with Modern Form Validation)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Phone number omission verification and focus shift
     if (!phone || !phone.trim()) {
       alert('📱 [미기입 사항] 전화번호를 입력해 주십시오.');
       const phoneInput = document.querySelector('input[type="tel"]');
@@ -122,20 +113,16 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       return;
     }
 
-    // 2. KYC ID card upload omission verification
     if (!idCardFile) {
       alert('🪪 [누락 사항] 신원 확인 및 KYC 심사 통과를 위해 주민등록증 / 여권 사진을 첨부해 주십시오.');
       return;
     }
 
-
-    // 3. Check Assigned Manager verification status
     if (!managerVerified) {
       alert('👑 [검증 필요] 담당 매니저 지갑 주소를 입력하고 [검증] 버튼을 눌러 승인받으셔야 가입이 가능합니다.');
       return;
     }
 
-    // 5. SUT Approve permission unapproved status verification
     if (!isApproved) {
       alert('🔑 [승인 필요] 가입비 자동 수납 및 시스템 활성화를 위해 [SUT 자동 인출 권한(Approve) 승인]을 완료해 주십시오.');
       return;
@@ -161,7 +148,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       });
       if (res.data.success) {
         alert(res.data.message);
-        onRegisterComplete(); // Parent app state refresh -> Redirecting to WaitingPage
+        onRegisterComplete();
         navigate('/waiting');
       }
     } catch (err) {
@@ -176,15 +163,14 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
 
   return (
     <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      
-      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
+
       {false && ((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div 
-          className="glass-card glow-active" 
+        <div
+          className="glass-card glow-active"
           onClick={() => navigate('/manager')}
-          style={{ 
-            padding: '12px 16px', 
+          style={{
+            padding: '12px 16px',
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             borderRadius: '12px',
@@ -209,8 +195,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </button>
         </div>
       )}
-      
-      {/* Title */}
+
       <div style={{ textAlign: 'center', marginTop: '10px' }}>
         <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>New Member KYC Registration</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
@@ -219,8 +204,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        
-        {/* 1. Wallet Address (Read-Only) */}
+
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">
             {(() => {
@@ -231,7 +215,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
                 };
                 return managers[addr.toLowerCase()];
               };
-              
+
               const mgrName = getManagerName(walletAddress);
               if (mgrName) {
                 return (
@@ -256,7 +240,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 2. Google Linked Login Information (Read-Only Confirmation Window) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">📧 연동된 구글 계정 이메일</label>
           <div style={{
@@ -277,18 +260,17 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 3. Name Input (Google Profile Information Auto-Display) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">👤 회원 실명 (구글 계정 자동 매핑)</label>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }}><User size={18} /></span>
-            <input 
-              type="text" 
-              className="form-input" 
+            <input
+              type="text"
+              className="form-input"
               style={{ paddingLeft: '45px', background: 'rgba(0,0,0,0.2)', color: '#F3F4F6' }}
               placeholder="구글 연동 실명"
               value={name}
-              readOnly // Set readOnly to ensure Google account and name match exactly
+              readOnly
               required
             />
           </div>
@@ -297,14 +279,13 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </span>
         </div>
 
-        {/* 4. Phone Number Input */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">📱 전화번호 (국가 코드 포함)</label>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }}><Phone size={18} /></span>
-            <input 
-              type="tel" 
-              className="form-input" 
+            <input
+              type="tel"
+              className="form-input"
               style={{ paddingLeft: '45px' }}
               placeholder="+82 10-1234-5678"
               value={phone}
@@ -314,13 +295,12 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 5. Country Selection */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">🌐 거주 국가</label>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)', zIndex: 1 }}><Globe size={18} /></span>
-            <select 
-              className="form-select" 
+            <select
+              className="form-select"
               style={{ paddingLeft: '45px' }}
               value={country}
               onChange={(e) => setCountry(e.target.value)}
@@ -335,7 +315,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        {/* 6. Assigned Manager Input (Required) */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">
             👑 담당 메니져 폴리곤 지갑 주소 (필수)
@@ -348,10 +327,10 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ position: 'relative', flex: 1 }}>
               <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }}><UserCheck size={18} /></span>
-              <input 
-                type="text" 
-                className="form-input" 
-                style={{ 
+              <input
+                type="text"
+                className="form-input"
+                style={{
                   paddingLeft: '45px',
                   borderColor: managerVerified ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.1)'
                 }}
@@ -365,18 +344,18 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
               />
             </div>
             {!managerVerified ? (
-              <button 
-                type="button" 
-                className="btn-primary" 
+              <button
+                type="button"
+                className="btn-primary"
                 style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto' }}
                 onClick={verifyManager}
               >
                 검증
               </button>
             ) : (
-              <button 
-                type="button" 
-                className="btn-secondary" 
+              <button
+                type="button"
+                className="btn-secondary"
                 style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto', background: 'rgba(239, 68, 68, 0.2)', color: '#FCA5A5' }}
                 onClick={() => {
                   setManagerVerified(false);
@@ -393,7 +372,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </span>
         </div>
 
-        {/* 7. ID Card File Upload */}
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">🪪 KYC 제출용 신분증 첨부</label>
           <div style={{
@@ -405,8 +383,8 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
             cursor: 'pointer',
             position: 'relative'
           }}>
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept="image/*,application/pdf"
               onChange={handleFileChange}
               style={{
@@ -429,9 +407,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-
-
-        {/* 8. Delegate Smart Contract Auto Collection Permission (Approve) */}
         <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(139,92,246,0.2)' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-start' }}>
             <Key size={20} color="#8B5CF6" style={{ marginTop: '2px', flexShrink: 0 }} />
@@ -442,11 +417,11 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
               </p>
             </div>
           </div>
-          
+
           {!isApproved ? (
-            <button 
-              type="button" 
-              className="btn-primary" 
+            <button
+              type="button"
+              className="btn-primary"
               style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', boxShadow: 'none' }}
               onClick={handleSUTApprove}
               disabled={approving}
@@ -473,7 +448,6 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           )}
         </div>
 
-        {/* 9. Submission Guide Warning */}
         <div style={{ display: 'flex', gap: '8px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', padding: '12px', borderRadius: '10px' }}>
           <ShieldAlert size={18} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
@@ -481,20 +455,19 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </p>
         </div>
 
-        {/* Submit Button (Always enabled to provide feedback on missing fields when clicked, only fully activated with a vivid color when all conditions are met!) */}
-        <button 
-          type="submit" 
-          className="btn-primary" 
+        <button
+          type="submit"
+          className="btn-primary"
           disabled={submitting}
-          style={{ 
-            padding: '16px', 
+          style={{
+            padding: '16px',
             marginTop: '10px',
-            opacity: isFormComplete ? 1.0 : 0.45, 
-            background: isFormComplete 
-              ? 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' 
-              : 'rgba(255, 255, 255, 0.08)', 
-            border: isFormComplete 
-              ? '1px solid rgba(139, 92, 246, 0.4)' 
+            opacity: isFormComplete ? 1.0 : 0.45,
+            background: isFormComplete
+              ? 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)'
+              : 'rgba(255, 255, 255, 0.08)',
+            border: isFormComplete
+              ? '1px solid rgba(139, 92, 246, 0.4)'
               : '1px solid rgba(255, 255, 255, 0.05)',
             color: isFormComplete ? '#FFFFFF' : 'rgba(255, 255, 255, 0.4)',
             boxShadow: isFormComplete ? '0 0 20px rgba(139, 92, 246, 0.45)' : 'none',

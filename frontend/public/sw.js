@@ -5,7 +5,7 @@ const CACHE_NAME = 'ai-s-pwa-cache-v2';
 const urlsToCache = [];
 
 self.addEventListener('install', (event) => {
-  // Induce new service worker to activate immediately without waiting
+
   self.skipWaiting();
 });
 
@@ -14,7 +14,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          // If a previous version's cache exists, delete all of it to immediately and completely release the browser lock-in phenomenon.
+
           console.log('[PWA SW] Clearing old cache:', cacheName);
           return caches.delete(cacheName);
         })
@@ -24,6 +24,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Always directly fetch the real latest data from the network without cache matching (Perfect White Screen Defense)
+
   event.respondWith(fetch(event.request));
 });

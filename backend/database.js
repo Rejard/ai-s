@@ -9,7 +9,7 @@ const db = new sqlite3.Database(dbPath);
 function initializeDatabase() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
-      // 1. Create users table
+
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,9 +30,6 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
-
-
-      // 3. Create payments table
       db.run(`
         CREATE TABLE IF NOT EXISTS payments (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,19 +44,17 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
-      // 3.5 Create platform_settings table
       db.run(`
         CREATE TABLE IF NOT EXISTS platform_settings (
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL
         )
-      `, (err) => { 
-        if (err) return reject(err); 
+      `, (err) => {
+        if (err) return reject(err);
         // Insert default mock yield (initial value 0.0)
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
       });
 
-      // 3.8 Create manager_yield_history table (for preserving yield time series chart data)
       db.run(`
         CREATE TABLE IF NOT EXISTS manager_yield_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +63,6 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
-      // 3.9 Create manager_ai_logs table (for preserving AI decision-making briefings)
       db.run(`
         CREATE TABLE IF NOT EXISTS manager_ai_logs (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,10 +151,8 @@ function initializeDatabase() {
         });
       });
 
-      // 4. For initial registration activation, insert Master Referrer (Root Referrer) data
-      // Rejard's real wallet address, email, and name permanently registered as Master Manager!
-      const rootReferrerAddress = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'; 
-      
+      const rootReferrerAddress = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
+
       db.run(`
         INSERT OR IGNORE INTO users (
           wallet_address, email, name, phone, country, status, tier, joined_at, approved_at
@@ -171,14 +163,14 @@ function initializeDatabase() {
 
       // Even if an existing DB file is already created, force integrity correction and rectification of email column and name with Lee Myung-hak's Master information
       db.run("ALTER TABLE users ADD COLUMN is_manager INTEGER DEFAULT 0", (err) => {
-        // If 'duplicate column name' error occurs, pass as it already exists
+
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ users 테이블 is_manager 컬럼 마이그레이션 실패:", err.message);
         }
       });
 
       db.run(`
-        UPDATE users 
+        UPDATE users
         SET email = 'lemaiiisk@gmail.com',
             name = '이명학',
             status = 'APPROVED',
@@ -187,16 +179,12 @@ function initializeDatabase() {
         WHERE wallet_address = ?
       `, [rootReferrerAddress]);
 
-
-
-      // 🌟 Master Manager Lee Myung-hak wallet account registration process completed
       console.log('✔ SQLite Database initialized successfully with Root Referrers.');
       resolve();
     });
   });
 }
 
-// Provide helper query function
 const queries = {
   run(sql, params = []) {
     return new Promise((resolve, reject) => {

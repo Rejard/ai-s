@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  TrendingUp, TrendingDown, Wallet, Users, AlertTriangle, 
+import {
+  TrendingUp, TrendingDown, Wallet, Users, AlertTriangle,
   ArrowUpRight, ArrowDownLeft, ShieldCheck, Play, Sparkles, StopCircle
 } from 'lucide-react';
 import { API_BASE } from '../App';
@@ -16,11 +16,10 @@ import {
 
 function Dashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
-  
+
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [depositPercent, setDepositPercent] = useState(0);
-
 
   const [priceHistory, setPriceHistory] = useState([]);
   const [sutPrice, setSutPrice] = useState(0.19);
@@ -116,16 +115,15 @@ function Dashboard({ walletAddress, userData, onLogout }) {
 
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      
-      {/* 🌟 Master Manager exclusive 'Return to Manager Mode' shortcut bar */}
+
       {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
         (walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div 
-          className="glass-card glow-active" 
+        <div
+          className="glass-card glow-active"
           onClick={() => navigate('/manager')}
-          style={{ 
-            padding: '12px 16px', 
+          style={{
+            padding: '12px 16px',
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             borderRadius: '12px',
@@ -151,14 +149,13 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       )}
 
-      {/* 👑 Master Admin exclusive 'Enter Admin Mode' shortcut bar */}
       {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div 
-          className="glass-card glow-active" 
+        <div
+          className="glass-card glow-active"
           onClick={() => navigate('/admin')}
-          style={{ 
-            padding: '12px 16px', 
+          style={{
+            padding: '12px 16px',
             background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             borderRadius: '12px',
@@ -185,12 +182,11 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       )}
 
-      {/* Registered User Welcome Banner */}
-      <div className="glass-card" style={{ 
+      <div className="glass-card" style={{
         padding: '15px 18px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)'
       }}>
-        <div style={{ 
-          width: '42px', height: '42px', borderRadius: '50%', background: 'var(--primary-gradient)', 
+        <div style={{
+          width: '42px', height: '42px', borderRadius: '50%', background: 'var(--primary-gradient)',
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           fontSize: '18px', fontWeight: '700', color: '#FFFFFF'
         }}>
@@ -202,7 +198,6 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       </div>
 
-      {/* 1. Real-time SUT Token Price Chart */}
       {portfolio ? (
         <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -213,7 +208,6 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                   ${sutPrice.toFixed(4)} <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
                 </span>
 
-                {/* 🌟 24h Fluctuation Rate Badge */}
                 <span style={{
                   fontSize: '11px',
                   fontWeight: '700',
@@ -268,7 +262,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                 const maxVal = Math.max(...data) * 1.001;
                 const valRange = maxVal - minVal || 0.01;
                 const points = data.map((val, idx) => {
-                  const x = data.length > 1 ? (idx / (data.length - 1)) * 220 : 110; 
+                  const x = data.length > 1 ? (idx / (data.length - 1)) * 220 : 110;
                   const y = height - 20 - ((val - minVal) / valRange) * (height - 40);
                   return { x, y, val };
                 });
@@ -304,13 +298,12 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
       )}
 
-      {/* 2. My Total Assets and Deposit Status */}
       <div className="glass-card" style={{ padding: '20px' }}>
         <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Wallet size={18} color="#8B5CF6" />
           나의 자산 및 예치 현황
         </h3>
-        
+
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
           {(() => {
             const totalAssets = walletSutBalance + (portfolio ? portfolio.totalInvested : 0);
@@ -341,16 +334,15 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                 </div>
 
                 <div style={{ marginTop: '10px', marginBottom: '20px', width: '100%', height: '14px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '10px', overflow: 'hidden', display: 'flex' }}>
-                  {/* Wallet Balance Ratio Bar (Purple) */}
+
                   <div style={{ width: `${walletPercent}%`, height: '100%', background: 'var(--primary-gradient)', transition: 'width 0.5s ease' }}></div>
-                  {/* Deposit Ratio Bar (Green) */}
+
                   <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
                 </div>
               </>
             );
           })()}
 
-          {/* Deposit/Withdrawal Button */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>자금 예치하기</button>
             <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>Withdraw Funds</button>
@@ -358,11 +350,6 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       </div>
 
-
-
-
-
-      {/* Virtual Deposit/Withdrawal Modal */}
       {showTxModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className="glass-card" style={{ width: '90%', maxWidth: '380px', background: 'var(--bg-app)', border: '1px solid rgba(255,255,255,0.1)', padding: '24px' }}>
@@ -375,8 +362,8 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                 <input type="number" className="form-input" placeholder="예: 250" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} min="1" required />
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
-                {txType === 'DEPOSIT' 
-                  ? '추가 자금을 수동으로 예치합니다.' 
+                {txType === 'DEPOSIT'
+                  ? '추가 자금을 수동으로 예치합니다.'
                   : '인출 시 포트폴리오에서 자산이 차감되어 본인 소유의 지갑 주소로 입금됩니다.'}
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -387,18 +374,16 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
       )}
-      {/* Virtual Deposit/Withdrawal Modal omitted (located above) */}
 
-      {/* Preview of Last 3 Transactions */}
       <div className="glass-card" style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
           <h3 style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: '#F3F4F6' }}>
             <span style={{ color: 'var(--accent-color)' }}>📜</span> 최근 거래 내역
           </h3>
-          <button 
+          <button
             onClick={() => navigate('/history')}
-            style={{ 
-              background: 'transparent', border: 'none', color: 'var(--accent-color)', 
+            style={{
+              background: 'transparent', border: 'none', color: 'var(--accent-color)',
               fontSize: '12px', fontWeight: '600', cursor: 'pointer'
             }}
           >
@@ -436,17 +421,15 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         )}
       </div>
 
-      {/* Secure Logout Button */}
-      <button 
-        type="button" 
-        className="btn-secondary" 
+      <button
+        type="button"
+        className="btn-secondary"
         style={{ padding: '14px', fontSize: '14px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.02)', marginTop: '5px', display: 'flex', justifyContent: 'center', gap: '8px' }}
         onClick={onLogout}
       >
         🔌 안전하게 로그아웃 (지갑 연결 해제)
       </button>
 
-      {/* Manager Contact (Customer Center) */}
       <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', color: 'var(--text-dark)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
           <div>💬 담당 매니저 문의</div>
