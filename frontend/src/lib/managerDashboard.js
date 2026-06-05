@@ -248,3 +248,33 @@ export async function saveManagerAiSettings({
     buildManagerHeaders({ managerEmail, getStorageItem })
   );
 }
+
+export async function submitManagerGateIoOrder({
+  apiBase,
+  managerEmail,
+  side,
+  amount,
+  price,
+  axiosClient,
+  getStorageItem,
+}) {
+  const parsedAmount = parseFloat(amount);
+  const parsedPrice = parseFloat(price);
+
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    throw new Error('invalid Gate.io order amount');
+  }
+  if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+    throw new Error('invalid Gate.io order price');
+  }
+
+  return axiosClient.post(
+    `${apiBase}/manager/gateio-order`,
+    {
+      side,
+      amount: parsedAmount,
+      price: parsedPrice,
+    },
+    buildManagerHeaders({ managerEmail, getStorageItem })
+  );
+}

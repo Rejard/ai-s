@@ -19,6 +19,7 @@ import {
   rejectManagerUser,
   saveManagerAiSettings,
   saveManagerGateIoCredentials,
+  submitManagerGateIoOrder,
 } from '../lib/managerDashboard';
 
 function ManagerDashboard({ walletAddress, managerEmail }) {
@@ -105,11 +106,15 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
     setSubmittingOrder(true);
     try {
-      const res = await axios.post(`${API_BASE}/manager/gateio-order`, {
+      const res = await submitManagerGateIoOrder({
+        apiBase: API_BASE,
+        managerEmail,
         side,
-        amount: parseFloat(orderAmount),
-        price: parseFloat(orderPrice)
-      }, getManagerHeaders());
+        amount: orderAmount,
+        price: orderPrice,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
 
       if (res.data.success) {
         alert(`🎉 ${res.data.message}\n주문 ID: ${res.data.order.id}`);

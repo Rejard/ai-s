@@ -11,6 +11,7 @@ import {
   rejectManagerUser,
   saveManagerAiSettings,
   saveManagerGateIoCredentials,
+  submitManagerGateIoOrder,
 } from './managerDashboard.js';
 
 assert.equal(getManagerIdentityEmail(' MANAGER@Example.COM '), 'manager@example.com');
@@ -278,3 +279,44 @@ assert.equal(settingsPosts[0].url, 'https://api.test/manager/ai-settings');
 assert.equal(settingsPosts[0].config.headers['x-manager-email'], 'boss@example.com');
 
 console.log('ok - manager dashboard AI settings handler');
+
+const orderPosts = [];
+const orderAxios = {
+  async post(url, body, config) {
+    orderPosts.push({ url, body, config });
+    return { data: { success: true, order: { id: 'order-1' } } };
+  },
+};
+
+await submitManagerGateIoOrder({
+  apiBase: 'https://api.test',
+  managerEmail: 'boss@example.com',
+  side: 'buy',
+  amount: '10.5',
+  price: '0.15',
+  axiosClient: orderAxios,
+  getStorageItem: () => '',
+});
+
+assert.deepEqual(orderPosts[0].body, {
+  side: 'buy',
+  amount: 10.5,
+  price: 0.15,
+});
+assert.equal(orderPosts[0].url, 'https://api.test/manager/gateio-order');
+assert.equal(orderPosts[0].config.headers['x-manager-email'], 'boss@example.com');
+
+await assert.rejects(
+  () => submitManagerGateIoOrder({
+    apiBase: 'https://api.test',
+    managerEmail: 'boss@example.com',
+    side: 'buy',
+    amount: '0',
+    price: '0.15',
+    axiosClient: orderAxios,
+    getStorageItem: () => '',
+  }),
+  /invalid Gate.io order amount/
+);
+
+console.log('ok - manager dashboard manual Gate.io order handler');
