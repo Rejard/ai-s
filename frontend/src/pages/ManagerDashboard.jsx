@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
+import { isFreshAiStrategy } from '../lib/aiTrading';
 
 function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -69,7 +70,8 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [managerPassword, setManagerPassword] = useState('');
   
   // 🌟 이명학 마스터 매니저 구글 이메일 고정 정의
-  const MASTER_MANAGER_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
+  const managerIdentityEmail = (managerEmail || 'lemaiiisk@gmail.com').toLowerCase().trim();
+  const isMaskedCredential = (value) => typeof value === 'string' && value.includes('******');
   
   // 백엔드 보안 미들웨어를 통과하기 위한 x-manager-email 헤더 빌드 및 로컬 Gate.io API 키 적재
   const getManagerHeaders = () => {
@@ -77,9 +79,9 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     const apiSecret = localStorage.getItem('gateio_api_secret') || '';
     return {
       headers: {
-        'x-manager-email': MASTER_MANAGER_EMAIL,
-        'x-gateio-api-key': apiKey,
-        'x-gateio-api-secret': apiSecret
+        'x-manager-email': managerIdentityEmail,
+        'x-gateio-api-key': isMaskedCredential(apiKey) ? '' : apiKey,
+        'x-gateio-api-secret': isMaskedCredential(apiSecret) ? '' : apiSecret
       }
     };
   };
@@ -330,14 +332,13 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         if (perfRes.data.success && perfRes.data.isConfigured) {
           setPerformance(perfRes.data);
           
-          // 다른 기기 접속 시 로컬 스토리지 및 UI State에 동기화 폴백
-          if (!localStorage.getItem('gateio_api_key') && perfRes.data.maskedApiKey) {
-            localStorage.setItem('gateio_api_key', perfRes.data.maskedApiKey);
-            setLocalApiKey(perfRes.data.maskedApiKey);
+          if (isMaskedCredential(localStorage.getItem('gateio_api_key'))) {
+            localStorage.removeItem('gateio_api_key');
+            setLocalApiKey('');
           }
-          if (!localStorage.getItem('gateio_api_secret') && perfRes.data.maskedApiSecret) {
-            localStorage.setItem('gateio_api_secret', perfRes.data.maskedApiSecret);
-            setLocalApiSecret(perfRes.data.maskedApiSecret);
+          if (isMaskedCredential(localStorage.getItem('gateio_api_secret'))) {
+            localStorage.removeItem('gateio_api_secret');
+            setLocalApiSecret('');
           }
           if (!localStorage.getItem('gateio_deposit_address') && perfRes.data.depositAddress) {
             localStorage.setItem('gateio_deposit_address', perfRes.data.depositAddress);
@@ -397,11 +398,11 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
     const latestStrategy = aiLogs[0];
     if (lastExecutedStrategyIdRef.current === latestStrategy.id) return; // 이미 실행한 전략
+    lastExecutedStrategyIdRef.current = latestStrategy.id;
+    return;
 
     // 15분 이상 지난 전략은 무시
-    const strategyTime = new Date(latestStrategy.created_at).getTime();
-    const now = Date.now();
-    if (now - strategyTime > 15 * 60 * 1000) {
+    if (!isFreshAiStrategy(latestStrategy.created_at)) {
       lastExecutedStrategyIdRef.current = latestStrategy.id;
       return;
     }
@@ -436,24 +437,24 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       
       const apiKey = localStorage.getItem('gateio_api_key') || '';
       const apiSecret = localStorage.getItem('gateio_api_secret') || '';
-      if (!apiKey || !apiSecret) {
-        console.warn('API 키가 없어 매매를 스킵합니다.');
-        return;
-      }
 
       // 백그라운드 매매 실행 함수
       const executeAutoTrade = async () => {
         try {
+          const headers = {
+            'x-manager-email': managerEmail
+          };
+          if (apiKey && apiSecret && !isMaskedCredential(apiKey) && !isMaskedCredential(apiSecret)) {
+            headers['x-gateio-api-key'] = apiKey;
+            headers['x-gateio-api-secret'] = apiSecret;
+          }
+
           const res = await axios.post(`${API_BASE}/manager/gateio-order`, {
             side: tradeSide,
             amount: parseFloat(tradeAmount.toFixed(4)),
             price: parseFloat(tradePrice)
           }, {
-            headers: {
-              'x-manager-email': managerEmail,
-              'x-gateio-api-key': apiKey,
-              'x-gateio-api-secret': apiSecret
-            }
+            headers
           });
           if (res.data.success) {
             console.log('🤖 AI 자동 매매 체결 성공!', res.data);

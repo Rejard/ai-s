@@ -1,5 +1,8 @@
 const axios = require('axios');
 const { queries } = require('./database');
+const { createGateIoOrder, getGateIoBalances } = require('./gateioHelper');
+const { decryptText } = require('./secureCredentials');
+const { buildTradePlan } = require('./autoTradeMath');
 
 // 실시간 SUT 가격 히스토리 메모리 저장소 (최근 10개 가격 보유)
 if (!global.priceHistory) {
@@ -86,6 +89,152 @@ Response JSON schema:
   return { success: false, error: 'AI 응답 수신 실패' };
 }
 
+async function recordManagerTradeExecution({ managerEmail, aiLogId, side, amount, price, status, gateioOrderId = '', message = '' }) {
+  try {
+    await queries.run(`
+      INSERT OR IGNORE INTO manager_trade_executions
+        (manager_email, ai_log_id, side, amount, price, status, gateio_order_id, message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [managerEmail, aiLogId, side, amount, price, status, gateioOrderId, message]);
+  } catch (err) {
+    console.error("[AI GRID BOT] trade execution log save failed:", err.message);
+  }
+}
+
+async function executeServerAutoTrades(aiLogId, aiResult) {
+  const decision = String(aiResult.decision || '').toUpperCase();
+  const proposedPrice = parseFloat(aiResult.price) || 0;
+  const amountRatio = parseFloat(aiResult.amount_ratio) || 0.1;
+
+  if (!aiLogId || !proposedPrice || !['BUY', 'SELL'].includes(decision)) {
+    return;
+  }
+
+  const managers = await queries.all(`
+    SELECT
+      s.manager_email,
+      s.ai_grid_lower,
+      s.ai_grid_upper,
+      c.encrypted_api_key,
+      c.encrypted_api_secret
+    FROM manager_ai_settings s
+    JOIN manager_gateio_credentials c
+      ON LOWER(c.manager_email) = LOWER(s.manager_email)
+    WHERE s.ai_grid_status = 'ON'
+  `);
+
+  for (const manager of managers) {
+    const managerEmail = manager.manager_email;
+    const alreadyRun = await queries.get(
+      "SELECT id FROM manager_trade_executions WHERE LOWER(manager_email) = LOWER(?) AND ai_log_id = ?",
+      [managerEmail, aiLogId]
+    );
+    if (alreadyRun) continue;
+
+    let side = '';
+    let amount = 0;
+
+    try {
+      const apiKey = decryptText(manager.encrypted_api_key);
+      const apiSecret = decryptText(manager.encrypted_api_secret);
+      const balanceRes = await getGateIoBalances(apiKey, apiSecret);
+      if (!balanceRes.success) {
+        await recordManagerTradeExecution({ managerEmail, aiLogId, side: decision.toLowerCase(), amount: 0, price: proposedPrice, status: 'FAILED', message: balanceRes.message || 'Gate.io balance check failed.' });
+        continue;
+      }
+
+      const oneTimeOverride = await queries.get(`
+        SELECT id, side, spend_usdt, dry_run
+        FROM manager_one_time_trade_tests
+        WHERE LOWER(manager_email) = LOWER(?)
+          AND status = 'PENDING'
+          AND UPPER(side) = ?
+        ORDER BY id ASC
+        LIMIT 1
+      `, [managerEmail, decision]);
+
+      const tradePlan = buildTradePlan({
+        decision,
+        proposedPrice,
+        amountRatio,
+        balances: balanceRes.balances,
+        lower: manager.ai_grid_lower,
+        upper: manager.ai_grid_upper,
+        oneTimeOverride
+      });
+      side = tradePlan.side;
+      amount = tradePlan.amount;
+
+      if (!tradePlan.executable) {
+        await recordManagerTradeExecution({
+          managerEmail,
+          aiLogId,
+          side: side || decision.toLowerCase(),
+          amount: tradePlan.amount || 0,
+          price: proposedPrice,
+          status: 'SKIPPED',
+          message: tradePlan.message
+        });
+        continue;
+      }
+
+      if (tradePlan.dryRun) {
+        await recordManagerTradeExecution({
+          managerEmail,
+          aiLogId,
+          side,
+          amount,
+          price: proposedPrice,
+          status: 'SKIPPED',
+          message: `${tradePlan.message} Would submit ${side} ${amount} SUT @ ${proposedPrice} USDT.`
+        });
+        if (oneTimeOverride) {
+          await queries.run(`
+            UPDATE manager_one_time_trade_tests
+            SET status = 'USED', used_ai_log_id = ?, used_at = datetime('now')
+            WHERE id = ?
+          `, [aiLogId, oneTimeOverride.id]);
+        }
+        continue;
+      }
+
+      const orderRes = await createGateIoOrder(apiKey, apiSecret, side, amount, proposedPrice);
+      if (orderRes.success) {
+        await recordManagerTradeExecution({
+          managerEmail,
+          aiLogId,
+          side,
+          amount,
+          price: proposedPrice,
+          status: 'SUCCESS',
+          gateioOrderId: orderRes.data && orderRes.data.id ? String(orderRes.data.id) : '',
+          message: 'Server auto trade order submitted.'
+        });
+      } else {
+        await recordManagerTradeExecution({
+          managerEmail,
+          aiLogId,
+          side,
+          amount,
+          price: proposedPrice,
+          status: 'FAILED',
+          message: orderRes.message || 'Gate.io order failed.'
+        });
+      }
+    } catch (err) {
+      await recordManagerTradeExecution({
+        managerEmail,
+        aiLogId,
+        side: side || decision.toLowerCase(),
+        amount,
+        price: proposedPrice,
+        status: 'FAILED',
+        message: err.message
+      });
+    }
+  }
+}
+
 /**
  * AI 그리드 봇 코어 실행 루프 함수 (중앙화 분석 엔진)
  */
@@ -106,8 +255,11 @@ async function runAiGridBot() {
       if (s.key === 'ai_grid_status') aiStatus = s.value;
     });
 
-    if (aiStatus !== 'ON') {
-      console.log(`[🤖 AI GRID BOT] 플랫폼 전체 AI 봇 상태가 OFF입니다. 분석을 일시 중단합니다.`);
+    const activeManagerRow = await queries.get("SELECT COUNT(*) AS total FROM manager_ai_settings WHERE ai_grid_status = 'ON'");
+    const hasActiveManager = activeManagerRow && activeManagerRow.total > 0;
+
+    if (aiStatus !== 'ON' && !hasActiveManager) {
+      console.log(`[🤖 AI GRID BOT] 활성화된 매니저 AI 봇이 없습니다. 분석을 일시 중단합니다.`);
       return;
     }
 
@@ -168,7 +320,7 @@ async function runAiGridBot() {
 
     // 5. AI 판단 로그 DB 저장 (매니저 로컬에서 이 데이터를 가져가서 개별 실행)
     try {
-      await queries.run(`
+      const logInsert = await queries.run(`
         INSERT INTO manager_ai_logs (decision, reason, proposed_price, proposed_amount)
         VALUES (?, ?, ?, ?)
       `, [
@@ -187,6 +339,7 @@ async function runAiGridBot() {
         )
       `);
       console.log(`[🤖 AI GRID BOT] 글로벌 전략 DB 저장 완료.`);
+      await executeServerAutoTrades(logInsert.lastID, aiResult);
     } catch (dbLogErr) {
       console.error("[🤖 AI GRID BOT] 전략 로그 저장 실패:", dbLogErr.message);
     }
@@ -235,5 +388,6 @@ function initGridBotScheduler() {
 
 module.exports = {
   runAiGridBot,
-  initGridBotScheduler
+  initGridBotScheduler,
+  executeServerAutoTrades
 };

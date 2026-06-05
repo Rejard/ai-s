@@ -3,25 +3,72 @@ const router = express.Router();
 const axios = require('axios');
 const { queries } = require('../database');
 const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades } = require('../gateioHelper');
+const { decryptText, encryptText } = require('../secureCredentials');
 
 // 플랫폼 최초 마스터 매니저 (이명학 - Root Master Wallet) 지갑 주소 고정
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
 // 남들의 메니져 데이터 불법 조회 및 제어를 원천 차단하는 철통 보안 미들웨어!
 // 기존 지갑 주소 검증 대신, 본인 인증의 최종 진리인 구글 이메일 lemaiiisk@gmail.com을 기준으로 통제합니다.
-const managerAuthMiddleware = (req, res, next) => {
-  const managerEmail = req.headers['x-manager-email'];
-  if (!managerEmail || managerEmail.toLowerCase().trim() !== 'lemaiiisk@gmail.com'.toLowerCase()) {
-    return res.status(403).json({ 
-      success: false, 
-      message: '보안 경보: 메니져 권한이 존재하지 않습니다. 마스터 매니저 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.' 
+const getRequestManagerEmail = (req) => (req.headers['x-manager-email'] || '').toLowerCase().trim();
+
+const managerAuthMiddleware = async (req, res, next) => {
+  const managerEmail = getRequestManagerEmail(req);
+  if (!managerEmail) {
+    return res.status(403).json({
+      success: false,
+      message: '매니저 이메일 인증 정보가 없습니다.'
     });
   }
-  next();
+
+  if (managerEmail === 'lemaiiisk@gmail.com') {
+    req.managerEmail = managerEmail;
+    return next();
+  }
+
+  try {
+    const manager = await queries.get(
+      "SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND is_manager = 1 AND status = 'APPROVED'",
+      [managerEmail]
+    );
+    if (!manager) {
+      return res.status(403).json({
+        success: false,
+        message: '매니저 권한이 존재하지 않습니다.'
+      });
+    }
+    req.managerEmail = managerEmail;
+    next();
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
 // 모든 메니져 라우트에 보안 차단 미들웨어 강제 마운트!
 router.use(managerAuthMiddleware);
+
+const isMaskedCredential = (value) => {
+  return typeof value === 'string' && value.includes('******');
+};
+
+const resolveGateIoCredentials = async (req, store = queries) => {
+  let apiKey = req.headers['x-gateio-api-key'];
+  let apiSecret = req.headers['x-gateio-api-secret'];
+  const managerEmail = req.managerEmail || getRequestManagerEmail(req);
+
+  if (!apiKey || !apiSecret || isMaskedCredential(apiKey) || isMaskedCredential(apiSecret)) {
+    const row = await store.get(
+      "SELECT encrypted_api_key, encrypted_api_secret FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)",
+      [managerEmail]
+    );
+    if (row) {
+      apiKey = decryptText(row.encrypted_api_key);
+      apiSecret = decryptText(row.encrypted_api_secret);
+    }
+  }
+
+  return { apiKey, apiSecret };
+};
 
 /**
  * @route GET /api/manager/gateio-balance
@@ -29,18 +76,7 @@ router.use(managerAuthMiddleware);
  */
 router.get('/gateio-balance', async (req, res) => {
   try {
-    let apiKey = req.headers['x-gateio-api-key'];
-    let apiSecret = req.headers['x-gateio-api-secret'];
-
-    // 헤더에 없으면 서버 DB에서 로드 (다른 기기 접속 폴백 지원)
-    if (!apiKey || !apiSecret) {
-      const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('gateio_api_key', 'gateio_api_secret')");
-      dbSettings.forEach(s => {
-        if (s.key === 'gateio_api_key') apiKey = s.value;
-        if (s.key === 'gateio_api_secret') apiSecret = s.value;
-      });
-    }
-
+    const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
     const balanceRes = await getGateIoBalances(apiKey, apiSecret);
     res.json(balanceRes);
   } catch (err) {
@@ -407,8 +443,7 @@ router.post('/trigger-ai-profit', async (req, res) => {
     // AI 수익 분배(이자 적립) 시, 매니저 거래소 계정에서 실제로 SUT 매매가 이루어지도록 0.1 SUT 소액 매도 주문을 퀵 격발합니다.
     let orderResultMsg = '';
     try {
-      const apiKey = req.headers['x-gateio-api-key'];
-      const apiSecret = req.headers['x-gateio-api-secret'];
+      const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
       const balanceCheck = await getGateIoBalances(apiKey, apiSecret);
       if (balanceCheck.success && balanceCheck.balances.SUT >= 0.1) {
         const mockPrice = 0.19; 
@@ -448,27 +483,33 @@ router.post('/trigger-ai-profit', async (req, res) => {
  */
 router.get('/ai-settings', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key LIKE 'ai_grid_%' OR key LIKE 'gateio_%'");
+    const managerEmail = req.managerEmail;
+    const row = await queries.get(
+      "SELECT * FROM manager_ai_settings WHERE LOWER(manager_email) = LOWER(?)",
+      [managerEmail]
+    );
+    const credentials = await queries.get(
+      "SELECT deposit_address FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)",
+      [managerEmail]
+    );
     const config = {
       ai_grid_status: 'OFF',
       ai_grid_lower: '0.15',
       ai_grid_upper: '0.30',
       ai_grid_count: '10',
       ai_grid_frequency: '5',
-      hasApiKey: false,
-      hasApiSecret: false,
-      hasDepositAddress: false
+      hasApiKey: !!credentials,
+      hasApiSecret: !!credentials,
+      hasDepositAddress: !!(credentials && credentials.deposit_address)
     };
-    
-    settings.forEach(s => {
-      if (s.key === 'gateio_api_key' && s.value) config.hasApiKey = true;
-      if (s.key === 'gateio_api_secret' && s.value) config.hasApiSecret = true;
-      if (s.key === 'gateio_deposit_address' && s.value) config.hasDepositAddress = true;
-      
-      if (config.hasOwnProperty(s.key)) {
-        config[s.key] = s.value;
-      }
-    });
+
+    if (row) {
+      config.ai_grid_status = row.ai_grid_status;
+      config.ai_grid_lower = row.ai_grid_lower;
+      config.ai_grid_upper = row.ai_grid_upper;
+      config.ai_grid_count = row.ai_grid_count;
+      config.ai_grid_frequency = row.ai_grid_frequency;
+    }
     
     res.json({ success: true, settings: config });
   } catch (err) {
@@ -483,11 +524,35 @@ router.get('/ai-settings', async (req, res) => {
 router.post('/ai-settings', async (req, res) => {
   const { status, lower, upper, count, frequency } = req.body;
   try {
-    await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ai_grid_status', ?)`, [status]);
-    if (lower) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ai_grid_lower', ?)`, [lower]);
-    if (upper) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ai_grid_upper', ?)`, [upper]);
-    if (count) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ai_grid_count', ?)`, [count]);
-    if (frequency) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ai_grid_frequency', ?)`, [frequency]);
+    const managerEmail = req.managerEmail;
+    const current = await queries.get(
+      "SELECT * FROM manager_ai_settings WHERE LOWER(manager_email) = LOWER(?)",
+      [managerEmail]
+    );
+    const next = {
+      status: status || (current ? current.ai_grid_status : 'OFF'),
+      lower: lower || (current ? current.ai_grid_lower : '0.15'),
+      upper: upper || (current ? current.ai_grid_upper : '0.30'),
+      count: count || (current ? current.ai_grid_count : '10'),
+      frequency: frequency || (current ? current.ai_grid_frequency : '5')
+    };
+
+    await queries.run(`
+      INSERT INTO manager_ai_settings
+        (manager_email, ai_grid_status, ai_grid_lower, ai_grid_upper, ai_grid_count, ai_grid_frequency, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(manager_email) DO UPDATE SET
+        ai_grid_status = excluded.ai_grid_status,
+        ai_grid_lower = excluded.ai_grid_lower,
+        ai_grid_upper = excluded.ai_grid_upper,
+        ai_grid_count = excluded.ai_grid_count,
+        ai_grid_frequency = excluded.ai_grid_frequency,
+        updated_at = datetime('now')
+    `, [managerEmail, next.status, next.lower, next.upper, next.count, next.frequency]);
+
+    if (next.status !== 'ON') {
+      await queries.run("DELETE FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)", [managerEmail]);
+    }
     
     res.json({ success: true, message: 'AI 그리드 봇 설정이 성공적으로 저장되었습니다.' });
   } catch (err) {
@@ -502,9 +567,31 @@ router.post('/ai-settings', async (req, res) => {
 router.post('/save-gateio-keys', async (req, res) => {
   const { apiKey, apiSecret, depositAddress } = req.body;
   try {
-    if (apiKey) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('gateio_api_key', ?)`, [apiKey.trim()]);
-    if (apiSecret) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('gateio_api_secret', ?)`, [apiSecret.trim()]);
-    if (depositAddress) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('gateio_deposit_address', ?)`, [depositAddress.trim()]);
+    if (isMaskedCredential(apiKey) || isMaskedCredential(apiSecret)) {
+      return res.status(400).json({
+        success: false,
+        message: '마스킹된 Gate.io 키는 저장할 수 없습니다. 실제 API Key와 Secret 전체를 다시 입력해 주세요.'
+      });
+    }
+    if (!apiKey || !apiSecret) {
+      return res.status(400).json({ success: false, message: 'Gate.io API Key와 Secret은 필수입니다.' });
+    }
+
+    await queries.run(`
+      INSERT INTO manager_gateio_credentials
+        (manager_email, encrypted_api_key, encrypted_api_secret, deposit_address, updated_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(manager_email) DO UPDATE SET
+        encrypted_api_key = excluded.encrypted_api_key,
+        encrypted_api_secret = excluded.encrypted_api_secret,
+        deposit_address = excluded.deposit_address,
+        updated_at = datetime('now')
+    `, [
+      req.managerEmail,
+      encryptText(apiKey.trim()),
+      encryptText(apiSecret.trim()),
+      depositAddress ? depositAddress.trim() : ''
+    ]);
     
     res.json({ success: true, message: 'Gate.io API 키 및 주소가 서버 DB에 안전하게 저장되었습니다.' });
   } catch (err) {
@@ -518,7 +605,7 @@ router.post('/save-gateio-keys', async (req, res) => {
  */
 router.post('/clear-gateio-keys', async (req, res) => {
   try {
-    await queries.run(`DELETE FROM platform_settings WHERE key IN ('gateio_api_key', 'gateio_api_secret', 'gateio_deposit_address')`);
+    await queries.run("DELETE FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)", [req.managerEmail]);
     res.json({ success: true, message: '서버 DB에서 Gate.io API 키가 삭제되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -531,14 +618,13 @@ router.post('/clear-gateio-keys', async (req, res) => {
  */
 router.post('/gateio-order', async (req, res) => {
   const { side, amount, price } = req.body;
-  const apiKey = req.headers['x-gateio-api-key'];
-  const apiSecret = req.headers['x-gateio-api-secret'];
 
   if (!side || !amount || !price) {
     return res.status(400).json({ success: false, message: '주문 방향(side), 수량(amount), 가격(price)은 필수 입력 사항입니다.' });
   }
 
   try {
+    const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
     const orderRes = await createGateIoOrder(apiKey, apiSecret, side, amount, price);
     if (orderRes.success) {
       res.json({
@@ -563,17 +649,7 @@ router.post('/gateio-order', async (req, res) => {
  */
 router.get('/gateio-performance', async (req, res) => {
   try {
-    let apiKey = req.headers['x-gateio-api-key'];
-    let apiSecret = req.headers['x-gateio-api-secret'];
-
-    // 헤더에 없으면 서버 DB에서 로드 (다른 기기 접속 폴백 지원)
-    if (!apiKey || !apiSecret) {
-      const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('gateio_api_key', 'gateio_api_secret')");
-      dbSettings.forEach(s => {
-        if (s.key === 'gateio_api_key') apiKey = s.value;
-        if (s.key === 'gateio_api_secret') apiSecret = s.value;
-      });
-    }
+    const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
 
     if (!apiKey || !apiSecret) {
       return res.json({ 
@@ -702,5 +778,10 @@ router.get('/ai-logs', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+router.__private = {
+  isMaskedCredential,
+  resolveGateIoCredentials
+};
 
 module.exports = router;

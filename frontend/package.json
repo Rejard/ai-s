@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "npm run test:wallet && npm run test:ai",
     "test:wallet": "node src/lib/walletProvider.test.mjs && node src/lib/sutApproval.test.mjs",
+    "test:ai": "node src/lib/aiTrading.test.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

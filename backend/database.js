@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const { encryptText } = require('./secureCredentials');
 
 const dbPath = path.resolve(__dirname, 'platform.db');
 const db = new sqlite3.Database(dbPath);
@@ -78,6 +79,83 @@ function initializeDatabase() {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_gateio_credentials (
+          manager_email TEXT PRIMARY KEY,
+          encrypted_api_key TEXT NOT NULL,
+          encrypted_api_secret TEXT NOT NULL,
+          deposit_address TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_ai_settings (
+          manager_email TEXT PRIMARY KEY,
+          ai_grid_status TEXT NOT NULL DEFAULT 'OFF',
+          ai_grid_lower TEXT NOT NULL DEFAULT '0.15',
+          ai_grid_upper TEXT NOT NULL DEFAULT '0.30',
+          ai_grid_count TEXT NOT NULL DEFAULT '10',
+          ai_grid_frequency TEXT NOT NULL DEFAULT '5',
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_trade_executions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_email TEXT NOT NULL,
+          ai_log_id INTEGER NOT NULL,
+          side TEXT NOT NULL,
+          amount REAL NOT NULL,
+          price REAL NOT NULL,
+          status TEXT NOT NULL CHECK (status IN ('SUCCESS', 'FAILED', 'SKIPPED')),
+          gateio_order_id TEXT,
+          message TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(manager_email, ai_log_id)
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_one_time_trade_tests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_email TEXT NOT NULL,
+          side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),
+          spend_usdt REAL NOT NULL,
+          dry_run INTEGER NOT NULL DEFAULT 1,
+          status TEXT NOT NULL CHECK (status IN ('PENDING', 'USED', 'CANCELLED')) DEFAULT 'PENDING',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          used_at DATETIME,
+          used_ai_log_id INTEGER
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.get("SELECT value FROM platform_settings WHERE key = 'gateio_api_key'", (keyErr, keyRow) => {
+        if (keyErr || !keyRow || !keyRow.value) return;
+        db.get("SELECT value FROM platform_settings WHERE key = 'gateio_api_secret'", (secretErr, secretRow) => {
+          if (secretErr || !secretRow || !secretRow.value) return;
+          db.get("SELECT value FROM platform_settings WHERE key = 'gateio_deposit_address'", (depositErr, depositRow) => {
+            if (depositErr) return;
+            try {
+              db.run(`
+                INSERT OR IGNORE INTO manager_gateio_credentials
+                  (manager_email, encrypted_api_key, encrypted_api_secret, deposit_address, updated_at)
+                VALUES (?, ?, ?, ?, datetime('now'))
+              `, [
+                'lemaiiisk@gmail.com',
+                encryptText(keyRow.value),
+                encryptText(secretRow.value),
+                depositRow ? depositRow.value : ''
+              ]);
+            } catch (migrationErr) {
+              console.error("Gate.io credential encryption migration failed:", migrationErr.message);
+            }
+          });
+        });
+      });
 
       // 4. 최초 가입 활성화를 위한 마스터 추천인(Root Referrer) 데이터 삽입
       // Rejard님의 진짜 지갑 주소와 이메일, 성명을 마스터 매니저로 영구 등록!
