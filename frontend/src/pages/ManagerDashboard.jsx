@@ -19,6 +19,7 @@ import {
   rejectManagerUser,
   saveManagerAiSettings,
   saveManagerGateIoCredentials,
+  sendSutToGateIoDepositAddress,
   submitManagerGateIoOrder,
 } from '../lib/managerDashboard';
 
@@ -207,6 +208,17 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
     setSendingSut(true);
     try {
+      const transferTx = await sendSutToGateIoDepositAddress({
+        ethereum: window.ethereum,
+        ethersLib: ethers,
+        depositAddress: depositAddr,
+        amount: sendSutAmount,
+      });
+
+      alert(`?럦 ?깃났?곸쑝濡?${sendSutAmount} SUT媛 吏?뺥븯??Gate.io ?낃툑 二쇱냼濡??꾩넚?섏뿀?듬땲??\nTxHash: ${transferTx.hash}`);
+      setShowSendSutModal(false);
+      setSendSutAmount('');
+      return;
       // 1. 폴리곤 체인 ID(137 = 0x89) 검증 및 네트워크 전환 요청
       const tempProvider = new ethers.BrowserProvider(window.ethereum);
       const network = await tempProvider.getNetwork();

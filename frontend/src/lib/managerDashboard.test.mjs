@@ -11,6 +11,7 @@ import {
   rejectManagerUser,
   saveManagerAiSettings,
   saveManagerGateIoCredentials,
+  sendSutToGateIoDepositAddress,
   submitManagerGateIoOrder,
 } from './managerDashboard.js';
 
@@ -320,3 +321,92 @@ await assert.rejects(
 );
 
 console.log('ok - manager dashboard manual Gate.io order handler');
+
+const walletRequests = [];
+const transferCalls = [];
+const fakeEthereum = {
+  async request(payload) {
+    walletRequests.push(payload);
+  },
+};
+
+class FakeBrowserProvider {
+  constructor(ethereum) {
+    assert.equal(ethereum, fakeEthereum);
+  }
+
+  async getNetwork() {
+    return { chainId: 1n };
+  }
+
+  async getSigner() {
+    return { address: '0xsigner' };
+  }
+}
+
+class FakeContract {
+  constructor(address, abi, signer) {
+    assert.equal(address, '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55');
+    assert.equal(abi[0], 'function transfer(address recipient, uint256 amount) external returns (bool)');
+    assert.deepEqual(signer, { address: '0xsigner' });
+  }
+
+  async transfer(address, amount) {
+    transferCalls.push([address, amount]);
+    return {
+      hash: '0xtxhash',
+      async wait() {
+        return { status: 1 };
+      },
+    };
+  }
+}
+
+const fakeTransferEthers = {
+  BrowserProvider: FakeBrowserProvider,
+  Contract: FakeContract,
+  parseUnits(value, decimals) {
+    assert.equal(value, '12.5');
+    assert.equal(decimals, 18);
+    return 12500000000000000000n;
+  },
+};
+
+const sendResult = await sendSutToGateIoDepositAddress({
+  ethereum: fakeEthereum,
+  ethersLib: fakeTransferEthers,
+  depositAddress: '0x1111111111111111111111111111111111111111',
+  amount: '12.5',
+});
+
+assert.equal(sendResult.hash, '0xtxhash');
+assert.deepEqual(walletRequests, [{
+  method: 'wallet_switchEthereumChain',
+  params: [{ chainId: '0x89' }],
+}]);
+assert.deepEqual(transferCalls, [[
+  '0x1111111111111111111111111111111111111111',
+  12500000000000000000n,
+]]);
+
+await assert.rejects(
+  () => sendSutToGateIoDepositAddress({
+    ethereum: fakeEthereum,
+    ethersLib: fakeTransferEthers,
+    depositAddress: 'bad-address',
+    amount: '1',
+  }),
+  /invalid Polygon deposit address/
+);
+
+await assert.rejects(
+  () => sendSutToGateIoDepositAddress({
+    ethereum: null,
+    ethersLib: fakeTransferEthers,
+    depositAddress: '0x1111111111111111111111111111111111111111',
+    amount: '1',
+  }),
+  /missing injected wallet/
+);
+
+console.log('ok - manager dashboard SUT transfer handler');

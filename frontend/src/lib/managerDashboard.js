@@ -278,3 +278,64 @@ export async function submitManagerGateIoOrder({
     buildManagerHeaders({ managerEmail, getStorageItem })
   );
 }
+
+export async function sendSutToGateIoDepositAddress({
+  ethereum,
+  ethersLib,
+  depositAddress,
+  amount,
+}) {
+  const nextDepositAddress = (depositAddress || '').trim();
+  const parsedAmountNumber = parseFloat(amount);
+
+  if (!/^0x[a-fA-F0-9]{40}$/.test(nextDepositAddress)) {
+    throw new Error('invalid Polygon deposit address');
+  }
+  if (!Number.isFinite(parsedAmountNumber) || parsedAmountNumber <= 0) {
+    throw new Error('invalid SUT transfer amount');
+  }
+  if (!ethereum) {
+    throw new Error('missing injected wallet');
+  }
+
+  const tempProvider = new ethersLib.BrowserProvider(ethereum);
+  const network = await tempProvider.getNetwork();
+
+  if (network.chainId !== 137n) {
+    try {
+      await ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x89' }],
+      });
+    } catch (switchError) {
+      if (switchError.code === 4902) {
+        await ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0x89',
+            chainName: 'Polygon Mainnet',
+            nativeCurrency: {
+              name: 'POL',
+              symbol: 'POL',
+              decimals: 18,
+            },
+            rpcUrls: ['https://polygon-rpc.com'],
+            blockExplorerUrls: ['https://polygonscan.com'],
+          }],
+        });
+      } else {
+        throw switchError;
+      }
+    }
+  }
+
+  const provider = new ethersLib.BrowserProvider(ethereum);
+  const signer = await provider.getSigner();
+  const sutContractAddress = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
+  const sutAbi = ['function transfer(address recipient, uint256 amount) external returns (bool)'];
+  const sutContract = new ethersLib.Contract(sutContractAddress, sutAbi, signer);
+  const parsedAmount = ethersLib.parseUnits(amount.toString(), 18);
+  const tx = await sutContract.transfer(nextDepositAddress, parsedAmount);
+  await tx.wait();
+  return tx;
+}
