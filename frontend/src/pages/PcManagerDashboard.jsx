@@ -45,9 +45,15 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [orderPrice, setOrderPrice] = useState('');
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
-  // 로컬 기기 보관용 Gate.io API 키 상태
+  // 로컬 기기 보관용 Gate.io API 키 및 입금 주소 상태
   const [localApiKey, setLocalApiKey] = useState(localStorage.getItem('gateio_api_key') || '');
   const [localApiSecret, setLocalApiSecret] = useState(localStorage.getItem('gateio_api_secret') || '');
+  const [localDepositAddress, setLocalDepositAddress] = useState(localStorage.getItem('gateio_deposit_address') || '');
+
+  // 온체인 Gate.io 송금 모달 상태
+  const [showSendSutModal, setShowSendSutModal] = useState(false);
+  const [sendSutAmount, setSendSutAmount] = useState('');
+  const [sendingSut, setSendingSut] = useState(false);
 
   // 모달 이미지 뷰어 상태
   const [selectedIdCard, setSelectedIdCard] = useState(null);
@@ -108,22 +114,76 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  // Gate.io API 키 로컬 기기 저장 핸들러
+  // Gate.io API 키 및 입금 주소 로컬 기기 저장 핸들러
   const handleSaveApiKeys = () => {
     localStorage.setItem('gateio_api_key', localApiKey.trim());
     localStorage.setItem('gateio_api_secret', localApiSecret.trim());
-    alert('💾 Gate.io API 키가 브라우저 로컬 스토리지에 저장되었습니다. (서버에는 전송/저장되지 않음)');
+    localStorage.setItem('gateio_deposit_address', localDepositAddress.trim());
+    alert('💾 Gate.io API 키 및 입금 주소가 브라우저 로컬 스토리지에 저장되었습니다. (서버에는 전송/저장되지 않음)');
     fetchManagerData(); // 잔고 정보 즉시 갱신
   };
 
-  // Gate.io API 키 로컬 기기 삭제 핸들러
+  // Gate.io API 키 및 입금 주소 로컬 기기 삭제 핸들러
   const handleClearApiKeys = () => {
     localStorage.removeItem('gateio_api_key');
     localStorage.removeItem('gateio_api_secret');
+    localStorage.removeItem('gateio_deposit_address');
     setLocalApiKey('');
     setLocalApiSecret('');
-    alert('🗑️ 저장된 API 키가 브라우저 로컬 스토리지에서 삭제되었습니다.');
+    setLocalDepositAddress('');
+    alert('🗑️ 저장된 API 키 및 입금 주소가 브라우저 로컬 스토리지에서 삭제되었습니다.');
     fetchManagerData(); // 데모 모드로 전환 확인
+  };
+
+  // 내 지갑에서 Gate.io로 SUT 송금 핸들러
+  const handleSendSutToGateIo = async (e) => {
+    if (e) e.preventDefault();
+    
+    const depositAddr = localStorage.getItem('gateio_deposit_address') || '';
+    if (!depositAddr) {
+      alert('Gate.io SUT 입금 주소를 로컬 설정에서 먼저 입력하고 저장해 주세요.');
+      return;
+    }
+
+    if (!sendSutAmount || parseFloat(sendSutAmount) <= 0) {
+      alert('유효한 수량을 입력해 주세요.');
+      return;
+    }
+
+    if (!window.ethereum) {
+      alert('설치된 메타마스크 혹은 트러스트월렛 브라우저 지갑을 찾을 수 없습니다.');
+      return;
+    }
+
+    setSendingSut(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // SUT 토큰 정보
+      const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
+      const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
+      
+      const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
+
+      // 금액 파싱 (18 decimals)
+      const parsedAmount = ethers.parseUnits(sendSutAmount.toString(), 18);
+
+      // 실제 온체인 토큰 전송 실행 (Gate.io 입금 주소로 전송)
+      const tx = await sutContract.transfer(depositAddr, parsedAmount);
+      
+      // 블록 확정 대기
+      await tx.wait();
+
+      alert(`🎉 성공적으로 ${sendSutAmount} SUT가 지정하신 Gate.io 입금 주소로 전송되었습니다.\nTxHash: ${tx.hash}`);
+      setShowSendSutModal(false);
+      setSendSutAmount('');
+    } catch (err) {
+      console.error(err);
+      alert(`❌ 전송 실패: ${err.message || err}`);
+    } finally {
+      setSendingSut(false);
+    }
   };
 
   // 1. 메니져 통합 데이터 로드
@@ -493,10 +553,10 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Settings size={18} color="#A78BFA" />
-              로컬 전용 Gate.io API 키 설정
+              로컬 전용 Gate.io API 키 및 주소 설정
             </h4>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-              보안 유지를 위해 API 키는 <strong>현재 기기 브라우저에만 저장</strong>되며 서버 DB나 설정 파일에 등록되지 않습니다.
+              보안 유지를 위해 입력 정보는 <strong>현재 기기 브라우저에만 저장</strong>되며 서버 DB나 설정 파일에 등록되지 않습니다.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input 
@@ -511,6 +571,13 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 value={localApiSecret}
                 onChange={(e) => setLocalApiSecret(e.target.value)}
                 placeholder="Gate.io API Secret Key 입력"
+                style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
+              />
+              <input 
+                type="text" 
+                value={localDepositAddress}
+                onChange={(e) => setLocalDepositAddress(e.target.value)}
+                placeholder="Gate.io SUT 입금 주소 (Polygon) 입력"
                 style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
               />
             </div>
@@ -529,7 +596,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 onClick={handleClearApiKeys}
                 style={{ flex: 1, padding: '10px', fontSize: '11px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)', fontWeight: 'bold' }}
               >
-                🗑️ 키 삭제
+                🗑️ 삭제
               </button>
             </div>
           </div>
@@ -677,33 +744,53 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
             
             {/* Gate.io API 실거래 연동 현황 카드 */}
-            <div className="glass-card" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)', margin: 0 }}>
-              <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '14px' }}>📊</span> Gate.io API 실거래 연동 현황
-              </h4>
-              {gateioBalance ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>연동 상태:</span>
-                    <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>● 실거래 가동 중</span>
+            <div className="glass-card" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)', margin: 0 }}>
+              <div>
+                <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '14px' }}>📊</span> Gate.io API 실거래 연동 현황
+                </h4>
+                {gateioBalance ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>연동 상태:</span>
+                      <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>● 실거래 가동 중</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>거래소 보유 SUT:</span>
+                      <span style={{ color: '#FFF', fontWeight: '700' }}>{parseFloat(gateioBalance.SUT).toFixed(2)} SUT</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>거래소 보유 USDT:</span>
+                      <span style={{ color: '#FFF', fontWeight: '700' }}>{parseFloat(gateioBalance.USDT).toFixed(2)} USDT</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>거래소 보유 SUT:</span>
-                    <span style={{ color: '#FFF', fontWeight: '700' }}>{parseFloat(gateioBalance.SUT).toFixed(2)} SUT</span>
+                ) : (
+                  <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
+                    <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
+                    <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                      API 키를 등록하면, 실제 거래소 SUT/USDT 자금 조회 및 자동매매 실거래 연동이 활성화됩니다.
+                    </p>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>거래소 보유 USDT:</span>
-                    <span style={{ color: '#FFF', fontWeight: '700' }}>{parseFloat(gateioBalance.USDT).toFixed(2)} USDT</span>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
-                  <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
-                  <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-                    API 키를 등록하면, 실제 거래소 SUT/USDT 자금 조회 및 자동매매 실거래 연동이 활성화됩니다.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
+              
+              <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <button 
+                  type="button"
+                  className="btn-primary" 
+                  onClick={() => {
+                    const addr = localStorage.getItem('gateio_deposit_address');
+                    if (!addr) {
+                      alert('Gate.io SUT 입금 주소를 로컬 설정에서 먼저 입력하고 저장해 주세요.');
+                    } else {
+                      setShowSendSutModal(true);
+                    }
+                  }}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                >
+                  <ArrowUpDown size={12} /> 내 지갑에서 Gate.io로 SUT 송금
+                </button>
+              </div>
             </div>
 
             {/* 👑 마스터 매니저 본인 Gate.io 실거래 주문 관리 패널 */}
@@ -1239,6 +1326,81 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   disabled={processingTx}
                 >
                   {processingTx ? '처리중...' : (txType === 'DEPOSIT' ? '승인 및 예치' : '출금 신청')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 👑 Gate.io 온체인 SUT 송금 모달 팝업 */}
+      {showSendSutModal && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%', 
+          background: 'rgba(0,0,0,0.85)', 
+          backdropFilter: 'blur(10px)', 
+          zIndex: 9999, 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center' 
+        }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '440px', background: '#111827', padding: '30px' }}>
+            <h3 style={{ fontSize: '18px', marginBottom: '14px', color: '#FFF', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ArrowUpDown size={20} color="#3B82F6" />
+              Gate.io로 SUT 온체인 송금
+            </h3>
+            
+            <form onSubmit={handleSendSutToGateIo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '10px', padding: '12px', fontSize: '11px', color: '#FFF' }}>
+                <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>수신 Gate.io 입금 주소 (Polygon):</div>
+                <div style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontWeight: '700' }}>{localStorage.getItem('gateio_deposit_address')}</div>
+                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ 반드시 Gate.io의 SUT (Polygon) 입금 주소인지 더블체크하세요!</div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ color: '#A78BFA' }}>
+                  송금할 SUT 수량 입력
+                </label>
+                <input 
+                  type="number" 
+                  className="form-input" 
+                  placeholder="예: 50" 
+                  value={sendSutAmount} 
+                  onChange={(e) => setSendSutAmount(e.target.value)} 
+                  min="0.0001" 
+                  step="any"
+                  required 
+                />
+              </div>
+
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.6', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px' }}>
+                💡 <b>가스비 안내</b>: 이 송금 트랜잭션은 <b>현재 서명하는 본인 지갑</b>에서 가스비(폴리곤 POL 코인)와 SUT 코인이 차감됩니다. 마스터 지갑의 가스비는 사용되지 않습니다.
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    setShowSendSutModal(false);
+                    setSendSutAmount('');
+                  }}
+                  style={{ flex: 1, padding: '14px' }}
+                  disabled={sendingSut}
+                >
+                  취소
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+                  disabled={sendingSut}
+                >
+                  {sendingSut ? '전송 처리중...' : 'SUT 송금하기'}
                 </button>
               </div>
             </form>
