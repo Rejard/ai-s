@@ -7,81 +7,58 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
+import {
+  buildNextPriceHistory,
+  loadUserDashboardData,
+  loadUserTxHistory,
+  submitUserInvestmentTransaction,
+} from '../lib/userDashboard';
 
 function PcDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
   
-  // 포트폴리오 상태
   const [portfolio, setPortfolio] = useState(null);
-  const [walletSutBalance, setWalletSutBalance] = useState(0); // 지갑 내 SUT 잔고
+  const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [depositPercent, setDepositPercent] = useState(0);
 
 
-  // 실시간 SUT 가격 히스토리
   const [priceHistory, setPriceHistory] = useState([]);
   const [sutPrice, setSutPrice] = useState(0.19);
-  const [sutChange24h, setSutChange24h] = useState(0); // 🌟 24시간 변동률 상태 추가
+  const [sutChange24h, setSutChange24h] = useState(0);
 
-  // 입출금 다이얼로그 상태
   const [showTxModal, setShowTxModal] = useState(false);
   const [txType, setTxType] = useState('DEPOSIT');
   const [txAmount, setTxAmount] = useState('');
   const [processingTx, setProcessingTx] = useState(false);
 
-  // 거래 내역(History) 상태
   const [txHistory, setTxHistory] = useState([]);
 
-  // 대시보드 데이터 및 지갑 잔고 로드
   const fetchDashboardData = async () => {
     try {
-      const portRes = await axios.get(`${API_BASE}/investment/portfolio/${walletAddress}`);
-      if (portRes.data.success) {
-        setPortfolio(portRes.data.portfolio);
-        const curPrice = portRes.data.portfolio.assets.SUT.price;
-        setSutPrice(curPrice);
-        setSutChange24h(portRes.data.portfolio.sutChange24h || 0); // 🌟 24h 변동률 설정
-        
-        setPriceHistory(prev => {
-          let nextHistory = prev;
-          if (prev.length === 0 && portRes.data.portfolio.sutHistory && portRes.data.portfolio.sutHistory.length > 0) {
-             nextHistory = portRes.data.portfolio.sutHistory;
-          } else if (prev.length === 0) {
-             nextHistory = [curPrice];
-          } else {
-             nextHistory = [...prev, curPrice];
-          }
-          if (nextHistory.length > 30) {
-            nextHistory.shift();
-          }
-          return nextHistory;
-        });
+      const data = await loadUserDashboardData({
+        apiBase: API_BASE,
+        walletAddress,
+        axiosClient: axios,
+        ethersLib: ethers,
+      });
+      if (data.portfolio !== undefined) setPortfolio(data.portfolio);
+      if (data.sutPrice !== undefined) setSutPrice(data.sutPrice);
+      if (data.sutChange24h !== undefined) setSutChange24h(data.sutChange24h);
+      if (data.sutPrice !== undefined) {
+        setPriceHistory((prev) => buildNextPriceHistory(prev, data.sutPrice, data.portfolio?.sutHistory || []));
       }
-
-      // 지갑의 실제 SUT 잔고 조회
-      try {
-        const rpcProvider = new ethers.JsonRpcProvider('https://polygon-bor-rpc.publicnode.com');
-        const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55".toLowerCase();
-        const sutAbi = ["function balanceOf(address account) external view returns (uint256)"];
-        const sutContract = new ethers.Contract(sutContractAddress, sutAbi, rpcProvider);
-        const balanceWei = await sutContract.balanceOf(walletAddress);
-        setWalletSutBalance(parseFloat(ethers.formatUnits(balanceWei, 18)));
-      } catch (balErr) {
-        console.error("지갑 잔고 조회 에러:", balErr);
-      }
-
+      if (data.walletSutBalance !== undefined) setWalletSutBalance(data.walletSutBalance);
     } catch (err) {
-      console.error('대시보드 데이터 조회 실패:', err);
+      console.error('Dashboard data load failed:', err);
     }
   };
 
   const fetchTxHistory = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/investment/history/${walletAddress}`);
-      if (res.data.success) {
-        setTxHistory(res.data.history);
-      }
+      const history = await loadUserTxHistory({ apiBase: API_BASE, walletAddress, axiosClient: axios });
+      setTxHistory(history);
     } catch (err) {
-      console.error('거래 내역 조회 실패:', err);
+      console.error('Transaction history load failed:', err);
     }
   };
 
@@ -95,71 +72,40 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
   }, [walletAddress]);
 
   const handleTxSubmit = async (e) => {
-    if (e) e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+
     if (!txAmount || parseFloat(txAmount) <= 0) {
-      alert('유효한 금액을 입력해 주세요.');
+      alert('Enter a valid amount.');
       return;
     }
 
     setProcessingTx(true);
     try {
+      const result = await submitUserInvestmentTransaction({
+        apiBase: API_BASE,
+        walletAddress,
+        amount: txAmount,
+        type: txType,
+        portfolio,
+        ethereum: window.ethereum,
+        axiosClient: axios,
+        ethersLib: ethers,
+      });
+
       if (txType === 'DEPOSIT') {
-        if (!window.ethereum) {
-          throw new Error('설치된 메타마스크 혹은 트러스트월렛 브라우저 지갑을 찾을 수 없습니다.');
+        if (result.response.data.success) {
+          alert(`Deposit recorded after confirmation: ${txAmount} SUT\nTxHash: ${result.txHash}`);
         }
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const signerAddress = await signer.getAddress();
-
-        if (signerAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-          throw new Error(`지갑 주소 불일치: 현재 로그인된 계정 주소(${walletAddress})와 메타마스크에 활성화된 주소(${signerAddress})가 다릅니다. 지갑 계정을 확인해 주세요.`);
-        }
-
-        // SUT 토큰 정보
-        const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55";
-        const vaultAddress = "0x855c880D538892fD899eECb72D4b1Ac5B46089eA";
-        const sutAbi = ["function transfer(address recipient, uint256 amount) external returns (bool)"];
-        
-        const sutContract = new ethers.Contract(sutContractAddress, sutAbi, signer);
-
-        // 금액 파싱 (18 decimals)
-        const parsedAmount = ethers.parseUnits(txAmount.toString(), 18);
-
-        // 실제 온체인 토큰 전송 실행
-        const tx = await sutContract.transfer(vaultAddress, parsedAmount);
-        
-        // 블록 확정 대기
-        await tx.wait();
-
-        const res = await axios.post(`${API_BASE}/investment/deposit`, {
-          walletAddress,
-          amount: parseFloat(txAmount),
-          txHash: tx.hash
-        });
-        if (res.data.success) {
-          alert(`🎉 성공적으로 ${txAmount} SUT가 예치되어 시뮬레이션 장부에 즉시 기록되었습니다.\nTxHash: ${tx.hash}`);
-        }
-      } else {
-        if (portfolio && parseFloat(txAmount) > portfolio.sutQuantity) {
-          alert('출금 요청 금액이 현재 총 보유 SUT 한도를 초과합니다.');
-          setProcessingTx(false);
-          return;
-        }
-        const res = await axios.post(`${API_BASE}/investment/withdraw`, {
-          walletAddress,
-          amount: parseFloat(txAmount)
-        });
-        if (res.data.success) {
-          alert(`📤 ${txAmount} SUT 출금 신청이 성공적으로 접수되었습니다. 승인 후 지갑으로 가상 전송됩니다.`);
-        }
+      } else if (result.response.data.success) {
+        alert(`${txAmount} SUT withdrawal request submitted.`);
       }
+
       setShowTxModal(false);
       setTxAmount('');
       fetchDashboardData();
       fetchTxHistory();
     } catch (err) {
-      alert('거래 처리 실패: ' + err.message);
+      alert('Transaction failed: ' + err.message);
     } finally {
       setProcessingTx(false);
     }
