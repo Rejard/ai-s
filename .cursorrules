@@ -3,7 +3,8 @@
 You must follow these rules strictly when writing code or comments in this repository.
 
 ## 1. AI-First & Exception-Only Commenting Philosophy
-- **Zero-Comment by Default:** Write clean, self-explanatory code with intuitive naming (variables, functions, classes) so that comments are **completely unnecessary**. AI agents analyze well-written clean code faster and more accurately without comment noise.
+- **For AI, Not Humans (Machine-Readability First):** All comments are written **exclusively** for AI/LLM context recovery, semantic indexing, and logical reasoning. They are **NOT** intended for human reading. Do not waste time making them look pretty for humans; write them in a way that maximizes machine understanding and parsing efficiency.
+- **Zero-Comment by Default:** Write clean, self-explanatory code with intuitive naming (variables, functions, classes) so that comments are **completely unnecessary**. AI agents analyze clean, well-structured code faster and more accurately without comment clutter.
 - **Exception-Only Comments:** Write comments **ONLY** in exceptional circumstances where the logical flow is non-standard or implements a critical workaround (e.g., RPC gas-fee check timeout fallback, Mock simulation mode triggers, API rate-limit bypass).
 - **Single-Line Technical English:** When an exception applies, write only a single line of concise, structured, technical English explaining the *why* (the business constraint or workaround reason), not the *how* (what the code does).
 - **No Redundancy:** Absolutely never comment on obvious operations (e.g., do not write comments for standard imports, variable declarations, or simple loops).

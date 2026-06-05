@@ -146,7 +146,7 @@ When updating the frontend, rebuild `frontend/dist`. The backend serves the buil
 
 To ensure seamless collaboration with AI coding assistants, this project enforces the following constitution:
 
-1. **AI-First & Exception-Only Commenting Philosophy**: The default rule is **zero-comment (100% no comments)**. AI agents prefer reading clean, self-explanatory code. Comments are written **only** in exceptional circumstances where the logic involves non-standard workarounds, API rate-limit bypasses, or fallback triggers. When exceptions apply, write only a single line of concise technical English explaining the *why*.
+1. **AI-First & Exception-Only Commenting Philosophy**: All comments are written **exclusively** for AI/LLM context recovery, semantic indexing, and logical reasoning. They are **NOT** intended for human reading. The default rule is **zero-comment (100% no comments)**. Comments are written **only** in exceptional circumstances involving non-standard workarounds, API rate-limit bypasses, or fallback triggers. When exceptions apply, write only a single line of concise technical English explaining the *why*.
 2. **Standard Terminology**: Always use standard English business terms (Manager, Platform Owner/Admin, Active Member/Approved User, Distribution, Registration Fee/Deposit, Withdrawal, Grid Bot) in all code naming conventions and exception comments.
 3. **Safety Policies**: Never modify global system configuration templates (like `ai_models.json`), never run `pm2 delete all`, and never auto-commit to git without human supervision. Refer to [.cursorrules](file:///c:/home/ai-s/.cursorrules) for full details.
 
