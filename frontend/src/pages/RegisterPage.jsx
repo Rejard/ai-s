@@ -178,7 +178,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
       {/* 🌟 마스터 매니저 전용 '메니져 모드 복귀' 단축 바 */}
-      {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
+      {false && ((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
         (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
         <div 
           className="glass-card glow-active" 
