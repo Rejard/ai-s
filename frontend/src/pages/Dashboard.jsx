@@ -438,8 +438,8 @@ function Dashboard({ walletAddress, userData, onLogout }) {
               ✉️ {userData?.managerEmail || 'lemaiiisk@gmail.com'}
             </a>
             <span style={{ color: 'var(--glass-border)' }}>|</span>
-            <a href={`tel:${userData?.managerPhone || '등록된 번호 없음'}`} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
-              📞 {userData?.managerPhone || '등록된 번호 없음'}
+            <a href={`tel:${userData?.managerPhone || '010-2020-6447'}`} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+              📞 {userData?.managerPhone || '010-2020-6447'}
             </a>
           </div>
         </div>

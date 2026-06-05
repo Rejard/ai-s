@@ -492,7 +492,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '28px' }}>👑</span>
           <div style={{ textAlign: 'left' }}>
-            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>Master Manager Dashboard</h1>
+            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>본사 총괄 매니저 대시보드</h1>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🏢 본사 전용 회원 관리 및 AI 시뮬레이션 제어 시스템</span>
           </div>
         </div>
@@ -516,7 +516,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 M
               </div>
               <div style={{ textAlign: 'left' }}>
-                <h4 style={{ fontSize: '16px', color: '#FFF', margin: 0 }}>Lee Myung-hak Master Manager</h4>
+                <h4 style={{ fontSize: '16px', color: '#FFF', margin: 0 }}>이명학 총괄 매니저</h4>
                 <span style={{ fontSize: '11px', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: '700' }}>
                   <ShieldCheck size={12} /> 최고 권한 인증됨
                 </span>
@@ -543,7 +543,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     {walletSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Wallet Balance</span>
+                <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>지갑 잔액</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
@@ -553,7 +553,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     {stats ? stats.totalRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Total Member Amount</span>
+                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>회원 총 예치액</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
@@ -563,7 +563,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     {stats ? stats.companyRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Platform Owner Holdings</span>
+                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>본사 보유고</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
@@ -573,7 +573,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     {stats ? stats.totalDistributed.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>Total Payout Amount</span>
+                <span style={{ fontSize: '10px', color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>총 출금 완료액</span>
               </div>
             </div>
           </div>
@@ -677,9 +677,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   )}
                 </div>
               </div>
-              <div>
-                <span className="glow-active" style={{ fontSize: '11px', color: performance ? 'var(--success-color)' : 'var(--text-dark)', background: performance ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', padding: '5px 12px', borderRadius: '12px', fontWeight: '700', border: performance ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(255,255,255,0.1)' }}>
-                  ● {performance ? 'LIVE YIELD' : 'DEMO'}
+              <div style={{ flexShrink: 0 }}>
+                <span className="glow-active" style={{ fontSize: '11px', color: performance ? 'var(--success-color)' : 'var(--text-dark)', background: performance ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', padding: '5px 12px', borderRadius: '12px', fontWeight: '700', border: performance ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>
+                  ● {performance ? '실거래 수익률' : '가상 데모'}
                 </span>
               </div>
             </div>
@@ -757,7 +757,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 textAlign: 'center'
               }}>
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                  <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px', fontSize: '14px' }}>⚠️ Profit Rate Chart Disabled</span>
+                  <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px', fontSize: '14px' }}>⚠️ 수익률 차트 비활성화됨</span>
                   로컬 Gate.io API 키를 등록하고 거래소에서 SUT를 실제 매수하면 수익률 차트가 여기에 활성화됩니다.
                 </div>
               </div>
@@ -769,7 +769,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <BarChart3 size={24} color="var(--success-color)" />
-                <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>AI Grid Trading Bot Settings</h4>
+                <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>AI 그리드 트레이딩 봇 설정</h4>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -796,11 +796,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '20px' }}>🤖</span>
-                  <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>Real-time AI Engine Decision Briefing</h4>
+                  <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
                 </div>
                 <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#3B82F6', fontWeight: '700' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 8px #3B82F6' }}></span>
-                  LIVE MONITORING
+                  실시간 모니터링
                 </span>
               </div>
 
@@ -858,7 +858,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                               borderRadius: '8px',
                               letterSpacing: '0.5px'
                             }}>
-                              {log.decision}
+                              {log.decision === 'BUY' ? '매수' : log.decision === 'SELL' ? '매도' : '관망'}
                             </span>
                             {log.decision !== 'HOLD' && (
                               <span style={{ fontSize: '11px', color: '#E5E7EB', fontWeight: 'bold' }}>
@@ -889,7 +889,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (Min)</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (최저)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
                     <input
@@ -902,7 +902,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>상한가 (Max)</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>상한가 (최고)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
                     <input
@@ -917,7 +917,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 수 (Count)</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 수</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <input
                       type="number"
@@ -998,7 +998,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   </div>
                 ) : (
                   <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
-                    <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px' }}>⚠️ API Key Not Registered (Virtual Demo Mode)</span>
+                    <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
                     <p style={{ color: 'var(--text-muted)', margin: 0 }}>
                       API 키를 등록하면, 실제 거래소 SUT/USDT 자금 조회 및 자동매매 실거래 연동이 활성화됩니다.
                     </p>
@@ -1188,7 +1188,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ textAlign: 'left' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#FFF' }}>{req.name} Member</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#FFF' }}>{req.name} 회원</span>
                       </div>
 
                       <div style={{ background: 'rgba(16,185,129,0.08)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)', color: 'var(--success-color)', fontSize: '13px', fontWeight: 'bold' }}>
@@ -1457,7 +1457,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '10px', padding: '12px', fontSize: '11px', color: '#FFF' }}>
                 <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>수신 Gate.io 입금 주소 (Polygon):</div>
                 <div style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontWeight: '700' }}>{localStorage.getItem('gateio_deposit_address')}</div>
-                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ Please double-check if it's Gate.io's SUT (Polygon) deposit address!</div>
+                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ 반드시 Gate.io의 SUT (Polygon) 입금 주소인지 더블체크해 주세요!</div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>

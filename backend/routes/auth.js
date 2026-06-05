@@ -170,12 +170,23 @@ router.get('/status-by-email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase().trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, tier, joined_at, approved_at, trial_ends_at, selected_coins
+      SELECT wallet_address, email, name, status, tier, joined_at, approved_at, trial_ends_at, selected_coins, manager_address
       FROM users WHERE email = ?
     `, [email]);
 
     if (!user) {
       return res.json({ success: true, registered: false });
+    }
+
+    let managerEmail = 'lemaiiisk@gmail.com';
+    let managerPhone = '010-2020-6447';
+
+    if (user.manager_address && user.manager_address !== 'none') {
+      const manager = await queries.get(`SELECT email, phone FROM users WHERE wallet_address = ?`, [user.manager_address]);
+      if (manager) {
+        managerEmail = manager.email;
+        managerPhone = manager.phone;
+      }
     }
 
     res.json({
@@ -190,7 +201,9 @@ router.get('/status-by-email/:email', async (req, res) => {
         joinedAt: user.joined_at,
         approvedAt: user.approved_at,
         trialEndsAt: user.trial_ends_at,
-        selectedCoins: user.selected_coins ? JSON.parse(user.selected_coins) : { POL: 50, USDT: 50 }
+        selectedCoins: user.selected_coins ? JSON.parse(user.selected_coins) : { POL: 50, USDT: 50 },
+        managerEmail,
+        managerPhone
       }
     });
 

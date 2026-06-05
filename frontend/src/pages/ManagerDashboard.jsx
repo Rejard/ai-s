@@ -526,9 +526,9 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               )}
             </div>
           </div>
-          <div>
-            <span className="glow-active" style={{ fontSize: '9px', color: performance ? 'var(--success-color)' : 'var(--text-dark)', background: performance ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '8px', fontWeight: '700' }}>
-              ● {performance ? 'LIVE YIELD' : 'DEMO'}
+          <div style={{ flexShrink: 0 }}>
+            <span className="glow-active" style={{ fontSize: '9px', color: performance ? 'var(--success-color)' : 'var(--text-dark)', background: performance ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '8px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+              ● {performance ? '실거래 수익률' : '가상 데모'}
             </span>
           </div>
         </div>
@@ -606,7 +606,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             textAlign: 'center'
           }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px', fontSize: '11px' }}>⚠️ Yield chart disabled</span>
+              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px', fontSize: '11px' }}>⚠️ 수익률 차트 비활성화됨</span>
               로컬 Gate.io API 키를 등록하고 거래소에서 SUT를 실제 매수하면 수익률 차트가 여기에 표기됩니다.
             </div>
           </div>
@@ -621,15 +621,20 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               <BarChart3 size={20} color="var(--success-color)" />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <h4 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>🤖 Fully Automated AI Grid Trading Bot</h4>
+              <h4 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>🤖 자동화 AI 그리드 트레이딩 봇</h4>
               <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>상/하한가 범위를 설정하면 매일 봇이 수익을 발생시킵니다.</p>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: gridSettings.ai_grid_status === 'ON' ? 'var(--success-color)' : 'var(--text-muted)' }}>
-              {gridSettings.ai_grid_status === 'ON' ? 'LIVE 작동 중' : '정지됨'}
-            </span>
+            {gridSettings.ai_grid_status === 'ON' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--success-color)' }}>LIVE</span>
+                <span style={{ fontSize: '9px', color: 'var(--success-color)', fontWeight: 'bold' }}>작동중</span>
+              </div>
+            ) : (
+              <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>정지됨</span>
+            )}
             <button
               onClick={handleToggleAiStatus}
               style={{
@@ -650,11 +655,11 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '14px' }}>🤖</span>
-              <h4 style={{ fontSize: '12px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>Real-time AI Engine Decision Briefing</h4>
+              <h4 style={{ fontSize: '12px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
             </div>
             <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#3B82F6', fontWeight: '700' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 6px #3B82F6' }}></span>
-              LIVE
+              실시간
             </span>
           </div>
 
@@ -711,7 +716,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                           padding: '1px 6px',
                           borderRadius: '4px'
                         }}>
-                          {log.decision}
+                          {log.decision === 'BUY' ? '매수' : log.decision === 'SELL' ? '매도' : '관망'}
                         </span>
                         {log.decision !== 'HOLD' && (
                           <span style={{ fontSize: '9px', color: '#E5E7EB', fontWeight: 'bold' }}>
@@ -736,48 +741,48 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>하한가 (Lower Price)</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>하한가 (최저)</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '6px 10px' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
               <input
                 type="number"
                 value={gridSettings.ai_grid_lower}
-                onChange={(e) => setGridSettings({...gridSettings, ai_grid_lower: e.target.value})}
+                onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_lower: e.target.value })}
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
             </div>
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>상한가 (Upper Price)</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>상한가 (최고)</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '6px 10px' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
               <input
                 type="number"
                 value={gridSettings.ai_grid_upper}
-                onChange={(e) => setGridSettings({...gridSettings, ai_grid_upper: e.target.value})}
+                onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_upper: e.target.value })}
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
             </div>
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>그리드 (Grid Count)</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>그리드 수</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '6px 10px' }}>
               <input
                 type="number"
                 value={gridSettings.ai_grid_count}
-                onChange={(e) => setGridSettings({...gridSettings, ai_grid_count: e.target.value})}
+                onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_count: e.target.value })}
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
               <span style={{ color: 'var(--text-dark)', fontSize: '11px', marginLeft: '4px' }}>개</span>
             </div>
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>일일 횟수 (Frequency)</label>
+            <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>일일 빈도 (Frequency)</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '6px 10px' }}>
               <input
                 type="number"
                 value={gridSettings.ai_grid_frequency}
-                onChange={(e) => setGridSettings({...gridSettings, ai_grid_frequency: e.target.value})}
+                onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_frequency: e.target.value })}
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
               <span style={{ color: 'var(--text-dark)', fontSize: '11px', marginLeft: '4px' }}>회</span>
@@ -845,7 +850,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             </div>
           ) : (
             <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
-              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px' }}>⚠️ API key unregistered (Virtual Demo Mode)</span>
+              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
               <p style={{ color: 'var(--text-muted)', margin: 0 }}>
                 아래 로컬 설정을 통해 API 키를 등록하면, 실제 거래소 SUT/USDT 자금 조회 및 소액 자동매매 실거래 연동이 활성화됩니다.
               </p>
@@ -963,7 +968,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>주문 수량 (Amount)</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>주문 수량</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <input
                 type="number"
@@ -977,7 +982,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>지정가 가격 (Price)</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>지정가 가격</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <input
                 type="number"
@@ -1000,7 +1005,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'linear-gradient(90deg, #10B981, #059669)' }}
             onClick={() => handleGateIoOrder('buy')}
           >
-            {submittingOrder ? '전송 중...' : '🟢 SUT 매수 (BUY)'}
+            {submittingOrder ? '전송 중...' : '🟢 SUT 매수'}
           </button>
 
           <button
@@ -1010,7 +1015,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'linear-gradient(90deg, #EF4444, #DC2626)' }}
             onClick={() => handleGateIoOrder('sell')}
           >
-            {submittingOrder ? '전송 중...' : '🔴 SUT 매도 (SELL)'}
+            {submittingOrder ? '전송 중...' : '🔴 SUT 매도'}
           </button>
         </div>
       </div>
@@ -1073,7 +1078,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>구글인증: {user.email}</span>
                   </div>
                   <span style={{ fontSize: '9px', color: 'var(--text-dark)' }}>
-                    {new Date(user.joined_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {new Date(user.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
 
@@ -1137,7 +1142,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             {withdrawals.map((req) => (
               <div key={req.id} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name}'s Withdrawal Request</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name} 회원의 출금 신청</div>
                   <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>{new Date(req.created_at).toLocaleString()}</span>
                 </div>
 
@@ -1441,7 +1446,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '10px', padding: '12px', fontSize: '11px', color: '#FFF' }}>
                 <div style={{ color: 'var(--text-muted)', marginBottom: '4px' }}>수신 Gate.io 입금 주소 (Polygon):</div>
                 <div style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontWeight: '700' }}>{localStorage.getItem('gateio_deposit_address')}</div>
-                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ Please double-check if it's Gate.io's SUT (Polygon) deposit address!</div>
+                <div style={{ color: '#93C5FD', marginTop: '6px' }}>⚠️ 반드시 Gate.io의 SUT (Polygon) 입금 주소인지 더블체크해 주세요!</div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
