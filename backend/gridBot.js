@@ -65,12 +65,12 @@ Based on the following real-time market data and guidelines, make a smart tradin
 1. If you decide to BUY SUT:
    - "decision" must be "BUY".
    - The proposed buy "price" must be within the safety boundary and close to the lower limit, or capitalizing on a dip. It must be <= ${marketData.lowerLimit} USDT (or near it).
-   - "amount" (SUT count) must be affordable with the current USDT balance: (price * amount) <= ${marketData.usdtBalance} USDT.
+   - "amount" (SUT count) must be calculated such that the total buy cost (price * amount) is strictly between 10% and 20% of the manager's available USDT balance (${marketData.usdtBalance} USDT). Never buy more than 20% of your available USDT balance in a single decision. (e.g., if USDT balance is 100 USDT, buy cost must be between 10 USDT and 20 USDT).
 2. If you decide to SELL SUT:
    - "decision" must be "SELL".
    - The proposed sell "price" must be >= the current SUT price, and ideally near or above ${marketData.upperLimit} USDT.
-   - "amount" (SUT count) to sell must be <= ${marketData.sutBalance} SUT.
-3. If market is uncertain or there is insufficient balance, choose "HOLD".
+   - "amount" (SUT count) to sell must be strictly between 10% and 20% of the manager's available SUT balance (${marketData.sutBalance} SUT). Never sell more than 20% of your available SUT balance in a single decision. (e.g., if SUT balance is 10 SUT, amount to sell must be between 1 SUT and 2 SUT).
+3. If market is uncertain or there is insufficient balance (e.g., less than 0.1 SUT or less than 1 USDT for a minimum trade size), choose "HOLD".
    - "decision" must be "HOLD".
    - "price" must be 0, "amount" must be 0.
 
@@ -248,6 +248,31 @@ async function runAiGridBot() {
     console.log(`[🤖 AI GRID BOT] AI 판단 결과:`, aiResult.decision);
     console.log(`[🤖 AI GRID BOT] AI 판단 근거: ${aiResult.reason}`);
     console.log(`[🤖 AI GRID BOT] AI 추천 주문 -> 가격: ${aiResult.price} USDT / 수량: ${aiResult.amount} SUT`);
+
+    // 5-1. AI 판단 로그 DB 저장 (매니저 대시보드 브리핑 노출용)
+    try {
+      await queries.run(`
+        INSERT INTO manager_ai_logs (decision, reason, proposed_price, proposed_amount)
+        VALUES (?, ?, ?, ?)
+      `, [
+        aiResult.decision,
+        aiResult.reason || '판단 근거 없음',
+        parseFloat(aiResult.price) || 0,
+        parseFloat(aiResult.amount) || 0
+      ]);
+      
+      // 최근 50개 초과 데이터 정리
+      await queries.run(`
+        DELETE FROM manager_ai_logs 
+        WHERE id NOT IN (
+          SELECT id FROM manager_ai_logs 
+          ORDER BY created_at DESC 
+          LIMIT 50
+        )
+      `);
+    } catch (dbLogErr) {
+      console.error("[🤖 AI GRID BOT] AI 브리핑 로그 저장 실패:", dbLogErr.message);
+    }
 
     if (aiResult.decision === 'HOLD') {
       console.log(`[🤖 AI GRID BOT] AI가 관망(HOLD)을 추천하여 추가 주문을 생성하지 않습니다.`);

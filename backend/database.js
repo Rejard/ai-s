@@ -67,6 +67,18 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
+      // 3.9 manager_ai_logs 테이블 생성 (AI 의사결정 브리핑 보존용)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_ai_logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          decision TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          proposed_price REAL NOT NULL,
+          proposed_amount REAL NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => { if (err) return reject(err); });
+
       // 4. 최초 가입 활성화를 위한 마스터 추천인(Root Referrer) 데이터 삽입
       // Rejard님의 진짜 지갑 주소와 이메일, 성명을 마스터 매니저로 영구 등록!
       const rootReferrerAddress = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'; 

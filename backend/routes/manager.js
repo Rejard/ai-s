@@ -685,4 +685,22 @@ router.get('/gateio-performance', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /api/manager/ai-logs
+ * @desc 최근 AI 오토 봇 의사결정 브리핑 로그 조회
+ */
+router.get('/ai-logs', async (req, res) => {
+  try {
+    const logs = await queries.all(`
+      SELECT id, decision, reason, proposed_price, proposed_amount, created_at
+      FROM manager_ai_logs
+      ORDER BY created_at DESC
+      LIMIT 10
+    `);
+    res.json({ success: true, logs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

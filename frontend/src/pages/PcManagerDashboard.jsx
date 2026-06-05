@@ -39,6 +39,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [gateioBalance, setGateioBalance] = useState(null);
   const [performance, setPerformance] = useState(null);
   const [yieldHistory, setYieldHistory] = useState([]);
+  const [aiLogs, setAiLogs] = useState([]);
 
   // Gate.io 실거래 주문 전용 상태
   const [orderAmount, setOrderAmount] = useState('');
@@ -355,6 +356,16 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         console.error("Gate.io 성과 조회 에러:", perfErr);
         setPerformance(null);
         setYieldHistory([]);
+      }
+
+      // 1-9. AI 오토 봇 브리핑 로그 로드
+      try {
+        const aiLogsRes = await axios.get(`${API_BASE}/manager/ai-logs`, getManagerHeaders());
+        if (aiLogsRes.data.success) {
+          setAiLogs(aiLogsRes.data.logs || []);
+        }
+      } catch (aiLogsErr) {
+        console.error("AI 의사결정 브리핑 로그 조회 에러:", aiLogsErr);
       }
 
     } catch (err) {
@@ -1103,6 +1114,96 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               >
                 ⚡ 수동 수익금 배분
               </button>
+            </div>
+
+            {/* 🤖 실시간 AI 엔진 의사결정 브리핑 카드 */}
+            <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '20px' }}>🤖</span>
+                  <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
+                </div>
+                <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#3B82F6', fontWeight: '700' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 8px #3B82F6' }}></span>
+                  LIVE MONITORING
+                </span>
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, textAlign: 'left' }}>
+                글로벌 AI 두뇌가 5분마다 실시간 가격 추이와 매니저 잔고를 독자적으로 분석하여 의사결정을 내린 결과 보고서입니다.
+              </p>
+
+              {aiLogs.length === 0 ? (
+                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
+                  📡 AI 엔진이 시장 데이터를 분석 중입니다. 최초 실행 완료까지 약 5분 정도 소요됩니다.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {aiLogs.map((log, index) => {
+                    let badgeColor = 'var(--text-muted)';
+                    let badgeBg = 'rgba(255,255,255,0.05)';
+                    let borderCol = 'rgba(255,255,255,0.05)';
+                    
+                    if (log.decision === 'BUY') {
+                      badgeColor = 'var(--success-color)';
+                      badgeBg = 'rgba(16, 185, 129, 0.1)';
+                      borderCol = 'rgba(16, 185, 129, 0.15)';
+                    } else if (log.decision === 'SELL') {
+                      badgeColor = 'var(--danger-color)';
+                      badgeBg = 'rgba(239, 68, 68, 0.1)';
+                      borderCol = 'rgba(239, 68, 68, 0.15)';
+                    } else if (log.decision === 'HOLD') {
+                      badgeColor = '#F59E0B';
+                      badgeBg = 'rgba(245, 158, 11, 0.1)';
+                      borderCol = 'rgba(245, 158, 11, 0.15)';
+                    }
+
+                    return (
+                      <div 
+                        key={log.id || index}
+                        style={{
+                          background: 'rgba(0,0,0,0.3)',
+                          border: `1px solid ${borderCol}`,
+                          borderRadius: '14px',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ 
+                              fontSize: '11px', 
+                              fontWeight: '900', 
+                              color: badgeColor, 
+                              background: badgeBg, 
+                              padding: '3px 10px', 
+                              borderRadius: '8px',
+                              letterSpacing: '0.5px'
+                            }}>
+                              {log.decision}
+                            </span>
+                            {log.decision !== 'HOLD' && (
+                              <span style={{ fontSize: '11px', color: '#E5E7EB', fontWeight: 'bold' }}>
+                                추천가: {log.proposed_price} USDT / 수량: {log.proposed_amount} SUT
+                              </span>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
+                            {new Date(log.created_at).toLocaleString('ko-KR', { hour12: false })}
+                          </span>
+                        </div>
+                        
+                        <div style={{ fontSize: '12px', color: '#D1D5DB', lineHeight: '1.6', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '10px', wordBreak: 'break-all' }}>
+                          <b>💡 판단 근거:</b> {log.reason}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
           </div>

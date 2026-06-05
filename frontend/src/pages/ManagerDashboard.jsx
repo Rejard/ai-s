@@ -40,6 +40,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [gateioBalance, setGateioBalance] = useState(null);
   const [performance, setPerformance] = useState(null);
   const [yieldHistory, setYieldHistory] = useState([]);
+  const [aiLogs, setAiLogs] = useState([]);
 
   // 모달 이미지 뷰어 상태
   const [selectedIdCard, setSelectedIdCard] = useState(null);
@@ -360,6 +361,16 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         console.error("Gate.io 성과 조회 에러:", perfErr);
         setPerformance(null);
         setYieldHistory([]);
+      }
+
+      // 1-9. AI 오토 봇 브리핑 로그 로드
+      try {
+        const aiLogsRes = await axios.get(`${API_BASE}/manager/ai-logs`, getManagerHeaders());
+        if (aiLogsRes.data.success) {
+          setAiLogs(aiLogsRes.data.logs || []);
+        }
+      } catch (aiLogsErr) {
+        console.error("AI 의사결정 브리핑 로그 조회 에러:", aiLogsErr);
       }
 
     } catch (err) {
@@ -990,6 +1001,94 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               </button>
             </div>
 
+            {/* 🤖 실시간 AI 엔진 의사결정 브리핑 카드 */}
+            <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.25)', marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>🤖</span>
+                  <h4 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
+                </div>
+                <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#3B82F6', fontWeight: '700' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 6px #3B82F6' }}></span>
+                  LIVE
+                </span>
+              </div>
+
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0, textAlign: 'left' }}>
+              글로벌 AI 두뇌가 5분마다 실시간 가격 추이와 잔고를 독자적으로 분석하여 의사결정을 내린 결과 보고서입니다.
+            </p>
+
+            {aiLogs.length === 0 ? (
+              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '12px' }}>
+                📡 AI 엔진이 시장 데이터를 분석 중입니다. 최초 실행 완료까지 약 5분 정도 소요됩니다.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto', paddingRight: '2px' }}>
+                {aiLogs.slice(0, 5).map((log, index) => {
+                  let badgeColor = 'var(--text-muted)';
+                  let badgeBg = 'rgba(255,255,255,0.05)';
+                  let borderCol = 'rgba(255,255,255,0.05)';
+                  
+                  if (log.decision === 'BUY') {
+                    badgeColor = 'var(--success-color)';
+                    badgeBg = 'rgba(16, 185, 129, 0.1)';
+                    borderCol = 'rgba(16, 185, 129, 0.15)';
+                  } else if (log.decision === 'SELL') {
+                    badgeColor = 'var(--danger-color)';
+                    badgeBg = 'rgba(239, 68, 68, 0.1)';
+                    borderCol = 'rgba(239, 68, 68, 0.15)';
+                  } else if (log.decision === 'HOLD') {
+                    badgeColor = '#F59E0B';
+                    badgeBg = 'rgba(245, 158, 11, 0.1)';
+                    borderCol = 'rgba(245, 158, 11, 0.15)';
+                  }
+
+                  return (
+                    <div 
+                      key={log.id || index}
+                      style={{
+                        background: 'rgba(0,0,0,0.3)',
+                        border: `1px solid ${borderCol}`,
+                        borderRadius: '10px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ 
+                            fontSize: '10px', 
+                            fontWeight: '950', 
+                            color: badgeColor, 
+                            background: badgeBg, 
+                            padding: '2px 8px', 
+                            borderRadius: '6px'
+                          }}>
+                            {log.decision}
+                          </span>
+                          {log.decision !== 'HOLD' && (
+                            <span style={{ fontSize: '10px', color: '#E5E7EB', fontWeight: 'bold' }}>
+                              {log.proposed_price} USDT / {log.proposed_amount} SUT
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '9px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
+                          {new Date(log.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      <div style={{ fontSize: '11px', color: '#D1D5DB', lineHeight: '1.5', background: 'rgba(0,0,0,0.15)', padding: '10px', borderRadius: '8px' }}>
+                        {log.reason}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           </div>
 
           {/* 👑 마스터 매니저 본인 Gate.io 실거래 주문 관리 패널 */}
