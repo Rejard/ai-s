@@ -13,7 +13,6 @@ import {
   approveManagerWithdrawal,
   buildManagerHeaders,
   clearManagerGateIoCredentials,
-  isMaskedCredential,
   loadManagerDashboardData,
   rejectManagerUser,
   saveManagerAiSettings,
@@ -255,132 +254,8 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       if (managerData.credentialUpdates.clearApiKey) setLocalApiKey('');
       if (managerData.credentialUpdates.clearApiSecret) setLocalApiSecret('');
       if (managerData.credentialUpdates.depositAddress) setLocalDepositAddress(managerData.credentialUpdates.depositAddress);
-      return;
     } catch (err) {
       console.error('Manager data load failed:', err);
-      return;
-    } finally {
-      setLoading(false);
-    }
-
-    try {
-      // 1-1. KYC 승인 대기 목록
-      const pendingRes = await axios.get(`${API_BASE}/manager/pending-users`, getManagerHeaders());
-      if (pendingRes.data.success) {
-        setPendingUsers(pendingRes.data.users);
-      }
-
-      // 1-2. 통계 및 최근 결제
-      const statsRes = await axios.get(`${API_BASE}/manager/stats`, getManagerHeaders());
-      if (statsRes.data.success) {
-        setStats(statsRes.data.stats);
-        setRecentPayments(statsRes.data.recentPayments);
-      }
-
-      // 1-3. 전체 회원 정보 목록 실시간 로드 추가!
-      const allUsersRes = await axios.get(`${API_BASE}/manager/users`, getManagerHeaders());
-      if (allUsersRes.data.success) {
-        setAllUsers(allUsersRes.data.users);
-      }
-
-      // 1-4. 출금 심사 대기 목록 로드
-      const withdrawRes = await axios.get(`${API_BASE}/manager/withdrawals`, getManagerHeaders());
-      if (withdrawRes.data.success) {
-        setWithdrawals(withdrawRes.data.withdrawals);
-      }
-
-      // 1-5. AI 그리드 설정 로드
-      const aiRes = await axios.get(`${API_BASE}/manager/ai-settings`, getManagerHeaders());
-      if (aiRes.data.success) {
-        setGridSettings(aiRes.data.settings);
-      }
-
-      // 1-6. 매니저 본인 AI 투자 현황 및 지갑 잔고 로드
-      if (walletAddress) {
-        try {
-          const portRes = await axios.get(`${API_BASE}/investment/portfolio/${walletAddress}`);
-          if (portRes.data.success) {
-            setPortfolio(portRes.data.portfolio);
-          }
-
-          // 실제 SUT 지갑 잔고 조회
-          const rpcProvider = new ethers.JsonRpcProvider('https://polygon-bor-rpc.publicnode.com');
-          const sutContractAddress = "0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55".toLowerCase();
-          const sutAbi = ["function balanceOf(address account) external view returns (uint256)"];
-          const sutContract = new ethers.Contract(sutContractAddress, sutAbi, rpcProvider);
-          const balanceWei = await sutContract.balanceOf(walletAddress);
-          setWalletSutBalance(parseFloat(ethers.formatUnits(balanceWei, 18)));
-        } catch (portErr) {
-          console.error("매니저 자산 조회 에러:", portErr);
-        }
-      }
-
-      // 1-7. Gate.io 거래소 잔고 로드
-      try {
-        const gateioRes = await axios.get(`${API_BASE}/manager/gateio-balance`, getManagerHeaders());
-        if (gateioRes.data.success) {
-          setGateioBalance(gateioRes.data.balances);
-        } else {
-          setGateioBalance(null);
-        }
-      } catch (gateioErr) {
-        console.error("Gate.io 잔고 로드 에러:", gateioErr);
-        setGateioBalance(null);
-      }
-
-      // 1-8. Gate.io 실시간 수익률 성과 로드
-      try {
-        const perfRes = await axios.get(`${API_BASE}/manager/gateio-performance`, getManagerHeaders());
-        if (perfRes.data.success && perfRes.data.isConfigured) {
-          setPerformance(perfRes.data);
-          
-          if (isMaskedCredential(localStorage.getItem('gateio_api_key'))) {
-            localStorage.removeItem('gateio_api_key');
-            setLocalApiKey('');
-          }
-          if (isMaskedCredential(localStorage.getItem('gateio_api_secret'))) {
-            localStorage.removeItem('gateio_api_secret');
-            setLocalApiSecret('');
-          }
-          if (!localStorage.getItem('gateio_deposit_address') && perfRes.data.depositAddress) {
-            localStorage.setItem('gateio_deposit_address', perfRes.data.depositAddress);
-            setLocalDepositAddress(perfRes.data.depositAddress);
-          }
-
-          if (perfRes.data.yieldHistory && perfRes.data.yieldHistory.length > 0) {
-            setYieldHistory(perfRes.data.yieldHistory);
-          } else if (perfRes.data.totalBuyUsdt > 0) {
-            const curYield = perfRes.data.yieldPercent;
-            setYieldHistory(prev => {
-              let nextHistory = [...prev, curYield];
-              if (nextHistory.length > 30) {
-                nextHistory.shift();
-              }
-              return nextHistory;
-            });
-          }
-        } else {
-          setPerformance(null);
-          setYieldHistory([]);
-        }
-      } catch (perfErr) {
-        console.error("Gate.io 성과 조회 에러:", perfErr);
-        setPerformance(null);
-        setYieldHistory([]);
-      }
-
-      // 1-9. AI 오토 봇 브리핑 로그 로드
-      try {
-        const aiLogsRes = await axios.get(`${API_BASE}/manager/ai-logs`, getManagerHeaders());
-        if (aiLogsRes.data.success) {
-          setAiLogs(aiLogsRes.data.logs || []);
-        }
-      } catch (aiLogsErr) {
-        console.error("AI 의사결정 브리핑 로그 조회 에러:", aiLogsErr);
-      }
-
-    } catch (err) {
-      console.error('메니져 데이터 로드 실패:', err);
     } finally {
       setLoading(false);
     }
@@ -388,7 +263,6 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
   useEffect(() => {
     fetchManagerData();
-    // 5초마다 실시간 동기화 리프레시
     const interval = setInterval(fetchManagerData, 5000);
     return () => clearInterval(interval);
   }, []);
