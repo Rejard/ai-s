@@ -710,14 +710,13 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납 - 온체인)</div>
-                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#A78BFA', marginTop: '2px' }}>
-                    {vaultSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 누적 예치금 (누적 입금액)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#3B82F6', marginTop: '2px' }}>
+                    {stats ? stats.totalDeposited.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>온체인 볼트 잔고</span>
+                <span style={{ fontSize: '10px', color: '#3B82F6', background: 'rgba(59,130,246,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>총 입금액</span>
               </div>
-
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
@@ -727,6 +726,16 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
                 <span style={{ fontSize: '10px', color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>총 출금 완료액</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 총 운용 자산 (볼트 잔고)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#A78BFA', marginTop: '2px' }}>
+                    {vaultSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>온체인 볼트 잔고</span>
               </div>
 
             </div>
@@ -1238,14 +1247,14 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     flex: 1,
                     padding: '12px',
                     fontSize: '13px',
-                    background: hasUnsavedChanges 
-                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' 
+                    background: hasUnsavedChanges
+                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
                       : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-                    boxShadow: hasUnsavedChanges 
-                      ? '0 0 12px rgba(245, 158, 11, 0.5)' 
+                    boxShadow: hasUnsavedChanges
+                      ? '0 0 12px rgba(245, 158, 11, 0.5)'
                       : '0 4px 12px rgba(139, 92, 246, 0.25)',
-                    border: hasUnsavedChanges 
-                      ? '1px solid #F59E0B' 
+                    border: hasUnsavedChanges
+                      ? '1px solid #F59E0B'
                       : '1px solid rgba(255, 255, 255, 0.15)',
                     borderRadius: '10px',
                     color: '#FFF',
@@ -1384,7 +1393,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     fontSize: '11px',
                     fontWeight: 'bold',
                     background: confirmMode === 'BUY'
-                      ? 'linear-gradient(90deg, #059669, #047857)' 
+                      ? 'linear-gradient(90deg, #059669, #047857)'
                       : 'linear-gradient(90deg, #10B981, #059669)',
                     border: confirmMode === 'BUY' ? '1px dashed #FFF' : 'none',
                     boxShadow: confirmMode === 'BUY' ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none',
@@ -1404,7 +1413,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     fontSize: '11px',
                     fontWeight: 'bold',
                     background: confirmMode === 'SELL'
-                      ? 'linear-gradient(90deg, #DC2626, #B91C1C)' 
+                      ? 'linear-gradient(90deg, #DC2626, #B91C1C)'
                       : 'linear-gradient(90deg, #EF4444, #DC2626)',
                     border: confirmMode === 'SELL' ? '1px dashed #FFF' : 'none',
                     boxShadow: confirmMode === 'SELL' ? '0 0 10px rgba(239, 68, 68, 0.4)' : 'none',
@@ -1425,7 +1434,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               <Receipt size={18} color="#10B981" />
               최근 Gate.io 실거래 체결 내역 (수동/자동 통합)
             </h4>
-            
+
             {(!performance || !performance.trades || performance.trades.length === 0) ? (
               <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
                 📭 API가 연동되지 않았거나 최근 체결된 거래 내역이 없습니다.
@@ -1711,7 +1720,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   >
                     <div style={{ textAlign: 'left' }}>
                       <div style={{ fontSize: '12px', fontWeight: '700', color: '#FFF' }}>
-                        {pay.name} ({pay.amount < 0 ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
+                        {pay.name} ({pay.type === 'WITHDRAW_REQUEST' ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
                       </div>
                       <a
                         href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`}
@@ -1724,11 +1733,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '800', color: pay.amount < 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
-                        {pay.amount > 0 ? `+${pay.amount}` : pay.amount} SUT
+                      <div style={{ fontSize: '14px', fontWeight: '800', color: pay.type === 'WITHDRAW_REQUEST' ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                        {pay.type === 'WITHDRAW_REQUEST' ? `-${pay.amount}` : `+${pay.amount}`} SUT
                       </div>
                       <span style={{ fontSize: '9px', color: 'var(--text-dark)' }}>
-                        {pay.amount < 0 ? '지급 완료' : (pay.type === 'DEPOSIT' ? '예치 완료' : '수익 배분 완료')}
+                        {pay.type === 'WITHDRAW_REQUEST' ? '지급 완료' : (pay.type === 'DEPOSIT' ? '예치 완료' : '수익 배분 완료')}
                       </span>
                     </div>
                   </div>

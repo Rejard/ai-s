@@ -177,12 +177,14 @@ router.get('/stats', async (req, res) => {
     const paymentStats = await queries.get(`
       SELECT
         SUM(CASE WHEN type IN ('DEPOSIT', 'AI_TRADING_PROFIT') THEN amount ELSE 0 END) as totalRevenue,
+        SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END) as totalDeposited,
         SUM(CASE WHEN type = 'WITHDRAW_REQUEST' THEN amount ELSE 0 END) as totalDistributed
       FROM payments
       WHERE status = 'SUCCESS'
     `);
 
     const totalRevenue = paymentStats.totalRevenue || 0;
+    const totalDeposited = paymentStats.totalDeposited || 0;
     const totalDistributed = paymentStats.totalDistributed || 0;
     const companyRevenue = totalRevenue - totalDistributed;
 
@@ -202,6 +204,7 @@ router.get('/stats', async (req, res) => {
         totalPending: pendingCountRow ? pendingCountRow.total : 0,
         limit: 500,
         totalRevenue,
+        totalDeposited,
         totalDistributed,
         companyRevenue
       },

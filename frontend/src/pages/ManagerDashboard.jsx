@@ -666,7 +666,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
               <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '24px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)' }}>
                   ${sutPrice.toFixed(4)} <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
@@ -1095,14 +1095,14 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             className={hasUnsavedChanges ? "btn-primary glow-active" : "btn-primary"}
             onClick={handleSaveGridSettings}
             style={{
-              background: hasUnsavedChanges 
-                ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' 
+              background: hasUnsavedChanges
+                ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
                 : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-              boxShadow: hasUnsavedChanges 
-                ? '0 0 12px rgba(245, 158, 11, 0.5)' 
+              boxShadow: hasUnsavedChanges
+                ? '0 0 12px rgba(245, 158, 11, 0.5)'
                 : '0 4px 12px rgba(139, 92, 246, 0.25)',
-              border: hasUnsavedChanges 
-                ? '1px solid #F59E0B' 
+              border: hasUnsavedChanges
+                ? '1px solid #F59E0B'
                 : '1px solid rgba(255, 255, 255, 0.15)',
               padding: '8px 16px',
               fontSize: '12px',
@@ -1186,14 +1186,18 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납 - 온체인):</span>
-            <span style={{ color: '#A78BFA', fontWeight: '700' }}>{vaultSutBalance.toFixed(2)} SUT</span>
+            <span style={{ color: 'var(--text-muted)' }}>회원 누적 예치금 (누적 입금액):</span>
+            <span style={{ color: '#3B82F6', fontWeight: '700' }}>{stats ? stats.totalDeposited.toFixed(2) : '0.00'} SUT</span>
           </div>
-
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
             <span style={{ color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료):</span>
             <span style={{ color: '#F59E0B', fontWeight: '700' }}>{stats ? stats.totalDistributed.toFixed(2) : '0.00'} SUT</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>회원 총 운용 자산 (볼트 잔고):</span>
+            <span style={{ color: '#A78BFA', fontWeight: '700' }}>{vaultSutBalance.toFixed(2)} SUT</span>
           </div>
         </div>
       </div>
@@ -1320,7 +1324,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               fontSize: '13px',
               fontWeight: 'bold',
               background: confirmMode === 'BUY'
-                ? 'linear-gradient(90deg, #059669, #047857)' 
+                ? 'linear-gradient(90deg, #059669, #047857)'
                 : 'linear-gradient(90deg, #10B981, #059669)',
               border: confirmMode === 'BUY' ? '1px dashed #FFF' : 'none',
               boxShadow: confirmMode === 'BUY' ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none',
@@ -1341,7 +1345,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               fontSize: '13px',
               fontWeight: 'bold',
               background: confirmMode === 'SELL'
-                ? 'linear-gradient(90deg, #DC2626, #B91C1C)' 
+                ? 'linear-gradient(90deg, #DC2626, #B91C1C)'
                 : 'linear-gradient(90deg, #EF4444, #DC2626)',
               border: confirmMode === 'SELL' ? '1px dashed #FFF' : 'none',
               boxShadow: confirmMode === 'SELL' ? '0 0 10px rgba(239, 68, 68, 0.4)' : 'none',
@@ -1360,7 +1364,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           <Receipt size={18} color="#10B981" />
           최근 Gate.io 실거래 체결 내역 (수동/자동 통합)
         </h3>
-        
+
         {(!performance || !performance.trades || performance.trades.length === 0) ? (
           <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0', margin: 0 }}>
             API가 연동되지 않았거나 최근 체결된 거래 내역이 없습니다.
@@ -1398,7 +1402,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                     </span>
                     <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>{formattedTime}</span>
                   </div>
-                  
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>단가:</span> <strong style={{ color: '#FFF' }}>{price} USDT</strong>
@@ -1611,7 +1615,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               >
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: '600', color: '#F3F4F6' }}>
-                    {pay.name} ({pay.amount < 0 ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
+                    {pay.name} ({pay.type === 'WITHDRAW_REQUEST' ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
                   </div>
                   <a
                     href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`}
@@ -1624,11 +1628,11 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: pay.amount < 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
-                    {pay.amount > 0 ? `+${pay.amount}` : pay.amount} SUT
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: pay.type === 'WITHDRAW_REQUEST' ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                    {pay.type === 'WITHDRAW_REQUEST' ? `-${pay.amount}` : `+${pay.amount}`} SUT
                   </div>
                   <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>
-                    {pay.amount < 0 ? '지급 완료' : (pay.type === 'DEPOSIT' ? '예치 완료' : '수익 배분 완료')}
+                    {pay.type === 'WITHDRAW_REQUEST' ? '지급 완료' : (pay.type === 'DEPOSIT' ? '예치 완료' : '수익 배분 완료')}
                   </span>
                 </div>
               </div>
