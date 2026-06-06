@@ -27,6 +27,48 @@ export function getPreferredInjectedProvider(ethereum) {
   return findTrustWalletProvider(providers) || providers[0] || null;
 }
 
+export async function createWalletConnectProvider(projectId) {
+  const { EthereumProvider } = await import('@walletconnect/ethereum-provider');
+  const provider = await EthereumProvider.init({
+    projectId,
+    optionalChains: [137],
+    showQrModal: true,
+    methods: ['eth_requestAccounts', 'wallet_switchEthereumChain', 'wallet_addEthereumChain', 'eth_sendTransaction'],
+    events: ['chainChanged', 'accountsChanged', 'disconnect'],
+    rpcMap: {
+      137: 'https://polygon-bor-rpc.publicnode.com',
+    },
+    metadata: {
+      name: 'Ai S',
+      description: 'Ai S Polygon SUT transaction',
+      url: window.location.origin,
+      icons: [`${window.location.origin}/favicon.svg`],
+    },
+  });
+  await provider.enable();
+  return provider;
+}
+
+export async function resolveWalletTransactionProvider({
+  ethereum,
+  userAgent,
+  walletConnectProjectId = '',
+  createWalletConnectProvider: createProvider = createWalletConnectProvider,
+}) {
+  if (isMobileChromeWithoutInjectedWallet(userAgent, ethereum)) {
+    if (!walletConnectProjectId) {
+      throw new Error('MOBILE_CHROME_REQUIRES_WALLET_APP');
+    }
+    return createProvider(walletConnectProjectId);
+  }
+
+  const provider = getPreferredInjectedProvider(ethereum);
+  if (provider) return provider;
+  if (walletConnectProjectId) return createProvider(walletConnectProjectId);
+
+  throw new Error('NO_INJECTED_WALLET');
+}
+
 export function normalizeChainId(chainId) {
   if (chainId === null || chainId === undefined || chainId === '') return '';
   if (typeof chainId === 'number') return `0x${chainId.toString(16)}`;

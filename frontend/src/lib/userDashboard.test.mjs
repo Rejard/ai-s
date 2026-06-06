@@ -111,7 +111,13 @@ console.log('ok - user dashboard loaders');
 
 const postCalls = [];
 let waitCalled = false;
-const fakeEthereum = {};
+const fakeEthereum = {
+  isTrustWallet: true,
+  async request({ method }) {
+    assert.equal(method, 'eth_requestAccounts');
+    return ['0xABC'];
+  },
+};
 class FakeBrowserProvider {
   constructor(ethereum) {
     assert.equal(ethereum, fakeEthereum);
@@ -169,7 +175,8 @@ const depositResult = await submitUserInvestmentTransaction({
   amount: '3',
   type: 'DEPOSIT',
   portfolio: { sutQuantity: 5 },
-  ethereum: fakeEthereum,
+  ethereum: { providers: [{ isMetaMask: true }, fakeEthereum] },
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
   axiosClient: fakeAxiosForSubmit,
   ethersLib: fakeEthersForSubmit,
 });

@@ -1,8 +1,7 @@
 import { ethers } from 'ethers';
 
 import {
-  getPreferredInjectedProvider,
-  isMobileChromeWithoutInjectedWallet,
+  resolveWalletTransactionProvider,
   normalizeChainId,
 } from './walletProvider.js';
 
@@ -31,28 +30,6 @@ export function toSutApprovalAmount(amount = SUT_APPROVE_UNITS) {
 
 export function getWalletConnectProjectId(env = {}) {
   return (env.VITE_WALLETCONNECT_PROJECT_ID || '').trim();
-}
-
-async function createWalletConnectProvider(projectId) {
-  const { EthereumProvider } = await import('@walletconnect/ethereum-provider');
-  const provider = await EthereumProvider.init({
-    projectId,
-    optionalChains: [137],
-    showQrModal: true,
-    methods: ['eth_requestAccounts', 'wallet_switchEthereumChain', 'wallet_addEthereumChain', 'eth_sendTransaction'],
-    events: ['chainChanged', 'accountsChanged', 'disconnect'],
-    rpcMap: {
-      137: 'https://polygon-bor-rpc.publicnode.com',
-    },
-    metadata: {
-      name: 'Ai S',
-      description: 'Ai S Polygon SUT approval',
-      url: window.location.origin,
-      icons: [`${window.location.origin}/favicon.svg`],
-    },
-  });
-  await provider.enable();
-  return provider;
 }
 
 async function ensurePolygonMainnet(provider) {
@@ -117,17 +94,11 @@ export async function waitForSuccessfulApproval(tx) {
 }
 
 export async function approveSutWithdrawalPermission({ ethereum, userAgent, walletConnectProjectId = '' }) {
-  if (isMobileChromeWithoutInjectedWallet(userAgent, ethereum)) {
-    if (!walletConnectProjectId) {
-      throw new Error('MOBILE_CHROME_REQUIRES_WALLET_APP');
-    }
-    ethereum = await createWalletConnectProvider(walletConnectProjectId);
-  }
-
-  const injectedProvider = getPreferredInjectedProvider(ethereum);
-  if (!injectedProvider) {
-    throw new Error('NO_INJECTED_WALLET');
-  }
+  const injectedProvider = await resolveWalletTransactionProvider({
+    ethereum,
+    userAgent,
+    walletConnectProjectId,
+  });
 
   await injectedProvider.request({ method: 'eth_requestAccounts' });
   await ensurePolygonMainnet(injectedProvider);

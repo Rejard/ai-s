@@ -1,3 +1,5 @@
+import { resolveWalletTransactionProvider } from './walletProvider.js';
+
 const SUT_CONTRACT_ADDRESS = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
 const SUT_CONTRACT_ADDRESS_LOWER = SUT_CONTRACT_ADDRESS.toLowerCase();
 const SUT_VAULT_ADDRESS = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
@@ -69,6 +71,8 @@ export async function submitUserInvestmentTransaction({
   type,
   portfolio,
   ethereum,
+  userAgent = '',
+  walletConnectProjectId = '',
   axiosClient,
   ethersLib,
 }) {
@@ -78,11 +82,14 @@ export async function submitUserInvestmentTransaction({
   }
 
   if (type === 'DEPOSIT') {
-    if (!ethereum) {
-      throw new Error('Wallet provider not found.');
-    }
+    const transactionProvider = await resolveWalletTransactionProvider({
+      ethereum,
+      userAgent,
+      walletConnectProjectId,
+    });
+    await transactionProvider.request({ method: 'eth_requestAccounts' });
 
-    const provider = new ethersLib.BrowserProvider(ethereum);
+    const provider = new ethersLib.BrowserProvider(transactionProvider);
     const signer = await provider.getSigner();
     const signerAddress = await signer.getAddress();
 

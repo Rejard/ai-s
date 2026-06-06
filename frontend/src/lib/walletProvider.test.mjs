@@ -7,6 +7,7 @@ import {
   getPreferredInjectedProvider,
   isMobileChromeWithoutInjectedWallet,
   normalizeChainId,
+  resolveWalletTransactionProvider,
 } from './walletProvider.js';
 
 const tests = [
@@ -53,9 +54,52 @@ const tests = [
       'https://link.trustwallet.com/open_url?coin_id=966&url=https%3A%2F%2Fedenai.alonics.com%2Fregister%3Fgoogle_email%3Da%2540b.com'
     );
   }],
+  ['resolves Trust Wallet from multiple injected providers', async () => {
+    const metaMaskProvider = { isMetaMask: true };
+    const trustProvider = { isTrustWallet: true };
+
+    assert.equal(
+      await resolveWalletTransactionProvider({
+        ethereum: { providers: [metaMaskProvider, trustProvider] },
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      }),
+      trustProvider
+    );
+  }],
+  ['uses WalletConnect when mobile Chrome has no injected provider', async () => {
+    const walletConnectProvider = { request() {} };
+    let receivedProjectId = '';
+
+    assert.equal(
+      await resolveWalletTransactionProvider({
+        ethereum: undefined,
+        userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36',
+        walletConnectProjectId: 'project-id',
+        createWalletConnectProvider: async (projectId) => {
+          receivedProjectId = projectId;
+          return walletConnectProvider;
+        },
+      }),
+      walletConnectProvider
+    );
+    assert.equal(receivedProjectId, 'project-id');
+  }],
+  ['uses WalletConnect on desktop when no injected provider is available', async () => {
+    const walletConnectProvider = { request() {} };
+
+    assert.equal(
+      await resolveWalletTransactionProvider({
+        ethereum: undefined,
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0 Safari/537.36',
+        walletConnectProjectId: 'project-id',
+        createWalletConnectProvider: async () => walletConnectProvider,
+      }),
+      walletConnectProvider
+    );
+  }],
 ];
 
 for (const [name, run] of tests) {
-  run();
+  await run();
   console.log(`ok - ${name}`);
 }
