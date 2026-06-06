@@ -426,7 +426,7 @@ function AppContent() {
           </div>
           <h2 style={{ fontSize: '24px', marginBottom: '10px' }}>Ai S</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.6', marginBottom: '24px' }}>
-            본 플랫폼은 폴리곤 네트워크 및 진짜 구글 OAuth 인증을 통합 연동합니다.
+            본 플랫폼은 폴리곤 네트워크 및 구글 OAuth 인증을 통합 연동합니다.
             2단계 추천인 자동 분배 및 AI 자동 투자 시스템 시뮬레이션을 시작하십시오.
           </p>
 

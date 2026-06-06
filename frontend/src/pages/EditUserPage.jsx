@@ -131,7 +131,7 @@ function EditUserPage() {
   };
 
   const handleApproveWithdrawal = async (id, requestedAmount, name) => {
-    const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금 신청 금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 실제로 출금 승인 처리하여 지급하신 금액을 메모용으로 입력해 주세요.\n(참고: 회원의 자산 장부에서는 출금 신청 원금인 ${requestedAmount} SUT가 차감 정산됩니다.)`, requestedAmount);
+    const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금 신청 금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 출금 승인 처리하여 지급하신 금액을 메모용으로 입력해 주세요.\n(참고: 회원의 자산 장부에서는 출금 신청 원금인 ${requestedAmount} SUT가 차감 정산됩니다.)`, requestedAmount);
 
     if (actualPayoutStr === null) return;
 
@@ -175,7 +175,7 @@ function EditUserPage() {
 
     const amountToSend = parseFloat(payoutAmount);
 
-    if (!confirm(`🚨 [온체인 실지급 집행 경고]\n정말로 이 회원(${targetWallet})에게 [${amountToSend} SUT]를 실제 지갑에서 전송하시겠습니까?\n이 작업은 실제 블록체인 트랜잭션을 실행하므로 되돌릴 수 없습니다.\n(주의: 투자 원장 잔고는 자동으로 차감되지 않으며, 원장 차감이 필요할 경우 별도로 처리해야 합니다.)`)) {
+    if (!confirm(`🚨 [온체인 전송 집행 경고]\n정말로 이 회원(${targetWallet})에게 [${amountToSend} SUT]를 지갑에서 전송하시겠습니까?\\n이 작업은 블록체인 트랜잭션을 실행하므로 되돌릴 수 없습니다.\\n(주의: 투자 원장 잔고는 자동으로 차감되지 않으며, 원장 차감이 필요할 경우 별도로 처리해야 합니다.)`)) {
       return;
     }
 
@@ -307,7 +307,7 @@ function EditUserPage() {
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
           <h3 style={{ fontSize: '13px', color: '#EF4444', fontWeight: '700', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Wallet size={14} />
-            위탁 자산 원장 수동 조정 (실제 지급 및 장부 조정)
+            위탁 자산 원장 수동 조정 (온체인 전송 및 장부 조정)
           </h3>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(239,68,68,0.05)', padding: '12px', borderRadius: '8px' }}>
@@ -316,7 +316,7 @@ function EditUserPage() {
           </div>
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '700' }}>회원 대상 온체인 실지급 (실제 SUT 송금)</label>
+            <label style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '700' }}>회원 대상 온체인 전송 (SUT 송금)</label>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input
                 type="number"
@@ -341,7 +341,7 @@ function EditUserPage() {
                 disabled={isPayingOut}
                 style={{ width: 'auto', padding: '12px 20px', borderRadius: '8px', background: 'var(--primary-gradient)', fontSize: '12px', fontWeight: 'bold' }}
               >
-                {isPayingOut ? '송금 진행 중...' : '⚡ 회원 지갑으로 SUT 실지급'}
+                {isPayingOut ? '송금 진행 중...' : '⚡ 회원 지갑으로 SUT 전송'}
               </button>
             </div>
           </div>
@@ -401,7 +401,7 @@ function EditUserPage() {
           </div>
 
           <p style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.4', marginTop: '8px' }}>
-            💡 <strong>회원 대상 온체인 실지급:</strong> 매니저의 지갑에서 회원의 블록체인 지갑({targetWallet})으로 SUT 토큰을 실제 송금합니다. (장부의 투자 원금은 자동으로 차감되지 않습니다.)<br />
+            💡 <strong>회원 대상 온체인 전송:</strong> 매니저의 지갑에서 회원의 블록체인 지갑({targetWallet})으로 SUT 토큰을 전송합니다. (장부의 투자 원금은 자동으로 차감되지 않습니다.)<br />
             💡 <strong>회원 지급 요청 심사:</strong> 회원이 신청한 지급 요청을 승인 또는 거절 처리합니다. 승인 시 회원의 예치 원금 장고가 신청 금액만큼 차감 정산됩니다.
           </p>
         </div>

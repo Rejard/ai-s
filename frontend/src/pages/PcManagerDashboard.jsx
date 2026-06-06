@@ -406,7 +406,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleApproveWithdrawal = async (id, requestedAmount, name) => {
-    const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금 신청 금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 실제로 출금 승인 처리하여 지급하신 금액을 메모용으로 입력해 주세요.\n(참고: 회원의 자산 장부에서는 출금 신청 원금인 ${requestedAmount} SUT가 차감 정산됩니다.)`, requestedAmount);
+    const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금 신청 금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 출금 승인 처리하여 지급하신 금액을 메모용으로 입력해 주세요.\n(참고: 회원의 자산 장부에서는 출금 신청 원금인 ${requestedAmount} SUT가 차감 정산됩니다.)`, requestedAmount);
 
     if (actualPayoutStr === null) return;
 
@@ -887,7 +887,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               }}>
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6' }}>
                   <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px', fontSize: '14px' }}>⚠️ 수익률 차트 비활성화됨</span>
-                  로컬 Gate.io API 키를 등록하고 거래소에서 SUT를 실제 매수하면 수익률 차트가 여기에 활성화됩니다.
+                  로컬 Gate.io API 키를 등록하고 거래소에서 SUT를 매수하면 수익률 차트가 여기에 활성화됩니다.
                 </div>
               </div>
             )}
@@ -1173,7 +1173,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
                     <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '6px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
                     <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-                      API 키를 등록하면, 실제 거래소 SUT/USDT 자금 조회 및 자동매매 실거래 연동이 활성화됩니다.
+                      API 키를 등록하면, 거래소 SUT/USDT 자금 조회 및 자동매매 실거래 연동이 활성화됩니다.
                     </p>
                   </div>
                 )}
@@ -1673,13 +1673,13 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '420px', background: '#111827', padding: '30px' }}>
             <h3 style={{ fontSize: '20px', marginBottom: '14px', color: '#FFF', fontWeight: '700' }}>
-              {txType === 'DEPOSIT' ? '💸 SUT 투자 봇 자본금 실제 예치' : '📤 SUT 투자 봇 자본금 출금 신청'}
+              {txType === 'DEPOSIT' ? '💸 SUT 투자 봇 자본금 예치' : '📤 SUT 투자 봇 자본금 출금 신청'}
             </h3>
 
             <form onSubmit={handleTxSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#A78BFA' }}>
-                  {txType === 'DEPOSIT' ? '예치할 SUT 수량 입력 (실제 온체인 전송)' : '인출할 SUT 수량 입력'}
+                  {txType === 'DEPOSIT' ? '예치할 SUT 수량 입력 (온체인 전송)' : '인출할 SUT 수량 입력'}
                 </label>
                 <input
                   type="number"
@@ -1694,7 +1694,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px' }}>
                 {txType === 'DEPOSIT'
-                  ? '💡 폴리곤 메인넷 상의 SUT 실제 온체인 전송입니다. 트러스트월렛/메타마스크 승인 창이 열리며 가스비(POL)와 토큰이 소모됩니다.'
+                  ? '💡 폴리곤 메인넷 상의 SUT 온체인 전송입니다. 트러스트월렛/메타마스크 승인 창이 열리며 가스비(POL)와 토큰이 소모됩니다.'
                   : '💡 출금 요청 시 봇 거래 정산이 수동으로 진행되며, 매니저 최종 승인 후 입력하신 가상 지갑 주소로 SUT가 전달됩니다.'}
               </div>
 

@@ -209,7 +209,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)' }}></div>
             <div>
-              <span style={{ color: 'var(--success-color)', fontWeight: '600' }}>진짜 구글 로그인 인증 완료:</span> {email}
+              <span style={{ color: 'var(--success-color)', fontWeight: '600' }}>구글 로그인 인증 완료:</span> {email}
             </div>
           </div>
         </div>
