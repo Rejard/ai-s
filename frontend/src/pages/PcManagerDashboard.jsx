@@ -1769,7 +1769,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                         {pay.name} ({pay.type === 'WITHDRAW_REQUEST' ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
                       </div>
                       <a
-                        href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`}
+                        href={`https://polygonscan.com/tx/${pay.tx_hash}`}
                         target="_blank"
                         rel="noreferrer"
                         style={{ fontSize: '9px', color: 'var(--accent-color)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '4px' }}
