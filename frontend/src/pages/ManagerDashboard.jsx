@@ -1661,14 +1661,20 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                   <div style={{ fontSize: '12px', fontWeight: '600', color: '#F3F4F6' }}>
                     {pay.name} ({pay.type === 'WITHDRAW_REQUEST' ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
                   </div>
-                  <a
-                    href={`https://polygonscan.com/tx/${pay.tx_hash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ fontSize: '9px', color: 'var(--accent-color)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}
-                  >
-                    TX: {pay.tx_hash.substring(0, 10)}... <ExternalLink size={8} />
-                  </a>
+                  {pay.tx_hash && pay.tx_hash.length === 66 && pay.tx_hash.startsWith('0x') ? (
+                    <a
+                      href={`https://polygonscan.com/tx/${pay.tx_hash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: '9px', color: 'var(--accent-color)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}
+                    >
+                      TX: {pay.tx_hash.substring(0, 10)}... <ExternalLink size={8} />
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+                      내부 수동 처리 (TX: {pay.tx_hash ? pay.tx_hash.substring(0, 16) : 'N/A'}...)
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
