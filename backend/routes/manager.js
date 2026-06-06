@@ -436,7 +436,7 @@ router.get('/ai-settings', async (req, res) => {
       ai_grid_status: 'OFF',
       ai_grid_lower: '0.15',
       ai_grid_upper: '0.30',
-      ai_grid_count: '10',
+      ai_grid_count: '5',
       ai_grid_frequency: '5',
       hasApiKey: !!credentials,
       hasApiSecret: !!credentials,
@@ -469,7 +469,7 @@ router.post('/ai-settings', async (req, res) => {
       status: status || (current ? current.ai_grid_status : 'OFF'),
       lower: lower || (current ? current.ai_grid_lower : '0.15'),
       upper: upper || (current ? current.ai_grid_upper : '0.30'),
-      count: count || (current ? current.ai_grid_count : '10'),
+      count: count || (current ? current.ai_grid_count : '5'),
       frequency: frequency || (current ? current.ai_grid_frequency : '5')
     };
 

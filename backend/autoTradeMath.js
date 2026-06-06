@@ -1,9 +1,15 @@
 const GATEIO_MIN_ORDER_USDT = 3;
 
-function buildTradePlan({ decision, proposedPrice, amountRatio, balances, lower, upper, oneTimeOverride = null }) {
+function buildTradePlan({ decision, proposedPrice, amountRatio, balances, lower, upper, count, oneTimeOverride = null }) {
   const normalizedDecision = String(decision || '').toUpperCase();
   const price = parseFloat(proposedPrice) || 0;
-  const ratio = parseFloat(amountRatio) || 0.1;
+
+  const parsedCount = parseInt(count);
+  let ratio = parseFloat(amountRatio) || 0.1;
+  if (Number.isInteger(parsedCount) && parsedCount > 0) {
+    ratio = 1 / parsedCount;
+  }
+
   const sutBalance = balances && balances.SUT ? balances.SUT : 0;
   const usdtBalance = balances && balances.USDT ? balances.USDT : 0;
 

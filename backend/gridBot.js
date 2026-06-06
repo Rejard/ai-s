@@ -112,6 +112,7 @@ async function executeServerAutoTrades(aiLogId, aiResult) {
       s.manager_email,
       s.ai_grid_lower,
       s.ai_grid_upper,
+      s.ai_grid_count,
       c.encrypted_api_key,
       c.encrypted_api_secret
     FROM manager_ai_settings s
@@ -157,6 +158,7 @@ async function executeServerAutoTrades(aiLogId, aiResult) {
         balances: balanceRes.balances,
         lower: manager.ai_grid_lower,
         upper: manager.ai_grid_upper,
+        count: manager.ai_grid_count,
         oneTimeOverride
       });
       side = tradePlan.side;

@@ -35,7 +35,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     ai_grid_status: 'OFF',
     ai_grid_lower: '0.15',
     ai_grid_upper: '0.30',
-    ai_grid_count: '10',
+    ai_grid_count: '5',
     ai_grid_frequency: '5'
   });
 

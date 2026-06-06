@@ -93,7 +93,7 @@ function initializeDatabase() {
           ai_grid_status TEXT NOT NULL DEFAULT 'OFF',
           ai_grid_lower TEXT NOT NULL DEFAULT '0.15',
           ai_grid_upper TEXT NOT NULL DEFAULT '0.30',
-          ai_grid_count TEXT NOT NULL DEFAULT '10',
+          ai_grid_count TEXT NOT NULL DEFAULT '5',
           ai_grid_frequency TEXT NOT NULL DEFAULT '5',
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
