@@ -635,7 +635,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       <div className="pc-layout-wrapper" style={{ justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div className="shimmer-loading" style={{ width: '60px', height: '60px', borderRadius: '50%', margin: '0 auto 20px' }}></div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>본사 매니저 통계 모듈을 빌드 중입니다...</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>매니저 대시보드를 불러오는 중입니다...</p>
         </div>
       </div>
     );
@@ -648,8 +648,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '28px' }}>👑</span>
           <div style={{ textAlign: 'left' }}>
-            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>본사 총괄 매니저 대시보드</h1>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🏢 본사 전용 회원 관리 및 AI 시뮬레이션 제어 시스템</span>
+            <h1 style={{ fontSize: '22px', color: '#FFF', margin: 0, fontWeight: '800' }}>매니저 대시보드</h1>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🏢 회원 관리 및 AI 시뮬레이션 제어 시스템</span>
           </div>
         </div>
         <button

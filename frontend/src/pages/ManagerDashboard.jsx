@@ -640,7 +640,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     return (
       <div style={{ margin: 'auto', textAlign: 'center', padding: '20px' }}>
         <div className="shimmer-loading" style={{ width: '40px', height: '40px', borderRadius: '50%', margin: '0 auto 15px' }}></div>
-        <p style={{ color: 'var(--text-muted)' }}>본사 총괄 매니저 대시보드를 빌드 중입니다...</p>
+        <p style={{ color: 'var(--text-muted)' }}>매니저 대시보드를 불러오는 중입니다...</p>
       </div>
     );
   }
@@ -658,7 +658,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           사용자 모드로
         </button>
         <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-          🏢 <strong>본사 총괄 매니저 대시보드</strong>
+          🏢 <strong>매니저 대시보드</strong>
         </span>
       </div>
 
