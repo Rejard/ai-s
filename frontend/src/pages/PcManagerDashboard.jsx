@@ -21,6 +21,10 @@ import {
   sendSutToGateIoDepositAddress,
   submitManagerGateIoOrder,
 } from '../lib/managerDashboard';
+import {
+  loadUserDashboardData,
+  buildNextPriceHistory,
+} from '../lib/userDashboard';
 
 function PcManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -47,6 +51,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
+  const [sutPrice, setSutPrice] = useState(0.19);
+  const [sutChange24h, setSutChange24h] = useState(0);
+  const [priceHistory, setPriceHistory] = useState([]);
   const [showTxModal, setShowTxModal] = useState(false);
   const [txType, setTxType] = useState('DEPOSIT');
   const [txAmount, setTxAmount] = useState('');
@@ -288,6 +295,24 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const fetchManagerData = async () => {
     const currentRequestId = ++lastRequestIdRef.current;
     try {
+      if (walletAddress) {
+        try {
+          const userData = await loadUserDashboardData({
+            apiBase: API_BASE,
+            walletAddress,
+            axiosClient: axios,
+            ethersLib: ethers,
+          });
+          if (userData.sutPrice !== undefined) setSutPrice(userData.sutPrice);
+          if (userData.sutChange24h !== undefined) setSutChange24h(userData.sutChange24h);
+          if (userData.sutPrice !== undefined) {
+            setPriceHistory((prev) => buildNextPriceHistory(prev, userData.sutPrice, userData.portfolio?.sutHistory || []));
+          }
+        } catch (err) {
+          console.error('Failed to load SUT price for manager:', err);
+        }
+      }
+
       const managerData = await loadManagerDashboardData({
         apiBase: API_BASE,
         managerEmail,
@@ -785,6 +810,102 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         </div>
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+          {portfolio ? (
+            <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
+              <div style={{ padding: '24px 24px 10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
+                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '28px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)' }}>
+                      ${sutPrice.toFixed(4)} <span style={{ fontSize: '16px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
+                    </span>
+
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      color: sutChange24h >= 0 ? 'var(--success-color)' : 'var(--danger-color)',
+                      background: sutChange24h >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      border: sutChange24h >= 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                      display: 'inline-flex',
+                      alignItems: 'center'
+                    }}>
+                      {sutChange24h >= 0 ? '▲' : '▼'} {sutChange24h >= 0 ? '+' : ''}{sutChange24h.toFixed(2)}%
+                    </span>
+
+                    <span style={{ fontSize: '14px', color: 'var(--success-color)', fontWeight: '600' }}>
+                      (≈ {(sutPrice * (portfolio.krwRate || 1400)).toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KRW)
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <span className="glow-active" style={{ fontSize: '11px', color: 'var(--success-color)', background: 'rgba(16, 185, 129, 0.1)', padding: '5px 12px', borderRadius: '12px', fontWeight: '700', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                    ● 실시간
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ width: '100%', height: '180px', position: 'relative', display: 'block', padding: '10px 20px 20px 20px' }}>
+                <svg width="100%" height="160" viewBox="0 0 500 160" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id="managerSutPriceGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
+                    </linearGradient>
+                    <linearGradient id="managerSutPriceLineGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#8B5CF6" />
+                      <stop offset="100%" stopColor="#10B981" />
+                    </linearGradient>
+                  </defs>
+
+                  <line x1="0" y1="30" x2="500" y2="30" stroke="rgba(255,255,255,0.08)" strokeDasharray="4,4" />
+                  <line x1="0" y1="80" x2="500" y2="80" stroke="rgba(255,255,255,0.15)" />
+                  <line x1="0" y1="130" x2="500" y2="130" stroke="rgba(255,255,255,0.08)" strokeDasharray="4,4" />
+
+                  {(() => {
+                    const data = priceHistory.length > 0 ? priceHistory : [0.19];
+                    const height = 160;
+                    const minVal = Math.min(...data) * 0.999;
+                    const maxVal = Math.max(...data) * 1.001;
+                    const valRange = maxVal - minVal || 0.01;
+                    const points = data.map((val, idx) => {
+                      const x = data.length > 1 ? (idx / (data.length - 1)) * 500 : 250;
+                      const y = height - 20 - ((val - minVal) / valRange) * (height - 40);
+                      return { x, y, val };
+                    });
+                    let dPath = '';
+                    let dArea = '';
+                    if (points.length > 0) {
+                      dPath = `M ${points[0].x} ${points[0].y}`;
+                      for (let i = 0; i < points.length - 1; i++) {
+                        const p0 = points[i];
+                        const p1 = points[i + 1];
+                        const cpX1 = p0.x + (p1.x - p0.x) / 2;
+                        const cpY1 = p0.y;
+                        const cpX2 = p0.x + (p1.x - p0.x) / 2;
+                        const cpY2 = p1.y;
+                        dPath += ` C ${cpX1} ${cpY1} ${cpX2} ${cpY2} ${p1.x} ${p1.y}`;
+                      }
+                      dArea = `${dPath} L ${points[points.length - 1].x} 160 L ${points[0].x} 160 Z`;
+                    }
+                    return (
+                      <>
+                        {dArea && <path d={dArea} fill="url(#managerSutPriceGrad)" style={{ transition: 'all 0.5s ease' }} />}
+                        {dPath && <path d={dPath} fill="none" stroke="url(#managerSutPriceLineGrad)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'all 0.5s ease' }} />}
+                        {points.length > 0 && (
+                          <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="5" fill="var(--success-color)" stroke="#FFF" strokeWidth="2" style={{ transition: 'all 0.5s ease' }} />
+                        )}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+            </div>
+          ) : (
+            <div className="shimmer-loading" style={{ height: '230px', borderRadius: '20px' }}></div>
+          )}
 
           <div className="glass-card" style={{ padding: '0', overflow: 'hidden', position: 'relative', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <div style={{ padding: '24px 24px 10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
