@@ -75,7 +75,7 @@ export async function loadManagerDashboardData({
     data.withdrawals = withdrawRes.data.withdrawals;
   }
 
-  const aiRes = await axiosClient.get(`${apiBase}/manager/ai-settings`, headers);
+  const aiRes = await axiosClient.get(`${apiBase}/manager/ai-settings?_t=${Date.now()}`, headers);
   if (aiRes.data.success) {
     data.gridSettings = aiRes.data.settings;
   }

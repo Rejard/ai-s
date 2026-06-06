@@ -39,6 +39,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     ai_grid_frequency: '5'
   });
 
+  const gridSettingsRef = useRef(gridSettings);
+  useEffect(() => {
+    gridSettingsRef.current = gridSettings;
+  }, [gridSettings]);
+
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [showTxModal, setShowTxModal] = useState(false);
@@ -52,6 +57,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
   // New: Strategy ID reference for preventing duplicate execution
   const lastExecutedStrategyIdRef = useRef(null);
+  const lastServerGridSettingsRef = useRef(null);
+  const lastRequestIdRef = useRef(0);
 
   const [orderAmount, setOrderAmount] = useState('');
   const [orderPrice, setOrderPrice] = useState('');
@@ -207,6 +214,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const fetchManagerData = async () => {
+    const currentRequestId = ++lastRequestIdRef.current;
     try {
       const managerData = await loadManagerDashboardData({
         apiBase: API_BASE,
@@ -220,12 +228,29 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         previousYieldHistory: yieldHistory,
       });
 
+      if (currentRequestId !== lastRequestIdRef.current) {
+        return;
+      }
+
       if (managerData.pendingUsers !== undefined) setPendingUsers(managerData.pendingUsers);
       if (managerData.stats !== undefined) setStats(managerData.stats);
       if (managerData.recentPayments !== undefined) setRecentPayments(managerData.recentPayments);
       if (managerData.allUsers !== undefined) setAllUsers(managerData.allUsers);
       if (managerData.withdrawals !== undefined) setWithdrawals(managerData.withdrawals);
-      if (managerData.gridSettings !== undefined) setGridSettings(managerData.gridSettings);
+      if (managerData.gridSettings !== undefined) {
+        const currentSettings = gridSettingsRef.current;
+        const isDirty = lastServerGridSettingsRef.current && (
+          currentSettings.ai_grid_lower !== lastServerGridSettingsRef.current.ai_grid_lower ||
+          currentSettings.ai_grid_upper !== lastServerGridSettingsRef.current.ai_grid_upper ||
+          currentSettings.ai_grid_count !== lastServerGridSettingsRef.current.ai_grid_count ||
+          currentSettings.ai_grid_frequency !== lastServerGridSettingsRef.current.ai_grid_frequency ||
+          currentSettings.ai_grid_status !== lastServerGridSettingsRef.current.ai_grid_status
+        );
+        if (!isDirty) {
+          setGridSettings(managerData.gridSettings);
+          lastServerGridSettingsRef.current = managerData.gridSettings;
+        }
+      }
       if (managerData.portfolio !== undefined) setPortfolio(managerData.portfolio);
       if (managerData.walletSutBalance !== undefined) setWalletSutBalance(managerData.walletSutBalance);
       if (managerData.gateioBalance !== undefined) setGateioBalance(managerData.gateioBalance);
@@ -309,7 +334,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleApproveWithdrawal = async (id, requestedAmount, name) => {
-    const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 실제로 트러스트월렛을 통해 송금하신 실제 금액을 메모용으로 입력해주세요.\n(참고: 회원의 장부에서는 무조건 신청 원금인 ${requestedAmount} SUT가 소멸됩니다.)`, requestedAmount);
+    const actualPayoutStr = prompt(`[수동 지급 확정]\n\n${name} 회원님이 신청한 출금 신청 금액은 [${requestedAmount} SUT] 입니다.\n\n매니저님께서 실제로 출금 승인 처리하여 지급하신 금액을 메모용으로 입력해 주세요.\n(참고: 회원의 자산 장부에서는 출금 신청 원금인 ${requestedAmount} SUT가 차감 정산됩니다.)`, requestedAmount);
 
     if (actualPayoutStr === null) return;
 
@@ -353,8 +378,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       });
 
       if (res.data.success) {
-        setGridSettings(prev => ({ ...prev, ai_grid_status: newStatus }));
+        lastServerGridSettingsRef.current = null;
         alert(newStatus === 'ON' ? '🤖 완전 자동화 AI 트레이딩 봇이 가동되었습니다!' : 'AI 트레이딩 봇이 정지되었습니다.');
+        fetchManagerData();
       }
     } catch (err) {
       alert('설정 변경 중 오류: ' + err.message);
@@ -378,7 +404,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       });
 
       if (res.data.success) {
-        alert('그리드 봇 파라미터가 안전하게 저장되었습니다.');
+        lastServerGridSettingsRef.current = null;
+        alert('그리드 봇 설정 변경사항이 정상적으로 적용되었습니다.');
+        fetchManagerData();
       }
     } catch (err) {
       alert('설정 저장 중 오류: ' + err.message);
@@ -452,11 +480,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleTriggerAIProfit = async () => {
-    const profitPercentage = prompt(`[AI 트레이딩 시뮬레이션 수익 분배]\n\n현재 가입된 정식(ACTIVE) 회원들에게 배분할 'SUT 수익률(%)'을 숫자로 입력해 주세요.\n(예: 0.5 입력 시, 회원의 SUT 총액 기준 0.5%의 SUT가 추가로 분배됩니다.)`, "0.5");
+    const profitPercentage = prompt(`[AI 트레이딩 시뮬레이션 수익 정산 배분]\n\n현재 가입된 정식(ACTIVE) 회원들에게 배분할 'SUT 수익률(%)'을 숫자로 입력해 주세요.\n(예: 0.5 입력 시, 회원의 SUT 총액 기준 0.5%의 SUT가 추가로 배분 정산됩니다.)`, "0.5");
 
     if (profitPercentage === null || isNaN(parseFloat(profitPercentage))) return;
 
-    if (!confirm(`전체 정회원을 대상으로 ${profitPercentage}%의 AI 수익률을 강제 배분하시겠습니까? (이 작업은 취소할 수 없으며 즉시 각 회원의 SUT 잔고가 증가합니다.)`)) {
+    if (!confirm(`전체 정회원을 대상으로 ${profitPercentage}%의 AI 수익 배분을 가동하시겠습니까? (이 작업은 정정할 수 없으며 즉시 각 회원의 SUT 잔고가 증가합니다.)`)) {
       return;
     }
 
@@ -473,6 +501,13 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       alert('AI 수익 분배 중 오류 발생: ' + err.message);
     }
   };
+
+  const hasUnsavedChanges = !!(lastServerGridSettingsRef.current && (
+    gridSettings.ai_grid_lower !== lastServerGridSettingsRef.current.ai_grid_lower ||
+    gridSettings.ai_grid_upper !== lastServerGridSettingsRef.current.ai_grid_upper ||
+    gridSettings.ai_grid_count !== lastServerGridSettingsRef.current.ai_grid_count ||
+    gridSettings.ai_grid_frequency !== lastServerGridSettingsRef.current.ai_grid_frequency
+  ));
 
   if (loading) {
     return (
@@ -538,7 +573,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>매니저 개인 지갑 (온체인)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>매니저 보유 잔액 (온체인)</div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#60A5FA', marginTop: '2px' }}>
                     {walletSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
@@ -548,7 +583,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원들이 맡긴 총 SUT (총 수납액)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납)</div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#A78BFA', marginTop: '2px' }}>
                     {stats ? stats.totalRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
@@ -558,7 +593,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 SUT (실수익)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 자산 (수익)</div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#10B981', marginTop: '2px' }}>
                     {stats ? stats.companyRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
@@ -568,7 +603,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 배분 SUT (배분 완료)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료)</div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#F59E0B', marginTop: '2px' }}>
                     {stats ? stats.totalDistributed.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
@@ -635,7 +670,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <div style={{ display: 'inline-flex', padding: '8px', borderRadius: '50%', background: 'rgba(139,92,246,0.1)', marginBottom: '8px' }}>
                   <Users size={20} color="#8B5CF6" />
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>1차 가입 정원 현황</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>승인 회원 현황</div>
                 <div style={{ fontSize: '20px', fontWeight: '800', color: '#FFF', marginTop: '6px', fontFamily: 'var(--font-title)' }}>
                   {stats.totalApproved} <span style={{ fontSize: '12px', color: 'var(--text-dark)' }}>/ {stats.limit} 명</span>
                 </div>
@@ -645,7 +680,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <div style={{ display: 'inline-flex', padding: '8px', borderRadius: '50%', background: 'rgba(245,158,11,0.1)', marginBottom: '8px' }}>
                   <ShieldAlert size={20} color="#F59E0B" />
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>신원 가입 대기자</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>가입 심사 대기</div>
                 <div style={{ fontSize: '20px', fontWeight: '800', color: '#F59E0B', marginTop: '6px', fontFamily: 'var(--font-title)' }}>
                   {stats.totalPending} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>명</span>
                 </div>
@@ -872,7 +907,14 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                             )}
                           </div>
                           <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
-                            {new Date(log.created_at).toLocaleString('ko-KR', { hour12: false })}
+                            {(() => {
+                              const dateStr = String(log.created_at || '').replace(' ', 'T') + 'Z';
+                              const dateObj = new Date(dateStr);
+                              if (isNaN(dateObj.getTime())) return log.created_at;
+                              const utcFormatted = `${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}/${String(dateObj.getUTCDate()).padStart(2, '0')} ${String(dateObj.getUTCHours()).padStart(2, '0')}:${String(dateObj.getUTCMinutes()).padStart(2, '0')}`;
+                              const kstFormatted = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+                              return `현지시간 : ${utcFormatted} (한국시간: ${kstFormatted})`;
+                            })()}
                           </span>
                         </div>
 
@@ -899,6 +941,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>USDT</span>
                     <input
                       type="number"
+                      className="grid-setting-input"
                       value={gridSettings.ai_grid_lower}
                       onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_lower: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -912,6 +955,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>USDT</span>
                     <input
                       type="number"
+                      className="grid-setting-input"
                       value={gridSettings.ai_grid_upper}
                       onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_upper: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -922,10 +966,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 수</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>그리드 분할 수</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <input
                       type="number"
+                      className="grid-setting-input"
                       value={gridSettings.ai_grid_count}
                       onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_count: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -935,10 +980,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>일일 빈도 (Frequency)</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>일일 매매 빈도</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                     <input
                       type="number"
+                      className="grid-setting-input"
                       value={gridSettings.ai_grid_frequency}
                       onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_frequency: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
@@ -958,23 +1004,51 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleSaveGridSettings}
-                style={{ flex: 1, padding: '12px', fontSize: '13px' }}
-              >
-                💾 봇 파라미터 저장
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleTriggerAIProfit}
-                style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(255,255,255,0.04)' }}
-              >
-                ⚡ 수동 수익금 배분
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+              {hasUnsavedChanges && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '10px', borderRadius: '8px', width: '100%' }}>
+                  <span className="pulse-indicator" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B', display: 'inline-block', boxShadow: '0 0 8px #F59E0B' }}></span>
+                  <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: 'bold' }}>
+                    ⚠️ 적용되지 않은 변경사항이 있습니다. 아래 버튼을 클릭하여 적용해 주십시오.
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                <button
+                  type="button"
+                  className={hasUnsavedChanges ? "btn-primary glow-active" : "btn-primary"}
+                  onClick={handleSaveGridSettings}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    fontSize: '13px',
+                    background: hasUnsavedChanges 
+                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' 
+                      : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+                    boxShadow: hasUnsavedChanges 
+                      ? '0 0 12px rgba(245, 158, 11, 0.5)' 
+                      : '0 4px 12px rgba(139, 92, 246, 0.25)',
+                    border: hasUnsavedChanges 
+                      ? '1px solid #F59E0B' 
+                      : '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '10px',
+                    color: '#FFF',
+                    cursor: 'pointer',
+                    fontWeight: '850'
+                  }}
+                >
+                  변경사항 적용
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleTriggerAIProfit}
+                  style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(255,255,255,0.04)' }}
+                >
+                  ⚡ 수동 수익 정산 배분
+                </button>
+              </div>
             </div>
 
           </div>
@@ -1093,7 +1167,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <ShieldAlert size={18} color="#F59E0B" />
-              신규 가입 신원 심사 보드 ({pendingUsers.length}건)
+              신규 가입 심사 ({pendingUsers.length}건)
             </h3>
 
             {pendingUsers.length === 0 ? (
@@ -1169,12 +1243,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <Receipt size={18} color="#F59E0B" />
-              출금(지급) 심사 보드 ({withdrawals.length}건)
+              출금 신청 심사 ({withdrawals.length}건)
             </h3>
 
             {withdrawals.length === 0 ? (
               <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
-                💸 대기 중인 회원 출금 신청 건이 없습니다.
+                💸 현재 접수된 회원 출금 신청이 없습니다.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
@@ -1202,7 +1276,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     </div>
 
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: '8px', wordBreak: 'break-all' }}>
-                      <b>송금 주소:</b> <span style={{ color: '#A78BFA', fontFamily: 'monospace' }}>{req.wallet_address}</span>
+                      <b>출금 지갑 주소:</b> <span style={{ color: '#A78BFA', fontFamily: 'monospace' }}>{req.wallet_address}</span>
                     </div>
 
                     <button
@@ -1211,7 +1285,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       style={{ background: 'var(--success-color)', padding: '8px', fontSize: '11px', fontWeight: '700', borderRadius: '8px', boxShadow: 'none' }}
                       onClick={() => handleApproveWithdrawal(req.id, req.requested_amount, req.name)}
                     >
-                      ✓ 트러스트월렛 송금 승인 완료
+                      ✓ 출금 승인 완료 (온체인 지급)
                     </button>
                   </div>
                 ))}
@@ -1222,7 +1296,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <Users size={18} color="#10B981" />
-              전체 회원 관리 명부 ({allUsers.length}명)
+              전체 회원 명부 ({allUsers.length}명)
             </h3>
 
             <div style={{ overflowY: 'auto', maxHeight: '300px', scrollbarWidth: 'thin', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1282,12 +1356,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <div className="glass-card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
               <Receipt size={18} color="#8B5CF6" />
-              최근 온체인 청구/수납 이력
+              최근 온체인 수납 내역
             </h3>
 
             {recentPayments.length === 0 ? (
               <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
-                아직 플랫폼 수납 이력이 존재하지 않습니다.
+                현재까지 결제 및 정산된 온체인 수납 내역이 없습니다.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', scrollbarWidth: 'none' }}>

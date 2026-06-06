@@ -44,7 +44,12 @@ Based on the real-time SUT price trend, generate a global trading strategy for a
 
 [DECISION RULE]
 1. decision: "BUY", "SELL", or "HOLD".
-2. reason: Detail your market analysis and reason in Korean.
+   - Strategically favor "HOLD" to prevent over-trading and avoid unnecessary fee/gas consumption. Only trigger trades under clear high-probability conditions.
+   - **Avoid Catching Falling Knives (BUY rule)**: If the SUT price is falling rapidly or shows consecutive down-trends, do NOT issue a "BUY" signal prematurely. Recommend "HOLD" instead to wait for price stabilization and bottom formation.
+   - **Ride the Trend (SELL rule)**: If SUT price is rising sharply or shows strong upward momentum, do NOT rush to take profit ("SELL") too early. Choose "HOLD" to ride the trend and maximize profits until momentum shifts or resistance is met.
+   - Trigger "BUY" only when a solid rebound or bottom support is confirmed.
+   - Trigger "SELL" only when an overbought state, momentum exhaustion, or downward reversal from a peak is detected.
+2. reason: Detail your market analysis and reason in Korean. Explain clearly why you decided to BUY, SELL, or HOLD according to the rules above.
 3. price: Target execution price in USDT. For BUY, recommend a price <= current price (capitalizing on dips). For SELL, recommend a price >= current price.
 4. amount_ratio: A number between 0.1 and 0.5 representing the recommended proportion of assets to trade (e.g., 0.1 means 10%).
 5. proposed_lower: Propose a reasonable lower grid limit in USDT based on the current price (e.g., usually 5% to 15% lower than current price, but adjust logically based on trend).
@@ -54,7 +59,7 @@ You must respond in structured JSON format ONLY. Do not output markdown code blo
 Response JSON schema:
 {
   "decision": "BUY" | "SELL" | "HOLD",
-  "reason": "Detail explanation for the decision in Korean",
+  "reason": "Detailed explanation for the decision in Korean reflecting the rules above",
   "price": number,
   "amount_ratio": number,
   "proposed_lower": number,
@@ -338,19 +343,9 @@ async function runAiGridBot() {
       `);
       console.log(`[🤖 AI GRID BOT] 글로벌 전략 DB 저장 완료.`);
 
-      // 자동(ON) 상태인 매니저들의 하한가/상한가 설정을 AI 추천 범위로 자동 업데이트
-      await queries.run(`
-        UPDATE manager_ai_settings
-        SET ai_grid_lower = ?,
-            ai_grid_upper = ?,
-            updated_at = datetime('now')
-        WHERE ai_grid_status = 'ON'
-      `, [String(proposedLower), String(proposedUpper)]);
-      console.log(`[🤖 AI GRID BOT] 자동 설정 매니저들의 하한가/상한가 자동 갱신 완료 (${proposedLower} USDT ~ ${proposedUpper} USDT)`);
-
       await executeServerAutoTrades(logInsert.lastID, aiResult);
     } catch (dbLogErr) {
-      console.error("[🤖 AI GRID BOT] 전략 로그 저장 및 설정 자동 갱신 실패:", dbLogErr.message);
+      console.error("[🤖 AI GRID BOT] 전략 로그 저장 실패:", dbLogErr.message);
     }
 
   } catch (err) {

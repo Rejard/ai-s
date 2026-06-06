@@ -65,6 +65,7 @@ const calls = [];
 const fakeAxios = {
   async get(url, config) {
     calls.push([url, config]);
+    const cleanUrl = url.split('?')[0];
     const responses = {
       'https://api.test/manager/pending-users': { success: true, users: [{ id: 1 }] },
       'https://api.test/manager/stats': { success: true, stats: { users: 1 }, recentPayments: [{ id: 2 }] },
@@ -81,7 +82,7 @@ const fakeAxios = {
       },
       'https://api.test/manager/ai-logs': { success: true, logs: [{ id: 5 }] },
     };
-    return { data: responses[url] };
+    return { data: responses[cleanUrl] };
   },
 };
 

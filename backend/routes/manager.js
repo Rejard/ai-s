@@ -422,6 +422,9 @@ router.post('/trigger-ai-profit', async (req, res) => {
 });
 
 router.get('/ai-settings', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   try {
     const managerEmail = req.managerEmail;
     const row = await queries.get(
@@ -458,6 +461,7 @@ router.get('/ai-settings', async (req, res) => {
 });
 
 router.post('/ai-settings', async (req, res) => {
+  console.log('[DEBUG /ai-settings POST] req.body:', req.body);
   const { status, lower, upper, count, frequency } = req.body;
   try {
     const managerEmail = req.managerEmail;
@@ -465,12 +469,13 @@ router.post('/ai-settings', async (req, res) => {
       "SELECT * FROM manager_ai_settings WHERE LOWER(manager_email) = LOWER(?)",
       [managerEmail]
     );
+    const isValid = (val) => val !== undefined && val !== null && String(val).trim() !== '';
     const next = {
-      status: status || (current ? current.ai_grid_status : 'OFF'),
-      lower: lower || (current ? current.ai_grid_lower : '0.15'),
-      upper: upper || (current ? current.ai_grid_upper : '0.30'),
-      count: count || (current ? current.ai_grid_count : '5'),
-      frequency: frequency || (current ? current.ai_grid_frequency : '5')
+      status: isValid(status) ? status : (current ? current.ai_grid_status : 'OFF'),
+      lower: isValid(lower) ? lower : (current ? current.ai_grid_lower : '0.15'),
+      upper: isValid(upper) ? upper : (current ? current.ai_grid_upper : '0.30'),
+      count: isValid(count) ? count : (current ? current.ai_grid_count : '5'),
+      frequency: isValid(frequency) ? frequency : (current ? current.ai_grid_frequency : '5')
     };
 
     await queries.run(`
