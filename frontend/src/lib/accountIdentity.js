@@ -2,6 +2,10 @@ export function normalizeAccountEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+export function isAdminGoogleAccount(email) {
+  return normalizeAccountEmail(email) === 'lemaiiisk@gmail.com';
+}
+
 export function isWalletOwnedByGoogleAccount(walletUser, googleEmail) {
   const walletEmail = normalizeAccountEmail(walletUser?.email);
   const authenticatedEmail = normalizeAccountEmail(googleEmail);

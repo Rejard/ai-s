@@ -18,7 +18,7 @@ import PcWaitingPage from './pages/PcWaitingPage';
 import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
-import { isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
+import { isAdminGoogleAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { buildTrustWalletOpenUrl } from './lib/walletProvider';
 
 export const API_BASE = 'https://edenai.alonics.com/api';
@@ -42,6 +42,7 @@ function AppContent() {
   const [showGPassModal, setShowGPassModal] = useState(false);
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const isAdminViewer = googleLoggedIn && isAdminGoogleAccount(googleEmail);
 
   useEffect(() => {
     const handleResize = () => setScreenWidth(window.innerWidth);
@@ -661,7 +662,7 @@ function AppContent() {
         ) : (
           <Routes>
             <Route path="/manager" element={
-              googleLoggedIn && googleEmail.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase() ? (
+              isAdminViewer ? (
                 isPcView ? (
                   <PcManagerDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 ) : (
@@ -673,7 +674,7 @@ function AppContent() {
             } />
 
             <Route path="/admin" element={
-              googleLoggedIn && googleEmail.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase() ? (
+              isAdminViewer ? (
                 isPcView ? (
                   <PcAdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 ) : (
@@ -685,7 +686,7 @@ function AppContent() {
             } />
 
             <Route path="/manager/edit-user/:walletAddress" element={
-              googleLoggedIn && googleEmail.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase() ? (
+              isAdminViewer ? (
                 <EditUserPage />
               ) : (
                 <Navigate to="/" replace />
@@ -732,8 +733,16 @@ function AppContent() {
               )
             } />
 
+            <Route path="/login" element={
+              !googleLoggedIn || isAdminViewer ? (
+                isPcView ? renderPcIntro() : renderIntro()
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+
             <Route path="/consent" element={
-              googleLoggedIn && walletAddress && !isRegistered ? (
+              isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
                 isPcView ? (
                   <PcConsentPage walletAddress={walletAddress} onLogout={disconnectWallet} />
                 ) : (
@@ -745,7 +754,7 @@ function AppContent() {
             } />
 
             <Route path="/register" element={
-              googleLoggedIn && walletAddress && !isRegistered ? (
+              isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
                 isPcView ? (
                   <PcRegisterPage
                     walletAddress={walletAddress}
@@ -767,7 +776,7 @@ function AppContent() {
             } />
 
             <Route path="/waiting" element={
-              googleLoggedIn && walletAddress && isRegistered && userStatus === 'PENDING_KYC' ? (
+              isAdminViewer || (googleLoggedIn && walletAddress && isRegistered && userStatus === 'PENDING_KYC') ? (
                 isPcView ? (
                   <PcWaitingPage walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
                 ) : (
@@ -791,8 +800,8 @@ function AppContent() {
             } />
 
             <Route path="/history" element={
-              googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED' ? (
-                isPcView ? (
+              isAdminViewer || (googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED') ? (
+                isPcView && !isAdminViewer ? (
                   <Navigate to="/dashboard" replace />
                 ) : (
                   <HistoryPage walletAddress={walletAddress} />
