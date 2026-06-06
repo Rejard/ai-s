@@ -23,3 +23,6 @@ Always use consistent English terminology for core business concepts. Never mix 
 - **Model Config Protection:** Never modify, overwrite, or delete `c:\home\alopop\config\ai_models.json` under any circumstances.
 - **PM2 Safety:** Never run `pm2 delete all`.
 - **Git Safety:** Never run `git add`, `git commit`, or `git push` automatically without explicit user permission.
+
+## 4. Task-Driven Development & Real-Time Task Update Rules
+- **Real-Time `task.md` Update:** When executing tasks listed in `task.md`, you MUST update `task.md` immediately as you complete or start each task (e.g., mark as `[/]` when starting, and `[x]` when completed). Do NOT wait until all tasks are completed to update the file. Keep `task.md` synchronized in real-time.
