@@ -70,6 +70,8 @@ function initializeDatabase() {
           reason TEXT NOT NULL,
           proposed_price REAL NOT NULL,
           proposed_amount REAL NOT NULL,
+          proposed_lower REAL DEFAULT 0.15,
+          proposed_upper REAL DEFAULT 0.30,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `, (err) => { if (err) return reject(err); });
@@ -163,9 +165,20 @@ function initializeDatabase() {
 
       // Even if an existing DB file is already created, force integrity correction and rectification of email column and name with Lee Myung-hak's Master information
       db.run("ALTER TABLE users ADD COLUMN is_manager INTEGER DEFAULT 0", (err) => {
-
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ users 테이블 is_manager 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
+      db.run("ALTER TABLE manager_ai_logs ADD COLUMN proposed_lower REAL DEFAULT 0.15", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ manager_ai_logs 테이블 proposed_lower 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
+      db.run("ALTER TABLE manager_ai_logs ADD COLUMN proposed_upper REAL DEFAULT 0.30", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ manager_ai_logs 테이블 proposed_upper 컬럼 마이그레이션 실패:", err.message);
         }
       });
 

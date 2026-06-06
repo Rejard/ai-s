@@ -865,6 +865,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                                 추천가: {log.proposed_price} USDT / 수량: {log.proposed_amount} SUT
                               </span>
                             )}
+                            {log.proposed_lower !== undefined && log.proposed_upper !== undefined && (
+                              <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 'bold', marginLeft: log.decision !== 'HOLD' ? '12px' : '0px' }}>
+                                추천 범위: {log.proposed_lower} ~ {log.proposed_upper} USDT
+                              </span>
+                            )}
                           </div>
                           <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
                             {new Date(log.created_at).toLocaleString('ko-KR', { hour12: false })}
@@ -891,11 +896,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (최저)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>USDT</span>
                     <input
                       type="number"
                       value={gridSettings.ai_grid_lower}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_lower: e.target.value})}
+                      onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_lower: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
                     />
                   </div>
@@ -904,11 +909,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>상한가 (최고)</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>SUT</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>USDT</span>
                     <input
                       type="number"
                       value={gridSettings.ai_grid_upper}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_upper: e.target.value})}
+                      onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_upper: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
                     />
                   </div>
@@ -922,7 +927,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     <input
                       type="number"
                       value={gridSettings.ai_grid_count}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_count: e.target.value})}
+                      onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_count: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
                     />
                     <span style={{ color: 'var(--text-dark)', fontSize: '12px', marginLeft: '4px' }}>개</span>
@@ -935,7 +940,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     <input
                       type="number"
                       value={gridSettings.ai_grid_frequency}
-                      onChange={(e) => setGridSettings({...gridSettings, ai_grid_frequency: e.target.value})}
+                      onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_frequency: e.target.value })}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
                     />
                     <span style={{ color: 'var(--text-dark)', fontSize: '12px', marginLeft: '4px' }}>회</span>

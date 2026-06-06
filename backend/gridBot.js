@@ -47,6 +47,8 @@ Based on the real-time SUT price trend, generate a global trading strategy for a
 2. reason: Detail your market analysis and reason in Korean.
 3. price: Target execution price in USDT. For BUY, recommend a price <= current price (capitalizing on dips). For SELL, recommend a price >= current price.
 4. amount_ratio: A number between 0.1 and 0.5 representing the recommended proportion of assets to trade (e.g., 0.1 means 10%).
+5. proposed_lower: Propose a reasonable lower grid limit in USDT based on the current price (e.g., usually 5% to 15% lower than current price, but adjust logically based on trend).
+6. proposed_upper: Propose a reasonable upper grid limit in USDT based on the current price (e.g., usually 10% to 50% higher than current price, but adjust logically based on trend).
 
 You must respond in structured JSON format ONLY. Do not output markdown code blocks.
 Response JSON schema:
@@ -54,7 +56,9 @@ Response JSON schema:
   "decision": "BUY" | "SELL" | "HOLD",
   "reason": "Detail explanation for the decision in Korean",
   "price": number,
-  "amount_ratio": number
+  "amount_ratio": number,
+  "proposed_lower": number,
+  "proposed_upper": number
 }
 `;
 
@@ -301,19 +305,25 @@ async function runAiGridBot() {
       return;
     }
 
+    const proposedLower = parseFloat(aiResult.proposed_lower) || 0.15;
+    const proposedUpper = parseFloat(aiResult.proposed_upper) || 0.30;
+
     console.log(`[🤖 AI GRID BOT] 전략:`, aiResult.decision);
     console.log(`[🤖 AI GRID BOT] 근거: ${aiResult.reason}`);
     console.log(`[🤖 AI GRID BOT] 타겟 가격: ${aiResult.price} USDT / 추천 비중: ${aiResult.amount_ratio}`);
+    console.log(`[🤖 AI GRID BOT] 추천 하한가/상한가: ${proposedLower} ~ ${proposedUpper} USDT`);
 
     try {
       const logInsert = await queries.run(`
-        INSERT INTO manager_ai_logs (decision, reason, proposed_price, proposed_amount)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO manager_ai_logs (decision, reason, proposed_price, proposed_amount, proposed_lower, proposed_upper)
+        VALUES (?, ?, ?, ?, ?, ?)
       `, [
         aiResult.decision,
         aiResult.reason || '판단 근거 없음',
         parseFloat(aiResult.price) || 0,
-        parseFloat(aiResult.amount_ratio) || 0.1
+        parseFloat(aiResult.amount_ratio) || 0.1,
+        proposedLower,
+        proposedUpper
       ]);
 
       await queries.run(`
@@ -325,9 +335,20 @@ async function runAiGridBot() {
         )
       `);
       console.log(`[🤖 AI GRID BOT] 글로벌 전략 DB 저장 완료.`);
+
+      // 자동(ON) 상태인 매니저들의 하한가/상한가 설정을 AI 추천 범위로 자동 업데이트
+      await queries.run(`
+        UPDATE manager_ai_settings
+        SET ai_grid_lower = ?,
+            ai_grid_upper = ?,
+            updated_at = datetime('now')
+        WHERE ai_grid_status = 'ON'
+      `, [String(proposedLower), String(proposedUpper)]);
+      console.log(`[🤖 AI GRID BOT] 자동 설정 매니저들의 하한가/상한가 자동 갱신 완료 (${proposedLower} USDT ~ ${proposedUpper} USDT)`);
+
       await executeServerAutoTrades(logInsert.lastID, aiResult);
     } catch (dbLogErr) {
-      console.error("[🤖 AI GRID BOT] 전략 로그 저장 실패:", dbLogErr.message);
+      console.error("[🤖 AI GRID BOT] 전략 로그 저장 및 설정 자동 갱신 실패:", dbLogErr.message);
     }
 
   } catch (err) {
