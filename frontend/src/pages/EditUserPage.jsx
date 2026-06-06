@@ -278,7 +278,7 @@ function EditUserPage() {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="예: +82-10-1234-5678"
+              placeholder="예: 010-1234-5678"
               required
               style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '12px', fontSize: '12px', color: '#FFF', outline: 'none' }}
             />
@@ -370,7 +370,7 @@ function EditUserPage() {
           </div>
 
           <p style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.4', marginTop: '4px' }}>
-            💡 <strong>회원에게 SUT 실제 송금:</strong> 매니저의 지갑에서 회원의 지갑({targetWallet})으로 실제 SUT 토큰을 전송합니다. (장부 차감은 되지 않음)<br/>
+            💡 <strong>회원에게 SUT 실제 송금:</strong> 매니저의 지갑에서 회원의 지갑({targetWallet})으로 실제 SUT 토큰을 전송합니다. (장부 차감은 되지 않음)<br />
             💡 <strong>회원의 장부에서 차감:</strong> 실제 토큰 전송 없이, 회원의 시뮬레이션 장부 잔액만 강제로 삭감(양수 입력 시 자동으로 차감 처리)합니다.
           </p>
         </div>

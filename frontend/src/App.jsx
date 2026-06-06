@@ -19,7 +19,7 @@ import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
 import { isAdminGoogleAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
-import { buildTrustWalletOpenUrl } from './lib/walletProvider';
+import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
 
 export const API_BASE = 'https://edenai.alonics.com/api';
 
@@ -142,7 +142,11 @@ function AppContent() {
         alert('Google 로그인 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
       }
 
-      const params = new URLSearchParams(window.location.search);
+      let searchString = window.location.search;
+      if (searchString.includes('&amp;')) {
+        searchString = searchString.replace(/&amp;/g, '&');
+      }
+      const params = new URLSearchParams(searchString);
       const paramEmail = params.get('google_email');
       const paramName = params.get('google_name');
 
@@ -345,9 +349,10 @@ function AppContent() {
   };
 
   const connectWallet = async () => {
-    if (window.ethereum) {
+    const trustProvider = getPreferredInjectedProvider(window.ethereum);
+    if (trustProvider) {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await trustProvider.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
           const address = accounts[0];
           await checkUserStatus(address, googleEmail);
@@ -361,8 +366,8 @@ function AppContent() {
         const baseUrl = window.location.origin + window.location.pathname;
         const queryParams = new URLSearchParams();
         if (googleLoggedIn && googleEmail) {
-          queryParams.set('google_email', encodeURIComponent(googleEmail));
-          queryParams.set('google_name', encodeURIComponent(googleName));
+          queryParams.set('google_email', googleEmail);
+          queryParams.set('google_name', googleName);
         }
 
         const finalUrl = `${baseUrl}?${queryParams.toString()}`;
@@ -371,7 +376,7 @@ function AppContent() {
         alert('📲 모바일 Trust Wallet 앱과 다이렉트 온체인 연동을 격발합니다. 확인을 누르시면 트러스트 월렛 앱이 자동으로 열리며 안전 연결이 개통됩니다.');
         window.location.href = trustDeepLink;
       } else {
-        alert('감지된 Web3 지갑(Trust Wallet 등)이 없습니다. 모바일 Trust Wallet 앱의 DApp 브라우저를 통해 접속해 주시거나, PC 브라우저에 지갑 확장 프로그램(메타마스크 등)을 설치 후 다시 시도해 주십시오.');
+        alert('감지된 Trust Wallet 지갑이 없거나 잠겨 있습니다. PC 브라우저에 Trust Wallet 확장 프로그램을 설치/활성화하고 다시 시도해 주십시오.');
       }
     }
   };

@@ -1,15 +1,38 @@
 const TRUST_RDNS = ['com.trustwallet.app', 'com.trustwallet.browser-extension'];
 const POLYGON_COIN_ID = 966;
 
+const eip6963Providers = [];
+
+// Bypass window listener setup when window is undefined in node.js test environment
+if (typeof window !== 'undefined') {
+  window.addEventListener('eip6963:announceProvider', (event) => {
+    if (!eip6963Providers.some((p) => p.info.uuid === event.detail.info.uuid)) {
+      eip6963Providers.push(event.detail);
+    }
+  });
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+}
+
 export function getInjectedProviders(ethereum) {
-  if (!ethereum) return [];
-  if (Array.isArray(ethereum.providers) && ethereum.providers.length > 0) {
-    return ethereum.providers;
+  const eipProviders = eip6963Providers.map((p) => p.provider);
+  let legacyProviders = [];
+  if (ethereum) {
+    if (Array.isArray(ethereum.providers) && ethereum.providers.length > 0) {
+      legacyProviders = ethereum.providers;
+    } else {
+      legacyProviders = [ethereum];
+    }
   }
-  return [ethereum];
+  return Array.from(new Set([...eipProviders, ...legacyProviders]));
 }
 
 export function findTrustWalletProvider(providers) {
+  const foundEip = eip6963Providers.find((p) => {
+    const rdns = p.info?.rdns?.toLowerCase();
+    return TRUST_RDNS.includes(rdns);
+  });
+  if (foundEip) return foundEip.provider;
+
   return providers.find((provider) => {
     const rdns = provider?.info?.rdns?.toLowerCase();
     return Boolean(
@@ -24,7 +47,7 @@ export function findTrustWalletProvider(providers) {
 
 export function getPreferredInjectedProvider(ethereum) {
   const providers = getInjectedProviders(ethereum);
-  return findTrustWalletProvider(providers) || providers[0] || null;
+  return findTrustWalletProvider(providers);
 }
 
 export async function createWalletConnectProvider(projectId) {

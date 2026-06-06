@@ -159,7 +159,7 @@ function initializeDatabase() {
         INSERT OR IGNORE INTO users (
           wallet_address, email, name, phone, country, status, tier, joined_at, approved_at
         ) VALUES (
-          ?, 'lemaiiisk@gmail.com', '이명학', '+82-10-1234-5678', 'Korea', 'APPROVED', 'ACTIVE', datetime('now'), datetime('now')
+          ?, 'lemaiiisk@gmail.com', '이명학', '010-1234-5678', 'Korea', 'APPROVED', 'ACTIVE', datetime('now'), datetime('now')
         )
       `, [rootReferrerAddress]);
 

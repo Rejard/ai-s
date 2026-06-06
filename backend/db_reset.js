@@ -24,7 +24,7 @@ db.serialize(() => {
     INSERT OR REPLACE INTO users (
       id, wallet_address, email, name, phone, country, referrer_address, status, tier, joined_at, approved_at
     ) VALUES (
-      (SELECT id FROM users WHERE wallet_address = ?), ?, 'lemaiiisk@gmail.com', 'System Admin', '+82-10-1234-5678', 'Korea', 'none', 'APPROVED', 'ACTIVE', datetime('now'), datetime('now')
+      (SELECT id FROM users WHERE wallet_address = ?), ?, 'lemaiiisk@gmail.com', 'System Admin', '010-1234-5678', 'Korea', 'none', 'APPROVED', 'ACTIVE', datetime('now'), datetime('now')
     )
   `, [rootAddress, rootAddress], (err) => {
     if (err) console.error('❌ Root user 생성 실패:', err.message);
