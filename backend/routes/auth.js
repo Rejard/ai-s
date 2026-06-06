@@ -90,9 +90,23 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
       return res.status(400).json({ success: false, message: '1차 한정 모집 인원 500명이 마감되었습니다.' });
     }
 
-    const existingUser = await queries.get("SELECT id FROM users WHERE wallet_address = ? OR email = ?", [cleanWallet, cleanEmail]);
+    const existingUser = await queries.get(
+      "SELECT wallet_address, email FROM users WHERE LOWER(wallet_address) = LOWER(?) OR email = ?",
+      [cleanWallet, cleanEmail]
+    );
     if (existingUser) {
-      return res.status(400).json({ success: false, message: '이미 가입 신청 또는 승인된 지갑 주소이거나 구글 계정입니다.' });
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
+
+      const duplicateWallet = existingUser.wallet_address.toLowerCase() === cleanWallet.toLowerCase();
+      return res.status(409).json({
+        success: false,
+        code: duplicateWallet ? 'WALLET_ALREADY_REGISTERED' : 'EMAIL_ALREADY_REGISTERED',
+        message: duplicateWallet
+          ? '이미 다른 Google 계정으로 가입된 지갑입니다. 기존 가입 Google 계정으로 로그인하거나 다른 지갑을 연결해 주세요.'
+          : '이미 가입된 Google 계정입니다. 기존 계정으로 로그인해 주세요.'
+      });
     }
 
     if (!req.file) {

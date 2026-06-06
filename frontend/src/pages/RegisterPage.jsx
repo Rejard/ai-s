@@ -4,7 +4,9 @@ import axios from 'axios';
 import { User, Mail, Phone, Globe, Image, UserCheck, Key, ShieldAlert } from 'lucide-react';
 import { API_BASE } from '../App';
 import { buildTrustWalletOpenUrl } from '../lib/walletProvider';
-import { approveSutWithdrawalPermission } from '../lib/sutApproval';
+import { approveSutWithdrawalPermission, waitForSuccessfulApproval } from '../lib/sutApproval';
+
+const DEFAULT_MANAGER_ADDRESS = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
 function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
@@ -16,7 +18,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
 
-  const [managerAddress, setManagerAddress] = useState('');
+  const [managerAddress, setManagerAddress] = useState(DEFAULT_MANAGER_ADDRESS);
   const [managerVerified, setManagerVerified] = useState(false);
   const [managerName, setManagerName] = useState('');
 
@@ -71,10 +73,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
 
       alert('트랜잭션이 폴리곤 네트워크에 전송되었습니다. 블록체인 처리를 잠시 확인합니다.');
 
-      await Promise.race([
-        tx.wait(),
-        new Promise(resolve => setTimeout(resolve, 2500))
-      ]);
+      await waitForSuccessfulApproval(tx);
 
       setIsApproved(true);
       alert('SUT 자동 결제 승인 서명이 등록되었습니다.');
@@ -89,6 +88,14 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       }
       if (err.message === 'NO_INJECTED_WALLET') {
         alert('감지된 Web3 지갑이 없습니다. PC에서는 Trust Wallet 확장 프로그램을 설치/잠금 해제하고, 모바일에서는 Trust Wallet 앱에서 열어 주세요.');
+        return;
+      }
+      if (err.code === 'INSUFFICIENT_POL_FOR_GAS') {
+        alert('Polygon 메인넷의 승인 트랜잭션 수수료를 낼 POL 잔액이 부족합니다. 소량의 POL을 지갑에 준비한 뒤 다시 시도해 주세요.');
+        return;
+      }
+      if (err.code === 'APPROVAL_TX_REVERTED') {
+        alert('SUT 승인 트랜잭션이 블록체인에서 실패했습니다. POL 잔액과 Polygon 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
         return;
       }
       if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
@@ -332,10 +339,18 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
                 className="form-input"
                 style={{
                   paddingLeft: '45px',
-                  borderColor: managerVerified ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.1)'
+                  borderColor: managerVerified ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.1)',
+                  color: !managerVerified && managerAddress === DEFAULT_MANAGER_ADDRESS
+                    ? 'var(--text-muted)'
+                    : undefined
                 }}
                 placeholder="0x..."
                 value={managerAddress}
+                onFocus={() => {
+                  if (!managerVerified && managerAddress === DEFAULT_MANAGER_ADDRESS) {
+                    setManagerAddress('');
+                  }
+                }}
                 onChange={(e) => {
                   setManagerAddress(e.target.value);
                   setManagerVerified(false);
@@ -359,7 +374,7 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
                 style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto', background: 'rgba(239, 68, 68, 0.2)', color: '#FCA5A5' }}
                 onClick={() => {
                   setManagerVerified(false);
-                  setManagerAddress('');
+                  setManagerAddress(DEFAULT_MANAGER_ADDRESS);
                   setManagerName('');
                 }}
               >

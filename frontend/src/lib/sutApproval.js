@@ -11,6 +11,7 @@ export const SUT_TOKEN_ADDRESS = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
 export const VAULT_CONTRACT_ADDRESS = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
 export const SUT_APPROVE_UNITS = '1000000';
 export const SUT_APPROVE_DECIMALS = 18;
+export const GAS_ESTIMATE_BUFFER_PERCENT = 20n;
 
 const POLYGON_CHAIN_PARAMS = {
   chainId: POLYGON_MAINNET_CHAIN_ID,
@@ -72,6 +73,49 @@ async function ensurePolygonMainnet(provider) {
   }
 }
 
+export function addGasEstimateBuffer(gasEstimate, bufferPercent = GAS_ESTIMATE_BUFFER_PERCENT) {
+  return gasEstimate + ((gasEstimate * bufferPercent) / 100n);
+}
+
+export function calculateRequiredGasWei(gasEstimate, feePerGas) {
+  return addGasEstimateBuffer(gasEstimate) * feePerGas;
+}
+
+async function assertSufficientPolForApproval(provider, signer, sutContract, approvalAmount) {
+  const signerAddress = await signer.getAddress();
+  const [balance, gasEstimate, feeData] = await Promise.all([
+    provider.getBalance(signerAddress),
+    sutContract.approve.estimateGas(VAULT_CONTRACT_ADDRESS, approvalAmount),
+    provider.getFeeData(),
+  ]);
+  const feePerGas = feeData.maxFeePerGas ?? feeData.gasPrice;
+
+  if (feePerGas === null) {
+    return addGasEstimateBuffer(gasEstimate);
+  }
+
+  const requiredGasWei = calculateRequiredGasWei(gasEstimate, feePerGas);
+  if (balance < requiredGasWei) {
+    const error = new Error('INSUFFICIENT_POL_FOR_GAS');
+    error.code = 'INSUFFICIENT_POL_FOR_GAS';
+    error.balanceWei = balance;
+    error.requiredGasWei = requiredGasWei;
+    throw error;
+  }
+
+  return addGasEstimateBuffer(gasEstimate);
+}
+
+export async function waitForSuccessfulApproval(tx) {
+  const receipt = await tx.wait(1);
+  if (!receipt || (receipt.status !== undefined && Number(receipt.status) !== 1)) {
+    const error = new Error('APPROVAL_TX_REVERTED');
+    error.code = 'APPROVAL_TX_REVERTED';
+    throw error;
+  }
+  return receipt;
+}
+
 export async function approveSutWithdrawalPermission({ ethereum, userAgent, walletConnectProjectId = '' }) {
   if (isMobileChromeWithoutInjectedWallet(userAgent, ethereum)) {
     if (!walletConnectProjectId) {
@@ -95,9 +139,16 @@ export async function approveSutWithdrawalPermission({ ethereum, userAgent, wall
     ['function approve(address spender, uint256 value) public returns (bool)'],
     signer
   );
+  const approvalAmount = toSutApprovalAmount();
+  const gasLimit = await assertSufficientPolForApproval(
+    provider,
+    signer,
+    sutContract,
+    approvalAmount
+  );
 
-  const tx = await sutContract.approve(VAULT_CONTRACT_ADDRESS, toSutApprovalAmount(), {
-    gasLimit: 100000,
+  const tx = await sutContract.approve(VAULT_CONTRACT_ADDRESS, approvalAmount, {
+    gasLimit,
   });
 
   return tx;

@@ -18,6 +18,7 @@ import PcWaitingPage from './pages/PcWaitingPage';
 import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
+import { isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { buildTrustWalletOpenUrl } from './lib/walletProvider';
 
 export const API_BASE = 'https://edenai.alonics.com/api';
@@ -100,7 +101,10 @@ function AppContent() {
     const name = profile.name || profile.given_name || email;
 
     setLoading(true);
-    await restoreSessionByEmail(email);
+    const restoredWallet = await restoreSessionByEmail(email);
+    if (!restoredWallet && walletAddress) {
+      await checkUserStatus(walletAddress, email);
+    }
     setLoading(false);
 
     setGoogleEmail(email);
@@ -192,8 +196,7 @@ function AppContent() {
                 if (emailWalletAddress) {
                   console.log("[AUTO-CONNECT] Email session already established. Skipping injected wallet overwrite.");
                 } else {
-                  setWalletAddress(address);
-                  await checkUserStatus(address);
+                  await checkUserStatus(address, currentEmail);
                 }
               }
             } catch (err) {
@@ -229,7 +232,10 @@ function AppContent() {
       localStorage.setItem('google_name', name);
 
       setLoading(true);
-      await restoreSessionByEmail(email);
+      const restoredWallet = await restoreSessionByEmail(email);
+      if (!restoredWallet && walletAddress) {
+        await checkUserStatus(walletAddress, email);
+      }
       setLoading(false);
 
       setGoogleEmail(email);
@@ -301,22 +307,35 @@ function AppContent() {
     }
   }, [googleLoggedIn]);
 
-  const checkUserStatus = async (address) => {
-    if (!address) return;
+  const checkUserStatus = async (address, authenticatedEmail = googleEmail) => {
+    if (!address) return { registered: false, conflict: false };
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE}/auth/status/${address}`);
       if (res.data.success) {
         if (res.data.registered) {
+          if (authenticatedEmail && !isWalletOwnedByGoogleAccount(res.data.user, authenticatedEmail)) {
+            setWalletAddress('');
+            setIsRegistered(false);
+            setUserStatus('');
+            setUserData(null);
+            alert('이미 다른 Google 계정으로 가입된 지갑입니다. 해당 지갑으로는 새 계정을 가입할 수 없습니다. 기존 가입 Google 계정으로 로그인하거나 다른 지갑을 연결해 주세요.');
+            return { registered: true, conflict: true };
+          }
+
+          setWalletAddress(address);
           setIsRegistered(true);
           setUserStatus(res.data.user.status);
           setUserData(res.data.user);
+          return { registered: true, conflict: false };
         } else {
+          setWalletAddress(address);
           setIsRegistered(false);
           setUserStatus('');
           setUserData(null);
         }
       }
+      return { registered: false, conflict: false };
     } catch (err) {
       console.error('회원 상태 조회 오류:', err);
     } finally {
@@ -330,8 +349,7 @@ function AppContent() {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
           const address = accounts[0];
-          setWalletAddress(address);
-          await checkUserStatus(address);
+          await checkUserStatus(address, googleEmail);
         }
       } catch (err) {
         alert('지갑 연결에 실패했거나 취소되었습니다.');
@@ -839,7 +857,7 @@ function AppContent() {
               <button
                 className="btn-primary"
                 style={{ flex: 1, padding: '12px', background: 'var(--primary-gradient)' }}
-                onClick={() => {
+                onClick={async () => {
                   const email = document.getElementById('gpass-email').value.trim();
                   const name = document.getElementById('gpass-name').value.trim();
                   if (!email || !email.includes('@')) {
@@ -856,6 +874,11 @@ function AppContent() {
                   localStorage.setItem('google_email', email.toLowerCase());
                   localStorage.setItem('google_name', name);
                   setShowGPassModal(false);
+
+                  const restoredWallet = await restoreSessionByEmail(email);
+                  if (!restoredWallet && walletAddress) {
+                    await checkUserStatus(walletAddress, email);
+                  }
                 }}
               >
                 연동 완료

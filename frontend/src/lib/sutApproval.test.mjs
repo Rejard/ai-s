@@ -4,10 +4,13 @@ import {
   POLYGON_MAINNET_CHAIN_ID,
   SUT_APPROVE_DECIMALS,
   SUT_APPROVE_UNITS,
+  addGasEstimateBuffer,
   approveSutWithdrawalPermission,
+  calculateRequiredGasWei,
   getWalletConnectProjectId,
   isPolygonMainnetChain,
   toSutApprovalAmount,
+  waitForSuccessfulApproval,
 } from './sutApproval.js';
 
 assert.equal(POLYGON_MAINNET_CHAIN_ID, '0x89');
@@ -18,8 +21,20 @@ assert.equal(isPolygonMainnetChain('0x1'), false);
 assert.equal(toSutApprovalAmount().toString(), '1000000000000000000000000');
 assert.equal(toSutApprovalAmount('2').toString(), '2000000000000000000');
 assert.equal(SUT_APPROVE_UNITS, '1000000');
+assert.equal(addGasEstimateBuffer(100000n), 120000n);
+assert.equal(calculateRequiredGasWei(100000n, 30n), 3600000n);
 assert.equal(getWalletConnectProjectId({ VITE_WALLETCONNECT_PROJECT_ID: 'abc123' }), 'abc123');
 assert.equal(getWalletConnectProjectId({}), '');
+
+assert.deepEqual(
+  await waitForSuccessfulApproval({ wait: async () => ({ status: 1, hash: '0xabc' }) }),
+  { status: 1, hash: '0xabc' }
+);
+
+await assert.rejects(
+  () => waitForSuccessfulApproval({ wait: async () => ({ status: 0 }) }),
+  /APPROVAL_TX_REVERTED/
+);
 
 await assert.rejects(
   () => approveSutWithdrawalPermission({
