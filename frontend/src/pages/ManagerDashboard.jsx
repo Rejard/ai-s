@@ -1199,7 +1199,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             }}
             onClick={() => handleGateIoOrderClick('buy')}
           >
-            {submittingOrder ? '전송 중...' : confirmMode === 'BUY' ? '⚡ 진짜 매수 (클릭!)' : '🟢 SUT 매수'}
+            {submittingOrder ? '전송 중...' : confirmMode === 'BUY' ? '⚡ 매수 최종 확정' : '🟢 SUT 매수'}
           </button>
 
           <button
@@ -1220,7 +1220,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             }}
             onClick={() => handleGateIoOrderClick('sell')}
           >
-            {submittingOrder ? '전송 중...' : confirmMode === 'SELL' ? '⚡ 진짜 매도 (클릭!)' : '🔴 SUT 매도'}
+            {submittingOrder ? '전송 중...' : confirmMode === 'SELL' ? '⚡ 매도 최종 확정' : '🔴 SUT 매도'}
           </button>
         </div>
       </div>

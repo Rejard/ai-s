@@ -1271,7 +1271,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   }}
                   onClick={() => handleGateIoOrderClick('buy')}
                 >
-                  {submittingOrder ? '...' : confirmMode === 'BUY' ? '⚡ 진짜 매수 (클릭!)' : '🟢 SUT 매수'}
+                  {submittingOrder ? '...' : confirmMode === 'BUY' ? '⚡ 매수 최종 확정' : '🟢 SUT 매수'}
                 </button>
                 <button
                   type="button"
@@ -1291,7 +1291,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                   }}
                   onClick={() => handleGateIoOrderClick('sell')}
                 >
-                  {submittingOrder ? '...' : confirmMode === 'SELL' ? '⚡ 진짜 매도 (클릭!)' : '🔴 SUT 매도'}
+                  {submittingOrder ? '...' : confirmMode === 'SELL' ? '⚡ 매도 최종 확정' : '🔴 SUT 매도'}
                 </button>
               </div>
             </div>
