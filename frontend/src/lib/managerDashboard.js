@@ -235,6 +235,20 @@ export async function approveManagerWithdrawal({
   );
 }
 
+export async function rejectManagerWithdrawal({
+  apiBase,
+  managerEmail,
+  withdrawalId,
+  axiosClient,
+  getStorageItem,
+}) {
+  return axiosClient.post(
+    `${apiBase}/manager/withdrawals/${withdrawalId}/reject`,
+    {},
+    buildManagerHeaders({ managerEmail, getStorageItem })
+  );
+}
+
 export async function saveManagerAiSettings({
   apiBase,
   managerEmail,

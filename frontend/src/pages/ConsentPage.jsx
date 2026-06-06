@@ -157,7 +157,7 @@ function ConsentPage({ walletAddress, onLogout }) {
               style={{ width: '20px', height: '20px', accentColor: 'var(--accent-color)', cursor: 'pointer', marginTop: '2px' }}
             />
             <label htmlFor="withdrawalAuth" style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6', cursor: 'pointer' }}>
-              [필수] 가입비 및 월정액 자동 인출 권한(SUT Approve) 위임 동의
+              [필수] 자산 예치 및 AI 자동 거래 (SUT Approve) 위임 동의
             </label>
           </div>
           <div style={{
@@ -170,7 +170,7 @@ function ConsentPage({ walletAddress, onLogout }) {
             maxHeight: '80px',
             overflowY: 'auto'
           }}>
-            본 서비스의 가입은 온체인 스마트 컨트랙트를 통해 안전하게 이루어집니다. 사용자가 설정한 가상 자동 투자 자금의 유동적 정산을 위해, 플랫폼 스마트 컨트랙트에 사용자 지갑 내 SUT 자산의 특정 한도(Approve) 권한을 스마트 서명으로 위임하는 것에 전적으로 동의합니다. 이 권한을 활용해 백엔드는 서명 없이 월정액을 원격 자동 수납할 수 있습니다.
+            본 서비스의 가입 및 시뮬레이션 투자는 안전하게 이루어집니다. 사용자가 설정한 가상 자동 투자 자금의 유동적 정산 및 거래 시뮬레이션을 위해, 플랫폼 스마트 컨트랙트에 사용자 지갑 내 SUT 자산의 특정 한도(Approve) 권한을 스마트 서명으로 위임하는 것에 전적으로 동의합니다. 이 권한을 활용해 플랫폼은 AI 트레이딩 및 자산 정산을 안전하게 연동 및 관리합니다.
           </div>
         </div>
 

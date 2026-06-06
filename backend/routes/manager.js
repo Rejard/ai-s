@@ -96,7 +96,7 @@ router.get('/pending-users', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const allUsers = await queries.all(`
-      SELECT id, wallet_address, email, name, phone, country, status, tier, joined_at, approved_at
+      SELECT id, wallet_address, email, name, phone, country, status, joined_at, approved_at
       FROM users
       ORDER BY joined_at DESC
     `);
@@ -134,7 +134,6 @@ router.post('/approve-user', async (req, res) => {
     await queries.run(`
       UPDATE users
       SET status = 'APPROVED',
-          tier = 'ACTIVE',
           approved_at = datetime('now', 'localtime')
       WHERE wallet_address = ?
     `, [cleanWallet]);
@@ -221,11 +220,10 @@ router.post('/update-user', async (req, res) => {
     name,
     phone,
     country,
-    status,
-    tier
+    status
   } = req.body;
 
-  if (!targetWalletAddress || !walletAddress || !email || !name || !phone || !country || !status || !tier) {
+  if (!targetWalletAddress || !walletAddress || !email || !name || !phone || !country || !status) {
     return res.status(400).json({ success: false, message: '모든 필수 수정 필드를 올바르게 기입해 주십시오.' });
   }
 
@@ -257,8 +255,7 @@ router.post('/update-user', async (req, res) => {
           name = ?,
           phone = ?,
           country = ?,
-          status = ?,
-          tier = ?
+          status = ?
       WHERE wallet_address = ?
     `, [
       cleanNewWallet,
@@ -267,7 +264,6 @@ router.post('/update-user', async (req, res) => {
       phone,
       country,
       status,
-      tier,
       cleanTarget
     ]);
 
@@ -308,12 +304,29 @@ router.post('/withdrawals/:id/approve', async (req, res) => {
 
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'MONTHLY_SUBSCRIPTION', 'SUCCESS', '0xManualManagerPayout')
+      VALUES (?, ?, 'DEPOSIT', 'SUCCESS', '0xManualManagerPayout')
     `, [request.wallet_address, -ledgerDeduction]);
 
     res.json({
       success: true,
       message: `지급 완료! 장부에서 회원이 신청한 ${ledgerDeduction} SUT가 정상적으로 차감(소멸)되었습니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/withdrawals/:id/reject', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const request = await queries.get("SELECT * FROM payments WHERE id = ? AND type = 'WITHDRAW_REQUEST' AND status = 'PENDING'", [id]);
+    if (!request) return res.status(404).json({ success: false, message: '유효한 출금 요청을 찾을 수 없습니다.' });
+
+    await queries.run("UPDATE payments SET status = 'FAILED' WHERE id = ?", [id]);
+
+    res.json({
+      success: true,
+      message: '출금(지급) 요청이 정상적으로 반려(거부) 처리되었습니다.'
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -332,7 +345,7 @@ router.post('/manual-adjustment', async (req, res) => {
 
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'MONTHLY_SUBSCRIPTION', 'SUCCESS', ?)
+      VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
     `, [cleanWallet, parseFloat(amount), description || '0xManualManagerAdjustment']);
 
     res.json({ success: true, message: `해당 회원의 장부에 ${amount} SUT 변동이 성공적으로 기록되었습니다.` });
@@ -368,7 +381,7 @@ router.post('/trigger-ai-profit', async (req, res) => {
 
       const balanceRow = await queries.get(`
         SELECT SUM(amount) as total FROM payments
-        WHERE wallet_address = ? AND type IN ('MONTHLY_SUBSCRIPTION', 'AI_TRADING_PROFIT') AND status = 'SUCCESS'
+        WHERE wallet_address = ? AND type IN ('DEPOSIT', 'AI_TRADING_PROFIT') AND status = 'SUCCESS'
       `, [user.wallet_address]);
 
       const currentBalance = balanceRow && balanceRow.total ? balanceRow.total : 0;
@@ -657,6 +670,12 @@ router.get('/gateio-performance', async (req, res) => {
       yieldHistory = [yieldPercent];
     }
 
+    const sortedTrades = [...trades].sort((a, b) => {
+      const timeA = parseFloat(a.create_time_ms || a.create_time || 0);
+      const timeB = parseFloat(b.create_time_ms || b.create_time || 0);
+      return timeB - timeA;
+    });
+
     res.json({
       success: true,
       isConfigured: true,
@@ -666,6 +685,7 @@ router.get('/gateio-performance', async (req, res) => {
       currentValue,
       yieldPercent,
       tradesCount: trades.length,
+      trades: sortedTrades.slice(0, 20),
       // Provide masked information for security (to prevent lock display on other local device UIs)
       maskedApiKey: apiKey ? `${apiKey.substring(0, 6)}******` : '',
       maskedApiSecret: apiSecret ? `${apiSecret.substring(0, 6)}******` : '',

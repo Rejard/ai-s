@@ -75,21 +75,15 @@ export async function createWalletConnectProvider(projectId) {
 export async function resolveWalletTransactionProvider({
   ethereum,
   userAgent,
-  walletConnectProjectId = '',
-  createWalletConnectProvider: createProvider = createWalletConnectProvider,
 }) {
   if (isMobileChromeWithoutInjectedWallet(userAgent, ethereum)) {
-    if (!walletConnectProjectId) {
-      throw new Error('MOBILE_CHROME_REQUIRES_WALLET_APP');
-    }
-    return createProvider(walletConnectProjectId);
+    throw new Error('MOBILE_CHROME_REQUIRES_WALLET_APP');
   }
 
   const provider = getPreferredInjectedProvider(ethereum);
   if (provider) return provider;
-  if (walletConnectProjectId) return createProvider(walletConnectProjectId);
 
-  throw new Error('NO_INJECTED_WALLET');
+  throw new Error('NO_TRUST_WALLET');
 }
 
 export function normalizeChainId(chainId) {

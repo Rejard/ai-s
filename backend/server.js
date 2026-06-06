@@ -27,8 +27,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/manager', require('./routes/manager'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/investment', require('./routes/investment'));
-const cronRouter = require('./routes/cron');
-app.use('/api/cron', cronRouter);
+
 
 // All root requests except for API fallback serving to React SPA build index file
 app.get('*', (req, res) => {

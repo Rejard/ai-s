@@ -11,6 +11,7 @@ import { ethers } from 'ethers';
 import {
   approveManagerUser,
   approveManagerWithdrawal,
+  rejectManagerWithdrawal,
   buildManagerHeaders,
   clearManagerGateIoCredentials,
   loadManagerDashboardData,
@@ -61,12 +62,57 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const lastServerGridSettingsRef = useRef(null);
   const lastRequestIdRef = useRef(0);
 
+  const [confirmMode, setConfirmMode] = useState('NONE');
+  const confirmTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) {
+        clearTimeout(confirmTimerRef.current);
+      }
+    };
+  }, []);
+
   const [selectedIdCard, setSelectedIdCard] = useState(null);
   const [submittingId, setSubmittingId] = useState(null);
 
   const [orderAmount, setOrderAmount] = useState('');
   const [orderPrice, setOrderPrice] = useState('');
+  const [orderTotal, setOrderTotal] = useState('');
   const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  const handleOrderAmountChange = (val) => {
+    setOrderAmount(val);
+    const amt = parseFloat(val);
+    const prc = parseFloat(orderPrice);
+    if (!isNaN(amt) && !isNaN(prc)) {
+      setOrderTotal((amt * prc).toFixed(4));
+    } else {
+      setOrderTotal('');
+    }
+  };
+
+  const handleOrderPriceChange = (val) => {
+    setOrderPrice(val);
+    const amt = parseFloat(orderAmount);
+    const prc = parseFloat(val);
+    if (!isNaN(amt) && !isNaN(prc)) {
+      setOrderTotal((amt * prc).toFixed(4));
+    } else {
+      setOrderTotal('');
+    }
+  };
+
+  const handleOrderTotalChange = (val) => {
+    setOrderTotal(val);
+    const tot = parseFloat(val);
+    const prc = parseFloat(orderPrice);
+    if (!isNaN(tot) && !isNaN(prc) && prc > 0) {
+      setOrderAmount((tot / prc).toFixed(4));
+    } else {
+      setOrderAmount('');
+    }
+  };
 
   const [localApiKey, setLocalApiKey] = useState(localStorage.getItem('gateio_api_key') || '');
   const [localApiSecret, setLocalApiSecret] = useState(localStorage.getItem('gateio_api_secret') || '');
@@ -97,10 +143,6 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       return;
     }
 
-    if (!confirm(`Gate.io 거래소에 SUT를 [${orderAmount}개]를 [${orderPrice} USDT] 단가로 실제 ${side === 'buy' ? '매수(BUY)' : '매도(SELL)'} 주문하시겠습니까?\n이 작업은 거래소에 실시간 반영되는 실제 주문입니다.`)) {
-      return;
-    }
-
     setSubmittingOrder(true);
     try {
       const res = await submitManagerGateIoOrder({
@@ -117,6 +159,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         alert(`🎉 ${res.data.message}\n주문 ID: ${res.data.order.id}`);
         setOrderAmount('');
         setOrderPrice('');
+        setOrderTotal('');
         fetchManagerData();
       }
     } catch (err) {
@@ -126,6 +169,35 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       alert(`❌ 주문 오류: ${errMsg}`);
     } finally {
       setSubmittingOrder(false);
+    }
+  };
+
+  const handleGateIoOrderClick = (side) => {
+    if (!orderAmount || parseFloat(orderAmount) <= 0) {
+      alert("주문 수량을 입력하세요.");
+      return;
+    }
+    if (!orderPrice || parseFloat(orderPrice) <= 0) {
+      alert("주문 가격을 입력하세요.");
+      return;
+    }
+
+    const upperSide = side.toUpperCase();
+    if (confirmMode === upperSide) {
+      if (confirmTimerRef.current) {
+        clearTimeout(confirmTimerRef.current);
+        confirmTimerRef.current = null;
+      }
+      setConfirmMode('NONE');
+      handleGateIoOrder(side);
+    } else {
+      if (confirmTimerRef.current) {
+        clearTimeout(confirmTimerRef.current);
+      }
+      setConfirmMode(upperSide);
+      confirmTimerRef.current = setTimeout(() => {
+        setConfirmMode('NONE');
+      }, 3000);
     }
   };
 
@@ -362,6 +434,28 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
+  const handleRejectWithdrawal = async (id, requestedAmount, name) => {
+    if (!confirm(`[출금 신청 반려]\n\n정말로 ${name} 회원님의 출금 신청 [${requestedAmount} SUT]을 반려 처리하시겠습니까?\n이 작업은 즉시 반영되며 장부 원장 차감은 발생하지 않습니다.`)) {
+      return;
+    }
+
+    try {
+      const res = await rejectManagerWithdrawal({
+        apiBase: API_BASE,
+        managerEmail,
+        withdrawalId: id,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
+      if (res.data.success) {
+        alert(res.data.message);
+        fetchManagerData();
+      }
+    } catch (err) {
+      alert('출금 반려 처리 중 오류 발생: ' + err.message);
+    }
+  };
+
   const handleToggleAiStatus = async () => {
     const newStatus = gridSettings.ai_grid_status === 'ON' ? 'OFF' : 'ON';
 
@@ -519,7 +613,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     return (
       <div style={{ margin: 'auto', textAlign: 'center', padding: '20px' }}>
         <div className="shimmer-loading" style={{ width: '40px', height: '40px', borderRadius: '50%', margin: '0 auto 15px' }}></div>
-        <p style={{ color: 'var(--text-muted)' }}>본사 매니저 통계 모듈을 빌드 중입니다...</p>
+        <p style={{ color: 'var(--text-muted)' }}>본사 총괄 매니저 대시보드를 빌드 중입니다...</p>
       </div>
     );
   }
@@ -537,7 +631,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           사용자 모드로
         </button>
         <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-          🏢 <strong>본사 매니저 관제 시스템</strong>
+          🏢 <strong>본사 총괄 매니저 대시보드</strong>
         </span>
       </div>
 
@@ -1029,7 +1123,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, rgba(20, 16, 45, 0.4) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ArrowUpDown size={18} color="#8B5CF6" />
-          매니저 Gate.io 실거래 매매 제어
+          SUT 실거래 수동 주문
         </h4>
 
         <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
@@ -1038,12 +1132,30 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>매매 수량</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>
+              단가 (USDT) <span style={{ color: 'var(--success-color)', fontWeight: '700', marginLeft: '4px' }}>(현재 시세: {performance ? performance.sutPrice.toFixed(4) : '0.1900'})</span>
+            </label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <input
                 type="number"
+                step="any"
+                value={orderPrice}
+                onChange={(e) => handleOrderPriceChange(e.target.value)}
+                placeholder="USDT 가격 입력 (예: 0.19)"
+                style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
+              />
+              <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginLeft: '6px', fontWeight: 'bold' }}>USDT</span>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>주문 수량 (SUT)</label>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <input
+                type="number"
+                step="any"
                 value={orderAmount}
-                onChange={(e) => setOrderAmount(e.target.value)}
+                onChange={(e) => handleOrderAmountChange(e.target.value)}
                 placeholder="SUT 수량 입력 (예: 10)"
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
@@ -1052,13 +1164,14 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>매매 지정가</label>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>총 주문 금액 (USDT)</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 10px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <input
                 type="number"
-                value={orderPrice}
-                onChange={(e) => setOrderPrice(e.target.value)}
-                placeholder="USDT 가격 입력 (예: 0.19)"
+                step="any"
+                value={orderTotal}
+                onChange={(e) => handleOrderTotalChange(e.target.value)}
+                placeholder="총 주문액 입력 (예: 3)"
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
               <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginLeft: '6px', fontWeight: 'bold' }}>USDT</span>
@@ -1072,22 +1185,113 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             type="button"
             className="btn-primary"
             disabled={submittingOrder}
-            style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'linear-gradient(90deg, #10B981, #059669)' }}
-            onClick={() => handleGateIoOrder('buy')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              background: confirmMode === 'BUY'
+                ? 'linear-gradient(90deg, #059669, #047857)' 
+                : 'linear-gradient(90deg, #10B981, #059669)',
+              border: confirmMode === 'BUY' ? '1px dashed #FFF' : 'none',
+              boxShadow: confirmMode === 'BUY' ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none',
+              transition: 'all 0.2s'
+            }}
+            onClick={() => handleGateIoOrderClick('buy')}
           >
-            {submittingOrder ? '전송 중...' : '🟢 SUT 매수'}
+            {submittingOrder ? '전송 중...' : confirmMode === 'BUY' ? '⚡ 진짜 매수 (클릭!)' : '🟢 SUT 매수'}
           </button>
 
           <button
             type="button"
             className="btn-primary"
             disabled={submittingOrder}
-            style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: 'bold', background: 'linear-gradient(90deg, #EF4444, #DC2626)' }}
-            onClick={() => handleGateIoOrder('sell')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              background: confirmMode === 'SELL'
+                ? 'linear-gradient(90deg, #DC2626, #B91C1C)' 
+                : 'linear-gradient(90deg, #EF4444, #DC2626)',
+              border: confirmMode === 'SELL' ? '1px dashed #FFF' : 'none',
+              boxShadow: confirmMode === 'SELL' ? '0 0 10px rgba(239, 68, 68, 0.4)' : 'none',
+              transition: 'all 0.2s'
+            }}
+            onClick={() => handleGateIoOrderClick('sell')}
           >
-            {submittingOrder ? '전송 중...' : '🔴 SUT 매도'}
+            {submittingOrder ? '전송 중...' : confirmMode === 'SELL' ? '⚡ 진짜 매도 (클릭!)' : '🔴 SUT 매도'}
           </button>
         </div>
+      </div>
+
+      {/* 최근 Gate.io 실거래 체결 내역 카드 추가 (모바일용) */}
+      <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Receipt size={18} color="#10B981" />
+          최근 Gate.io 실거래 체결 내역 (수동/자동 통합)
+        </h3>
+        
+        {(!performance || !performance.trades || performance.trades.length === 0) ? (
+          <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0', margin: 0 }}>
+            API가 연동되지 않았거나 최근 체결된 거래 내역이 없습니다.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {performance.trades.map((trade, idx) => {
+              const isBuy = trade.side === 'buy';
+              const formattedTime = (() => {
+                try {
+                  const ts = parseFloat(trade.create_time_ms || (trade.create_time * 1000));
+                  const date = new Date(ts);
+                  return date.toLocaleString();
+                } catch (e) {
+                  return '-';
+                }
+              })();
+              const amount = parseFloat(trade.amount).toFixed(2);
+              const price = parseFloat(trade.price).toFixed(4);
+              const total = (parseFloat(trade.amount) * parseFloat(trade.price)).toFixed(4);
+              const fee = trade.fee ? `${parseFloat(trade.fee).toFixed(4)} ${trade.fee_currency}` : '0';
+
+              return (
+                <div key={trade.id || idx} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{
+                      color: isBuy ? 'var(--success-color)' : 'var(--danger-color)',
+                      background: isBuy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      fontSize: '10px'
+                    }}>
+                      {isBuy ? '🟢 매수' : '🔴 매도'}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>{formattedTime}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>단가:</span> <strong style={{ color: '#FFF' }}>{price} USDT</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>수량:</span> <strong style={{ color: '#FFF' }}>{amount} SUT</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '6px', marginTop: '2px' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)' }}>총액:</span> <strong style={{ color: isBuy ? 'var(--success-color)' : 'var(--danger-color)' }}>{total} USDT</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-dark)' }}>수수료:</span> <span style={{ color: 'var(--text-muted)' }}>{fee}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {stats && (
@@ -1200,41 +1404,50 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       <div className="glass-card" style={{ border: '1px solid rgba(245, 158, 11, 0.3)' }}>
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Receipt size={18} color="#F59E0B" />
-          출금 신청 심사 (대기: {withdrawals.length}건)
+          지급 요청 심사 (대기: {withdrawals.length}건)
         </h3>
 
         {withdrawals.length === 0 ? (
           <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-            현재 접수된 회원 출금 신청이 없습니다.
+            현재 접수된 회원 지급 요청이 없습니다.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {withdrawals.map((req) => (
               <div key={req.id} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name} 회원의 출금 신청</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name} 회원의 지급 요청</div>
                   <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>{new Date(req.created_at).toLocaleString()}</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                   <div style={{ flex: 1, background: 'rgba(16,185,129,0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.1)' }}>
-                    <div style={{ fontSize: '10px', color: 'var(--success-color)' }}>출금 신청 금액</div>
+                    <div style={{ fontSize: '10px', color: 'var(--success-color)' }}>지급 요청 금액</div>
                     <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#FFF' }}>{req.requested_amount} SUT</div>
                   </div>
                 </div>
 
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', marginBottom: '15px', wordBreak: 'break-all' }}>
-                  <strong>출금 지갑 주소:</strong><br />
+                  <strong>지급 지갑 주소:</strong><br />
                   <span style={{ color: '#A78BFA' }}>{req.wallet_address}</span>
                 </div>
 
-                <button
-                  className="btn-primary"
-                  style={{ width: '100%', background: 'var(--success-color)' }}
-                  onClick={() => handleApproveWithdrawal(req.id, req.requested_amount, req.name)}
-                >
-                  <Check size={16} /> 출금 승인 완료 (온체인 지급)
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    className="btn-primary"
+                    style={{ flex: 1, background: 'var(--success-color)', fontSize: '12px', padding: '10px 8px', boxShadow: 'none' }}
+                    onClick={() => handleApproveWithdrawal(req.id, req.requested_amount, req.name)}
+                  >
+                    <Check size={14} style={{ marginRight: '4px' }} /> 지급 승인 완료
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    style={{ flex: 1, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#FCA5A5', fontSize: '12px', padding: '10px 8px' }}
+                    onClick={() => handleRejectWithdrawal(req.id, req.requested_amount, req.name)}
+                  >
+                    <X size={14} style={{ marginRight: '4px' }} /> 지급 요청 반려
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1245,12 +1458,12 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Receipt size={18} color="#8B5CF6" />
-          최근 온체인 수납 내역
+          최근 자산 예치/정산 내역
         </h3>
 
         {recentPayments.length === 0 ? (
           <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-            현재까지 결제 및 정산된 온체인 수납 내역이 없습니다.
+            현재까지 플랫폼을 통해 발생한 예치 및 정산 내역이 없습니다.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '250px', overflowY: 'auto', scrollbarWidth: 'none' }}>
@@ -1269,7 +1482,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
               >
                 <div>
                   <div style={{ fontSize: '12px', fontWeight: '600', color: '#F3F4F6' }}>
-                    {pay.name} ({pay.type === 'MEMBERSHIP_FEE' ? '가입비 수납' : '월정액 수납'})
+                    {pay.name} ({pay.amount < 0 ? '지급 요청 정상 처리' : (pay.type === 'DEPOSIT' ? '자산 예치' : '수익 정산 배분')})
                   </div>
                   <a
                     href={`https://amoy.polygonscan.com/tx/${pay.tx_hash}`}
@@ -1282,11 +1495,11 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--success-color)' }}>
-                    +{pay.amount} SUT
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: pay.amount < 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                    {pay.amount > 0 ? `+${pay.amount}` : pay.amount} SUT
                   </div>
                   <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>
-                    50% 초대인 분배 완료
+                    {pay.amount < 0 ? '지급 완료' : (pay.type === 'DEPOSIT' ? '예치 완료' : '수익 배분 완료')}
                   </span>
                 </div>
               </div>
@@ -1314,8 +1527,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                   <th style={{ padding: '10px 8px' }}>이름 (국가)</th>
                   <th style={{ padding: '10px 8px' }}>이메일 / 연락처</th>
                   <th style={{ padding: '10px 8px' }}>지갑 주소</th>
-                  <th style={{ padding: '10px 8px' }}>심사 상태</th>
-                  <th style={{ padding: '10px 8px' }}>가입 등급</th>
+                  <th style={{ padding: '10px 8px' }}>회원 상태</th>
                   <th style={{ padding: '10px 8px' }}>가입일</th>
                 </tr>
               </thead>
@@ -1357,22 +1569,10 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                           borderRadius: '6px',
                           fontSize: '9px',
                           fontWeight: '700',
-                          background: user.status === 'APPROVED' ? 'rgba(16,185,129,0.12)' : user.status === 'PENDING_KYC' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)',
-                          color: user.status === 'APPROVED' ? 'var(--success-color)' : user.status === 'PENDING_KYC' ? '#F59E0B' : 'var(--danger-color)'
+                          background: user.status === 'APPROVED' ? 'rgba(139,92,246,0.12)' : user.status === 'PENDING_KYC' ? 'rgba(59,130,246,0.12)' : 'rgba(156,163,175,0.12)',
+                          color: user.status === 'APPROVED' ? '#C084FC' : user.status === 'PENDING_KYC' ? '#60A5FA' : '#9CA3AF'
                         }}>
-                          {user.status === 'APPROVED' ? '승인완료' : user.status === 'PENDING_KYC' ? ' KYC대기 ' : ' 가입반려 '}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '9px',
-                          fontWeight: '700',
-                          background: user.tier === 'ACTIVE' ? 'rgba(139,92,246,0.12)' : user.tier === 'TRIAL' ? 'rgba(59,130,246,0.12)' : 'rgba(156,163,175,0.12)',
-                          color: user.tier === 'ACTIVE' ? '#C084FC' : user.tier === 'TRIAL' ? '#60A5FA' : '#9CA3AF'
-                        }}>
-                          {user.tier === 'ACTIVE' ? '정회원' : user.tier === 'TRIAL' ? '무료체험' : '만료됨'}
+                          {user.status === 'APPROVED' ? '정회원' : user.status === 'PENDING_KYC' ? '승인대기' : '반려됨'}
                         </span>
                       </td>
                       <td style={{ padding: '12px 8px', color: 'var(--text-dark)', fontSize: '9px' }}>

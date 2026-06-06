@@ -23,8 +23,6 @@ function initializeDatabase() {
           status TEXT NOT NULL CHECK (status IN ('PENDING_KYC', 'APPROVED', 'REJECTED')),
           joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           approved_at DATETIME,
-          trial_ends_at DATETIME,
-          tier TEXT NOT NULL CHECK (tier IN ('TRIAL', 'ACTIVE', 'EXPIRED')),
           selected_coins TEXT DEFAULT '{"POL":50,"USDT":50}',
           manager_address TEXT DEFAULT 'none'
         )
@@ -35,7 +33,7 @@ function initializeDatabase() {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           wallet_address TEXT NOT NULL,
           amount REAL NOT NULL,
-          type TEXT NOT NULL CHECK (type IN ('MEMBERSHIP_FEE', 'MONTHLY_SUBSCRIPTION', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
+          type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
           status TEXT NOT NULL CHECK (status IN ('SUCCESS', 'FAILED', 'PENDING')),
           tx_hash TEXT,
           distributed_amount REAL DEFAULT 0,
@@ -157,9 +155,9 @@ function initializeDatabase() {
 
       db.run(`
         INSERT OR IGNORE INTO users (
-          wallet_address, email, name, phone, country, status, tier, joined_at, approved_at
+          wallet_address, email, name, phone, country, status, joined_at, approved_at
         ) VALUES (
-          ?, 'lemaiiisk@gmail.com', '이명학', '010-1234-5678', 'Korea', 'APPROVED', 'ACTIVE', datetime('now'), datetime('now')
+          ?, 'lemaiiisk@gmail.com', '이명학', '010-1234-5678', 'Korea', 'APPROVED', datetime('now'), datetime('now')
         )
       `, [rootReferrerAddress]);
 
@@ -182,15 +180,114 @@ function initializeDatabase() {
         }
       });
 
+      // users table schema migration: remove tier, trial_ends_at columns if exists
+      db.serialize(() => {
+        db.all("PRAGMA table_info(users)", (pragmaErr, columns) => {
+          if (!pragmaErr && columns && columns.length > 0) {
+            const hasTier = columns.some(col => col.name === 'tier');
+            if (hasTier) {
+              console.log("[MIGRATION] users 테이블 스키마 갱신을 시작합니다. (tier, trial_ends_at 컬럼 삭제)");
+              db.serialize(() => {
+                db.run(`
+                  CREATE TABLE IF NOT EXISTS users_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    wallet_address TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    country TEXT NOT NULL,
+                    id_card_path TEXT,
+                    referrer_address TEXT NOT NULL DEFAULT 'none',
+                    status TEXT NOT NULL CHECK (status IN ('PENDING_KYC', 'APPROVED', 'REJECTED')),
+                    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    approved_at DATETIME,
+                    selected_coins TEXT DEFAULT '{"POL":50,"USDT":50}',
+                    manager_address TEXT DEFAULT 'none',
+                    is_manager INTEGER DEFAULT 0
+                  )
+                `);
+                db.run(`
+                  INSERT INTO users_new (id, wallet_address, email, name, phone, country, id_card_path, referrer_address, status, joined_at, approved_at, selected_coins, manager_address, is_manager)
+                  SELECT id, wallet_address, email, name, phone, country, id_card_path, referrer_address, status, joined_at, approved_at, selected_coins, manager_address, is_manager FROM users
+                `);
+                db.run(`DROP TABLE users`);
+                db.run(`ALTER TABLE users_new RENAME TO users`);
+                console.log("✔ [MIGRATION SUCCESS] users 테이블 스키마 갱신 및 컬럼 삭제가 완료되었습니다.");
+              });
+            }
+          }
+        });
+      });
+
       db.run(`
         UPDATE users
         SET email = 'lemaiiisk@gmail.com',
             name = '이명학',
             status = 'APPROVED',
-            tier = 'ACTIVE',
             is_manager = 1
         WHERE wallet_address = ?
       `, [rootReferrerAddress]);
+
+      // payments table schema update migration: if type constraint is old, migrate to new schema
+      db.serialize(() => {
+        db.all("SELECT id, type FROM payments WHERE type IN ('MONTHLY_SUBSCRIPTION', 'MEMBERSHIP_FEE')", (selErr, selRows) => {
+          if (!selErr && selRows && selRows.length > 0) {
+            console.log(`[MIGRATION] Migrating payments table schema. Deleting ${selRows.length} old billing rows.`);
+            db.serialize(() => {
+              db.run(`
+                CREATE TABLE IF NOT EXISTS payments_new (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  wallet_address TEXT NOT NULL,
+                  amount REAL NOT NULL,
+                  type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
+                  status TEXT NOT NULL CHECK (status IN ('SUCCESS', 'FAILED', 'PENDING')),
+                  tx_hash TEXT,
+                  distributed_amount REAL DEFAULT 0,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (wallet_address) REFERENCES users (wallet_address)
+                )
+              `);
+              db.run(`
+                INSERT INTO payments_new (id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at)
+                SELECT id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at
+                FROM payments
+                WHERE type NOT IN ('MONTHLY_SUBSCRIPTION', 'MEMBERSHIP_FEE')
+              `);
+              db.run(`DROP TABLE payments`);
+              db.run(`ALTER TABLE payments_new RENAME TO payments`);
+              console.log('✔ [MIGRATION SUCCESS] payments table updated and old billing data purged successfully.');
+            });
+          } else {
+            db.run("INSERT INTO payments (wallet_address, amount, type, status, tx_hash) VALUES ('0x0000000000000000000000000000000000000000', 0, 'DEPOSIT', 'FAILED', '0xSchemaTest')", (insErr) => {
+              if (insErr && insErr.message.includes("CHECK constraint failed")) {
+                console.log("[MIGRATION] CHECK constraint test failed. Migrating payments table schema.");
+                db.serialize(() => {
+                  db.run(`CREATE TABLE IF NOT EXISTS payments_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    wallet_address TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
+                    status TEXT NOT NULL CHECK (status IN ('SUCCESS', 'FAILED', 'PENDING')),
+                    tx_hash TEXT,
+                    distributed_amount REAL DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (wallet_address) REFERENCES users (wallet_address)
+                  )`);
+                  db.run(`INSERT INTO payments_new (id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at)
+                          SELECT id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at
+                          FROM payments
+                          WHERE type NOT IN ('MONTHLY_SUBSCRIPTION', 'MEMBERSHIP_FEE')`);
+                  db.run(`DROP TABLE payments`);
+                  db.run(`ALTER TABLE payments_new RENAME TO payments`);
+                  console.log('✔ [MIGRATION SUCCESS] payments table CHECK constraint updated and purged.');
+                });
+              } else {
+                db.run("DELETE FROM payments WHERE tx_hash = '0xSchemaTest'");
+              }
+            });
+          }
+        });
+      });
 
       console.log('✔ SQLite Database initialized successfully with Root Referrers.');
       resolve();

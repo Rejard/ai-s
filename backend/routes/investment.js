@@ -100,7 +100,7 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
 
     const deposits = await queries.get(`
       SELECT SUM(amount) as total FROM payments
-      WHERE LOWER(wallet_address) = ? AND type = 'MONTHLY_SUBSCRIPTION' AND status = 'SUCCESS'
+      WHERE LOWER(wallet_address) = ? AND type = 'DEPOSIT' AND status = 'SUCCESS'
     `, [walletAddress]);
 
     const addedDeposits = deposits.total || 0;
@@ -207,7 +207,7 @@ router.post('/deposit', async (req, res) => {
 
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'MONTHLY_SUBSCRIPTION', 'SUCCESS', ?)
+      VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
     `, [cleanWallet, amount, txHash || '0xSimulatedDepositTx']);
 
     res.json({ success: true, message: `가상 투자 풀에 ${amount} USDT가 추가 입금되었습니다.` });
@@ -224,12 +224,19 @@ router.post('/withdraw', async (req, res) => {
   const cleanWallet = walletAddress.toLowerCase().trim();
 
   try {
+    const existingRequest = await queries.get(
+      "SELECT id FROM payments WHERE LOWER(wallet_address) = LOWER(?) AND type = 'WITHDRAW_REQUEST' AND status = 'PENDING'",
+      [cleanWallet]
+    );
+    if (existingRequest) {
+      return res.status(400).json({ success: false, message: '이미 대기 중인 지급 요청이 존재합니다. 이전 요청이 처리된 후 다시 신청해 주십시오.' });
+    }
 
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
       VALUES (?, ?, 'WITHDRAW_REQUEST', 'PENDING', '0xPendingManualPayout')
     `, [cleanWallet, amount]);
-    res.json({ success: true, message: `📤 ${amount} SUT 출금 신청이 접수되었습니다. 매니저 심사 후 지갑으로 자동 송금됩니다.` });
+    res.json({ success: true, message: `📤 ${amount} SUT 지급 요청이 접수되었습니다. 매니저 심사 후 처리됩니다.` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

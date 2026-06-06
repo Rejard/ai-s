@@ -28,8 +28,8 @@ async function columnExists(table, column) {
 
 async function migratePaymentsCheck() {
   const [{ sql = '' } = {}] = await all("SELECT sql FROM sqlite_master WHERE type='table' AND name='payments'");
-  if (sql.includes('AI_TRADING_PROFIT')) {
-    return 'payments already supports AI_TRADING_PROFIT';
+  if (sql.includes('DEPOSIT')) {
+    return 'payments already supports DEPOSIT';
   }
 
   await run('DROP TABLE IF EXISTS payments_new');
@@ -41,7 +41,7 @@ async function migratePaymentsCheck() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         wallet_address TEXT NOT NULL,
         amount REAL NOT NULL,
-        type TEXT NOT NULL CHECK (type IN ('MEMBERSHIP_FEE', 'MONTHLY_SUBSCRIPTION', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
+        type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
         status TEXT NOT NULL CHECK (status IN ('SUCCESS', 'FAILED', 'PENDING')),
         tx_hash TEXT,
         distributed_amount REAL DEFAULT 0,
@@ -53,10 +53,11 @@ async function migratePaymentsCheck() {
       INSERT INTO payments (id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at)
       SELECT id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at
       FROM payments_old
+      WHERE type NOT IN ('MONTHLY_SUBSCRIPTION', 'MEMBERSHIP_FEE')
     `);
     await run('DROP TABLE payments_old');
     await run('COMMIT');
-    return 'payments migrated to support AI_TRADING_PROFIT';
+    return 'payments migrated to support DEPOSIT';
   } catch (err) {
     try {
       await run('ROLLBACK');

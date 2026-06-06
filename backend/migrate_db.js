@@ -17,7 +17,7 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     wallet_address TEXT NOT NULL,
     amount REAL NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('MEMBERSHIP_FEE', 'MONTHLY_SUBSCRIPTION', 'WITHDRAW_REQUEST')),
+    type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAW_REQUEST', 'AI_TRADING_PROFIT')),
     status TEXT NOT NULL CHECK (status IN ('SUCCESS', 'FAILED', 'PENDING')),
     tx_hash TEXT,
     distributed_amount REAL DEFAULT 0,
@@ -25,7 +25,12 @@ db.serialize(() => {
     FOREIGN KEY (wallet_address) REFERENCES users (wallet_address)
   )`);
 
-  db.run(`INSERT INTO payments_new SELECT * FROM payments`, (err) => {
+  db.run(`
+    INSERT INTO payments_new (id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at)
+    SELECT id, wallet_address, amount, type, status, tx_hash, distributed_amount, created_at
+    FROM payments
+    WHERE type NOT IN ('MONTHLY_SUBSCRIPTION', 'MEMBERSHIP_FEE')
+  `, (err) => {
     if (err && !err.message.includes("no such table")) {
       console.error(err);
     } else {

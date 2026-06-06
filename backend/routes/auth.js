@@ -118,8 +118,8 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
 
     await queries.run(`
       INSERT INTO users (
-        wallet_address, email, name, phone, country, id_card_path, status, tier, manager_address, referrer_address
-      ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING_KYC', 'TRIAL', ?, 'none')
+        wallet_address, email, name, phone, country, id_card_path, status, manager_address, referrer_address
+      ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING_KYC', ?, 'none')
     `, [cleanWallet, cleanEmail, name, phone, country, idCardPath, assignedManager]);
 
     res.json({
@@ -138,7 +138,7 @@ router.get('/status/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, tier, joined_at, approved_at, trial_ends_at, selected_coins, manager_address
+      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address
       FROM users WHERE wallet_address = ?
     `, [walletAddress]);
 
@@ -165,10 +165,8 @@ router.get('/status/:walletAddress', async (req, res) => {
         email: user.email,
         name: user.name,
         status: user.status,
-        tier: user.tier,
         joinedAt: user.joined_at,
         approvedAt: user.approved_at,
-        trialEndsAt: user.trial_ends_at,
         selectedCoins: JSON.parse(user.selected_coins),
         managerEmail,
         managerPhone
@@ -184,7 +182,7 @@ router.get('/status-by-email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase().trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, tier, joined_at, approved_at, trial_ends_at, selected_coins, manager_address
+      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address
       FROM users WHERE email = ?
     `, [email]);
 
@@ -211,10 +209,8 @@ router.get('/status-by-email/:email', async (req, res) => {
         email: user.email,
         name: user.name,
         status: user.status,
-        tier: user.tier,
         joinedAt: user.joined_at,
         approvedAt: user.approved_at,
-        trialEndsAt: user.trial_ends_at,
         selectedCoins: user.selected_coins ? JSON.parse(user.selected_coins) : { POL: 50, USDT: 50 },
         managerEmail,
         managerPhone
