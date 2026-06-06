@@ -51,6 +51,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
+  const [vaultSutBalance, setVaultSutBalance] = useState(0);
   const [sutPrice, setSutPrice] = useState(0.19);
   const [sutChange24h, setSutChange24h] = useState(0);
   const [priceHistory, setPriceHistory] = useState([]);
@@ -350,6 +351,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       }
       if (managerData.portfolio !== undefined) setPortfolio(managerData.portfolio);
       if (managerData.walletSutBalance !== undefined) setWalletSutBalance(managerData.walletSutBalance);
+      if (managerData.vaultSutBalance !== undefined) setVaultSutBalance(managerData.vaultSutBalance);
       if (managerData.gateioBalance !== undefined) setGateioBalance(managerData.gateioBalance);
       if (managerData.performance !== undefined) setPerformance(managerData.performance);
       if (managerData.yieldHistory !== undefined) setYieldHistory(managerData.yieldHistory);
@@ -691,33 +693,39 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>매니저 보유 잔액 (온체인)</div>
+                <div style={{ textAlign: 'left', width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>매니저 SUT 총 보유 (지갑 + 거래소)</div>
+                    <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>총 보유고</span>
+                  </div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#60A5FA', marginTop: '2px' }}>
-                    {walletSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                    {(walletSutBalance + (gateioBalance ? parseFloat(gateioBalance.SUT || 0) : 0)).toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '6px', paddingLeft: '8px', borderLeft: '2px solid rgba(96, 165, 250, 0.3)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <div>• 개인 지갑: <span style={{ color: '#FFF', fontWeight: '600' }}>{walletSutBalance.toFixed(2)} SUT</span></div>
+                    <div>• 거래소 (Gate.io): <span style={{ color: '#FFF', fontWeight: '600' }}>{(gateioBalance ? parseFloat(gateioBalance.SUT || 0) : 0).toFixed(2)} SUT</span></div>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(96,165,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>지갑 잔액</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납 - 온체인)</div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#A78BFA', marginTop: '2px' }}>
-                    {stats ? stats.totalRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                    {vaultSutBalance.toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>회원 총 예치액</span>
+                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>온체인 볼트 잔고</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 자산 (수익)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간)</div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#10B981', marginTop: '2px' }}>
-                    {stats ? stats.companyRevenue.toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                    {(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
                   </div>
                 </div>
-                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>본사 보유고</span>
+                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>실시간 본사 보유고</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>

@@ -52,6 +52,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
+  const [vaultSutBalance, setVaultSutBalance] = useState(0);
   const [sutPrice, setSutPrice] = useState(0.19);
   const [sutChange24h, setSutChange24h] = useState(0);
   const [priceHistory, setPriceHistory] = useState([]);
@@ -355,6 +356,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       }
       if (managerData.portfolio !== undefined) setPortfolio(managerData.portfolio);
       if (managerData.walletSutBalance !== undefined) setWalletSutBalance(managerData.walletSutBalance);
+      if (managerData.vaultSutBalance !== undefined) setVaultSutBalance(managerData.vaultSutBalance);
       if (managerData.gateioBalance !== undefined) setGateioBalance(managerData.gateioBalance);
       if (managerData.performance !== undefined) setPerformance(managerData.performance);
       if (managerData.yieldHistory !== undefined) setYieldHistory(managerData.yieldHistory);
@@ -1172,19 +1174,25 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </h4>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>매니저 보유 잔액 (온체인):</span>
-            <span style={{ color: '#60A5FA', fontWeight: '700' }}>{walletSutBalance.toFixed(2)} SUT</span>
+          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-muted)' }}>매니저 SUT 총 보유 (지갑 + 거래소):</span>
+              <span style={{ color: '#60A5FA', fontWeight: '700' }}>{(walletSutBalance + (gateioBalance ? parseFloat(gateioBalance.SUT || 0) : 0)).toFixed(2)} SUT</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px', borderLeft: '2px solid rgba(96, 165, 250, 0.3)', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <div>• 개인 지갑: <span style={{ color: '#FFF', fontWeight: '600' }}>{walletSutBalance.toFixed(2)} SUT</span></div>
+              <div>• 거래소 (Gate.io): <span style={{ color: '#FFF', fontWeight: '600' }}>{(gateioBalance ? parseFloat(gateioBalance.SUT || 0) : 0).toFixed(2)} SUT</span></div>
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납):</span>
-            <span style={{ color: '#A78BFA', fontWeight: '700' }}>{stats ? stats.totalRevenue.toFixed(2) : '0.00'} SUT</span>
+            <span style={{ color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납 - 온체인):</span>
+            <span style={{ color: '#A78BFA', fontWeight: '700' }}>{vaultSutBalance.toFixed(2)} SUT</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>본사 보유 자산 (수익):</span>
-            <span style={{ color: '#10B981', fontWeight: '700' }}>{stats ? stats.companyRevenue.toFixed(2) : '0.00'} SUT</span>
+            <span style={{ color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간):</span>
+            <span style={{ color: '#10B981', fontWeight: '700' }}>{(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} SUT</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>

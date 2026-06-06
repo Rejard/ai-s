@@ -43,6 +43,7 @@ export async function loadManagerDashboardData({
     gridSettings: undefined,
     portfolio: undefined,
     walletSutBalance: undefined,
+    vaultSutBalance: undefined,
     gateioBalance: undefined,
     performance: undefined,
     yieldHistory: undefined,
@@ -92,6 +93,15 @@ export async function loadManagerDashboardData({
     const sutContract = new ethersLib.Contract(sutContractAddress, sutAbi, rpcProvider);
     const balanceWei = await sutContract.balanceOf(walletAddress);
     data.walletSutBalance = parseFloat(ethersLib.formatUnits(balanceWei, 18));
+
+    try {
+      const vaultAddress = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA'.toLowerCase();
+      const vaultBalanceWei = await sutContract.balanceOf(vaultAddress);
+      data.vaultSutBalance = parseFloat(ethersLib.formatUnits(vaultBalanceWei, 18));
+    } catch (vaultErr) {
+      console.error('Failed to load on-chain vault SUT balance:', vaultErr.message);
+      data.vaultSutBalance = 0;
+    }
   }
 
   try {
