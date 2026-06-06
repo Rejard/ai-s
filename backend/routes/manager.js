@@ -176,8 +176,8 @@ router.get('/stats', async (req, res) => {
 
     const paymentStats = await queries.get(`
       SELECT
-        SUM(amount) as totalRevenue,
-        SUM(distributed_amount) as totalDistributed
+        SUM(CASE WHEN type IN ('DEPOSIT', 'AI_TRADING_PROFIT') THEN amount ELSE 0 END) as totalRevenue,
+        SUM(CASE WHEN type = 'WITHDRAW_REQUEST' THEN amount ELSE 0 END) as totalDistributed
       FROM payments
       WHERE status = 'SUCCESS'
     `);
