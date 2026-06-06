@@ -1,12 +1,9 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Clock, ShieldAlert, CheckCircle2, Shield } from 'lucide-react';
 import { API_BASE } from '../App';
 
 function PcWaitingPage({ walletAddress, onApproved }) {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -28,40 +25,6 @@ function PcWaitingPage({ walletAddress, onApproved }) {
 
   return (
     <div className="pc-layout-wrapper" style={{ justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
-
-      {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
-        (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div
-          className="glass-card glow-active"
-          onClick={() => navigate('/manager')}
-          style={{
-            padding: '16px',
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-            cursor: 'pointer',
-            transition: 'transform 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            maxWidth: '640px',
-            marginBottom: '15px'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>👑</span>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>메니져 페이지 바로 가기 (터치 시 복귀)</div>
-            </div>
-          </div>
-          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '12px', width: 'auto' }}>
-            메니져 모드 이동
-          </button>
-        </div>
-      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '640px' }}>
 

@@ -1,12 +1,9 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { API_BASE } from '../App';
 
 function WaitingPage({ walletAddress, onApproved }) {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -28,38 +25,6 @@ function WaitingPage({ walletAddress, onApproved }) {
 
   return (
     <div style={{ margin: 'auto 20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-      {((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
-        (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-        <div
-          className="glass-card glow-active"
-          onClick={() => navigate('/manager')}
-          style={{
-            padding: '12px 16px',
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            transition: 'transform 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '18px' }}>👑</span>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Connected</div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
-            </div>
-          </div>
-          <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
-            메니져 모드 가기
-          </button>
-        </div>
-      )}
 
       <div className="glass-card glow-active" style={{ padding: '40px 20px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
 

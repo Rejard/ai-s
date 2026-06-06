@@ -13,6 +13,7 @@ import {
   loadUserTxHistory,
   submitUserInvestmentTransaction,
 } from '../lib/userDashboard';
+import { DASHBOARD_COPY } from '../lib/dashboardCopy';
 
 function Dashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
     const finalType = explicitType !== null ? explicitType : txType;
 
     if (!finalAmount || parseFloat(finalAmount) <= 0) {
-      alert('Enter a valid amount.');
+      alert('올바른 SUT 수량을 입력해 주세요.');
       return;
     }
 
@@ -96,10 +97,10 @@ function Dashboard({ walletAddress, userData, onLogout }) {
 
       if (finalType === 'DEPOSIT') {
         if (result.response.data.success) {
-          alert(`Deposit recorded after confirmation: ${finalAmount} SUT\nTxHash: ${result.txHash}`);
+          alert(`${finalAmount} SUT 입금이 완료되었습니다.\n거래 해시: ${result.txHash}`);
         }
       } else if (result.response.data.success) {
-        alert(`${finalAmount} SUT withdrawal request submitted.`);
+        alert(`${finalAmount} SUT 출금 신청이 접수되었습니다.`);
       }
 
       setShowTxModal(false);
@@ -107,7 +108,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       fetchDashboardData();
       fetchTxHistory();
     } catch (err) {
-      alert('Transaction failed: ' + err.message);
+      alert('거래 처리에 실패했습니다: ' + err.message);
     } finally {
       setProcessingTx(false);
     }
@@ -139,12 +140,12 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>👑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Mode</div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>메니져 페이지 바로 가기</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>{DASHBOARD_COPY.managerPage}</div>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>회원 관리 화면으로 이동</div>
             </div>
           </div>
           <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
-            메니져 모드 이동
+            {DASHBOARD_COPY.managerPage}
           </button>
         </div>
       )}
@@ -172,12 +173,12 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px' }}>🔑</span>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#F87171' }}>Admin Mode</div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>관리자 페이지 바로 가기</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#F87171' }}>{DASHBOARD_COPY.adminPage}</div>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>시스템 관리 화면으로 이동</div>
             </div>
           </div>
           <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'linear-gradient(90deg, #EF4444, #DC2626)', border: 'none', color: '#FFF' }}>
-            관리자 모드 이동
+            {DASHBOARD_COPY.adminPage}
           </button>
         </div>
       )}
@@ -202,7 +203,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
           <div style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>📊 1 SUT 실시간 시세 (Gate.io)</span>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
               <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '24px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)' }}>
                   ${sutPrice.toFixed(4)} <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
@@ -301,7 +302,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       <div className="glass-card" style={{ padding: '20px' }}>
         <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Wallet size={18} color="#8B5CF6" />
-          나의 자산 및 예치 현황
+          {DASHBOARD_COPY.assetOverview}
         </h3>
 
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -316,7 +317,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
             return (
               <>
                 <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>총 보유 가상자산 (원금)</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.totalAssets}</span>
                   <div style={{ fontSize: '26px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)', marginTop: '4px' }}>
                     {totalAssets.toFixed(2)} SUT
                   </div>
@@ -324,11 +325,11 @@ function Dashboard({ walletAddress, userData, onLogout }) {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <div style={{ textAlign: 'left' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>내 지갑 잔고 (미예치)</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.walletBalance}</span>
                     <span style={{ fontSize: '14px', fontWeight: '700', color: '#8B5CF6' }}>{walletSutBalance.toFixed(2)} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({walletPercent.toFixed(1)}%)</span></span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>매니저 풀 예치금</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.managedAssets}</span>
                     <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>{portfolio ? portfolio.totalInvested.toFixed(2) : '0.00'} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({depositedPercent.toFixed(1)}%)</span></span>
                   </div>
                 </div>
@@ -344,8 +345,8 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           })()}
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>자금 예치하기</button>
-            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>Withdraw Funds</button>
+            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>{DASHBOARD_COPY.depositAction}</button>
+            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>{DASHBOARD_COPY.withdrawAction}</button>
           </div>
         </div>
       </div>
@@ -354,21 +355,21 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className="glass-card" style={{ width: '90%', maxWidth: '380px', background: 'var(--bg-app)', border: '1px solid rgba(255,255,255,0.1)', padding: '24px' }}>
             <h3 style={{ fontSize: '18px', marginBottom: '14px', color: '#F3F4F6' }}>
-              {txType === 'DEPOSIT' ? '투자 봇 자본금 예치' : '투자 봇 자본금 인출'}
+              {txType === 'DEPOSIT' ? DASHBOARD_COPY.depositAction : DASHBOARD_COPY.withdrawAction}
             </h3>
             <form onSubmit={handleTxSubmit}>
               <div className="form-group">
-                <label className="form-label">{txType === 'DEPOSIT' ? '예치 요청 금액 (SUT 단위)' : '출금 요청 금액 (SUT 단위)'}</label>
+                <label className="form-label">{txType === 'DEPOSIT' ? DASHBOARD_COPY.depositAmount : DASHBOARD_COPY.withdrawAmount}</label>
                 <input type="number" className="form-input" placeholder="예: 250" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} min="1" required />
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
                 {txType === 'DEPOSIT'
-                  ? '추가 자금을 수동으로 예치합니다.'
-                  : '인출 시 포트폴리오에서 자산이 차감되어 본인 소유의 지갑 주소로 입금됩니다.'}
+                  ? '입금한 SUT는 운용 자산에 반영됩니다.'
+                  : '출금 신청 금액은 운용 자산에서 차감되며 승인 후 연결된 지갑으로 전송됩니다.'}
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowTxModal(false)} style={{ flex: 1 }}>취소</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, background: txType === 'DEPOSIT' ? 'var(--primary-gradient)' : 'var(--danger-color)' }} disabled={processingTx}>{processingTx ? '처리 중...' : '확인'}</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, background: txType === 'DEPOSIT' ? 'var(--primary-gradient)' : 'var(--danger-color)' }} disabled={processingTx}>{processingTx ? '처리 중...' : txType === 'DEPOSIT' ? DASHBOARD_COPY.depositSubmit : DASHBOARD_COPY.withdrawSubmit}</button>
               </div>
             </form>
           </div>
@@ -378,7 +379,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       <div className="glass-card" style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
           <h3 style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: '#F3F4F6' }}>
-            <span style={{ color: 'var(--accent-color)' }}>📜</span> 최근 거래 내역
+            <span style={{ color: 'var(--accent-color)' }}>📜</span> {DASHBOARD_COPY.recentTransactions}
           </h3>
           <button
             onClick={() => navigate('/history')}
@@ -399,7 +400,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
                 <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--glass-border)' }}>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6', marginBottom: '4px' }}>
-                      {isDeposit ? '예치 (입금)' : '인출 (출금)'}
+                      {isDeposit ? DASHBOARD_COPY.depositCompleted : DASHBOARD_COPY.withdrawalPending}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       {new Date(tx.createdAt).toLocaleDateString('ko-KR')}
@@ -416,7 +417,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           </div>
         ) : (
           <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-            아직 거래 내역이 없습니다.
+            {DASHBOARD_COPY.noTransactions}
           </div>
         )}
       </div>
@@ -427,7 +428,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         style={{ padding: '14px', fontSize: '14px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.02)', marginTop: '5px', display: 'flex', justifyContent: 'center', gap: '8px' }}
         onClick={onLogout}
       >
-        🔌 안전하게 로그아웃 (지갑 연결 해제)
+        🔌 {DASHBOARD_COPY.logout}
       </button>
 
       <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px' }}>
