@@ -715,6 +715,181 @@ router.get('/ai-logs', async (req, res) => {
   }
 });
 
+router.post('/sync-transactions', managerAuthMiddleware, async (req, res) => {
+  try {
+    const { ethers } = require('ethers');
+    const rpcUrl = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
+    const sutAddress = process.env.SUT_CONTRACT_ADDRESS || '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
+    const vaultAddress = process.env.VAULT_CONTRACT_ADDRESS || '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
+    const managerAddress = req.body.managerAddress || MASTER_MANAGER_WALLET;
+
+    // 1. 가입 승인된 모든 회원의 지갑 주소 조회
+    const approvedUsers = await queries.all("SELECT LOWER(wallet_address) as wallet FROM users WHERE status = 'APPROVED'");
+    const userWallets = new Set(approvedUsers.map(u => u.wallet));
+
+    if (userWallets.size === 0) {
+      return res.json({
+        success: true,
+        addedDepositCount: 0,
+        addedDepositAmount: 0,
+        addedWithdrawCount: 0,
+        addedWithdrawAmount: 0,
+        message: '동기화할 회원이 없습니다.'
+      });
+    }
+
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const sutAbi = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
+    const sutContract = new ethers.Contract(sutAddress, sutAbi, provider);
+
+    const latestBlock = await provider.getBlockNumber();
+    
+    // Retrieve last_synced_block from DB
+    const syncStatusRow = await queries.get("SELECT last_synced_block FROM manager_sync_status WHERE wallet_address = ?", [managerAddress]);
+    
+    let startBlock;
+    if (syncStatusRow && syncStatusRow.last_synced_block) {
+      startBlock = syncStatusRow.last_synced_block + 1;
+    } else {
+      // 최초 동기화 시 최근 80,000 블록(약 2일 치) 스캔
+      startBlock = latestBlock - 80000;
+    }
+
+    if (startBlock > latestBlock) {
+      return res.json({
+        success: true,
+        addedDepositCount: 0,
+        addedDepositAmount: 0,
+        addedWithdrawCount: 0,
+        addedWithdrawAmount: 0,
+        message: '이미 최신 상태입니다. 새로운 거래 내역이 없습니다.'
+      });
+    }
+
+    const step = 10000;
+    const targetAddresses = new Set([
+      vaultAddress.toLowerCase(),
+      MASTER_MANAGER_WALLET.toLowerCase(),
+      managerAddress.toLowerCase()
+    ]);
+
+    const promises = [];
+
+    // 1) 수신(입금) 추적: to 가 매니저 지갑인 이벤트들 (병렬 처리용 Promise 생성)
+    for (const addr of targetAddresses) {
+      const filter = sutContract.filters.Transfer(null, addr);
+      for (let currentStart = startBlock; currentStart <= latestBlock; currentStart += step) {
+        const currentEnd = Math.min(currentStart + step - 1, latestBlock);
+        promises.push(
+          sutContract.queryFilter(filter, currentStart, currentEnd)
+            .then(batch => batch.map(log => ({ log, isIncoming: true })))
+            .catch(e => {
+              console.error(`[Sync Transactions] Error querying incoming batch ${currentStart}-${currentEnd} for ${addr}:`, e.message);
+              return [];
+            })
+        );
+      }
+    }
+
+    // 2) 송신(출금/정산) 추적: from 이 매니저 지갑인 이벤트들 (병렬 처리용 Promise 생성)
+    for (const addr of targetAddresses) {
+      const filter = sutContract.filters.Transfer(addr, null);
+      for (let currentStart = startBlock; currentStart <= latestBlock; currentStart += step) {
+        const currentEnd = Math.min(currentStart + step - 1, latestBlock);
+        promises.push(
+          sutContract.queryFilter(filter, currentStart, currentEnd)
+            .then(batch => batch.map(log => ({ log, isIncoming: false })))
+            .catch(e => {
+              console.error(`[Sync Transactions] Error querying outgoing batch ${currentStart}-${currentEnd} for ${addr}:`, e.message);
+              return [];
+            })
+        );
+      }
+    }
+
+    // 모든 RPC 쿼리를 병렬로 실행하여 응답 속도 비약적으로 개선 (504 Gateway Timeout 근본 방지)
+    const results = await Promise.all(promises);
+    let allTransfers = [];
+    for (const batch of results) {
+      allTransfers = allTransfers.concat(batch);
+    }
+
+    let addedDepositCount = 0;
+    let addedDepositAmount = 0;
+    let addedWithdrawCount = 0;
+    let addedWithdrawAmount = 0;
+
+    for (const item of allTransfers) {
+      const { log, isIncoming } = item;
+      const txHash = log.transactionHash;
+      const amount = parseFloat(ethers.formatUnits(log.args.value, 18));
+
+      if (isIncoming) {
+        const fromAddr = log.args.from.toLowerCase();
+        if (userWallets.has(fromAddr)) {
+          const existing = await queries.get(
+            "SELECT id FROM payments WHERE tx_hash = ? AND type = 'DEPOSIT' AND amount > 0",
+            [txHash]
+          );
+          if (!existing) {
+            await queries.run(`
+              INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
+              VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
+            `, [fromAddr, amount, txHash]);
+
+            addedDepositCount++;
+            addedDepositAmount += amount;
+          }
+        }
+      } else {
+        const toAddr = log.args.to.toLowerCase();
+        if (userWallets.has(toAddr)) {
+          const existing = await queries.get(
+            "SELECT id FROM payments WHERE tx_hash = ? AND type = 'WITHDRAW_REQUEST'",
+            [txHash]
+          );
+          if (!existing) {
+            // 1) WITHDRAW_REQUEST (SUCCESS) 등록
+            await queries.run(`
+              INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
+              VALUES (?, ?, 'WITHDRAW_REQUEST', 'SUCCESS', ?)
+            `, [toAddr, amount, txHash]);
+
+            // 2) DEPOSIT 음수액 등록 (실보유량 차감용)
+            await queries.run(`
+              INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
+              VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
+            `, [toAddr, -amount, txHash + '_deduct']);
+
+            addedWithdrawCount++;
+            addedWithdrawAmount += amount;
+          }
+        }
+      }
+    }
+
+    // Save latest block as last_synced_block
+    await queries.run(`
+      INSERT INTO manager_sync_status (wallet_address, last_synced_block, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(wallet_address) DO UPDATE SET last_synced_block = excluded.last_synced_block, updated_at = CURRENT_TIMESTAMP
+    `, [managerAddress, latestBlock]);
+
+    res.json({
+      success: true,
+      addedDepositCount,
+      addedDepositAmount: parseFloat(addedDepositAmount.toFixed(2)),
+      addedWithdrawCount,
+      addedWithdrawAmount: parseFloat(addedWithdrawAmount.toFixed(2)),
+      message: `온체인 거래 동기화 완료: 예치 ${addedDepositCount}건 (${addedDepositAmount.toFixed(2)} SUT) / 정산 ${addedWithdrawCount}건 (${addedWithdrawAmount.toFixed(2)} SUT) 추가 복구되었습니다.`
+    });
+
+  } catch (err) {
+    console.error('[Sync Transactions Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.__private = {
   isMaskedCredential,
   resolveGateIoCredentials

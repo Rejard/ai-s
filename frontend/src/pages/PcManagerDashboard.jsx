@@ -35,6 +35,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [recentPayments, setRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [syncing, setSyncing] = useState(false);
 
   const [gridSettings, setGridSettings] = useState({
     ai_grid_status: 'OFF',
@@ -290,6 +291,24 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       alert(`❌ 전송 실패: ${err.message || err}`);
     } finally {
       setSendingSut(false);
+    }
+  };
+
+  const handleSyncTransactions = async () => {
+    setSyncing(true);
+    try {
+      const res = await axios.post(`${API_BASE}/manager/sync-transactions`, { managerAddress: walletAddress }, getManagerHeaders());
+      if (res.data.success) {
+        alert(`🎉 ${res.data.message}`);
+        fetchManagerData();
+      }
+    } catch (err) {
+      const errMsg = err.response && err.response.data && err.response.data.message
+        ? err.response.data.message
+        : err.message;
+      alert(`❌ 온체인 동기화 실패: ${errMsg}`);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -737,6 +756,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 </div>
                 <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>온체인 볼트 잔고</span>
               </div>
+
+
 
             </div>
           </div>
@@ -1694,10 +1715,35 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           </div>
 
           <div className="glass-card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', color: '#FFF', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-              <Receipt size={18} color="#8B5CF6" />
-              최근 자산 예치/정산 내역
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <h3 style={{ fontSize: '16px', color: '#FFF', margin: 0, display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
+                <Receipt size={18} color="#8B5CF6" />
+                최근 자산 예치/정산 내역
+              </h3>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={syncing}
+                onClick={handleSyncTransactions}
+                style={{
+                  width: 'auto',
+                  padding: '6px 14px',
+                  fontSize: '11px',
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '700',
+                  color: '#FFF',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: 'none'
+                }}
+              >
+                {syncing ? '🔄 온체인 거래 동기화 중...' : '🔄 온체인 거래 동기화 (Sync)'}
+              </button>
+            </div>
 
             {recentPayments.length === 0 ? (
               <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>

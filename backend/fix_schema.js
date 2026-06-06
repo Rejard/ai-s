@@ -76,9 +76,18 @@ async function main() {
   await run("UPDATE users SET referrer_address = 'none' WHERE referrer_address IS NULL OR referrer_address = ''");
   const paymentsResult = await migratePaymentsCheck();
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS manager_sync_status (
+      wallet_address TEXT PRIMARY KEY,
+      last_synced_block INTEGER NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   console.log(JSON.stringify({
     usersReferrerAddress: 'ready',
     payments: paymentsResult,
+    managerSyncStatus: 'ready'
   }, null, 2));
 }
 

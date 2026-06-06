@@ -141,6 +141,7 @@ When updating the frontend, rebuild `frontend/dist`. The backend serves the buil
 - Preferred Trust Wallet provider when multiple wallet extensions are injected.
 - Added Google OAuth redirect fallback for mobile Chrome to avoid the GSI transform blank page.
 - Fixed SQLite schema compatibility for new registrations and `AI_TRADING_PROFIT` payments.
+- Implemented Delta Sync optimization for on-chain transactions, reducing RPC payload and avoiding 504 Gateway Timeouts by maintaining `last_synced_block` in `manager_sync_status`.
 
 ## AI Agent Coding Guidelines
 

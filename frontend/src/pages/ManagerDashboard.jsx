@@ -34,6 +34,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [stats, setStats] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   const [withdrawals, setWithdrawals] = useState([]);
 
@@ -295,6 +296,24 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       alert(`❌ 전송 실패: ${err.message || err}`);
     } finally {
       setSendingSut(false);
+    }
+  };
+
+  const handleSyncTransactions = async () => {
+    setSyncing(true);
+    try {
+      const res = await axios.post(`${API_BASE}/manager/sync-transactions`, { managerAddress: walletAddress }, getManagerHeaders());
+      if (res.data.success) {
+        alert(`🎉 ${res.data.message}`);
+        fetchManagerData();
+      }
+    } catch (err) {
+      const errMsg = err.response && err.response.data && err.response.data.message
+        ? err.response.data.message
+        : err.message;
+      alert(`❌ 온체인 동기화 실패: ${errMsg}`);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -1589,10 +1608,35 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
       {/* 4. Recent Payment and On-chain Distribution History List */}
       <div className="glass-card">
-        <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Receipt size={18} color="#8B5CF6" />
-          최근 자산 예치/정산 내역
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ fontSize: '15px', color: '#F3F4F6', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Receipt size={18} color="#8B5CF6" />
+            최근 자산 예치/정산 내역
+          </h3>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={syncing}
+            onClick={handleSyncTransactions}
+            style={{
+              width: 'auto',
+              padding: '6px 12px',
+              fontSize: '11px',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: '700',
+              color: '#FFF',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              boxShadow: 'none'
+            }}
+          >
+            {syncing ? '🔄 동기화 중...' : '🔄 거래 동기화'}
+          </button>
+        </div>
 
         {recentPayments.length === 0 ? (
           <p style={{ color: 'var(--text-dark)', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
