@@ -1190,10 +1190,6 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             <span style={{ color: '#A78BFA', fontWeight: '700' }}>{vaultSutBalance.toFixed(2)} SUT</span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간):</span>
-            <span style={{ color: '#10B981', fontWeight: '700' }}>{(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} SUT</span>
-          </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
             <span style={{ color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료):</span>

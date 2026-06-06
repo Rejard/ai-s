@@ -27,8 +27,11 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     isAdmin,
     handlePromoteManager,
     handleDeleteManager,
-    handleSaveAiConfig
+    handleSaveAiConfig,
+    vaultSutBalance,
+    stats
   } = useAdminLogic(managerEmail);
+
 
 
 
@@ -87,6 +90,18 @@ function AdminDashboard({ walletAddress, managerEmail }) {
         {activeTab === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
+            <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+              <h3 style={{ fontSize: '15px', color: '#FFF', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
+                🏢 본사 SUT 자산 현황
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간):</span>
+                  <span style={{ color: '#10B981', fontWeight: '700' }}>{(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} SUT</span>
+                </div>
+              </div>
+            </div>
 
             <div className="glass-card" style={{ padding: '20px' }}>
               <h3 style={{ fontSize: '15px', color: '#FFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>

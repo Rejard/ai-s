@@ -718,15 +718,6 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>온체인 볼트 잔고</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간)</div>
-                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#10B981', marginTop: '2px' }}>
-                    {(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>실시간 본사 보유고</span>
-              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
