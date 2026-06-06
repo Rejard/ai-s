@@ -27,8 +27,11 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     isAdmin,
     handlePromoteManager,
     handleDeleteManager,
-    handleSaveAiConfig
+    handleSaveAiConfig,
+    vaultSutBalance,
+    stats
   } = useAdminLogic(managerEmail);
+
 
   if (!isAdmin) {
     return (
@@ -84,6 +87,29 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
         {activeTab === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+              <h3 style={{ fontSize: '15px', color: '#FFF', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
+                🏢 본사 SUT 자산 통합 통제 보드
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납 - 온체인):</span>
+                  <span style={{ color: '#A78BFA', fontWeight: '700' }}>{vaultSutBalance.toFixed(2)} SUT</span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간):</span>
+                  <span style={{ color: '#10B981', fontWeight: '700' }}>{(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} SUT</span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료):</span>
+                  <span style={{ color: '#F59E0B', fontWeight: '700' }}>{stats ? stats.totalDistributed.toFixed(2) : '0.00'} SUT</span>
+                </div>
+              </div>
+            </div>
 
             <div className="glass-card" style={{ padding: '20px' }}>
               <h3 style={{ fontSize: '15px', color: '#FFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>

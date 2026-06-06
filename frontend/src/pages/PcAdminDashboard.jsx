@@ -26,8 +26,11 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     isAdmin,
     handlePromoteManager,
     handleDeleteManager,
-    handleSaveAiConfig
+    handleSaveAiConfig,
+    vaultSutBalance,
+    stats
   } = useAdminLogic(managerEmail);
+
 
   if (!isAdmin) {
     return (
@@ -91,6 +94,44 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
             <div style={{ background: 'rgba(0,0,0,0.25)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
               <div><b>어드민 이메일:</b> {managerEmail}</div>
               <div style={{ wordBreak: 'break-all' }}><b>지갑 주소:</b> <span style={{ fontFamily: 'monospace' }}>{walletAddress}</span></div>
+            </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+            <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 16px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>🏢</span> 본사 SUT 자산 통합 통제 보드
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 총 운용 자산 (수납 - 온체인)</div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#A78BFA', marginTop: '4px' }}>
+                    {vaultSutBalance.toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#A78BFA', background: 'rgba(167,139,250,0.1)', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>온체인 볼트</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>본사 보유 자산 (수익 - 실시간)</div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#10B981', marginTop: '4px' }}>
+                    {(vaultSutBalance - (stats ? stats.totalDistributed : 0)).toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>실시간 본사 보유고</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료)</div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#F59E0B', marginTop: '4px' }}>
+                    {stats ? stats.totalDistributed.toFixed(2) : '0.00'} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '3px 8px', borderRadius: '6px', fontWeight: '700' }}>총 출금액</span>
+              </div>
             </div>
           </div>
 

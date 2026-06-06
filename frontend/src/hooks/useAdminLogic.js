@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
+import { ethers } from 'ethers';
 
 export function useAdminLogic(managerEmail) {
 
@@ -15,8 +16,13 @@ export function useAdminLogic(managerEmail) {
   const [globalAiInterval, setGlobalAiInterval] = useState('5');
   const [savingAiConfig, setSavingAiConfig] = useState(false);
 
+  // 새로 추가된 상태
+  const [vaultSutBalance, setVaultSutBalance] = useState(0);
+  const [stats, setStats] = useState(null);
+
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
   const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
+
 
   const getAdminHeaders = () => {
     return {
@@ -54,6 +60,40 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const fetchVaultSutBalance = async () => {
+    if (!isAdmin) return;
+    try {
+      const rpcProvider = new ethers.JsonRpcProvider('https://polygon-bor-rpc.publicnode.com');
+      const sutContractAddress = '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55'.toLowerCase();
+      const sutAbi = ['function balanceOf(address account) external view returns (uint256)'];
+      const sutContract = new ethers.Contract(sutContractAddress, sutAbi, rpcProvider);
+
+      const vaultAddress = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA'.toLowerCase();
+      const vaultBalanceWei = await sutContract.balanceOf(vaultAddress);
+      setVaultSutBalance(parseFloat(ethers.formatUnits(vaultBalanceWei, 18)));
+    } catch (err) {
+      console.error('Failed to load on-chain vault SUT balance in Admin:', err.message);
+      setVaultSutBalance(0);
+    }
+  };
+
+  const fetchStats = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE}/manager/stats`, {
+        headers: {
+          'x-manager-email': ADMIN_EMAIL
+        }
+      });
+      if (res.data.success) {
+        setStats(res.data.stats);
+      }
+    } catch (err) {
+      console.error('Failed to load stats in Admin:', err.message);
+    }
+  };
+
+
   const handleSaveAiConfig = async (e) => {
     if (e) e.preventDefault();
     if (!globalGeminiApiKey.trim()) {
@@ -86,10 +126,17 @@ export function useAdminLogic(managerEmail) {
   useEffect(() => {
     fetchManagers();
     fetchAiConfig();
+    fetchVaultSutBalance();
+    fetchStats();
 
-    const interval = setInterval(fetchManagers, 5000);
+    const interval = setInterval(() => {
+      fetchManagers();
+      fetchVaultSutBalance();
+      fetchStats();
+    }, 5000);
     return () => clearInterval(interval);
   }, [managerEmail]);
+
 
   const handlePromoteManager = async (e) => {
     if (e) e.preventDefault();
@@ -165,6 +212,9 @@ export function useAdminLogic(managerEmail) {
     isAdmin,
     handlePromoteManager,
     handleDeleteManager,
-    handleSaveAiConfig
+    handleSaveAiConfig,
+    vaultSutBalance,
+    stats
   };
+
 }
