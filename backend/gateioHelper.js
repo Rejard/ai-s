@@ -107,11 +107,21 @@ async function cancelGateIoOrder(apiKey = null, apiSecret = null, orderId) {
   return await callGateIoApi('DELETE', `/api/v4/spot/orders/${orderId}`, queryString, null, apiKey, apiSecret);
 }
 
+async function getGateIoDeposits(apiKey = null, apiSecret = null) {
+  return await callGateIoApi('GET', '/api/v4/wallet/deposits', '', null, apiKey, apiSecret);
+}
+
+async function getGateIoWithdrawals(apiKey = null, apiSecret = null) {
+  return await callGateIoApi('GET', '/api/v4/wallet/withdrawals', '', null, apiKey, apiSecret);
+}
+
 module.exports = {
   getGateIoBalances,
   createGateIoOrder,
   getGateIoMyTrades,
   getGateIoOpenOrders,
-  cancelGateIoOrder
+  cancelGateIoOrder,
+  getGateIoDeposits,
+  getGateIoWithdrawals
 };
 

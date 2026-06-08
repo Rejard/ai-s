@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { queries } = require('../database');
-const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades } = require('../gateioHelper');
+const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades, getGateIoOpenOrders, cancelGateIoOrder, getGateIoDeposits, getGateIoWithdrawals } = require('../gateioHelper');
 const { decryptText, encryptText } = require('../secureCredentials');
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
@@ -588,6 +588,95 @@ router.post('/gateio-order', async (req, res) => {
   }
 });
 
+async function syncGateIoTradesToDb(managerEmail, apiKey, apiSecret) {
+  try {
+    const tradesRes = await getGateIoMyTrades(apiKey, apiSecret);
+    if (tradesRes.success && Array.isArray(tradesRes.data)) {
+      const ignoredTradeIds = ['1658098'];
+      console.log("=== syncGateIoTradesToDb total trades ===", tradesRes.data.length);
+      for (const t of tradesRes.data) {
+        console.log(`Trade checking: id=${t.id} (${typeof t.id}), ignore?=${ignoredTradeIds.includes(String(t.id))}`);
+        if (ignoredTradeIds.includes(String(t.id))) {
+          console.log(`Skipping ignored trade ID: ${t.id}`);
+          continue;
+        }
+        const deal = t.deal ? parseFloat(t.deal) : (parseFloat(t.price) * parseFloat(t.amount));
+        await queries.run(`
+          INSERT OR IGNORE INTO manager_gateio_trades
+            (manager_email, trade_id, order_id, side, price, amount, deal, fee, fee_currency, create_time, create_time_ms)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          managerEmail,
+          String(t.id),
+          String(t.order_id || ''),
+          t.side,
+          parseFloat(t.price),
+          parseFloat(t.amount),
+          deal,
+          t.fee || '0',
+          t.fee_currency || 'USDT',
+          String(t.create_time || ''),
+          String(t.create_time_ms || '')
+        ]);
+      }
+    }
+  } catch (err) {
+    console.error("❌ [Gate.io Trades Sync Error]:", err.message);
+  }
+}
+
+async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
+  try {
+    // 1. 입금 내역 동기화
+    const depositsRes = await getGateIoDeposits(apiKey, apiSecret);
+    if (depositsRes.success && Array.isArray(depositsRes.data)) {
+      for (const d of depositsRes.data) {
+        const transferId = String(d.id || d.txid || d.create_time || d.timestamp || '');
+        if (!transferId) continue;
+        
+        await queries.run(`
+          INSERT OR IGNORE INTO manager_gateio_transfers
+            (manager_email, transfer_id, type, currency, amount, txid, status, create_time)
+          VALUES (?, ?, 'DEPOSIT', ?, ?, ?, ?, ?)
+        `, [
+          managerEmail,
+          transferId,
+          d.currency || 'USDT',
+          parseFloat(d.amount || 0),
+          d.txid || '',
+          d.status || '',
+          String(d.create_time || d.timestamp || '')
+        ]);
+      }
+    }
+
+    // 2. 출금 내역 동기화
+    const withdrawalsRes = await getGateIoWithdrawals(apiKey, apiSecret);
+    if (withdrawalsRes.success && Array.isArray(withdrawalsRes.data)) {
+      for (const w of withdrawalsRes.data) {
+        const transferId = String(w.id || w.withdrawal_id || w.txid || w.create_time || '');
+        if (!transferId) continue;
+
+        await queries.run(`
+          INSERT OR IGNORE INTO manager_gateio_transfers
+            (manager_email, transfer_id, type, currency, amount, txid, status, create_time)
+          VALUES (?, ?, 'WITHDRAW', ?, ?, ?, ?, ?)
+        `, [
+          managerEmail,
+          transferId,
+          w.currency || 'USDT',
+          parseFloat(w.amount || 0),
+          w.txid || '',
+          w.status || '',
+          String(w.create_time || '')
+        ]);
+      }
+    }
+  } catch (err) {
+    console.error("❌ [Gate.io Transfers Sync Error]:", err.message);
+  }
+}
+
 router.get('/gateio-performance', async (req, res) => {
   try {
     const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
@@ -600,53 +689,139 @@ router.get('/gateio-performance', async (req, res) => {
       });
     }
 
+    const managerEmail = req.managerEmail;
+
+    // 1. 거래소 실시간 체결 및 입출금 기록을 DB로 동기화
+    await syncGateIoTradesToDb(managerEmail, apiKey, apiSecret);
+    await syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret);
+
+    // 2. 잔고 조회 (SUT 및 USDT 현금 모두 조회)
     const balanceRes = await getGateIoBalances(apiKey, apiSecret);
     if (!balanceRes.success) {
       return res.json({ success: false, error: balanceRes.message || '잔고 조회 실패' });
     }
     const sutBalance = balanceRes.balances.SUT || 0;
+    const usdtBalance = balanceRes.balances.USDT || 0;
 
-    const tradesRes = await getGateIoMyTrades(apiKey, apiSecret);
-    if (!tradesRes.success) {
-      return res.json({ success: false, error: tradesRes.message || '체결 내역 조회 실패' });
-    }
+    // 3. 로컬 DB에서 거래 기록 전체 조회 (최신순)
+    const dbTrades = await queries.all(`
+      SELECT * FROM manager_gateio_trades
+      WHERE LOWER(manager_email) = LOWER(?)
+      ORDER BY CAST(create_time AS REAL) DESC
+    `, [managerEmail]);
 
-    const trades = tradesRes.data || [];
-
-    let totalBuyUsdt = 0;
-    trades.forEach(t => {
-      if (t.side === 'buy') {
-        const deal = t.deal ? parseFloat(t.deal) : (parseFloat(t.price) * parseFloat(t.amount));
-        totalBuyUsdt += deal;
-      }
-    });
+    // 4. 기존 Gate.io API 데이터 포맷과 100% 호환되도록 가공 (UI 수정 방지)
+    const trades = (dbTrades || []).map(t => ({
+      id: t.trade_id,
+      order_id: t.order_id,
+      side: t.side,
+      price: String(t.price),
+      amount: String(t.amount),
+      deal: String(t.deal),
+      fee: t.fee,
+      fee_currency: t.fee_currency,
+      create_time: parseFloat(t.create_time || 0),
+      create_time_ms: parseFloat(t.create_time_ms || 0)
+    }));
 
     let sutPrice = 0.19; // Default fallback price
+    let sutHigh24h = 0.19;
+    let sutLow24h = 0.19;
     try {
       const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
       if (tickerRes.data && tickerRes.data.length > 0) {
         sutPrice = parseFloat(tickerRes.data[0].last);
+        sutHigh24h = parseFloat(tickerRes.data[0].high_24h || tickerRes.data[0].last);
+        sutLow24h = parseFloat(tickerRes.data[0].low_24h || tickerRes.data[0].last);
       }
     } catch (tickErr) {
       console.error("[Performance API] SUT 가격 조회 에러:", tickErr.message);
     }
 
-    const currentValue = sutBalance * sutPrice;
-    let yieldPercent = 0;
-    if (totalBuyUsdt > 0) {
-      yieldPercent = ((currentValue - totalBuyUsdt) / totalBuyUsdt) * 100;
-    } else {
-      // If there is no trading history or principal is 0 ➡️ fallback to SUT's 24h change rate or change rate compared to benchmark price (0.15)
-      try {
-        const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
-        if (tickerRes.data && tickerRes.data.length > 0 && tickerRes.data[0].change_percentage !== undefined) {
-          yieldPercent = parseFloat(tickerRes.data[0].change_percentage);
-        } else {
-          yieldPercent = ((sutPrice - 0.15) / 0.15) * 100;
-        }
-      } catch (tickErr) {
-        yieldPercent = ((sutPrice - 0.15) / 0.15) * 100;
+    // 📊 [MWR: 금액가중수익률 및 실계좌 자산 연산]
+    
+    // DB에서 모든 입출금 내역 조회
+    const transfers = await queries.all(`
+      SELECT * FROM manager_gateio_transfers
+      WHERE LOWER(manager_email) = LOWER(?)
+    `, [managerEmail]);
+
+    let totalDepositUsdt = 0;
+    let totalWithdrawUsdt = 0;
+
+    (transfers || []).forEach(tr => {
+      const amt = tr.amount;
+      let val = 0;
+      if (tr.currency === 'USDT') {
+        val = amt;
+      } else if (tr.currency === 'SUT') {
+        val = amt * sutPrice; // SUT 입출금 가치는 실시간 시가 기준 반영
+      } else {
+        val = amt;
       }
+
+      if (tr.type === 'DEPOSIT') {
+        totalDepositUsdt += val;
+      } else if (tr.type === 'WITHDRAW') {
+        totalWithdrawUsdt += val;
+      }
+    });
+
+    // 순 투자 원금 (Net Invested)
+    let netInvested = totalDepositUsdt - totalWithdrawUsdt;
+
+    // 현재 계좌의 총 자산 가치 (SUT 평가액 + USDT 현금 잔고)
+    const currentValue = (sutBalance * sutPrice) + usdtBalance;
+
+    // 만약 입출금 내역이 없거나 원금이 0 이하로 잡힐 경우의 폴백 처리
+    if (netInvested <= 0) {
+      let holdingQty = 0;
+      let avgPrice = 0;
+      let totalCost = 0;
+      const chronTrades = [...trades].sort((a, b) => parseFloat(a.create_time || 0) - parseFloat(b.create_time || 0));
+      
+      chronTrades.forEach(t => {
+        const price = parseFloat(t.price);
+        const amount = parseFloat(t.amount);
+        if (t.side === 'buy') {
+          totalCost += (price * amount);
+          holdingQty += amount;
+          if (holdingQty > 0) {
+            avgPrice = totalCost / holdingQty;
+          }
+        } else if (t.side === 'sell') {
+          holdingQty = Math.max(0, holdingQty - amount);
+          totalCost = holdingQty * avgPrice;
+          if (holdingQty === 0) {
+            avgPrice = 0;
+          }
+        }
+      });
+      netInvested = totalCost > 0 ? totalCost : 100;
+    }
+
+    const totalBuyUsdt = netInvested; // 하위 호환성 유지
+
+    // 수익률 계산 (MWR)
+    let yieldPercent = 0;
+    const isDustBalance = sutBalance < 1.0 && usdtBalance < 1.0;
+
+    if (isDustBalance) {
+      if (netInvested > 0) {
+        yieldPercent = ((currentValue - netInvested) / netInvested) * 100;
+      } else {
+        yieldPercent = 0;
+      }
+    } else {
+      if (netInvested > 0) {
+        yieldPercent = ((currentValue - netInvested) / netInvested) * 100;
+      } else {
+        yieldPercent = 0;
+      }
+    }
+
+    if (isNaN(yieldPercent) || !isFinite(yieldPercent)) {
+      yieldPercent = 0;
     }
 
     let depositAddress = '';
@@ -685,6 +860,8 @@ router.get('/gateio-performance', async (req, res) => {
       totalBuyUsdt,
       sutBalance,
       sutPrice,
+      sutHigh24h,
+      sutLow24h,
       currentValue,
       yieldPercent,
       tradesCount: trades.length,
@@ -697,6 +874,59 @@ router.get('/gateio-performance', async (req, res) => {
     });
   } catch (err) {
     console.error("[Performance API Error]:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/gateio-open-orders', async (req, res) => {
+  try {
+    const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
+
+    if (!apiKey || !apiSecret) {
+      return res.json({
+        success: true,
+        isConfigured: false,
+        orders: []
+      });
+    }
+
+    const ordersRes = await getGateIoOpenOrders(apiKey, apiSecret);
+    if (!ordersRes.success) {
+      return res.json({ success: false, error: ordersRes.message || '대기 주문 조회 실패' });
+    }
+
+    return res.json({
+      success: true,
+      isConfigured: true,
+      orders: ordersRes.data || []
+    });
+  } catch (err) {
+    console.error("❌ Gate.io open orders API 에러:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/gateio-cancel-order', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: '주문 ID가 제공되지 않았습니다.' });
+    }
+    const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
+    if (!apiKey || !apiSecret) {
+      return res.json({ success: false, error: '거래소 API 키가 설정되어 있지 않습니다.' });
+    }
+    const cancelRes = await cancelGateIoOrder(apiKey, apiSecret, orderId);
+    if (!cancelRes.success) {
+      return res.json({ success: false, error: cancelRes.message || '주문 취소 실패' });
+    }
+    return res.json({
+      success: true,
+      message: '주문이 성공적으로 취소되었습니다.',
+      data: cancelRes.data
+    });
+  } catch (err) {
+    console.error("❌ Gate.io cancel order API 에러:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

@@ -48,6 +48,7 @@ export async function loadManagerDashboardData({
     performance: undefined,
     yieldHistory: undefined,
     aiLogs: undefined,
+    gateioOpenOrders: undefined,
     credentialUpdates: {
       clearApiKey: false,
       clearApiSecret: false,
@@ -150,6 +151,15 @@ export async function loadManagerDashboardData({
     }
   } catch {
     data.aiLogs = undefined;
+  }
+
+  try {
+    const openOrdersRes = await axiosClient.get(`${apiBase}/manager/gateio-open-orders`, headers);
+    if (openOrdersRes.data.success) {
+      data.gateioOpenOrders = openOrdersRes.data.orders || [];
+    }
+  } catch {
+    data.gateioOpenOrders = [];
   }
 
   return data;
@@ -362,4 +372,18 @@ export async function sendSutToGateIoDepositAddress({
   const tx = await sutContract.transfer(nextDepositAddress, parsedAmount);
   await tx.wait();
   return tx;
+}
+
+export async function cancelManagerGateIoOrder({
+  apiBase,
+  managerEmail,
+  orderId,
+  axiosClient,
+  getStorageItem,
+}) {
+  const headers = buildManagerHeaders({
+    managerEmail,
+    getStorageItem,
+  });
+  return await axiosClient.post(`${apiBase}/manager/gateio-cancel-order`, { orderId }, headers);
 }

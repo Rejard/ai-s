@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { queries } = require('./database');
-const { createGateIoOrder, getGateIoBalances } = require('./gateioHelper');
+const { createGateIoOrder, getGateIoBalances, getGateIoOpenOrders, cancelGateIoOrder } = require('./gateioHelper');
 const { decryptText } = require('./secureCredentials');
 const { buildTradePlan } = require('./autoTradeMath');
 const { exec } = require('child_process');
@@ -258,7 +258,7 @@ async function recordManagerTradeExecution({ managerEmail, aiLogId, side, amount
   }
 }
 
-async function executeServerAutoTrades(aiLogId, aiResult) {
+async function executeServerAutoTrades(aiLogId, aiResult, currentSutPrice = 0) {
   const decision = String(aiResult.decision || '').toUpperCase();
   const proposedPrice = parseFloat(aiResult.price) || 0;
   const amountRatio = parseFloat(aiResult.amount_ratio) || 0.1;
@@ -299,6 +299,30 @@ async function executeServerAutoTrades(aiLogId, aiResult) {
       if (!balanceRes.success) {
         await recordManagerTradeExecution({ managerEmail, aiLogId, side: decision.toLowerCase(), amount: 0, price: proposedPrice, status: 'FAILED', message: balanceRes.message || 'Gate.io balance check failed.' });
         continue;
+      }
+
+      // ⏳ [AI GRID BOT] 기존 미체결 주문 자동 취소 (Clean-up) 로직 수행
+      try {
+        const openOrdersRes = await getGateIoOpenOrders(apiKey, apiSecret);
+        if (openOrdersRes.success && Array.isArray(openOrdersRes.data)) {
+          const now = Date.now();
+          for (const order of openOrdersRes.data) {
+            const createTimeMs = parseFloat(order.create_time_ms || (order.create_time * 1000));
+            const elapsedMinutes = (now - createTimeMs) / (60 * 1000);
+            
+            const orderPrice = parseFloat(order.price);
+            const refPrice = currentSutPrice || proposedPrice;
+            const priceDiffPercent = Math.abs((refPrice - orderPrice) / orderPrice) * 100;
+            
+            // 조건 1: 15분 경과 OR 조건 2: 가격 괴리율 2% 이상
+            if (elapsedMinutes >= 15 || priceDiffPercent >= 2.0) {
+              console.log(`[🤖 AI GRID BOT] 미체결 대기 주문 자동 취소 진행 - 매니저: ${managerEmail}, 주문ID: ${order.id}, 경과시간: ${elapsedMinutes.toFixed(1)}분, 괴리율: ${priceDiffPercent.toFixed(2)}%`);
+              await cancelGateIoOrder(apiKey, apiSecret, order.id);
+            }
+          }
+        }
+      } catch (cancelErr) {
+        console.error(`[-] [AI GRID BOT] 매니저 ${managerEmail} 기존 주문 자동 취소 중 예외 발생:`, cancelErr.message);
       }
 
       const oneTimeOverride = await queries.get(`
@@ -683,7 +707,7 @@ async function runAiGridBot() {
         console.error("[🤖 AI GRID BOT] CSV 학습 데이터 저장 실패:", csvErr.message);
       }
 
-      await executeServerAutoTrades(logInsert.lastID, aiResult);
+      await executeServerAutoTrades(logInsert.lastID, aiResult, currentSutPrice);
     } catch (dbLogErr) {
       console.error("[🤖 AI GRID BOT] 전략 로그 저장 실패:", dbLogErr.message);
     }

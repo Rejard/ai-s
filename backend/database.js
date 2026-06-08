@@ -115,6 +115,41 @@ function initializeDatabase() {
       `, (err) => { if (err) return reject(err); });
 
       db.run(`
+        CREATE TABLE IF NOT EXISTS manager_gateio_trades (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_email TEXT NOT NULL,
+          trade_id TEXT NOT NULL,
+          order_id TEXT,
+          side TEXT NOT NULL,
+          price REAL NOT NULL,
+          amount REAL NOT NULL,
+          deal REAL NOT NULL,
+          fee TEXT DEFAULT '0',
+          fee_currency TEXT DEFAULT 'USDT',
+          create_time TEXT,
+          create_time_ms TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(manager_email, trade_id)
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS manager_gateio_transfers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_email TEXT NOT NULL,
+          transfer_id TEXT NOT NULL,
+          type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAW')),
+          currency TEXT NOT NULL,
+          amount REAL NOT NULL,
+          txid TEXT,
+          status TEXT,
+          create_time TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(manager_email, transfer_id, type)
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`
         CREATE TABLE IF NOT EXISTS ais_training_data (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           timestamp TEXT NOT NULL,

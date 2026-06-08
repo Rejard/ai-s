@@ -20,6 +20,7 @@ import {
   saveManagerGateIoCredentials,
   sendSutToGateIoDepositAddress,
   submitManagerGateIoOrder,
+  cancelManagerGateIoOrder,
 } from '../lib/managerDashboard';
 import {
   loadUserDashboardData,
@@ -64,6 +65,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [performance, setPerformance] = useState(null);
   const [yieldHistory, setYieldHistory] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
+  const [openOrders, setOpenOrders] = useState([]);
 
   // New: Strategy ID reference for preventing duplicate execution
   const lastExecutedStrategyIdRef = useRef(null);
@@ -173,6 +175,27 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       alert(`❌ 주문 오류: ${errMsg}`);
     } finally {
       setSubmittingOrder(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!confirm('정말로 이 대기 주문을 취소하시겠습니까?')) return;
+    try {
+      const res = await cancelManagerGateIoOrder({
+        apiBase: API_BASE,
+        managerEmail,
+        orderId,
+        axiosClient: axios,
+        getStorageItem: (key) => localStorage.getItem(key),
+      });
+      if (res.data.success) {
+        alert('주문이 정상적으로 취소되었습니다.');
+        fetchManagerData();
+      } else {
+        alert('주문 취소 실패: ' + (res.data.error || '알 수 없는 오류'));
+      }
+    } catch (err) {
+      alert('주문 취소 중 오류 발생: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -375,6 +398,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       if (managerData.performance !== undefined) setPerformance(managerData.performance);
       if (managerData.yieldHistory !== undefined) setYieldHistory(managerData.yieldHistory);
       if (managerData.aiLogs !== undefined) setAiLogs(managerData.aiLogs);
+      if (managerData.gateioOpenOrders !== undefined) setOpenOrders(managerData.gateioOpenOrders);
 
       if (managerData.credentialUpdates.clearApiKey) setLocalApiKey('');
       if (managerData.credentialUpdates.clearApiSecret) setLocalApiSecret('');
@@ -868,6 +892,11 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                     <span style={{ fontSize: '14px', color: 'var(--success-color)', fontWeight: '600' }}>
                       (≈ {(sutPrice * (portfolio.krwRate || 1400)).toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KRW)
                     </span>
+                  </div>
+                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                    <span>24H 고점: <span style={{ color: 'var(--success-color)', fontFamily: 'var(--font-title)', fontSize: '13px' }}>${performance?.sutHigh24h ? performance.sutHigh24h.toFixed(4) : sutPrice.toFixed(4)}</span></span>
+                    <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
+                    <span>24H 저점: <span style={{ color: 'var(--danger-color)', fontFamily: 'var(--font-title)', fontSize: '13px' }}>${performance?.sutLow24h ? performance.sutLow24h.toFixed(4) : sutPrice.toFixed(4)}</span></span>
                   </div>
                 </div>
                 <div>
@@ -1447,6 +1476,93 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
+          </div>
+
+          {/* 최근 Gate.io 실거래 미체결 대기 주문 카드 추가 (PC용) */}
+          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
+            <h4 style={{ fontSize: '14px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>⏳</span>
+              실거래 미체결 대기 주문 (Open Orders)
+            </h4>
+
+            {!openOrders || openOrders.length === 0 ? (
+              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
+                현재 거래소 호가창에 대기 중인 주문이 없습니다. (체결 완료 혹은 미접수)
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#D1D5DB', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)' }}>
+                      <th style={{ padding: '10px 8px', fontWeight: '600' }}>주문 접수 시각 (한국 시간)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600' }}>주문 구분</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>주문 가격 (USDT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>주문 수량 (SUT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>남은 수량 (SUT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>총액 (USDT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'center' }}>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openOrders.map((order, idx) => {
+                      const isBuy = order.side === 'buy';
+                      const formattedTime = (() => {
+                        try {
+                          const ts = parseFloat(order.create_time_ms || (order.create_time * 1000));
+                          const date = new Date(ts);
+                          return date.toLocaleString();
+                        } catch (e) {
+                          return '-';
+                        }
+                      })();
+                      const amount = parseFloat(order.amount).toFixed(2);
+                      const price = parseFloat(order.price).toFixed(4);
+                      const left = parseFloat(order.left || 0).toFixed(2);
+                      const total = (parseFloat(order.amount) * parseFloat(order.price)).toFixed(4);
+
+                      return (
+                        <tr key={order.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                          <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{formattedTime}</td>
+                          <td style={{ padding: '12px 8px' }}>
+                            <span style={{
+                              color: isBuy ? 'var(--success-color)' : 'var(--danger-color)',
+                              background: isBuy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                              fontSize: '11px'
+                            }}>
+                              {isBuy ? '🟢 매수 대기' : '🔴 매도 대기'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#FFF' }}>{price}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#FFF' }}>{amount}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--warning-color)' }}>{left}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#10B981' }}>{total}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.15)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                color: '#EF4444',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              취소
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* 최근 Gate.io 실거래 체결 내역 카드 추가 */}
