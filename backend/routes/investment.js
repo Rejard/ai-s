@@ -324,17 +324,30 @@ Rules:
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-    const response = await axios.post(url, {
-      contents: [{ parts: [{ text: promptText }] }],
-      generationConfig: {
-        maxOutputTokens: 2000,
-        temperature: 0.7
-      }
-    }, { timeout: 60000 });
+    
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const response = await axios.post(url, {
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            maxOutputTokens: 2000,
+            temperature: 0.7
+          }
+        }, { timeout: 300000 }); // 5 minutes
 
-    if (response.data && response.data.candidates && response.data.candidates[0].content) {
-      const text = response.data.candidates[0].content.parts[0].text.trim();
-      return text;
+        if (response.data && response.data.candidates && response.data.candidates[0].content) {
+          return response.data.candidates[0].content.parts[0].text.trim();
+        }
+        break; // If response is ok but no text, break to fallback
+      } catch (err) {
+        retries--;
+        console.error(`❌ Gemini Council Opinion Briefing Error. Retries left: ${retries}`, err.message);
+        if (retries === 0) {
+          return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+        }
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
     }
     
     return generateFallbackBriefing(factionStats, activeMembers, generationStats);
@@ -432,7 +445,7 @@ router.get('/council-stats', async (req, res) => {
     
     if (!cachedBriefing || (now - lastBriefingUpdate > BRIEFING_CACHE_DURATION) || (lastBriefingUpdate < lastEvoTime)) {
       if (!cachedBriefing) {
-        cachedBriefing = "현재 500명 AI 의원들의 세대 진화 및 파벌 탄생 배경에 대한 심층 분석을 백그라운드에서 진행 중입니다. 약 15~30초 후 새로고침해 주십시오...";
+        cachedBriefing = "현재 500명 AI 의원들의 세대 진화 및 파벌 탄생 배경에 대한 심층 분석을 백그라운드에서 진행 중입니다. 분석이 완료되기까지 약 3분이 소요될 수 있으니 잠시 후 새로고침해 주십시오...";
       }
       
       lastBriefingUpdate = now; // 중복 호출 방지를 위해 미리 갱신
