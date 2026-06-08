@@ -371,6 +371,60 @@ function initializeDatabase() {
               SELL: [0.162, 0.8, 67.0, 0.164, 0.161],
               HOLD: [0.156, 0.1, 52.0, 0.156, 0.156]
             }
+          },
+          {
+            id: 'ais_member_06',
+            name: 'Mutant Beta (Aggressive)',
+            weights: {
+              BUY: [0.157, 1.2, 40.0, 0.158, 0.155],
+              SELL: [0.160, 1.2, 75.0, 0.162, 0.159],
+              HOLD: [0.156, 0.0, 50.0, 0.156, 0.156]
+            }
+          },
+          {
+            id: 'ais_member_07',
+            name: 'RSI Contrarian (Reversal)',
+            weights: {
+              BUY: [0.160, 0.5, 22.0, 0.158, 0.159],
+              SELL: [0.148, -0.5, 78.0, 0.150, 0.149],
+              HOLD: [0.155, 0.0, 50.0, 0.155, 0.155]
+            }
+          },
+          {
+            id: 'ais_member_08',
+            name: 'SMA Slow Cross (Long-term)',
+            weights: {
+              BUY: [0.158, 0.1, 52.0, 0.162, 0.154],
+              SELL: [0.152, -0.1, 48.0, 0.148, 0.156],
+              HOLD: [0.155, 0.0, 50.0, 0.155, 0.155]
+            }
+          },
+          {
+            id: 'ais_member_09',
+            name: 'Mutant Gamma (Volatility)',
+            weights: {
+              BUY: [0.149, -1.0, 31.0, 0.147, 0.151],
+              SELL: [0.166, 1.0, 69.0, 0.168, 0.164],
+              HOLD: [0.157, 0.0, 50.0, 0.157, 0.157]
+            }
+          },
+          {
+            id: 'ais_member_10',
+            name: 'Price Momentum Seeker',
+            weights: {
+              BUY: [0.159, 1.5, 55.0, 0.160, 0.157],
+              SELL: [0.151, -1.5, 45.0, 0.150, 0.153],
+              HOLD: [0.155, 0.0, 50.0, 0.155, 0.155]
+            }
+          },
+          {
+            id: 'ais_member_11',
+            name: 'Volatility Shield (Safety)',
+            weights: {
+              BUY: [0.135, -2.0, 18.0, 0.133, 0.137],
+              SELL: [0.185, 2.0, 82.0, 0.187, 0.183],
+              HOLD: [0.158, 0.0, 50.0, 0.158, 0.158]
+            }
           }
         ];
         
