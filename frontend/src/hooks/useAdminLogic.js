@@ -28,6 +28,10 @@ export function useAdminLogic(managerEmail) {
   const [aisModelAccuracy, setAisModelAccuracy] = useState('0.00');
   const [savingAiEngine, setSavingAiEngine] = useState(false);
 
+  // AI 의회 관련 추가 상태
+  const [councilStats, setCouncilStats] = useState(null);
+  const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
+
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
   const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
 
@@ -143,6 +147,26 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const fetchCouncilStats = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE}/admin/council-stats`, getAdminHeaders());
+      if (res.data.success) {
+        setCouncilStats({
+          totalCount: res.data.totalCount || 0,
+          factionStats: res.data.factionStats || [],
+          activeMembers: res.data.activeMembers || [],
+          recentVotes: res.data.recentVotes || [],
+          briefing: res.data.briefing || ''
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load council stats in Admin:', err.message);
+    } finally {
+      setLoadingCouncilStats(false);
+    }
+  };
+
   const handleSaveAiEngine = async (engineMode) => {
     if (!isAdmin) return;
     setSavingAiEngine(true);
@@ -201,6 +225,7 @@ export function useAdminLogic(managerEmail) {
     fetchAiLogs();
     fetchAiEngineConfig();
     fetchTrainingStats();
+    fetchCouncilStats();
 
     const interval = setInterval(() => {
       fetchManagers();
@@ -208,6 +233,7 @@ export function useAdminLogic(managerEmail) {
       fetchStats();
       fetchAiLogs();
       fetchTrainingStats();
+      fetchCouncilStats();
     }, 5000);
     return () => clearInterval(interval);
   }, [managerEmail]);
@@ -297,7 +323,10 @@ export function useAdminLogic(managerEmail) {
     aisLastTrainedAt,
     aisModelAccuracy,
     savingAiEngine,
-    handleSaveAiEngine
+    handleSaveAiEngine,
+    councilStats,
+    loadingCouncilStats,
+    fetchCouncilStats
   };
 
 }

@@ -353,6 +353,38 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       </div>
 
+      {/* 🏛️ AI Council (의회) 독립 페이지 퀵 링크 */}
+      <div
+        className="glass-card glow-active"
+        onClick={() => navigate('/council')}
+        style={{
+          padding: '16px 20px',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(20, 16, 45, 0.4) 100%)',
+          border: '1px solid rgba(139, 92, 246, 0.25)',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          transition: 'transform 0.2s',
+          textAlign: 'left',
+          marginTop: '5px'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '20px' }}>🏛️</span>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: '800', color: '#A78BFA' }}>AI 의회 (AI Council) 현황</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>500인의 분파 지분율 및 오늘의 11인 의정 지표 조회</div>
+          </div>
+        </div>
+        <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)', border: 'none', color: '#FFF' }}>
+          의정 보기 &gt;
+        </button>
+      </div>
+
       {showTxModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className="glass-card" style={{ width: '90%', maxWidth: '380px', background: 'var(--bg-app)', border: '1px solid rgba(255,255,255,0.1)', padding: '24px' }}>

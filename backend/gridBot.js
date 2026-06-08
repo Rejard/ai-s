@@ -48,35 +48,111 @@ function calculateRSI(prices, period = 14) {
   return parseFloat(rsi.toFixed(2));
 }
 
-function getAiSTradingDecision(currentPrice, rsi, sma5, sma20, priceChangeRatio = 0.0) {
-  return new Promise((resolve) => {
-    const path = require('path');
-    const scriptPath = path.join(__dirname, 'ais_inference.py');
-    const cmd = `${pythonCmd} "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20} ${priceChangeRatio}`;
+async function getAiSTradingDecision(currentPrice, rsi, sma5, sma20, priceChangeRatio = 0.0) {
+  try {
+    const members = await queries.all(`
+      SELECT member_id, name, weights_json, voting_power 
+      FROM ais_council_members 
+      WHERE status = 'ACTIVE'
+    `);
     
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error("[AiS Bridge Error]:", error.message);
-        return resolve({
-          success: false,
-          error: error.message
-        });
-      }
-      try {
-        const result = JSON.parse(stdout.trim());
-        resolve({
-          success: true,
-          ...result
-        });
-      } catch (parseErr) {
-        console.error("[AiS Bridge JSON Parse Error]:", parseErr.message, "Output was:", stdout);
-        resolve({
-          success: false,
-          error: parseErr.message
-        });
-      }
+    const membersB64 = Buffer.from(JSON.stringify(members || [])).toString('base64');
+    
+    return new Promise((resolve) => {
+      const path = require('path');
+      const scriptPath = path.join(__dirname, 'ais_inference.py');
+      const cmd = `${pythonCmd} "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20} ${priceChangeRatio} ${membersB64}`;
+      
+      exec(cmd, async (error, stdout, stderr) => {
+        if (error) {
+          console.error("[AiS Council Bridge Error]:", error.message);
+          return resolve({
+            success: false,
+            error: error.message
+          });
+        }
+        try {
+          const result = JSON.parse(stdout.trim());
+          if (!result.success || !result.votes) {
+            return resolve({ success: false, error: "Inference response format invalid" });
+          }
+          
+          const votes = result.votes;
+          let buyVotes = 0;
+          let sellVotes = 0;
+          let holdVotes = 0;
+          let totalPower = 0;
+          
+          const powerMap = {};
+          (members || []).forEach(m => {
+            powerMap[m.member_id] = m.voting_power || 1.0;
+          });
+          
+          votes.forEach(v => {
+            const power = powerMap[v.member_id] || 1.0;
+            totalPower += power;
+            if (v.decision === 'BUY') buyVotes += power;
+            else if (v.decision === 'SELL') sellVotes += power;
+            else holdVotes += power;
+          });
+          
+          let finalDecision = 'HOLD';
+          let winningVotes = holdVotes;
+          
+          if (buyVotes > winningVotes) {
+            finalDecision = 'BUY';
+            winningVotes = buyVotes;
+          }
+          if (sellVotes > winningVotes) {
+            finalDecision = 'SELL';
+            winningVotes = sellVotes;
+          }
+          
+          const kstDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+          const timestampKst = kstDate.toISOString().replace('T', ' ').substring(0, 19);
+          
+          let reasonHeader = `[AI 의회 최종 의결 - ${finalDecision} (${winningVotes.toFixed(1)}표 / ${totalPower.toFixed(1)}표)]\n`;
+          let reasonBody = "의원별 투표 성향:\n";
+          
+          for (const v of votes) {
+            const power = powerMap[v.member_id] || 1.0;
+            reasonBody += `- ${v.name}: [${v.decision}] (${power.toFixed(1)}표)\n`;
+            
+            try {
+              await queries.run(`
+                INSERT INTO ais_council_voting_history (timestamp, member_id, decision_vote, weight_at_vote)
+                VALUES (?, ?, ?, ?)
+              `, [timestampKst, v.member_id, v.decision, power]);
+            } catch (dbVoteErr) {
+              // Bypassed logging
+            }
+          }
+          
+          const finalReason = reasonHeader + reasonBody;
+          
+          resolve({
+            success: true,
+            decision: finalDecision,
+            reason: finalReason,
+            price: currentPrice,
+            amount_ratio: 0.1,
+            proposed_lower: parseFloat((currentPrice * 0.90).toFixed(4)),
+            proposed_upper: parseFloat((currentPrice * 1.15).toFixed(4))
+          });
+          
+        } catch (parseErr) {
+          console.error("[AiS Council JSON Parse Error]:", parseErr.message, "Output was:", stdout);
+          resolve({
+            success: false,
+            error: parseErr.message
+          });
+        }
+      });
     });
-  });
+  } catch (err) {
+    console.error("[-] Council Inference System Error:", err.message);
+    return { success: false, error: err.message };
+  }
 }
 
 async function getSutCurrentPrice() {

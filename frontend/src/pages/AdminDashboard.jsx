@@ -38,7 +38,9 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     aisLastTrainedAt,
     aisModelAccuracy,
     savingAiEngine,
-    handleSaveAiEngine
+    handleSaveAiEngine,
+    councilStats,
+    loadingCouncilStats
   } = useAdminLogic(managerEmail);
 
 
@@ -498,6 +500,233 @@ function AdminDashboard({ walletAddress, managerEmail }) {
           </div>
         )}
 
+        {activeTab === 'council' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(59, 130, 246, 0.25)', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <span style={{ fontSize: '18px' }}>🏛️</span>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '800' }}>🏛️ AI Council (의회) 의정 현황</h3>
+                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>500인 후보군과 11인 현역 의원의 정당 지분 현황입니다.</p>
+                </div>
+              </div>
+
+              {loadingCouncilStats ? (
+                <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                  <Loader2 size={24} className="spin" style={{ margin: '0 auto 10px', color: '#3B82F6' }} />
+                  <p style={{ color: 'var(--text-muted)', fontSize: '11px' }}>의회 데이터를 불러오는 중...</p>
+                </div>
+              ) : !councilStats ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '11px', textAlign: 'center' }}>의회 정보를 불러오지 못했습니다.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* 1. 게이지 */}
+                  <div>
+                    <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
+                      📊 500인 후보군 분파별 점유율
+                    </h4>
+                    <div style={{ display: 'flex', height: '20px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      {councilStats.factionStats.map((f) => {
+                        let color = '#6B7280';
+                        if (f.faction === 'TREND_FOLLOWER') color = '#EF4444';
+                        if (f.faction === 'VALUE_SEEKER') color = '#3B82F6';
+                        if (f.faction === 'CONSERVATIVE_WATCHER') color = '#10B981';
+                        if (f.faction === 'MUTANT_ROOKIE') color = '#8B5CF6';
+
+                        return (
+                          <div
+                            key={f.faction}
+                            style={{
+                              width: `${f.percentage}%`,
+                              background: color,
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              color: '#FFF',
+                              fontSize: '9px',
+                              fontWeight: 'bold',
+                              transition: 'width 0.5s ease-in-out'
+                            }}
+                            title={`${f.faction}: ${f.count}석 (${f.percentage}%)`}
+                          >
+                            {f.percentage >= 12 ? `${f.percentage}%` : ''}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* 범례 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                      {[
+                        { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA/모멘텀)', color: '#EF4444' },
+                        { key: 'VALUE_SEEKER', label: '기술반등파 (RSI/역추세)', color: '#3B82F6' },
+                        { key: 'CONSERVATIVE_WATCHER', label: '변동성방어파 (안정지향)', color: '#10B981' },
+                        { key: 'MUTANT_ROOKIE', label: '돌연변이 혁신파 (알고리즘)', color: '#8B5CF6' }
+                      ].map(item => {
+                        const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
+                        return (
+                          <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: item.color }} />
+                            <span><b>{item.label}:</b> {stat.count}석 ({stat.percentage}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* AI 의회 실시간 여론 동향 브리핑 */}
+                  {councilStats.briefing && (
+                    <div style={{
+                      background: 'rgba(59, 130, 246, 0.05)',
+                      border: '1px solid rgba(59, 130, 246, 0.15)',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      fontSize: '11px',
+                      lineHeight: '1.6',
+                      color: '#E5E7EB',
+                      textAlign: 'left'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60A5FA', fontWeight: 'bold', marginBottom: '6px', fontSize: '11.5px' }}>
+                        <span>🎙️</span>
+                        <span>AI 의원 여론 동향 브리핑</span>
+                      </div>
+                      <div style={{ wordBreak: 'keep-all' }}>{councilStats.briefing}</div>
+                    </div>
+                  )}
+
+                  {/* 2. 탑 11인 */}
+                  <div>
+                    <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
+                      🏛️ 현직 라이브 의원 탑 11인 (ACTIVE)
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                      {councilStats.activeMembers.map((member, i) => {
+                        let borderCol = 'rgba(255,255,255,0.06)';
+                        let badgeBg = 'rgba(255,255,255,0.05)';
+                        let factionColor = '#6B7280';
+                        let factionName = '무소속';
+
+                        if (member.faction === 'TREND_FOLLOWER') {
+                          borderCol = 'rgba(239, 68, 68, 0.2)';
+                          badgeBg = 'rgba(239, 68, 68, 0.05)';
+                          factionColor = '#EF4444';
+                          factionName = '추세추종';
+                        } else if (member.faction === 'VALUE_SEEKER') {
+                          borderCol = 'rgba(59, 130, 246, 0.2)';
+                          badgeBg = 'rgba(59, 130, 246, 0.05)';
+                          factionColor = '#3B82F6';
+                          factionName = '기술반등';
+                        } else if (member.faction === 'CONSERVATIVE_WATCHER') {
+                          borderCol = 'rgba(16, 185, 129, 0.2)';
+                          badgeBg = 'rgba(16, 185, 129, 0.05)';
+                          factionColor = '#10B981';
+                          factionName = '변동방어';
+                        } else if (member.faction === 'MUTANT_ROOKIE') {
+                          borderCol = 'rgba(139, 92, 246, 0.2)';
+                          badgeBg = 'rgba(139, 92, 246, 0.05)';
+                          factionColor = '#8B5CF6';
+                          factionName = '돌연변이';
+                        }
+
+                        let titleLabel = '🏛️ 의원';
+                        let titleColor = '#9CA3AF';
+                        let cardBg = 'rgba(0,0,0,0.2)';
+                        if (i === 0) {
+                          titleLabel = '👑 의장';
+                          titleColor = '#F59E0B';
+                          cardBg = 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
+                          borderCol = 'rgba(245, 158, 11, 0.3)';
+                        } else if (i === 1) {
+                          titleLabel = '🥈 부의장';
+                          titleColor = '#E5E7EB';
+                          cardBg = 'linear-gradient(135deg, rgba(229, 231, 235, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
+                          borderCol = 'rgba(229, 231, 235, 0.3)';
+                        } else if (i === 2) {
+                          titleLabel = '🥉 상임위원장';
+                          titleColor = '#B45309';
+                          cardBg = 'linear-gradient(135deg, rgba(180, 83, 9, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
+                          borderCol = 'rgba(180, 83, 9, 0.3)';
+                        }
+
+                        return (
+                          <div key={member.member_id} style={{ border: `1px solid ${borderCol}`, background: cardBg, padding: '10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '9px', color: titleColor, fontWeight: '900' }}>
+                                {titleLabel}
+                              </span>
+                              <span style={{ fontSize: '8px', background: 'rgba(255,255,255,0.06)', color: '#A78BFA', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>
+                                🧬 {member.generation || 1}대
+                              </span>
+                            </div>
+                            
+                            <div style={{ textAlign: 'left' }}>
+                              <div style={{ fontSize: '11px', color: '#FFF', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {member.name}
+                              </div>
+                              <div style={{ fontSize: '8px', color: factionColor, marginTop: '2px', fontWeight: 'bold' }}>
+                                • {factionName}
+                              </div>
+                            </div>
+
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>
+                                <span>지분:</span>
+                                <span style={{ color: '#FFF', fontWeight: 'bold' }}>{member.voting_power.toFixed(1)}표</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>
+                                <span>정확도:</span>
+                                <span style={{ color: '#10B981', fontWeight: 'bold' }}>{member.correct_count}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. 최근 의결 투표 흐름 */}
+                  <div>
+                    <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700' }}>
+                      🔔 최근 12개 AI 의원 개별 투표
+                    </h4>
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+                      {councilStats.recentVotes.map(v => {
+                        let voteColor = '#6B7280';
+                        let voteBg = 'rgba(255,255,255,0.05)';
+                        if (v.decision_vote === 'BUY') {
+                          voteColor = 'var(--success-color)';
+                          voteBg = 'rgba(16, 185, 129, 0.1)';
+                        } else if (v.decision_vote === 'SELL') {
+                          voteColor = 'var(--danger-color)';
+                          voteBg = 'rgba(239, 68, 68, 0.1)';
+                        } else {
+                          voteColor = 'var(--text-muted)';
+                          voteBg = 'rgba(255,255,255,0.08)';
+                        }
+
+                        return (
+                          <div key={v.id} style={{ flexShrink: 0, width: '110px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                            <span style={{ fontSize: '8px', color: 'var(--text-muted)' }}>{v.timestamp.substring(11)}</span>
+                            <span style={{ fontSize: '10px', color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                              <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>{v.faction === 'TREND_FOLLOWER' ? '추세' : v.faction === 'VALUE_SEEKER' ? '기술' : v.faction === 'CONSERVATIVE_WATCHER' ? '방어' : '변동'}</span>
+                              <span style={{ fontSize: '9px', color: voteColor, background: voteBg, padding: '1px 4px', borderRadius: '4px', fontWeight: '800' }}>{v.decision_vote}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </main>
 
       <div style={{
@@ -515,15 +744,23 @@ function AdminDashboard({ walletAddress, managerEmail }) {
       }}>
         <button
           onClick={() => setActiveTab('home')}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'home' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none' }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'home' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <Home size={22} />
           <span style={{ fontSize: '10px', fontWeight: 'bold' }}>자산관제</span>
         </button>
 
         <button
+          onClick={() => setActiveTab('council')}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'council' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <Users size={22} />
+          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 의회</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('settings')}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'settings' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none' }}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'settings' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <Settings size={22} />
           <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 제어</span>

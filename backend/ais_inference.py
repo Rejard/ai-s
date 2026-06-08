@@ -1,31 +1,23 @@
 import sys
 import json
-import os
+import base64
 import math
 
-MODEL_PKL_PATH = os.path.join(os.path.dirname(__file__), 'ais_model.pkl')
-MODEL_JSON_PATH = os.path.join(os.path.dirname(__file__), 'ais_model_weights.json')
-
-def predict_by_sklearn(features):
-    import joblib
-    model = joblib.load(MODEL_PKL_PATH)
-    pred = model.predict([features])
-    return str(pred[0])
-
-def predict_by_lightweight(features):
-    with open(MODEL_JSON_PATH, 'r', encoding='utf-8') as f:
-        weights = json.load(f)
-        
+def predict_for_member(features, weights):
+    """
+    Calculate Euclidean distance to find the closest decision centroid
+    for a given member's weights dictionary.
+    """
     best_decision = "HOLD"
     min_dist = float('inf')
-    
-    # Predict closest prototype vector by Euclidean distance
     for dec, mean_vec in weights.items():
-        dist = sum((f - m) ** 2 for f, m in zip(features, mean_vec))
+        # Check matching length just in case
+        if len(mean_vec) < 5:
+            continue
+        dist = sum((f - m) ** 2 for f, m in zip(features, mean_vec[:5]))
         if dist < min_dist:
             min_dist = dist
             best_decision = dec
-            
     return best_decision
 
 def main():
@@ -35,94 +27,100 @@ def main():
         sma_5 = 0.158
         sma_20 = 0.158
         price_change_ratio = 0.0
-        
-        # Parse arguments from Node.js child_process
+        members_data = []
+
+        # 1. Parse standard market features
         if len(sys.argv) > 1:
-            try:
-                current_price = float(sys.argv[1])
-            except ValueError:
-                pass
+            current_price = float(sys.argv[1])
         if len(sys.argv) > 2:
-            try:
-                rsi_value = float(sys.argv[2])
-            except ValueError:
-                pass
+            rsi_value = float(sys.argv[2])
         if len(sys.argv) > 3:
-            try:
-                sma_5 = float(sys.argv[3])
-            except ValueError:
-                pass
+            sma_5 = float(sys.argv[3])
         if len(sys.argv) > 4:
-            try:
-                sma_20 = float(sys.argv[4])
-            except ValueError:
-                pass
+            sma_20 = float(sys.argv[4])
         if len(sys.argv) > 5:
+            price_change_ratio = float(sys.argv[5])
+
+        # 2. Parse Base64 encoded members array
+        if len(sys.argv) > 6:
             try:
-                price_change_ratio = float(sys.argv[5])
-            except ValueError:
-                pass
+                b64_str = sys.argv[6]
+                decoded_bytes = base64.b64decode(b64_str)
+                members_data = json.loads(decoded_bytes.decode('utf-8'))
+            except Exception as b64_err:
+                # Fallback to empty if decoding fails
+                members_data = []
 
         features = [current_price, price_change_ratio, rsi_value, sma_5, sma_20]
-        decision = None
-        model_type = "Fallback Heuristics"
+        votes_result = []
 
-        # 1. Try loading Scikit-learn Random Forest model
-        if os.path.exists(MODEL_PKL_PATH):
-            try:
-                decision = predict_by_sklearn(features)
-                model_type = "RandomForest Model"
-            except Exception as e:
-                # Fallback on load error
-                pass
+        if members_data:
+            # Run inference for each member in the active council
+            for member in members_data:
+                member_id = member.get('member_id')
+                name = member.get('name')
+                weights_str = member.get('weights_json', '{}')
                 
-        # 2. Try loading Lightweight Distance-based Prototype model
-        if not decision and os.path.exists(MODEL_JSON_PATH):
-            try:
-                decision = predict_by_lightweight(features)
-                model_type = "Lightweight Model"
-            except Exception as e:
-                pass
+                try:
+                    weights = json.loads(weights_str)
+                except Exception:
+                    weights = {}
+                
+                # Predict closest class (Centroid distance fallback heuristics)
+                decision = "HOLD"
+                if weights:
+                    decision = predict_for_member(features, weights)
+                else:
+                    # Heuristic fallback if weights missing
+                    if rsi_value < 35:
+                        decision = "BUY"
+                    elif rsi_value > 65:
+                        decision = "SELL"
 
-        # 3. Fallback to heuristic rules if no models are available or load failed
-        if not decision:
-            decision = "HOLD"
-            if rsi_value < 30:
-                decision = "BUY"
-            elif rsi_value > 70:
-                decision = "SELL"
-
-        reason = f"AiS [{model_type}] 분석 완료. 현재가 {current_price} USDT, RSI {rsi_value:.1f}, SMA_5/20이 분석에 사용되었습니다."
-        if decision == "BUY":
-            reason += " 시장 저평가 매수 신호가 감지되어 매수(BUY)를 제안합니다."
-        elif decision == "SELL":
-            reason += " 시장 고평가 매도 신호가 감지되어 매도(SELL)를 제안합니다."
+                # Construct Korean reason reflecting individual member profile
+                reason = f"[{name}] 분석: 현재가 {current_price} USDT, RSI {rsi_value:.1f} 기준으로 "
+                if decision == "BUY":
+                    reason += "시장 저평가 매수 진입 투표."
+                elif decision == "SELL":
+                    reason += "시장 고평가 분할 매도 투표."
+                else:
+                    reason += "뚜렷한 포지션 시그널 부재로 관망 투표."
+                
+                votes_result.append({
+                    "member_id": member_id,
+                    "name": name,
+                    "decision": decision,
+                    "reason": reason
+                })
         else:
-            reason += " 뚜렷한 추세 전환 지표가 확인되지 않아 관망(HOLD)을 권장합니다."
+            # Fallback mock member vote if no database members provided
+            mock_members = [
+                {"id": "mock_01", "name": "General Heuristics (RSI)"}
+            ]
+            for m in mock_members:
+                decision = "HOLD"
+                if rsi_value < 35:
+                    decision = "BUY"
+                elif rsi_value > 65:
+                    decision = "SELL"
+                votes_result.append({
+                    "member_id": m["id"],
+                    "name": m["name"],
+                    "decision": decision,
+                    "reason": f"[{m['name']}] Heuristic Fallback 분석 완료."
+                })
 
-        proposed_price = current_price
-        amount_ratio = 0.1
-        proposed_lower = round(current_price * 0.90, 4)
-        proposed_upper = round(current_price * 1.15, 4)
-
-        result = {
-            "decision": decision,
-            "reason": reason,
-            "price": proposed_price,
-            "amount_ratio": amount_ratio,
-            "proposed_lower": proposed_lower,
-            "proposed_upper": proposed_upper
+        output = {
+            "success": True,
+            "votes": votes_result
         }
-        
-        print(json.dumps(result))
+        print(json.dumps(output))
+
     except Exception as e:
         err_res = {
-            "decision": "HOLD",
-            "reason": f"AiS 로컬 추론 실행 중 예외 발생: {str(e)}",
-            "price": 0.158,
-            "amount_ratio": 0.1,
-            "proposed_lower": 0.15,
-            "proposed_upper": 0.30
+            "success": False,
+            "error": str(e),
+            "votes": []
         }
         print(json.dumps(err_res))
 

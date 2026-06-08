@@ -203,6 +203,25 @@ function initializeDatabase() {
         }
       });
 
+      db.run("ALTER TABLE ais_council_members ADD COLUMN faction TEXT DEFAULT 'MUTANT_ROOKIE'", (err) => {
+        if (err) {
+          if (!err.message.includes("duplicate column name")) {
+            console.error("❌ ais_council_members 테이블 faction 컬럼 마이그레이션 실패:", err.message);
+          }
+        } else {
+          db.run("UPDATE ais_council_members SET faction = 'TREND_FOLLOWER' WHERE member_id IN ('ais_member_01', 'ais_member_04', 'ais_member_08', 'ais_member_10')");
+          db.run("UPDATE ais_council_members SET faction = 'VALUE_SEEKER' WHERE member_id IN ('ais_member_02', 'ais_member_07')");
+          db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_03', 'ais_member_11')");
+          db.run("UPDATE ais_council_members SET faction = 'MUTANT_ROOKIE' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
+        }
+      });
+
+      db.run("ALTER TABLE ais_council_members ADD COLUMN generation INTEGER DEFAULT 1", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ ais_council_members 테이블 generation 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
       // users table schema migration: remove tier, trial_ends_at columns if exists
       db.serialize(() => {
         db.all("PRAGMA table_info(users)", (pragmaErr, columns) => {
@@ -321,6 +340,8 @@ function initializeDatabase() {
           correct_count INTEGER DEFAULT 0,
           total_count INTEGER DEFAULT 0,
           status TEXT NOT NULL CHECK (status IN ('ACTIVE', 'CANDIDATE', 'RETIRED')) DEFAULT 'ACTIVE',
+          faction TEXT DEFAULT 'MUTANT_ROOKIE',
+          generation INTEGER DEFAULT 1,
           joined_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `, (err) => {
@@ -330,6 +351,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_01',
             name: 'Trend Follower (SMA)',
+            faction: 'TREND_FOLLOWER',
             weights: {
               BUY: [0.155, 0.2, 50.0, 0.156, 0.154],
               SELL: [0.155, -0.2, 50.0, 0.154, 0.156],
@@ -339,6 +361,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_02',
             name: 'Value Seeker (RSI)',
+            faction: 'VALUE_SEEKER',
             weights: {
               BUY: [0.150, 0.0, 28.0, 0.150, 0.150],
               SELL: [0.165, 0.0, 72.0, 0.165, 0.165],
@@ -348,6 +371,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_03',
             name: 'Conservative Watcher (Safety)',
+            faction: 'CONSERVATIVE_WATCHER',
             weights: {
               BUY: [0.140, -1.5, 20.0, 0.138, 0.142],
               SELL: [0.180, 1.5, 80.0, 0.182, 0.178],
@@ -357,6 +381,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_04',
             name: 'Short Specialist (Bear)',
+            faction: 'TREND_FOLLOWER',
             weights: {
               BUY: [0.145, 0.0, 25.0, 0.145, 0.145],
               SELL: [0.155, -0.1, 60.0, 0.154, 0.156],
@@ -366,6 +391,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_05',
             name: 'Mutant Alpha (Genetics)',
+            faction: 'MUTANT_ROOKIE',
             weights: {
               BUY: [0.152, -0.8, 33.0, 0.150, 0.153],
               SELL: [0.162, 0.8, 67.0, 0.164, 0.161],
@@ -375,6 +401,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_06',
             name: 'Mutant Beta (Aggressive)',
+            faction: 'MUTANT_ROOKIE',
             weights: {
               BUY: [0.157, 1.2, 40.0, 0.158, 0.155],
               SELL: [0.160, 1.2, 75.0, 0.162, 0.159],
@@ -384,6 +411,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_07',
             name: 'RSI Contrarian (Reversal)',
+            faction: 'VALUE_SEEKER',
             weights: {
               BUY: [0.160, 0.5, 22.0, 0.158, 0.159],
               SELL: [0.148, -0.5, 78.0, 0.150, 0.149],
@@ -393,6 +421,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_08',
             name: 'SMA Slow Cross (Long-term)',
+            faction: 'TREND_FOLLOWER',
             weights: {
               BUY: [0.158, 0.1, 52.0, 0.162, 0.154],
               SELL: [0.152, -0.1, 48.0, 0.148, 0.156],
@@ -402,6 +431,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_09',
             name: 'Mutant Gamma (Volatility)',
+            faction: 'MUTANT_ROOKIE',
             weights: {
               BUY: [0.149, -1.0, 31.0, 0.147, 0.151],
               SELL: [0.166, 1.0, 69.0, 0.168, 0.164],
@@ -411,6 +441,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_10',
             name: 'Price Momentum Seeker',
+            faction: 'TREND_FOLLOWER',
             weights: {
               BUY: [0.159, 1.5, 55.0, 0.160, 0.157],
               SELL: [0.151, -1.5, 45.0, 0.150, 0.153],
@@ -420,6 +451,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_11',
             name: 'Volatility Shield (Safety)',
+            faction: 'CONSERVATIVE_WATCHER',
             weights: {
               BUY: [0.135, -2.0, 18.0, 0.133, 0.137],
               SELL: [0.185, 2.0, 82.0, 0.187, 0.183],
@@ -430,9 +462,9 @@ function initializeDatabase() {
         
         initialMembers.forEach(m => {
           db.run(`
-            INSERT OR IGNORE INTO ais_council_members (member_id, name, weights_json, voting_power, status)
-            VALUES (?, ?, ?, 1.0, 'ACTIVE')
-          `, [m.id, m.name, JSON.stringify(m.weights)]);
+            INSERT OR IGNORE INTO ais_council_members (member_id, name, weights_json, voting_power, status, faction, generation)
+            VALUES (?, ?, ?, 1.0, 'ACTIVE', ?, 1)
+          `, [m.id, m.name, JSON.stringify(m.weights), m.faction]);
         });
       });
 
