@@ -593,7 +593,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                         <span>🎙️</span>
                         <span>500인 후보군의 특징 분석</span>
                       </div>
-                      <div style={{ wordBreak: 'keep-all' }}>{councilStats.briefing}</div>
+                      <div style={{ wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>{councilStats.briefing}</div>
                     </div>
                   )}
 

@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { queries } = require('../database');
+const {
+  extractCompleteGeminiText,
+  makeCouncilBriefingGenerationConfig
+} = require('../councilBriefing');
 
 // SUT price memory cache (default market price for simulation)
 let cachedPrices = {
@@ -303,7 +307,7 @@ async function generateCouncilOpinionBriefing(factionStats, activeMembers, gener
 
     const promptText = `
 You are an expert system analyst observing the "AiS Virtual Council" (an AI assembly of 500 neural net trading bots evolving via genetic algorithms).
-Based on the current faction distribution, generation composition, and top leaders of the 500-member AI candidate pool, analyze the overall genetic and philosophical characteristics of these 500 AI candidates. Write a comprehensive, long-form briefing in Korean. (Output example: "이번 세대 교체를 통해 2세대 AI가 N명으로 새롭게 등장했으며... 특히 기술반등파가 다수를 차지하게 된 배경에는... 반면 추세추종파가 소수로 전락한 이유는...")
+Based on the current faction distribution, generation composition, and top leaders of the 500-member AI candidate pool, analyze the overall genetic and philosophical characteristics of these 500 AI candidates. Write a concise executive briefing in Korean within 500 Korean characters. (Output example: "이번 세대 교체를 통해 2세대 AI가 N명으로 새롭게 등장했으며... 특히 기술반등파가 다수를 차지하게 된 배경에는... 반면 추세추종파가 소수로 전락한 이유는...")
 
 Input data:
 - Faction Counts (500 candidates): ${factionInfo}
@@ -320,7 +324,7 @@ Rules:
 3. Deeply analyze the REASONS behind the current distribution. Why are the dominant factions succeeding and multiplying in this generation? Why did the minority factions fail to secure seats or dwindle? Create a logical evolutionary narrative explaining these market-survival dynamics in detail.
 4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what kind of market crash or bull run birthed the Value Seekers or Mutant Rookies).
 5. Do NOT talk about real-time market trends or recent trades. Focus purely on their genetic character, dominant factions, and historical evolution traits.
-6. The content can be LONG and detailed (e.g., 4 to 6 paragraphs). Feel free to be descriptive and analytical. Return ONLY the raw text response in Korean without any formatting or markdown.
+6. Keep the report within 500 Korean characters. Return ONLY the raw text response in Korean without any formatting or markdown.
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
@@ -330,16 +334,10 @@ Rules:
       try {
         const response = await axios.post(url, {
           contents: [{ parts: [{ text: promptText }] }],
-          generationConfig: {
-            maxOutputTokens: 2000,
-            temperature: 0.7
-          }
+          generationConfig: makeCouncilBriefingGenerationConfig()
         }, { timeout: 300000 }); // 5 minutes
 
-        if (response.data && response.data.candidates && response.data.candidates[0].content) {
-          return response.data.candidates[0].content.parts[0].text.trim();
-        }
-        break; // If response is ok but no text, break to fallback
+        return extractCompleteGeminiText(response.data);
       } catch (err) {
         retries--;
         console.error(`❌ Gemini Council Opinion Briefing Error. Retries left: ${retries}`, err.message);
