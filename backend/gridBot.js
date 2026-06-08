@@ -4,6 +4,9 @@ const { createGateIoOrder, getGateIoBalances } = require('./gateioHelper');
 const { decryptText } = require('./secureCredentials');
 const { buildTradePlan } = require('./autoTradeMath');
 const { exec } = require('child_process');
+const os = require('os');
+
+const pythonCmd = os.platform() === 'win32' ? 'py' : 'python';
 
 if (!global.priceHistory) {
   global.priceHistory = [];
@@ -49,7 +52,7 @@ function getAiSTradingDecision(currentPrice, rsi, sma5, sma20, priceChangeRatio 
   return new Promise((resolve) => {
     const path = require('path');
     const scriptPath = path.join(__dirname, 'ais_inference.py');
-    const cmd = `python "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20} ${priceChangeRatio}`;
+    const cmd = `${pythonCmd} "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20} ${priceChangeRatio}`;
     
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
@@ -634,7 +637,7 @@ async function runAiGridBot() {
         console.log(`[🤖 AI GRID BOT] 자동 재학습 조건 만족 (데이터: ${totalUnfilled}건). 백그라운드 학습 스크립트 실행 중...`);
         const path = require('path');
         const trainScriptPath = path.join(__dirname, 'train_ais.py');
-        exec(`python "${trainScriptPath}"`, (trainErr, stdout, stderr) => {
+        exec(`${pythonCmd} "${trainScriptPath}"`, (trainErr, stdout, stderr) => {
           if (trainErr) {
             console.error("[-] AiS Auto-Training failed:", trainErr.message);
           } else {
