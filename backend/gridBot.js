@@ -45,11 +45,11 @@ function calculateRSI(prices, period = 14) {
   return parseFloat(rsi.toFixed(2));
 }
 
-function getAiSTradingDecision(currentPrice, rsi, sma5, sma20) {
+function getAiSTradingDecision(currentPrice, rsi, sma5, sma20, priceChangeRatio = 0.0) {
   return new Promise((resolve) => {
     const path = require('path');
     const scriptPath = path.join(__dirname, 'ais_inference.py');
-    const cmd = `python "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20}`;
+    const cmd = `python "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20} ${priceChangeRatio}`;
     
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
@@ -109,14 +109,22 @@ Based on the real-time SUT price trend, generate a global trading strategy for a
 [MARKET DATA]
 - Recent SUT Price Trend (Last 10 updates, older to newer): ${JSON.stringify(marketData.priceHistory)} USDT
 - Current SUT Price: ${marketData.currentPrice} USDT
+- Current RSI (14 Ticks): ${marketData.rsi14}
+- Simple Moving Average 5 (SMA_5): ${marketData.sma5} USDT
+- Simple Moving Average 20 (SMA_20): ${marketData.sma20} USDT
+- Real-time Price Change Ratio (t-1 to t): ${marketData.priceChangeRatio.toFixed(4)}%
+- 24-Hour Price Stats:
+  - 24h Lowest Price (Min): ${marketData.stats24h.minPrice} USDT
+  - 24h Highest Price (Max): ${marketData.stats24h.maxPrice} USDT
+  - 24h Average Price (Avg): ${marketData.stats24h.avgPrice} USDT
 
 [DECISION RULE]
 1. decision: "BUY", "SELL", or "HOLD".
-   - Strategically favor "HOLD" to prevent over-trading and avoid unnecessary fee/gas consumption. Only trigger trades under clear high-probability conditions.
-   - **Avoid Catching Falling Knives (BUY rule)**: If the SUT price is falling rapidly or shows consecutive down-trends, do NOT issue a "BUY" signal prematurely. Recommend "HOLD" instead to wait for price stabilization and bottom formation.
-   - **Ride the Trend (SELL rule)**: If SUT price is rising sharply or shows strong upward momentum, do NOT rush to take profit ("SELL") too early. Choose "HOLD" to ride the trend and maximize profits until momentum shifts or resistance is met.
-   - Trigger "BUY" only when a solid rebound or bottom support is confirmed.
-   - Trigger "SELL" only when an overbought state, momentum exhaustion, or downward reversal from a peak is detected.
+   - Favor "HOLD" to prevent over-trading, but do NOT hesitate to suggest "BUY" or "SELL" when indicators clearly display extreme under/overvaluation.
+   - **BUY rule (Downtrend/Dip)**: Under extremely low RSI (<35) or clear bottom support/consolidation near 24h Min, trigger "BUY" even during consecutive downtrends to capture value. Avoid buying only when there is high-velocity panic-selling without any support.
+   - **SELL rule (Uptrend/Peak)**: Under extremely high RSI (>65) or resistance near 24h Max, trigger "SELL" to secure profits. Do not delay taking profit excessively if momentum shifts or resistance is met.
+   - Trigger "BUY" when solid bottom support or oversold indicator (RSI < 35) is confirmed.
+   - Trigger "SELL" when overbought state (RSI > 65) or peak resistance is confirmed.
 2. reason: Detail your market analysis and reason in Korean. Explain clearly why you decided to BUY, SELL, or HOLD according to the rules above.
 3. price: Target execution price in USDT. For BUY, recommend a price <= current price (capitalizing on dips). For SELL, recommend a price >= current price.
 4. amount_ratio: A number between 0.1 and 0.5 representing the recommended proportion of assets to trade (e.g., 0.1 means 10%).
@@ -384,18 +392,78 @@ async function runAiGridBot() {
       // Bypassed yield error logging
     }
 
+    let stats24h = { minPrice: currentSutPrice, maxPrice: currentSutPrice, avgPrice: currentSutPrice };
+    try {
+      const past24hData = await queries.all(`
+        SELECT current_price FROM ais_training_data 
+        WHERE timestamp >= datetime('now', '-24 hours') 
+        ORDER BY timestamp ASC
+      `);
+      if (past24hData && past24hData.length > 0) {
+        const prices = past24hData.map(d => d.current_price);
+        stats24h.minPrice = Math.min(...prices);
+        stats24h.maxPrice = Math.max(...prices);
+        stats24h.avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+      }
+    } catch (dbErr) {
+      console.error("[-] 24h stats query error in gridBot:", dbErr.message);
+    }
+
     const marketData = {
       priceHistory: global.priceHistory,
-      currentPrice: currentSutPrice
+      currentPrice: currentSutPrice,
+      rsi14,
+      sma5,
+      sma20,
+      priceChangeRatio,
+      stats24h
     };
 
     let aiResult;
     if (aiEngineMode === 'AIS_ONLY') {
       console.log(`[🤖 AI GRID BOT] AiS 독자 로컬 모델 시황 분석 요청 중...`);
-      aiResult = await getAiSTradingDecision(currentSutPrice, rsi14, sma5, sma20);
+      aiResult = await getAiSTradingDecision(currentSutPrice, rsi14, sma5, sma20, priceChangeRatio);
       if (!aiResult.success) {
         console.warn(`[🤖 AI GRID BOT] AiS 추론 실패로 Gemini 모델로 임시 우회합니다. Error: ${aiResult.error}`);
         aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData);
+      }
+    } else if (aiEngineMode === 'HYBRID_COOP') {
+      console.log(`[🤖 AI GRID BOT] Gemini + AiS 공동 합의 매매 분석 진행 중...`);
+      try {
+        const [geminiRes, aisRes] = await Promise.all([
+          getAiTradingDecision(globalApiKey, globalModel, marketData),
+          getAiSTradingDecision(currentSutPrice, rsi14, sma5, sma20, priceChangeRatio)
+        ]);
+
+        if (geminiRes.success && aisRes.success) {
+          if (geminiRes.decision === aisRes.decision) {
+            aiResult = {
+              success: true,
+              decision: geminiRes.decision,
+              reason: `[Gemini+AiS 공동 합의 일치 - ${geminiRes.decision}] 양 모델의 의사결정이 일치하여 거래를 속행합니다.\n- Gemini 근거: ${geminiRes.reason}\n- AiS 근거: ${aisRes.reason}`,
+              price: geminiRes.price,
+              amount_ratio: geminiRes.amount_ratio,
+              proposed_lower: geminiRes.proposed_lower,
+              proposed_upper: geminiRes.proposed_upper
+            };
+          } else {
+            aiResult = {
+              success: true,
+              decision: 'HOLD',
+              reason: `[Gemini+AiS 공동 합의] 양 모델의 의견이 달라 자산 보호를 위해 관망(HOLD) 조치되었습니다.\n- Gemini: [${geminiRes.decision}] ${geminiRes.reason}\n- AiS: [${aisRes.decision}] ${aisRes.reason}`,
+              price: currentSutPrice,
+              amount_ratio: 0.1,
+              proposed_lower: proposedLower,
+              proposed_upper: proposedUpper
+            };
+          }
+        } else {
+          console.warn(`[-] 공동 매매 중 하나가 실패하였습니다. Gemini 결과를 우선으로 적용합니다. (Gemini: ${geminiRes.success}, AiS: ${aisRes.success})`);
+          aiResult = geminiRes.success ? geminiRes : { success: false, error: '공동 분석 실패' };
+        }
+      } catch (coopErr) {
+        console.error("[-] 공동 합의 분석 중 심각한 오류 발생:", coopErr.message);
+        aiResult = { success: false, error: coopErr.message };
       }
     } else {
       console.log(`[🤖 AI GRID BOT] Gemini (${globalModel}) 글로벌 시황 분석 요청 중...`);
@@ -539,6 +607,43 @@ async function runAiGridBot() {
       await executeServerAutoTrades(logInsert.lastID, aiResult);
     } catch (dbLogErr) {
       console.error("[🤖 AI GRID BOT] 전략 로그 저장 실패:", dbLogErr.message);
+    }
+
+    // 3. AiS 모델 백그라운드 자동 학습 트리거 검사
+    try {
+      const statsRow = await queries.get("SELECT COUNT(*) as total FROM ais_training_data WHERE next_price_5m > 0.0");
+      const totalUnfilled = statsRow ? statsRow.total : 0;
+      
+      const lastTrainedRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'ais_last_trained_at'");
+      const lastTrainedStr = lastTrainedRow ? lastTrainedRow.value : '';
+      
+      let shouldTrain = false;
+      if (totalUnfilled >= 10) {
+        if (!lastTrainedStr) {
+          shouldTrain = true;
+        } else {
+          const lastTrainedDate = new Date(lastTrainedStr);
+          const diffHours = (new Date() - lastTrainedDate) / (1000 * 60 * 60);
+          if (diffHours >= 24) {
+            shouldTrain = true;
+          }
+        }
+      }
+
+      if (shouldTrain) {
+        console.log(`[🤖 AI GRID BOT] 자동 재학습 조건 만족 (데이터: ${totalUnfilled}건). 백그라운드 학습 스크립트 실행 중...`);
+        const path = require('path');
+        const trainScriptPath = path.join(__dirname, 'train_ais.py');
+        exec(`python "${trainScriptPath}"`, (trainErr, stdout, stderr) => {
+          if (trainErr) {
+            console.error("[-] AiS Auto-Training failed:", trainErr.message);
+          } else {
+            console.log("[+] AiS Auto-Training finished:", stdout.trim());
+          }
+        });
+      }
+    } catch (trainTriggerErr) {
+      console.error("[-] Failed to check AiS auto-training trigger:", trainTriggerErr.message);
     }
 
   } catch (err) {

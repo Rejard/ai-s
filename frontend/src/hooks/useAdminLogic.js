@@ -20,6 +20,13 @@ export function useAdminLogic(managerEmail) {
   const [vaultSutBalance, setVaultSutBalance] = useState(0);
   const [stats, setStats] = useState(null);
   const [aiLogs, setAiLogs] = useState([]);
+  
+  // AiS Shadow 및 엔진 스위칭 관련 추가 상태
+  const [globalAiEngine, setGlobalAiEngine] = useState('GEMINI_ONLY');
+  const [trainingDataCount, setTrainingDataCount] = useState(0);
+  const [aisLastTrainedAt, setAisLastTrainedAt] = useState('');
+  const [aisModelAccuracy, setAisModelAccuracy] = useState('0.00');
+  const [savingAiEngine, setSavingAiEngine] = useState(false);
 
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
   const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
@@ -110,6 +117,52 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const fetchAiEngineConfig = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE}/admin/ai-engine`, getAdminHeaders());
+      if (res.data.success) {
+        setGlobalAiEngine(res.data.engineMode || 'GEMINI_ONLY');
+      }
+    } catch (err) {
+      console.error('Failed to load global AI engine mode:', err.message);
+    }
+  };
+
+  const fetchTrainingStats = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE}/admin/training-stats`, getAdminHeaders());
+      if (res.data.success) {
+        setTrainingDataCount(res.data.count || 0);
+        setAisLastTrainedAt(res.data.lastTrainedAt || '');
+        setAisModelAccuracy(res.data.modelAccuracy || '0.00');
+      }
+    } catch (err) {
+      console.error('Failed to load training dataset count:', err.message);
+    }
+  };
+
+  const handleSaveAiEngine = async (engineMode) => {
+    if (!isAdmin) return;
+    setSavingAiEngine(true);
+    try {
+      const res = await axios.post(`${API_BASE}/admin/save-ai-engine`, {
+        engineMode
+      }, getAdminHeaders());
+      if (res.data.success) {
+        setGlobalAiEngine(engineMode);
+        alert(res.data.message);
+        fetchTrainingStats();
+      }
+    } catch (err) {
+      console.error('Failed to save global AI engine:', err.message);
+      alert('AI 엔진 설정 저장 실패: ' + err.message);
+    } finally {
+      setSavingAiEngine(false);
+    }
+  };
+
 
   const handleSaveAiConfig = async (e) => {
     if (e) e.preventDefault();
@@ -146,12 +199,15 @@ export function useAdminLogic(managerEmail) {
     fetchVaultSutBalance();
     fetchStats();
     fetchAiLogs();
+    fetchAiEngineConfig();
+    fetchTrainingStats();
 
     const interval = setInterval(() => {
       fetchManagers();
       fetchVaultSutBalance();
       fetchStats();
       fetchAiLogs();
+      fetchTrainingStats();
     }, 5000);
     return () => clearInterval(interval);
   }, [managerEmail]);
@@ -234,7 +290,14 @@ export function useAdminLogic(managerEmail) {
     handleSaveAiConfig,
     vaultSutBalance,
     stats,
-    aiLogs
+    aiLogs,
+    globalAiEngine,
+    setGlobalAiEngine,
+    trainingDataCount,
+    aisLastTrainedAt,
+    aisModelAccuracy,
+    savingAiEngine,
+    handleSaveAiEngine
   };
 
 }

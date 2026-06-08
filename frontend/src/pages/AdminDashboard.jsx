@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../App';
 import {
   ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus,
   ArrowLeft, BarChart3, Loader2, Home, Settings, Receipt
@@ -31,7 +32,13 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     handleSaveAiConfig,
     vaultSutBalance,
     stats,
-    aiLogs
+    aiLogs,
+    globalAiEngine,
+    trainingDataCount,
+    aisLastTrainedAt,
+    aisModelAccuracy,
+    savingAiEngine,
+    handleSaveAiEngine
   } = useAdminLogic(managerEmail);
 
 
@@ -194,8 +201,158 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               </form>
             </div>
 
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+              <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🤖</span> 글로벌 AI 엔진 제어
+              </h4>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                모든 매니저 오토 봇의 공동 판단 두뇌가 되는 AI 모델의 설정을 관리합니다.
+              </p>
+
+              <form onSubmit={handleSaveAiConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '12px' }}>사용할 AI 모델</label>
+                  <select
+                    className="form-select"
+                    value={globalAiModel}
+                    onChange={(e) => setGlobalAiModel(e.target.value)}
+                    style={{ padding: '14px', fontSize: '13px' }}
+                  >
+                    <option value="Gemini 2.0 Flash">Gemini 2.0 Flash (최신/초고속)</option>
+                    <option value="Gemini 1.5 Pro">Gemini 1.5 Pro (고성능 추론)</option>
+                    <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (예상 모델)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '12px' }}>Gemini API Key</label>
+                  <input
+                    type="password"
+                    value={globalGeminiApiKey}
+                    onChange={(e) => setGlobalGeminiApiKey(e.target.value)}
+                    placeholder="AI_..."
+                    className="form-input"
+                    style={{ padding: '14px', fontSize: '13px' }}
+                  />
+                  <div style={{ fontSize: '10px', color: 'var(--danger-color)', marginTop: '6px' }}>
+                    * 보안 유지를 위해 서버 DB에 영구 저장됩니다.
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '12px' }}>AI 분석 주기 (의미 인식 간격)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {['1', '3', '5', '10', '15', '30', '60'].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setGlobalAiInterval(mins)}
+                        style={{
+                          padding: '12px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          border: globalAiInterval === mins ? '1px solid #3B82F6' : '1px solid rgba(255,255,255,0.1)',
+                          background: globalAiInterval === mins ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.2)',
+                          color: globalAiInterval === mins ? '#60A5FA' : '#9CA3AF',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {mins}분
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={savingAiConfig}
+                  style={{ width: '100%', padding: '14px', fontSize: '14px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
+                >
+                  {savingAiConfig ? <Loader2 size={16} className="spin" /> : '💾 글로벌 AI 설정 저장'}
+                </button>
+              </form>
+            </div>
+
+            <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(139, 92, 246, 0.25)', marginTop: '20px' }}>
+              <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🧠</span> AiS 엔진 모드 및 학습 관리
+              </h4>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+                매매를 집행할 메인 AI 엔진 모드를 지정하고 백그라운드 학습용 데이터셋(SQLite 및 CSV) 상태를 모니터링합니다.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>작동 엔진 선택</label>
+                  <select
+                    value={globalAiEngine}
+                    onChange={(e) => handleSaveAiEngine(e.target.value)}
+                    disabled={savingAiEngine}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#FFF', outline: 'none' }}
+                  >
+                    <option value="GEMINI_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 단독 가동 모드</option>
+                    <option value="GEMINI_AIS_SHADOW" style={{ background: '#1A1825', color: '#FFF' }}>Gemini (매매) + AiS (Shadow 학습) [기본]</option>
+                    <option value="HYBRID_COOP" style={{ background: '#1A1825', color: '#FFF' }}>Gemini + AiS 공동 합의 매매 모드</option>
+                    <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 모델 매매 모드 (성능 테스트)</option>
+                  </select>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span><b>학습 데이터셋 누적 건수:</b></span>
+                    <span style={{ color: '#A78BFA', fontWeight: 'bold', fontSize: '12px' }}>{trainingDataCount.toLocaleString()} 건</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span><b>최근 자동 학습 완료 시각:</b></span>
+                    <span style={{ color: '#F59E0B', fontWeight: 'bold', fontSize: '11px' }}>{aisLastTrainedAt ? aisLastTrainedAt : '학습 전 (대기 중)'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span><b>AiS 모델 검증 정확도:</b></span>
+                    <span style={{ color: '#10B981', fontWeight: 'bold', fontSize: '11px' }}>{aisModelAccuracy}%</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px' }}>
+                    * 매 5분 틱마다 시장 지표(RSI_14, SMA_5/20) 및 사후 채점(next_price) 피드백이 실시간 자동 빌드되어 SQLite DB에 무제한 누적됩니다.
+                  </div>
+                </div>
+
+                <a
+                  href={`${API_BASE}/admin/export-training-csv?x-admin-email=lemaiiisk@gmail.com`}
+                  download="ais_training_dataset.csv"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '6px',
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                    color: '#FFF',
+                    textDecoration: 'none',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    border: 'none',
+                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)'
+                  }}
+                >
+                  📥 AI 학습용 CSV 데이터셋 다운로드
+                </a>
+              </div>
+            </div>
+
             {/* 🤖 AI 틱 결정 히스토리 내역 섹션 */}
-            <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
+            <div className="glass-card" style={{ padding: '16px', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ padding: '6px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.15)' }}>
@@ -336,87 +493,6 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                   </div>
                 );
               })()}
-            </div>
-
-          </div>
-        )}
-
-        {activeTab === 'settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-            <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
-              <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>🤖</span> 글로벌 AI 엔진 제어
-              </h4>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                모든 매니저 오토 봇의 공동 판단 두뇌가 되는 AI 모델의 설정을 관리합니다.
-              </p>
-
-              <form onSubmit={handleSaveAiConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label className="form-label" style={{ fontSize: '12px' }}>사용할 AI 모델</label>
-                  <select
-                    className="form-select"
-                    value={globalAiModel}
-                    onChange={(e) => setGlobalAiModel(e.target.value)}
-                    style={{ padding: '14px', fontSize: '13px' }}
-                  >
-                    <option value="Gemini 2.0 Flash">Gemini 2.0 Flash (최신/초고속)</option>
-                    <option value="Gemini 1.5 Pro">Gemini 1.5 Pro (고성능 추론)</option>
-                    <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (예상 모델)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '12px' }}>Gemini API Key</label>
-                  <input
-                    type="password"
-                    value={globalGeminiApiKey}
-                    onChange={(e) => setGlobalGeminiApiKey(e.target.value)}
-                    placeholder="AI_..."
-                    className="form-input"
-                    style={{ padding: '14px', fontSize: '13px' }}
-                  />
-                  <div style={{ fontSize: '10px', color: 'var(--danger-color)', marginTop: '6px' }}>
-                    * 보안 유지를 위해 서버 DB에 영구 저장됩니다.
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '12px' }}>AI 분석 주기 (의미 인식 간격)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                    {['1', '3', '5', '10', '15', '30', '60'].map((mins) => (
-                      <button
-                        key={mins}
-                        type="button"
-                        onClick={() => setGlobalAiInterval(mins)}
-                        style={{
-                          padding: '12px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          border: globalAiInterval === mins ? '1px solid #3B82F6' : '1px solid rgba(255,255,255,0.1)',
-                          background: globalAiInterval === mins ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.2)',
-                          color: globalAiInterval === mins ? '#60A5FA' : '#9CA3AF',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {mins}분
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={savingAiConfig}
-                  style={{ width: '100%', padding: '14px', fontSize: '14px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
-                >
-                  {savingAiConfig ? <Loader2 size={16} className="spin" /> : '💾 글로벌 AI 설정 저장'}
-                </button>
-              </form>
             </div>
 
           </div>

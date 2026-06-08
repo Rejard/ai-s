@@ -229,4 +229,110 @@ router.get('/ai-config', async (req, res) => {
   }
 });
 
+/**
+ * @route GET /api/admin/ai-engine
+ * @desc Get global AI engine switching mode
+ */
+router.get('/ai-engine', async (req, res) => {
+  try {
+    const row = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
+    const engineMode = row ? row.value : 'GEMINI_ONLY';
+    res.json({ success: true, engineMode });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * @route POST /api/admin/save-ai-engine
+ * @desc Save global AI engine switching mode
+ */
+router.post('/save-ai-engine', async (req, res) => {
+  const { engineMode } = req.body;
+  const validModes = ['GEMINI_ONLY', 'GEMINI_AIS_SHADOW', 'AIS_ONLY', 'HYBRID_COOP'];
+  if (!engineMode || !validModes.includes(engineMode)) {
+    return res.status(400).json({ success: false, message: '올바르지 않은 AI 구동 모드 선택입니다.' });
+  }
+  try {
+    await queries.run(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('global_ai_engine', ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `, [engineMode]);
+    res.json({ success: true, message: `🎉 글로벌 AI 작동 엔진이 성공적으로 [${engineMode}] 모드로 저장되었습니다.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * @route GET /api/admin/training-stats
+ * @desc Retrieve total count of records in ais_training_data
+ */
+router.get('/training-stats', async (req, res) => {
+  try {
+    const row = await queries.get("SELECT COUNT(*) as total FROM ais_training_data");
+    const count = row ? row.total : 0;
+
+    const settings = await queries.all(`
+      SELECT key, value FROM platform_settings 
+      WHERE key IN ('ais_last_trained_at', 'ais_model_accuracy')
+    `);
+
+    let lastTrainedAt = '';
+    let modelAccuracy = '0.00';
+
+    settings.forEach(s => {
+      if (s.key === 'ais_last_trained_at') lastTrainedAt = s.value;
+      if (s.key === 'ais_model_accuracy') modelAccuracy = s.value;
+    });
+
+    res.json({ 
+      success: true, 
+      count,
+      lastTrainedAt,
+      modelAccuracy
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * @route GET /api/admin/export-training-csv
+ * @desc Export SQLite ais_training_data to fully compliant RFC 4180 CSV file
+ */
+router.get('/export-training-csv', async (req, res) => {
+  try {
+    const rows = await queries.all(`
+      SELECT timestamp, current_price, price_change_ratio, rsi_14, sma_5, sma_20,
+             gemini_decision, gemini_proposed_price, gemini_amount_ratio, gemini_reason,
+             next_price_5m, realized_price_change, is_correct_decision
+      FROM ais_training_data
+      ORDER BY id ASC
+    `);
+
+    // Build CSV compliant header and body rows
+    const header = 'timestamp,current_price,price_change_ratio,rsi_14,sma_5,sma_20,gemini_decision,gemini_proposed_price,gemini_amount_ratio,gemini_reason,next_price_5m,realized_price_change,is_correct_decision\n';
+    
+    let csvContent = header;
+    rows.forEach(r => {
+      // Escape reasons containing quotes or newlines to prevent parsing crashes in ML packages
+      const escapedReason = String(r.gemini_reason || '')
+        .replace(/"/g, '""')
+        .replace(/\r?\n|\r/g, ' ');
+      
+      const line = `"${r.timestamp}",${r.current_price},${r.price_change_ratio},${r.rsi_14},${r.sma_5},${r.sma_20},"${r.gemini_decision}",${r.gemini_proposed_price},${r.gemini_amount_ratio},"${escapedReason}",${r.next_price_5m},${r.realized_price_change},${r.is_correct_decision}\n`;
+      csvContent += line;
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="ais_training_dataset.csv"');
+    res.status(200).send(csvContent);
+  } catch (err) {
+    console.error("❌ CSV 다운로드 내보내기 에러:", err);
+    res.status(500).send(`CSV 내보내기 실패: ${err.message}`);
+  }
+});
+
 module.exports = router;

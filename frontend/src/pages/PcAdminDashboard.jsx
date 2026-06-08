@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../App';
 import {
   ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus,
   ArrowLeft, BarChart3, HelpCircle, Loader2, Receipt
@@ -30,7 +31,13 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     handleSaveAiConfig,
     vaultSutBalance,
     stats,
-    aiLogs
+    aiLogs,
+    globalAiEngine,
+    trainingDataCount,
+    aisLastTrainedAt,
+    aisModelAccuracy,
+    savingAiEngine,
+    handleSaveAiEngine
   } = useAdminLogic(managerEmail);
 
 
@@ -190,6 +197,75 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 {savingAiConfig ? <Loader2 size={16} className="spin" /> : '💾 글로벌 AI 설정 저장'}
               </button>
             </form>
+          </div>
+
+          <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
+            <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🧠</span> AiS 엔진 모드 및 학습 관리
+            </h4>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0', textAlign: 'left' }}>
+              매매를 집행할 메인 AI 엔진 모드를 지정하고 백그라운드 학습용 데이터셋(SQLite 및 CSV) 상태를 모니터링합니다.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>작동 엔진 선택</label>
+                <select
+                  value={globalAiEngine}
+                  onChange={(e) => handleSaveAiEngine(e.target.value)}
+                  disabled={savingAiEngine}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
+                >
+                  <option value="GEMINI_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 단독 가동 모드</option>
+                  <option value="GEMINI_AIS_SHADOW" style={{ background: '#1A1825', color: '#FFF' }}>Gemini (매매) + AiS (Shadow 학습) [기본]</option>
+                  <option value="HYBRID_COOP" style={{ background: '#1A1825', color: '#FFF' }}>Gemini + AiS 공동 합의 매매 모드</option>
+                  <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 모델 매매 모드 (성능 테스트)</option>
+                </select>
+              </div>
+
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><b>학습 데이터셋 누적 건수:</b></span>
+                  <span style={{ color: '#A78BFA', fontWeight: 'bold', fontSize: '12px' }}>{trainingDataCount.toLocaleString()} 건</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><b>최근 자동 학습 완료 시각:</b></span>
+                  <span style={{ color: '#F59E0B', fontWeight: 'bold', fontSize: '11px' }}>{aisLastTrainedAt ? aisLastTrainedAt : '학습 전 (대기 중)'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><b>AiS 모델 검증 정확도:</b></span>
+                  <span style={{ color: '#10B981', fontWeight: 'bold', fontSize: '11px' }}>{aisModelAccuracy}%</span>
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px' }}>
+                  * 매 5분 틱마다 시장 지표(RSI_14, SMA_5/20) 및 사후 채점(next_price) 피드백이 실시간 자동 빌드되어 SQLite DB에 무제한 누적됩니다.
+                </div>
+              </div>
+
+              <a
+                href={`${API_BASE}/admin/export-training-csv?x-admin-email=lemaiiisk@gmail.com`}
+                download="ais_training_dataset.csv"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '6px',
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                  color: '#FFF',
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)'
+                }}
+              >
+                📥 AI 학습용 CSV 데이터셋 다운로드
+              </a>
+            </div>
           </div>
 
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
