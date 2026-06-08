@@ -3,9 +3,77 @@ const { queries } = require('./database');
 const { createGateIoOrder, getGateIoBalances } = require('./gateioHelper');
 const { decryptText } = require('./secureCredentials');
 const { buildTradePlan } = require('./autoTradeMath');
+const { exec } = require('child_process');
 
 if (!global.priceHistory) {
   global.priceHistory = [];
+}
+
+function calculateSMA(prices, period) {
+  if (!prices || prices.length === 0) return 0;
+  const targetPrices = prices.slice(-period);
+  const sum = targetPrices.reduce((a, b) => a + b, 0);
+  return sum / targetPrices.length;
+}
+
+function calculateRSI(prices, period = 14) {
+  if (!prices || prices.length < 2) return 50.0;
+  
+  let gains = 0;
+  let losses = 0;
+  
+  const limit = Math.min(prices.length, period + 1);
+  for (let i = prices.length - limit + 1; i < prices.length; i++) {
+    const diff = prices[i] - prices[i - 1];
+    if (diff > 0) {
+      gains += diff;
+    } else {
+      losses -= diff;
+    }
+  }
+  
+  const activeTicks = limit - 1;
+  if (activeTicks === 0) return 50.0;
+  
+  const avgGain = gains / activeTicks;
+  const avgLoss = losses / activeTicks;
+  
+  if (avgLoss === 0) return avgGain > 0 ? 100.0 : 50.0;
+  
+  const rs = avgGain / avgLoss;
+  const rsi = 100 - (100 / (1 + rs));
+  return parseFloat(rsi.toFixed(2));
+}
+
+function getAiSTradingDecision(currentPrice, rsi, sma5, sma20) {
+  return new Promise((resolve) => {
+    const path = require('path');
+    const scriptPath = path.join(__dirname, 'ais_inference.py');
+    const cmd = `python "${scriptPath}" ${currentPrice} ${rsi} ${sma5} ${sma20}`;
+    
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error("[AiS Bridge Error]:", error.message);
+        return resolve({
+          success: false,
+          error: error.message
+        });
+      }
+      try {
+        const result = JSON.parse(stdout.trim());
+        resolve({
+          success: true,
+          ...result
+        });
+      } catch (parseErr) {
+        console.error("[AiS Bridge JSON Parse Error]:", parseErr.message, "Output was:", stdout);
+        resolve({
+          success: false,
+          error: parseErr.message
+        });
+      }
+    });
+  });
 }
 
 async function getSutCurrentPrice() {
@@ -244,16 +312,17 @@ async function runAiGridBot() {
   console.log(`[🤖 AI GRID BOT] 글로벌 시황 분석 스케줄러 실행 중... (시간: ${new Date().toLocaleString()})`);
 
   try {
-
-    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'ai_grid_status')");
+    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'ai_grid_status', 'global_ai_engine')");
     let globalModel = 'Gemini 1.5 Pro';
     let globalApiKey = '';
     let aiStatus = 'OFF';
+    let aiEngineMode = 'GEMINI_ONLY';
 
     dbSettings.forEach(s => {
       if (s.key === 'global_ai_model') globalModel = s.value;
       if (s.key === 'global_gemini_api_key') globalApiKey = s.value;
       if (s.key === 'ai_grid_status') aiStatus = s.value;
+      if (s.key === 'global_ai_engine') aiEngineMode = s.value;
     });
 
     const activeManagerRow = await queries.get("SELECT COUNT(*) AS total FROM manager_ai_settings WHERE ai_grid_status = 'ON'");
@@ -264,16 +333,32 @@ async function runAiGridBot() {
       return;
     }
 
-    if (!globalApiKey) {
+    if (!globalApiKey && aiEngineMode !== 'AIS_ONLY') {
       console.warn(`[🤖 AI GRID BOT] 경고: 어드민 페이지에 글로벌 Gemini API Key가 등록되지 않았습니다.`);
       return;
     }
 
+    // 2. 보조지표 계산을 위한 가격 히스토리 데이터 채우기 및 계산
+    if (global.priceHistory.length < 20) {
+      const pastLogs = await queries.all("SELECT proposed_price FROM manager_ai_logs ORDER BY created_at DESC LIMIT 30");
+      if (pastLogs && pastLogs.length > 0) {
+        const prices = pastLogs.map(l => l.proposed_price).reverse();
+        global.priceHistory = [...prices, ...global.priceHistory].slice(-30);
+      }
+    }
+
     const currentSutPrice = await getSutCurrentPrice();
     global.priceHistory.push(currentSutPrice);
-    if (global.priceHistory.length > 10) {
+    if (global.priceHistory.length > 30) {
       global.priceHistory.shift();
     }
+
+    const rsi14 = calculateRSI(global.priceHistory, 14);
+    const sma5 = calculateSMA(global.priceHistory, 5);
+    const sma20 = calculateSMA(global.priceHistory, 20);
+    const priceChangeRatio = global.priceHistory.length >= 2 
+      ? ((currentSutPrice - global.priceHistory[global.priceHistory.length - 2]) / global.priceHistory[global.priceHistory.length - 2]) * 100 
+      : 0.0;
 
     let yieldPercent = ((currentSutPrice - 0.15) / 0.15) * 100;
     try {
@@ -296,7 +381,7 @@ async function runAiGridBot() {
         )
       `);
     } catch (yieldErr) {
-
+      // Bypassed yield error logging
     }
 
     const marketData = {
@@ -304,8 +389,18 @@ async function runAiGridBot() {
       currentPrice: currentSutPrice
     };
 
-    console.log(`[🤖 AI GRID BOT] Gemini (${globalModel}) 글로벌 시황 분석 요청 중...`);
-    const aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData);
+    let aiResult;
+    if (aiEngineMode === 'AIS_ONLY') {
+      console.log(`[🤖 AI GRID BOT] AiS 독자 로컬 모델 시황 분석 요청 중...`);
+      aiResult = await getAiSTradingDecision(currentSutPrice, rsi14, sma5, sma20);
+      if (!aiResult.success) {
+        console.warn(`[🤖 AI GRID BOT] AiS 추론 실패로 Gemini 모델로 임시 우회합니다. Error: ${aiResult.error}`);
+        aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData);
+      }
+    } else {
+      console.log(`[🤖 AI GRID BOT] Gemini (${globalModel}) 글로벌 시황 분석 요청 중...`);
+      aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData);
+    }
 
     if (!aiResult.success) {
       console.error(`[🤖 AI GRID BOT] AI 의사결정 호출 실패:`, aiResult.error);
@@ -342,6 +437,104 @@ async function runAiGridBot() {
         )
       `);
       console.log(`[🤖 AI GRID BOT] 글로벌 전략 DB 저장 완료.`);
+
+      // 1. Shadow 학습 혹은 AiS 전담 상태일 때 SQLite ais_training_data 테이블에 무제한 적재
+      if (aiEngineMode === 'GEMINI_AIS_SHADOW' || aiEngineMode === 'AIS_ONLY') {
+        try {
+          const kstDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+          const timestampKstFormatted = kstDate.toISOString().replace('T', ' ').substring(0, 19);
+          
+          await queries.run(`
+            INSERT INTO ais_training_data (
+              timestamp, current_price, price_change_ratio, rsi_14, sma_5, sma_20,
+              gemini_decision, gemini_proposed_price, gemini_amount_ratio, gemini_reason
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, [
+            timestampKstFormatted,
+            currentSutPrice,
+            parseFloat(priceChangeRatio.toFixed(4)),
+            rsi14,
+            parseFloat(sma5.toFixed(4)),
+            parseFloat(sma20.toFixed(4)),
+            aiResult.decision,
+            parseFloat(aiResult.price) || 0,
+            parseFloat(aiResult.amount_ratio) || 0.1,
+            aiResult.reason || '판단 근거 없음'
+          ]);
+          console.log(`[🤖 AI GRID BOT] AiS 학습용 데이터셋 무제한 SQLite 적재 완료.`);
+        } catch (dbTrainErr) {
+          console.error("[🤖 AI GRID BOT] SQLite 학습 데이터셋 적재 오류:", dbTrainErr.message);
+        }
+      }
+
+      // 2. 사후 피드백 라벨링 스케줄링 (직전 틱 t-1의 next_price_5m 채워주기)
+      try {
+        const lastUnfilled = await queries.get(`
+          SELECT id, current_price, gemini_decision, gemini_proposed_price 
+          FROM ais_training_data 
+          WHERE next_price_5m = 0.0 
+          ORDER BY id DESC 
+          LIMIT 1
+        `);
+        if (lastUnfilled) {
+          const realizedPriceChange = ((currentSutPrice - lastUnfilled.current_price) / lastUnfilled.current_price) * 100;
+          
+          let isCorrect = 0;
+          const decision = lastUnfilled.gemini_decision;
+          if (decision === 'BUY') {
+            isCorrect = currentSutPrice > lastUnfilled.current_price ? 1 : 0;
+          } else if (decision === 'SELL') {
+            isCorrect = currentSutPrice < lastUnfilled.current_price ? 1 : 0;
+          } else if (decision === 'HOLD') {
+            isCorrect = Math.abs(realizedPriceChange) < 1.0 ? 1 : 0;
+          }
+          
+          await queries.run(`
+            UPDATE ais_training_data
+            SET next_price_5m = ?,
+                realized_price_change = ?,
+                is_correct_decision = ?
+            WHERE id = ?
+          `, [
+            currentSutPrice,
+            parseFloat(realizedPriceChange.toFixed(4)),
+            isCorrect,
+            lastUnfilled.id
+          ]);
+          console.log(`[🤖 AI GRID BOT] 직전 틱(ID: ${lastUnfilled.id}) 피드백 라벨링 업데이트 성공: next_price=${currentSutPrice}, 채점=${isCorrect}`);
+        }
+      } catch (feedbackErr) {
+        console.error("[🤖 AI GRID BOT] 피드백 라벨링 업데이트 실패:", feedbackErr.message);
+      }
+
+      // 💾 CSV 파일에 학습 데이터 저장 로직 추가 (호환성 보존)
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const dataDir = path.resolve(__dirname, 'data');
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        const csvPath = path.join(dataDir, 'ai_decisions.csv');
+        const fileExists = fs.existsSync(csvPath);
+        
+        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        const escapedReason = (aiResult.reason || '판단 근거 없음')
+          .replace(/"/g, '""')
+          .replace(/\r?\n|\r/g, ' ');
+        
+        const csvLine = `"${timestamp}",${currentSutPrice},"${aiResult.decision}",${parseFloat(aiResult.price) || 0},${parseFloat(aiResult.amount_ratio) || 0.1},${proposedLower},${proposedUpper},"${escapedReason}"\n`;
+        
+        if (!fileExists) {
+          const header = 'timestamp,current_price,decision,proposed_price,amount_ratio,proposed_lower,proposed_upper,reason\n';
+          fs.writeFileSync(csvPath, header + csvLine, 'utf8');
+        } else {
+          fs.appendFileSync(csvPath, csvLine, 'utf8');
+        }
+        console.log(`[🤖 AI GRID BOT] AI 학습 데이터 CSV 저장 완료. (${csvPath})`);
+      } catch (csvErr) {
+        console.error("[🤖 AI GRID BOT] CSV 학습 데이터 저장 실패:", csvErr.message);
+      }
 
       await executeServerAutoTrades(logInsert.lastID, aiResult);
     } catch (dbLogErr) {

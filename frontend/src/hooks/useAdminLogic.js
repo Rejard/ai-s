@@ -19,6 +19,7 @@ export function useAdminLogic(managerEmail) {
   // 새로 추가된 상태
   const [vaultSutBalance, setVaultSutBalance] = useState(0);
   const [stats, setStats] = useState(null);
+  const [aiLogs, setAiLogs] = useState([]);
 
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
   const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
@@ -93,6 +94,22 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const fetchAiLogs = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE}/manager/ai-logs?limit=50`, {
+        headers: {
+          'x-manager-email': ADMIN_EMAIL
+        }
+      });
+      if (res.data.success) {
+        setAiLogs(res.data.logs || []);
+      }
+    } catch (err) {
+      console.error('AI 로그 로드 실패 in Admin:', err.message);
+    }
+  };
+
 
   const handleSaveAiConfig = async (e) => {
     if (e) e.preventDefault();
@@ -128,11 +145,13 @@ export function useAdminLogic(managerEmail) {
     fetchAiConfig();
     fetchVaultSutBalance();
     fetchStats();
+    fetchAiLogs();
 
     const interval = setInterval(() => {
       fetchManagers();
       fetchVaultSutBalance();
       fetchStats();
+      fetchAiLogs();
     }, 5000);
     return () => clearInterval(interval);
   }, [managerEmail]);
@@ -214,7 +233,8 @@ export function useAdminLogic(managerEmail) {
     handleDeleteManager,
     handleSaveAiConfig,
     vaultSutBalance,
-    stats
+    stats,
+    aiLogs
   };
 
 }

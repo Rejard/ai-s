@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus,
-  ArrowLeft, BarChart3, Loader2, Home, Settings
+  ArrowLeft, BarChart3, Loader2, Home, Settings, Receipt
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
 
 function AdminDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('home');
+  const [historyFilter, setHistoryFilter] = useState('ALL');
 
   const {
     managers,
@@ -29,7 +30,8 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     handleDeleteManager,
     handleSaveAiConfig,
     vaultSutBalance,
-    stats
+    stats,
+    aiLogs
   } = useAdminLogic(managerEmail);
 
 
@@ -42,7 +44,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
           <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', marginBottom: '20px' }}>
             <ShieldAlert size={48} color="var(--danger-color)" />
           </div>
-          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>Access Permission Security Restriction</h2>
+          <h2 style={{ fontSize: '20px', color: '#FFF', fontWeight: '800', marginBottom: '12px' }}>접근 권한 보안 제한 (보안 통제 구역)</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '24px' }}>
             본 화면은 플랫폼 총괄 관리자(Admin)만 진입할 수 있는 통제구역입니다. 등록된 관리자 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.
           </p>
@@ -66,7 +68,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
             <ArrowLeft size={24} />
           </button>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#FFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            👑 어드민 센터
+            👑 최고 관리자(Admin) 제어 센터
           </h1>
         </div>
       </header>
@@ -79,7 +81,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
               A
             </div>
             <div>
-              <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>Platform Owner</h4>
+              <h4 style={{ fontSize: '15px', color: '#FFF', margin: 0 }}>이명학 총괄 관리자 (Platform Owner)</h4>
               <span style={{ fontSize: '11px', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', fontWeight: '700' }}>
                 <ShieldCheck size={12} /> 보안 인증 가동 중
               </span>
@@ -190,6 +192,150 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                   {submittingPromote ? <Loader2 size={16} className="spin" /> : '🚀 정식 매니저 승격'}
                 </button>
               </form>
+            </div>
+
+            {/* 🤖 AI 틱 결정 히스토리 내역 섹션 */}
+            <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ padding: '6px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.15)' }}>
+                    <Receipt size={16} color="#A78BFA" />
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <h3 style={{ fontSize: '13px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>🤖 AI 틱별 결정 히스토리 (최대 50개)</h3>
+                    <p style={{ fontSize: '9px', color: 'var(--text-muted)', margin: '1px 0 0 0' }}>AI 엔진이 매 틱마다 판단한 세부 의사결정 이력입니다.</p>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', background: 'rgba(0, 0, 0, 0.3)', padding: '2px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  {['ALL', 'BUY', 'SELL', 'HOLD'].map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setHistoryFilter(filter)}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        borderRadius: '4px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: historyFilter === filter ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                        color: historyFilter === filter ? '#A78BFA' : 'var(--text-muted)',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {filter === 'ALL' ? '전체' : filter === 'BUY' ? '매수' : filter === 'SELL' ? '매도' : '관망'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {(() => {
+                const filteredLogs = aiLogs.filter(log => {
+                  if (historyFilter === 'ALL') return true;
+                  return log.decision === historyFilter;
+                });
+
+                if (filteredLogs.length === 0) {
+                  return (
+                    <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '11px' }}>
+                      📭 선택한 필터 조건에 해당하는 AI 결정 내역이 없습니다.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {filteredLogs.map((log, index) => {
+                      let badgeColor = 'var(--text-muted)';
+                      let badgeBg = 'rgba(255,255,255,0.05)';
+                      let borderCol = 'rgba(255,255,255,0.05)';
+
+                      if (log.decision === 'BUY') {
+                        badgeColor = 'var(--success-color)';
+                        badgeBg = 'rgba(16, 185, 129, 0.1)';
+                        borderCol = 'rgba(16, 185, 129, 0.15)';
+                      } else if (log.decision === 'SELL') {
+                        badgeColor = 'var(--danger-color)';
+                        badgeBg = 'rgba(239, 68, 68, 0.1)';
+                        borderCol = 'rgba(239, 68, 68, 0.15)';
+                      } else if (log.decision === 'HOLD') {
+                        badgeColor = '#F59E0B';
+                        badgeBg = 'rgba(245, 158, 11, 0.1)';
+                        borderCol = 'rgba(245, 158, 11, 0.15)';
+                      }
+
+                      return (
+                        <div
+                          key={log.id || index}
+                          style={{
+                            background: 'rgba(0,0,0,0.2)',
+                            border: `1px solid ${borderCol}`,
+                            borderRadius: '8px',
+                            padding: '10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                            textAlign: 'left',
+                            transition: 'transform 0.2s, background 0.2s',
+                            cursor: 'pointer'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.03)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{
+                                fontSize: '9px',
+                                fontWeight: 'bold',
+                                color: badgeColor,
+                                background: badgeBg,
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                border: `1px solid ${borderCol}`
+                              }}>
+                                {log.decision === 'BUY' ? '🟢 매수' : log.decision === 'SELL' ? '🔴 매도' : '🟡 관망'}
+                              </span>
+                              
+                              {log.decision !== 'HOLD' && (
+                                <span style={{ fontSize: '10px', color: '#E5E7EB', fontWeight: 'bold' }}>
+                                  {log.proposed_price.toFixed(4)} USDT / {log.proposed_amount.toFixed(2)} SUT 추천
+                                </span>
+                              )}
+                            </div>
+                            
+                            <span style={{ fontSize: '8px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
+                              {(() => {
+                                const dateStr = String(log.created_at || '').replace(' ', 'T') + 'Z';
+                                const dateObj = new Date(dateStr);
+                                if (isNaN(dateObj.getTime())) return log.created_at;
+                                const kstFormatted = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
+                                return kstFormatted;
+                              })()}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '6px', fontSize: '10px' }}>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', color: 'var(--text-muted)', fontSize: '9px' }}>
+                              <div>추천 밴드 범위: <span style={{ color: '#E5E7EB', fontWeight: '600' }}>{(log.proposed_lower || 0.15).toFixed(4)} ~ {(log.proposed_upper || 0.30).toFixed(4)} USDT</span></div>
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#D1D5DB', lineHeight: '1.4', background: 'rgba(0,0,0,0.15)', padding: '8px', borderRadius: '6px' }}>
+                              {log.reason}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
           </div>

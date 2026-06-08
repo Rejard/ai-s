@@ -51,6 +51,7 @@ function initializeDatabase() {
         if (err) return reject(err);
         // Insert default mock yield (initial value 0.0)
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_engine', 'GEMINI_ONLY')`);
       });
 
       db.run(`
@@ -112,6 +113,28 @@ function initializeDatabase() {
           UNIQUE(manager_email, ai_log_id)
         )
       `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS ais_training_data (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp TEXT NOT NULL,
+          current_price REAL NOT NULL,
+          price_change_ratio REAL NOT NULL,
+          rsi_14 REAL NOT NULL,
+          sma_5 REAL NOT NULL,
+          sma_20 REAL NOT NULL,
+          gemini_decision TEXT NOT NULL,
+          gemini_proposed_price REAL NOT NULL,
+          gemini_amount_ratio REAL NOT NULL,
+          gemini_reason TEXT,
+          next_price_5m REAL DEFAULT 0.0,
+          realized_price_change REAL DEFAULT 0.0,
+          is_correct_decision INTEGER DEFAULT -1
+        )
+      `, (err) => {
+        if (err) return reject(err);
+        db.run(`CREATE INDEX IF NOT EXISTS IDX_AIS_TRAINING_TIME ON ais_training_data(timestamp)`);
+      });
 
       db.run(`
         CREATE TABLE IF NOT EXISTS manager_one_time_trade_tests (

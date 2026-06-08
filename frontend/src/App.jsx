@@ -8,7 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import WaitingPage from './pages/WaitingPage';
 import Dashboard from './pages/Dashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
-import EditUserPage from './pages/EditUserPage';
+
 import HistoryPage from './pages/HistoryPage';
 import AdminDashboard from './pages/AdminDashboard';
 
@@ -690,13 +690,7 @@ function AppContent() {
               )
             } />
 
-            <Route path="/manager/edit-user/:walletAddress" element={
-              isAdminViewer ? (
-                <EditUserPage />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            } />
+
 
             <Route path="/" element={
               !googleLoggedIn || !walletAddress ? (

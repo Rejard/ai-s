@@ -703,12 +703,13 @@ router.get('/gateio-performance', async (req, res) => {
 
 router.get('/ai-logs', async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit) || 50;
     const logs = await queries.all(`
       SELECT id, decision, reason, proposed_price, proposed_amount, proposed_lower, proposed_upper, created_at
       FROM manager_ai_logs
       ORDER BY created_at DESC
-      LIMIT 10
-    `);
+      LIMIT ?
+    `, [limit]);
     res.json({ success: true, logs });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
