@@ -312,6 +312,88 @@ function initializeDatabase() {
         });
       });
 
+      db.run(`
+        CREATE TABLE IF NOT EXISTS ais_council_members (
+          member_id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          weights_json TEXT NOT NULL,
+          voting_power REAL DEFAULT 1.0,
+          correct_count INTEGER DEFAULT 0,
+          total_count INTEGER DEFAULT 0,
+          status TEXT NOT NULL CHECK (status IN ('ACTIVE', 'CANDIDATE', 'RETIRED')) DEFAULT 'ACTIVE',
+          joined_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => {
+        if (err) return reject(err);
+        
+        const initialMembers = [
+          {
+            id: 'ais_member_01',
+            name: 'Trend Follower (SMA)',
+            weights: {
+              BUY: [0.155, 0.2, 50.0, 0.156, 0.154],
+              SELL: [0.155, -0.2, 50.0, 0.154, 0.156],
+              HOLD: [0.155, 0.0, 50.0, 0.155, 0.155]
+            }
+          },
+          {
+            id: 'ais_member_02',
+            name: 'Value Seeker (RSI)',
+            weights: {
+              BUY: [0.150, 0.0, 28.0, 0.150, 0.150],
+              SELL: [0.165, 0.0, 72.0, 0.165, 0.165],
+              HOLD: [0.158, 0.0, 50.0, 0.158, 0.158]
+            }
+          },
+          {
+            id: 'ais_member_03',
+            name: 'Conservative Watcher (Safety)',
+            weights: {
+              BUY: [0.140, -1.5, 20.0, 0.138, 0.142],
+              SELL: [0.180, 1.5, 80.0, 0.182, 0.178],
+              HOLD: [0.158, 0.0, 50.0, 0.158, 0.158]
+            }
+          },
+          {
+            id: 'ais_member_04',
+            name: 'Short Specialist (Bear)',
+            weights: {
+              BUY: [0.145, 0.0, 25.0, 0.145, 0.145],
+              SELL: [0.155, -0.1, 60.0, 0.154, 0.156],
+              HOLD: [0.158, 0.0, 48.0, 0.158, 0.158]
+            }
+          },
+          {
+            id: 'ais_member_05',
+            name: 'Mutant Alpha (Genetics)',
+            weights: {
+              BUY: [0.152, -0.8, 33.0, 0.150, 0.153],
+              SELL: [0.162, 0.8, 67.0, 0.164, 0.161],
+              HOLD: [0.156, 0.1, 52.0, 0.156, 0.156]
+            }
+          }
+        ];
+        
+        initialMembers.forEach(m => {
+          db.run(`
+            INSERT OR IGNORE INTO ais_council_members (member_id, name, weights_json, voting_power, status)
+            VALUES (?, ?, ?, 1.0, 'ACTIVE')
+          `, [m.id, m.name, JSON.stringify(m.weights)]);
+        });
+      });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS ais_council_voting_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp TEXT NOT NULL,
+          member_id TEXT NOT NULL,
+          decision_vote TEXT NOT NULL,
+          weight_at_vote REAL NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (member_id) REFERENCES ais_council_members (member_id)
+        )
+      `, (err) => { if (err) return reject(err); });
+
       console.log('✔ SQLite Database initialized successfully with Root Referrers.');
       resolve();
     });
