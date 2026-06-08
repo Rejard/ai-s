@@ -5,7 +5,6 @@ import {
   buildTrustWalletOpenUrl,
   getInjectedProviders,
   getPreferredInjectedProvider,
-  isMobileChromeWithoutInjectedWallet,
   normalizeChainId,
   resolveWalletTransactionProvider,
 } from './walletProvider.js';
@@ -39,19 +38,12 @@ const tests = [
     assert.equal(normalizeChainId('not-a-chain'), '');
   }],
 
-  ['detects mobile Chrome without an injected wallet', () => {
-    const ua = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36';
-
-    assert.equal(isMobileChromeWithoutInjectedWallet(ua, undefined), true);
-    assert.equal(isMobileChromeWithoutInjectedWallet(ua, { request() {} }), false);
-  }],
-
-  ['builds Trust Wallet universal open_url links', () => {
+  ['builds direct Trust Wallet app open_url links', () => {
     const url = buildTrustWalletOpenUrl('https://edenai.alonics.com/register?google_email=a%40b.com');
 
     assert.equal(
       url,
-      'https://link.trustwallet.com/open_url?coin_id=966&url=https%3A%2F%2Fedenai.alonics.com%2Fregister%3Fgoogle_email%3Da%2540b.com'
+      'trust://open_url?coin_id=966&url=https%3A%2F%2Fedenai.alonics.com%2Fregister%3Fgoogle_email%3Da%2540b.com'
     );
   }],
   ['resolves Trust Wallet from multiple injected providers', async () => {
@@ -66,35 +58,13 @@ const tests = [
       trustProvider
     );
   }],
-  ['uses WalletConnect when mobile Chrome has no injected provider', async () => {
-    const walletConnectProvider = { request() {} };
-    let receivedProjectId = '';
-
-    assert.equal(
-      await resolveWalletTransactionProvider({
+  ['rejects missing Trust Wallet provider without alternate wallet fallbacks', async () => {
+    await assert.rejects(
+      () => resolveWalletTransactionProvider({
         ethereum: undefined,
-        userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36',
-        walletConnectProjectId: 'project-id',
-        createWalletConnectProvider: async (projectId) => {
-          receivedProjectId = projectId;
-          return walletConnectProvider;
-        },
+        userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 SamsungBrowser/26.0 Chrome/125.0 Mobile Safari/537.36',
       }),
-      walletConnectProvider
-    );
-    assert.equal(receivedProjectId, 'project-id');
-  }],
-  ['uses WalletConnect on desktop when no injected provider is available', async () => {
-    const walletConnectProvider = { request() {} };
-
-    assert.equal(
-      await resolveWalletTransactionProvider({
-        ethereum: undefined,
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0 Safari/537.36',
-        walletConnectProjectId: 'project-id',
-        createWalletConnectProvider: async () => walletConnectProvider,
-      }),
-      walletConnectProvider
+      /NO_TRUST_WALLET/
     );
   }],
 ];

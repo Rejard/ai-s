@@ -51,6 +51,16 @@ export async function loadUserTxHistory({ apiBase, walletAddress, axiosClient })
   return res.data.success ? res.data.history : [];
 }
 
+export function buildNextPriceHistory(previousHistory = [], currentPrice, apiHistory = []) {
+  if (apiHistory.length > 0) return apiHistory;
+
+  const nextHistory = previousHistory.length > 0
+    ? [...previousHistory, currentPrice]
+    : [currentPrice];
+
+  return nextHistory.slice(-30);
+}
+
 export async function submitUserInvestmentTransaction({
   apiBase,
   walletAddress,
@@ -59,7 +69,6 @@ export async function submitUserInvestmentTransaction({
   portfolio,
   ethereum,
   userAgent = '',
-  walletConnectProjectId = '',
   axiosClient,
   ethersLib,
 }) {
@@ -72,7 +81,6 @@ export async function submitUserInvestmentTransaction({
     const transactionProvider = await resolveWalletTransactionProvider({
       ethereum,
       userAgent,
-      walletConnectProjectId,
     });
     await transactionProvider.request({ method: 'eth_requestAccounts' });
 

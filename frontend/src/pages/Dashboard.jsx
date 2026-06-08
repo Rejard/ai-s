@@ -93,7 +93,6 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         portfolio,
         ethereum: window.ethereum,
         userAgent: navigator.userAgent,
-        walletConnectProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID,
         axiosClient: axios,
         ethersLib: ethers,
       });

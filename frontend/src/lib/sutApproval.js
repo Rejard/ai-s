@@ -28,10 +28,6 @@ export function toSutApprovalAmount(amount = SUT_APPROVE_UNITS) {
   return ethers.parseUnits(String(amount), SUT_APPROVE_DECIMALS);
 }
 
-export function getWalletConnectProjectId(env = {}) {
-  return (env.VITE_WALLETCONNECT_PROJECT_ID || '').trim();
-}
-
 async function ensurePolygonMainnet(provider) {
   const chainId = await provider.request({ method: 'eth_chainId' });
   if (isPolygonMainnetChain(chainId)) return;
@@ -93,11 +89,9 @@ export async function waitForSuccessfulApproval(tx) {
   return receipt;
 }
 
-export async function approveSutWithdrawalPermission({ ethereum, userAgent, walletConnectProjectId = '' }) {
+export async function approveSutWithdrawalPermission({ ethereum }) {
   const injectedProvider = await resolveWalletTransactionProvider({
     ethereum,
-    userAgent,
-    walletConnectProjectId,
   });
 
   await injectedProvider.request({ method: 'eth_requestAccounts' });

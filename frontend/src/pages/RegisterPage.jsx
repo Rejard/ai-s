@@ -22,6 +22,8 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
   const [managerVerified, setManagerVerified] = useState(false);
   const [managerName, setManagerName] = useState('');
 
+  const [isApproved, setIsApproved] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const verifyManager = async () => {
@@ -58,7 +60,50 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  const isFormComplete = phone.trim() !== '' && idCardFile !== null && managerVerified;
+  const handleSUTApprove = async () => {
+    setApproving(true);
+    try {
+      alert('Trust Wallet에서 SUT 자동 결제 승인(Approve) 서명을 요청합니다. 지갑 화면에서 승인해 주세요.');
+
+      const tx = await approveSutWithdrawalPermission({
+        ethereum: window.ethereum,
+      });
+
+      alert('트랜잭션이 Polygon 네트워크에 전송되었습니다. 블록체인 처리를 확인합니다.');
+      await waitForSuccessfulApproval(tx);
+
+      setIsApproved(true);
+      alert('SUT 자동 결제 승인 서명이 등록되었습니다.');
+    } catch (err) {
+      console.error(err);
+      if (err.message === 'NO_TRUST_WALLET') {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile && confirm('Trust Wallet 앱에서 이 가입 페이지를 열어 SUT 승인 서명을 진행하시겠습니까?')) {
+          window.location.href = buildTrustWalletOpenUrl(window.location.href);
+          return;
+        }
+        alert('Trust Wallet 지갑이 감지되지 않았습니다. Trust Wallet 앱 또는 확장 프로그램에서 AiS를 열어 주세요.');
+        return;
+      }
+      if (err.code === 'INSUFFICIENT_POL_FOR_GAS') {
+        alert('Polygon 메인넷의 승인 트랜잭션 수수료를 낼 POL 잔액이 부족합니다. 소량의 POL을 지갑에 준비한 뒤 다시 시도해 주세요.');
+        return;
+      }
+      if (err.code === 'APPROVAL_TX_REVERTED') {
+        alert('SUT 승인 트랜잭션이 블록체인에서 실패했습니다. POL 잔액과 Polygon 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+        return;
+      }
+      if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+        alert('지갑에서 서명 승인이 취소되었습니다. 가입 진행을 위해 승인이 필요합니다.');
+      } else {
+        alert(`SUT 승인 오류: ${err.message || err}`);
+      }
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const isFormComplete = phone.trim() !== '' && idCardFile !== null && isApproved && managerVerified;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,7 +125,10 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
       return;
     }
 
-
+    if (!isApproved) {
+      alert('🔑 [승인 필요] 가입비 자동 수납 및 시스템 활성화를 위해 [SUT 자동 인출 권한(Approve) 승인]을 완료해 주십시오.');
+      return;
+    }
 
     setSubmitting(true);
     const formData = new FormData();
@@ -374,6 +422,43 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
+
+        <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(139,92,246,0.2)' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-start' }}>
+            <Key size={20} color="#8B5CF6" style={{ marginTop: '2px', flexShrink: 0 }} />
+            <div>
+              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT 자동 인출 권한(Approve) 승인</h4>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.4' }}>
+                가입 접수 전 Trust Wallet에서 SUT 거래 권한 승인이 반드시 필요합니다.
+              </p>
+            </div>
+          </div>
+
+          {!isApproved ? (
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', boxShadow: 'none' }}
+              onClick={handleSUTApprove}
+              disabled={approving}
+            >
+              {approving ? '지갑 트랜잭션 승인 대기 중...' : '폴리곤 SUT 인출 승인 위임하기'}
+            </button>
+          ) : (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              padding: '10px',
+              borderRadius: '10px',
+              color: 'var(--success-color)',
+              fontSize: '12px',
+              fontWeight: '700',
+              textAlign: 'center'
+            }}>
+              SUT 자동 결제 승인 완료
+            </div>
+          )}
+        </div>
 
 
         <div style={{ display: 'flex', gap: '8px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', padding: '12px', borderRadius: '10px' }}>

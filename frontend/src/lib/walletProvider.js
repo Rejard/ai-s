@@ -50,36 +50,9 @@ export function getPreferredInjectedProvider(ethereum) {
   return findTrustWalletProvider(providers);
 }
 
-export async function createWalletConnectProvider(projectId) {
-  const { EthereumProvider } = await import('@walletconnect/ethereum-provider');
-  const provider = await EthereumProvider.init({
-    projectId,
-    optionalChains: [137],
-    showQrModal: true,
-    methods: ['eth_requestAccounts', 'wallet_switchEthereumChain', 'wallet_addEthereumChain', 'eth_sendTransaction'],
-    events: ['chainChanged', 'accountsChanged', 'disconnect'],
-    rpcMap: {
-      137: 'https://polygon-bor-rpc.publicnode.com',
-    },
-    metadata: {
-      name: 'Ai S',
-      description: 'Ai S Polygon SUT transaction',
-      url: window.location.origin,
-      icons: [`${window.location.origin}/favicon.svg`],
-    },
-  });
-  await provider.enable();
-  return provider;
-}
-
 export async function resolveWalletTransactionProvider({
   ethereum,
-  userAgent,
 }) {
-  if (isMobileChromeWithoutInjectedWallet(userAgent, ethereum)) {
-    throw new Error('MOBILE_CHROME_REQUIRES_WALLET_APP');
-  }
-
   const provider = getPreferredInjectedProvider(ethereum);
   if (provider) return provider;
 
@@ -102,13 +75,6 @@ export function normalizeChainId(chainId) {
   return Number.isNaN(parsed) ? '' : `0x${parsed.toString(16)}`;
 }
 
-export function isMobileChromeWithoutInjectedWallet(userAgent, ethereum) {
-  const ua = userAgent || '';
-  const isMobile = /android|iphone|ipad|ipod/i.test(ua);
-  const isChrome = /crios|chrome/i.test(ua) && !/edg|opr|samsungbrowser/i.test(ua);
-  return isMobile && isChrome && !ethereum;
-}
-
 export function buildTrustWalletOpenUrl(targetUrl) {
-  return `https://link.trustwallet.com/open_url?coin_id=${POLYGON_COIN_ID}&url=${encodeURIComponent(targetUrl)}`;
+  return `trust://open_url?coin_id=${POLYGON_COIN_ID}&url=${encodeURIComponent(targetUrl)}`;
 }

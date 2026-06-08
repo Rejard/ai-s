@@ -13,7 +13,7 @@ https://edenai.alonics.com/
 - Frontend: React, Vite, ethers
 - Backend: Node.js, Express
 - Database: SQLite
-- Wallet: Trust Wallet injected provider, WalletConnect
+- Wallet: Trust Wallet injected provider and Trust Wallet direct app links only
 - Network: Polygon mainnet
 
 ## Project Structure
@@ -30,7 +30,6 @@ cfg/        Local configuration files, ignored from git
 Create `frontend/.env` for frontend-only environment variables:
 
 ```env
-VITE_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
 ```
 
 Do not commit `.env`, private keys, wallet seed phrases, wallet passwords, Google account passwords, or uploaded KYC documents.
@@ -61,7 +60,7 @@ Mobile Chrome uses the redirect flow to avoid the `accounts.google.com/gsi/trans
 The app supports:
 
 - PC Chrome with Trust Wallet extension
-- Mobile Chrome through WalletConnect
+- Mobile browsers through direct Trust Wallet app links
 - Trust Wallet app deep link fallback
 
 When multiple injected wallets exist, the frontend prefers Trust Wallet over other injected providers. SUT approve is executed against Polygon mainnet.
@@ -136,8 +135,8 @@ When updating the frontend, rebuild `frontend/dist`. The backend serves the buil
 
 ## Recent Fixes
 
-- Added WalletConnect support for mobile Chrome.
-- Replaced Trust Wallet mobile deep link handling with a universal open URL.
+- Trust Wallet is the only supported wallet for onboarding and transactions.
+- Mobile deep links use the direct Trust Wallet app scheme for users who already have Trust Wallet installed.
 - Preferred Trust Wallet provider when multiple wallet extensions are injected.
 - Added Google OAuth redirect fallback for mobile Chrome to avoid the GSI transform blank page.
 - Fixed SQLite schema compatibility for new registrations and `AI_TRADING_PROFIT` payments.
@@ -150,4 +149,3 @@ To ensure seamless collaboration with AI coding assistants, this project enforce
 1. **AI-First & Exception-Only Commenting Philosophy**: All comments are written **exclusively** for AI/LLM context recovery, semantic indexing, and logical reasoning. They are **NOT** intended for human reading. The default rule is **zero-comment (100% no comments)**. Comments are written **only** in exceptional circumstances involving non-standard workarounds, API rate-limit bypasses, or fallback triggers. When exceptions apply, write only a single line of concise technical English explaining the *why*.
 2. **Standard Terminology**: Always use standard English business terms (Manager, Platform Owner/Admin, Active Member/Approved User, Distribution, Registration Fee/Deposit, Withdrawal, Grid Bot) in all code naming conventions and exception comments.
 3. **Safety Policies**: Never modify global system configuration templates (like `ai_models.json`), never run `pm2 delete all`, and never auto-commit to git without human supervision. Refer to [.cursorrules](file:///c:/home/ai-s/.cursorrules) for full details.
-

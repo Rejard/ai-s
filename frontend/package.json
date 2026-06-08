@@ -13,7 +13,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@walletconnect/ethereum-provider": "^2.23.9",
     "axios": "^1.6.8",
     "ethers": "^6.12.1",
     "lucide-react": "^0.372.0",

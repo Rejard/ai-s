@@ -7,7 +7,6 @@ import {
   addGasEstimateBuffer,
   approveSutWithdrawalPermission,
   calculateRequiredGasWei,
-  getWalletConnectProjectId,
   isPolygonMainnetChain,
   toSutApprovalAmount,
   waitForSuccessfulApproval,
@@ -23,8 +22,6 @@ assert.equal(toSutApprovalAmount('2').toString(), '2000000000000000000');
 assert.equal(SUT_APPROVE_UNITS, '1000000');
 assert.equal(addGasEstimateBuffer(100000n), 120000n);
 assert.equal(calculateRequiredGasWei(100000n, 30n), 3600000n);
-assert.equal(getWalletConnectProjectId({ VITE_WALLETCONNECT_PROJECT_ID: 'abc123' }), 'abc123');
-assert.equal(getWalletConnectProjectId({}), '');
 
 assert.deepEqual(
   await waitForSuccessfulApproval({ wait: async () => ({ status: 1, hash: '0xabc' }) }),
@@ -41,7 +38,7 @@ await assert.rejects(
     ethereum: undefined,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0 Safari/537.36',
   }),
-  /NO_INJECTED_WALLET/
+  /NO_TRUST_WALLET/
 );
 
 await assert.rejects(
@@ -49,7 +46,7 @@ await assert.rejects(
     ethereum: undefined,
     userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36',
   }),
-  /MOBILE_CHROME_REQUIRES_WALLET_APP/
+  /NO_TRUST_WALLET/
 );
 
 console.log('ok - sut approval configuration');

@@ -374,7 +374,7 @@ function AppContent() {
         const finalUrl = `${baseUrl}?${queryParams.toString()}`;
         const trustDeepLink = buildTrustWalletOpenUrl(finalUrl);
 
-        alert('📲 모바일 Trust Wallet 앱과 다이렉트 온체인 연동을 격발합니다. 확인을 누르시면 트러스트 월렛 앱이 자동으로 열리며 안전 연결이 개통됩니다.');
+        alert('Trust Wallet 앱으로 이동합니다. Trust Wallet에서 AiS를 열어 지갑을 연결해 주세요.');
         window.location.href = trustDeepLink;
       } else {
         alert('감지된 Trust Wallet 지갑이 없거나 잠겨 있습니다. PC 브라우저에 Trust Wallet 확장 프로그램을 설치/활성화하고 다시 시도해 주십시오.');
