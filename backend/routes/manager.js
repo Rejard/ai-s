@@ -738,6 +738,17 @@ router.get('/gateio-performance', async (req, res) => {
       console.error("[Performance API] SUT 가격 조회 에러:", tickErr.message);
     }
 
+    let sutPriceHistory24h = [];
+    try {
+      const candleRes = await axios.get('https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&interval=30m&limit=48', { timeout: 3000 });
+      if (Array.isArray(candleRes.data)) {
+        sutPriceHistory24h = candleRes.data.map(c => parseFloat(c[2]));
+      }
+    } catch (candleErr) {
+      console.error("[Performance API] SUT 캔들스틱 조회 에러:", candleErr.message);
+      sutPriceHistory24h = new Array(48).fill(sutPrice);
+    }
+
     // 📊 [MWR: 금액가중수익률 및 실계좌 자산 연산]
     
     // DB에서 모든 입출금 내역 조회
@@ -862,6 +873,7 @@ router.get('/gateio-performance', async (req, res) => {
       sutPrice,
       sutHigh24h,
       sutLow24h,
+      sutPriceHistory24h,
       currentValue,
       yieldPercent,
       tradesCount: trades.length,

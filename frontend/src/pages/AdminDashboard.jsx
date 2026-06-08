@@ -577,7 +577,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* AI 의회 실시간 여론 동향 브리핑 */}
+                  {/* 500인 후보군의 특징 분석 */}
                   {councilStats.briefing && (
                     <div style={{
                       background: 'rgba(59, 130, 246, 0.05)',
@@ -591,7 +591,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60A5FA', fontWeight: 'bold', marginBottom: '6px', fontSize: '11.5px' }}>
                         <span>🎙️</span>
-                        <span>AI 의원 여론 동향 브리핑</span>
+                        <span>500인 후보군의 특징 분석</span>
                       </div>
                       <div style={{ wordBreak: 'keep-all' }}>{councilStats.briefing}</div>
                     </div>

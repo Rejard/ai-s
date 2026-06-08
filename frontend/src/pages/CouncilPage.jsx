@@ -147,20 +147,21 @@ function CouncilPage() {
             </div>
           </div>
 
-          {/* AI 의회 실시간 여론 동향 브리핑 */}
+          {/* 500인 후보군의 특징 분석 */}
           {councilStats.briefing && (
-            <div className="glass-card" style={{
-              padding: '16px',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(20, 16, 45, 0.3) 100%)',
+            <div style={{
+              background: 'rgba(59, 130, 246, 0.05)',
               border: '1px solid rgba(59, 130, 246, 0.15)',
-              fontSize: '11px',
+              borderRadius: '12px',
+              padding: '16px',
+              fontSize: '13px',
               lineHeight: '1.6',
               color: '#E5E7EB',
               textAlign: 'left'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60A5FA', fontWeight: 'bold', marginBottom: '6px', fontSize: '11.5px' }}>
-                <span>🎙️</span>
-                <span>AI 의원 여론 동향 브리핑</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#60A5FA', fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>
+                <span style={{ fontSize: '18px' }}>🎙️</span>
+                <span>500인 후보군의 특징 분석</span>
               </div>
               <div style={{ wordBreak: 'keep-all' }}>{councilStats.briefing}</div>
             </div>

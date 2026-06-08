@@ -2,6 +2,7 @@ const axios = require('axios');
 const { queries } = require('./database');
 const { createGateIoOrder, getGateIoBalances, getGateIoOpenOrders, cancelGateIoOrder } = require('./gateioHelper');
 const { decryptText } = require('./secureCredentials');
+const { runDailyEvolution } = require('./evolution');
 const { buildTradePlan } = require('./autoTradeMath');
 const { exec } = require('child_process');
 const os = require('os');
@@ -760,6 +761,24 @@ function initGridBotScheduler() {
   const scheduleNext = async () => {
     try {
       await runAiGridBot();
+
+      // --- Daily Evolution Check ---
+      try {
+        const lastEvolutionRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
+        let lastEvo = 0;
+        if (lastEvolutionRow && lastEvolutionRow.value) {
+          lastEvo = parseInt(lastEvolutionRow.value, 10);
+        }
+        const now = Date.now();
+        // 24 hours
+        if (now - lastEvo > 24 * 60 * 60 * 1000) {
+          await runDailyEvolution();
+          await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('last_evolution_time', ?)", [now.toString()]);
+        }
+      } catch (err) {
+        console.error("[🧬 AI EVOLUTION ERROR]", err.message);
+      }
+      // -----------------------------
     } catch (e) {
       console.error("[🤖 AI GRID BOT] 실행 중 에러:", e);
     }

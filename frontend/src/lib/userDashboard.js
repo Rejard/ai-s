@@ -8,26 +8,11 @@ const SUT_DECIMALS = 18;
 const SUT_TRANSFER_ABI = ['function transfer(address recipient, uint256 amount) external returns (bool)'];
 const SUT_BALANCE_ABI = ['function balanceOf(address account) external view returns (uint256)'];
 
-export function buildNextPriceHistory(previousPriceHistory, currentPrice, backendHistory = []) {
-  let nextHistory = previousPriceHistory;
-
-  if (previousPriceHistory.length === 0 && backendHistory.length > 0) {
-    nextHistory = [...backendHistory];
-  } else if (previousPriceHistory.length === 0) {
-    nextHistory = [currentPrice];
-  } else {
-    nextHistory = [...previousPriceHistory, currentPrice];
-  }
-
-  return nextHistory.slice(-30);
-}
-
 export async function loadUserDashboardData({
   apiBase,
   walletAddress,
   axiosClient,
   ethersLib,
-  previousPriceHistory = [],
 }) {
   const data = {
     portfolio: undefined,
@@ -44,7 +29,9 @@ export async function loadUserDashboardData({
     data.portfolio = portfolio;
     data.sutPrice = currentPrice;
     data.sutChange24h = portfolio.sutChange24h || 0;
-    data.priceHistory = buildNextPriceHistory(previousPriceHistory, currentPrice, portfolio.sutHistory || []);
+    data.sutHigh24h = portfolio.sutHigh24h;
+    data.sutLow24h = portfolio.sutLow24h;
+    data.priceHistory = portfolio.sutHistory || [];
   }
 
   try {

@@ -24,8 +24,8 @@ import {
 } from '../lib/managerDashboard';
 import {
   loadUserDashboardData,
-  buildNextPriceHistory,
 } from '../lib/userDashboard';
+import SutPriceChart from '../components/SutPriceChart';
 
 function PcManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -348,8 +348,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           });
           if (userData.sutPrice !== undefined) setSutPrice(userData.sutPrice);
           if (userData.sutChange24h !== undefined) setSutChange24h(userData.sutChange24h);
-          if (userData.sutPrice !== undefined) {
-            setPriceHistory((prev) => buildNextPriceHistory(prev, userData.sutPrice, userData.portfolio?.sutHistory || []));
+          if (userData.priceHistory !== undefined) {
+            setPriceHistory(userData.priceHistory);
           }
         } catch (err) {
           console.error('Failed to load SUT price for manager:', err);
@@ -728,6 +728,20 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
+          {portfolio ? (
+            <SutPriceCard 
+              sutPrice={sutPrice}
+              sutChange24h={sutChange24h}
+              krwRate={portfolio.krwRate}
+              priceHistory={priceHistory}
+              sutHigh24h={performance?.sutHigh24h || portfolio.sutHigh24h}
+              sutLow24h={performance?.sutLow24h || portfolio.sutLow24h}
+              isMobile={false}
+            />
+          ) : (
+            <div className="shimmer-loading" style={{ height: '230px', borderRadius: '20px' }}></div>
+          )}
+
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '16px' }}>💰</span> SUT 자산 통합 관리 현황
@@ -869,7 +883,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
               <div style={{ padding: '24px 24px 10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>📊 SUT 최근 24시간 시세 추이 (30분 단위)</span>
                   <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '28px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)' }}>
                       ${sutPrice.toFixed(4)} <span style={{ fontSize: '16px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
@@ -907,59 +921,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
 
               <div style={{ width: '100%', height: '180px', position: 'relative', display: 'block', padding: '10px 20px 20px 20px' }}>
-                <svg width="100%" height="160" viewBox="0 0 500 160" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible' }}>
-                  <defs>
-                    <linearGradient id="managerSutPriceGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
-                    </linearGradient>
-                    <linearGradient id="managerSutPriceLineGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#8B5CF6" />
-                      <stop offset="100%" stopColor="#10B981" />
-                    </linearGradient>
-                  </defs>
-
-                  <line x1="0" y1="30" x2="500" y2="30" stroke="rgba(255,255,255,0.08)" strokeDasharray="4,4" />
-                  <line x1="0" y1="80" x2="500" y2="80" stroke="rgba(255,255,255,0.15)" />
-                  <line x1="0" y1="130" x2="500" y2="130" stroke="rgba(255,255,255,0.08)" strokeDasharray="4,4" />
-
-                  {(() => {
-                    const data = priceHistory.length > 0 ? priceHistory : [0.19];
-                    const height = 160;
-                    const minVal = Math.min(...data) * 0.999;
-                    const maxVal = Math.max(...data) * 1.001;
-                    const valRange = maxVal - minVal || 0.01;
-                    const points = data.map((val, idx) => {
-                      const x = data.length > 1 ? (idx / (data.length - 1)) * 500 : 250;
-                      const y = height - 20 - ((val - minVal) / valRange) * (height - 40);
-                      return { x, y, val };
-                    });
-                    let dPath = '';
-                    let dArea = '';
-                    if (points.length > 0) {
-                      dPath = `M ${points[0].x} ${points[0].y}`;
-                      for (let i = 0; i < points.length - 1; i++) {
-                        const p0 = points[i];
-                        const p1 = points[i + 1];
-                        const cpX1 = p0.x + (p1.x - p0.x) / 2;
-                        const cpY1 = p0.y;
-                        const cpX2 = p0.x + (p1.x - p0.x) / 2;
-                        const cpY2 = p1.y;
-                        dPath += ` C ${cpX1} ${cpY1} ${cpX2} ${cpY2} ${p1.x} ${p1.y}`;
-                      }
-                      dArea = `${dPath} L ${points[points.length - 1].x} 160 L ${points[0].x} 160 Z`;
-                    }
-                    return (
-                      <>
-                        {dArea && <path d={dArea} fill="url(#managerSutPriceGrad)" style={{ transition: 'all 0.5s ease' }} />}
-                        {dPath && <path d={dPath} fill="none" stroke="url(#managerSutPriceLineGrad)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'all 0.5s ease' }} />}
-                        {points.length > 0 && (
-                          <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="5" fill="var(--success-color)" stroke="#FFF" strokeWidth="2" style={{ transition: 'all 0.5s ease' }} />
-                        )}
-                      </>
-                    );
-                  })()}
-                </svg>
+                <SutPriceChart 
+                  data={(performance && performance.sutPriceHistory24h && performance.sutPriceHistory24h.length > 0) ? performance.sutPriceHistory24h : (priceHistory.length > 0 ? priceHistory : [sutPrice || 0.19])} 
+                  height={160} 
+                  gradientId="managerSutPriceGrad" 
+                  lineGradientId="managerSutPriceLineGrad" 
+                />
               </div>
             </div>
           ) : (
@@ -1101,106 +1068,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '20px' }}>🤖</span>
-                  <h4 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
-                </div>
-                <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#3B82F6', fontWeight: '700' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 8px #3B82F6' }}></span>
-                  실시간 모니터링
-                </span>
-              </div>
 
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, textAlign: 'left' }}>
-                글로벌 AI 두뇌가 5분마다 실시간 가격 추이와 매니저 잔고를 독자적으로 분석하여 의사결정을 내린 결과 보고서입니다.
-              </p>
-
-              {aiLogs.length === 0 ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
-                  📡 AI 엔진이 시장 데이터를 분석 중입니다. 최초 실행 완료까지 약 5분 정도 소요됩니다.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
-                  {aiLogs.map((log, index) => {
-                    let badgeColor = 'var(--text-muted)';
-                    let badgeBg = 'rgba(255,255,255,0.05)';
-                    let borderCol = 'rgba(255,255,255,0.05)';
-
-                    if (log.decision === 'BUY') {
-                      badgeColor = 'var(--success-color)';
-                      badgeBg = 'rgba(16, 185, 129, 0.1)';
-                      borderCol = 'rgba(16, 185, 129, 0.15)';
-                    } else if (log.decision === 'SELL') {
-                      badgeColor = 'var(--danger-color)';
-                      badgeBg = 'rgba(239, 68, 68, 0.1)';
-                      borderCol = 'rgba(239, 68, 68, 0.15)';
-                    } else if (log.decision === 'HOLD') {
-                      badgeColor = '#F59E0B';
-                      badgeBg = 'rgba(245, 158, 11, 0.1)';
-                      borderCol = 'rgba(245, 158, 11, 0.15)';
-                    }
-
-                    return (
-                      <div
-                        key={log.id || index}
-                        style={{
-                          background: 'rgba(0,0,0,0.3)',
-                          border: `1px solid ${borderCol}`,
-                          borderRadius: '14px',
-                          padding: '16px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px',
-                          textAlign: 'left'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: '900',
-                              color: badgeColor,
-                              background: badgeBg,
-                              padding: '3px 10px',
-                              borderRadius: '8px',
-                              letterSpacing: '0.5px'
-                            }}>
-                              {log.decision === 'BUY' ? '매수' : log.decision === 'SELL' ? '매도' : '관망'}
-                            </span>
-                            {log.decision !== 'HOLD' && (
-                              <span style={{ fontSize: '11px', color: '#E5E7EB', fontWeight: 'bold' }}>
-                                추천가: {log.proposed_price} USDT / 수량: {log.proposed_amount} SUT
-                              </span>
-                            )}
-                            {log.proposed_lower !== undefined && log.proposed_upper !== undefined && (
-                              <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 'bold', marginLeft: log.decision !== 'HOLD' ? '12px' : '0px' }}>
-                                추천 범위: {log.proposed_lower} ~ {log.proposed_upper} USDT
-                              </span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: '10px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
-                            {(() => {
-                              const dateStr = String(log.created_at || '').replace(' ', 'T') + 'Z';
-                              const dateObj = new Date(dateStr);
-                              if (isNaN(dateObj.getTime())) return log.created_at;
-                              const utcFormatted = `${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}/${String(dateObj.getUTCDate()).padStart(2, '0')} ${String(dateObj.getUTCHours()).padStart(2, '0')}:${String(dateObj.getUTCMinutes()).padStart(2, '0')}`;
-                              const kstFormatted = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-                              return `현지시간 : ${utcFormatted} (한국시간: ${kstFormatted})`;
-                            })()}
-                          </span>
-                        </div>
-
-                        <div style={{ fontSize: '12px', color: '#D1D5DB', lineHeight: '1.6', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '10px', wordBreak: 'break-all' }}>
-                          <b>💡 판단 근거:</b> {log.reason}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>
               설정한 상/하한가 범위 내에서 자동 매매 시뮬레이션을 수행하고 매일 정해진 주기마다 회원 이자를 분배합니다.

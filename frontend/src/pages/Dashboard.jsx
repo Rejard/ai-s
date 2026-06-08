@@ -8,12 +8,13 @@ import {
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
 import {
-  buildNextPriceHistory,
   loadUserDashboardData,
   loadUserTxHistory,
   submitUserInvestmentTransaction,
 } from '../lib/userDashboard';
 import { DASHBOARD_COPY } from '../lib/dashboardCopy';
+import SutPriceCard from '../components/SutPriceCard';
+import SutPriceChart from '../components/SutPriceChart';
 
 function Dashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
@@ -44,8 +45,8 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       if (data.portfolio !== undefined) setPortfolio(data.portfolio);
       if (data.sutPrice !== undefined) setSutPrice(data.sutPrice);
       if (data.sutChange24h !== undefined) setSutChange24h(data.sutChange24h);
-      if (data.sutPrice !== undefined) {
-        setPriceHistory((prev) => buildNextPriceHistory(prev, data.sutPrice, data.portfolio?.sutHistory || []));
+      if (data.priceHistory !== undefined) {
+        setPriceHistory(data.priceHistory);
       }
       if (data.walletSutBalance !== undefined) setWalletSutBalance(data.walletSutBalance);
     } catch (err) {
@@ -202,101 +203,15 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       </div>
 
       {portfolio ? (
-        <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
-              <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '24px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)' }}>
-                  ${sutPrice.toFixed(4)} <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
-                </span>
-
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  color: sutChange24h >= 0 ? 'var(--success-color)' : 'var(--danger-color)',
-                  background: sutChange24h >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  padding: '3px 6px',
-                  borderRadius: '6px',
-                  border: sutChange24h >= 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
-                  display: 'inline-flex',
-                  alignItems: 'center'
-                }}>
-                  {sutChange24h >= 0 ? '▲' : '▼'} {sutChange24h >= 0 ? '+' : ''}{sutChange24h.toFixed(2)}%
-                </span>
-
-                <span style={{ fontSize: '13px', color: 'var(--success-color)', fontWeight: '600' }}>
-                  (≈ {(sutPrice * (portfolio.krwRate || 1400)).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원)
-                </span>
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '10px', color: 'var(--success-color)', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '10px', fontWeight: '700' }}>
-                ● LIVE
-              </span>
-            </div>
-          </div>
-
-          <div style={{ width: '100%', height: '120px', position: 'relative', display: 'block', padding: '0 10px 10px 10px' }}>
-            <svg width="100%" height="110" viewBox="0 0 220 110" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible' }}>
-              <defs>
-                <linearGradient id="dbProfitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
-                </linearGradient>
-                <linearGradient id="dbLineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#8B5CF6" />
-                  <stop offset="100%" stopColor="#10B981" />
-                </linearGradient>
-                <filter id="dbGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-
-              <line x1="0" y1="20" x2="220" y2="20" stroke="rgba(255,255,255,0.15)" strokeDasharray="3,3" />
-              <line x1="0" y1="55" x2="220" y2="55" stroke="rgba(255,255,255,0.25)" />
-              <line x1="0" y1="90" x2="220" y2="90" stroke="rgba(255,255,255,0.15)" strokeDasharray="3,3" />
-
-              {(() => {
-                const data = priceHistory.length > 0 ? priceHistory : [0.19];
-                const height = 110;
-                const minVal = Math.min(...data) * 0.999;
-                const maxVal = Math.max(...data) * 1.001;
-                const valRange = maxVal - minVal || 0.01;
-                const points = data.map((val, idx) => {
-                  const x = data.length > 1 ? (idx / (data.length - 1)) * 220 : 110;
-                  const y = height - 20 - ((val - minVal) / valRange) * (height - 40);
-                  return { x, y, val };
-                });
-                let dPath = '';
-                let dArea = '';
-                if (points.length > 0) {
-                  dPath = `M ${points[0].x} ${points[0].y}`;
-                  for (let i = 0; i < points.length - 1; i++) {
-                    const p0 = points[i];
-                    const p1 = points[i + 1];
-                    const cpX1 = p0.x + (p1.x - p0.x) / 2;
-                    const cpY1 = p0.y;
-                    const cpX2 = p0.x + (p1.x - p0.x) / 2;
-                    const cpY2 = p1.y;
-                    dPath += ` C ${cpX1} ${cpY1} ${cpX2} ${cpY2} ${p1.x} ${p1.y}`;
-                  }
-                  dArea = `${dPath} L ${points[points.length - 1].x} 110 L ${points[0].x} 110 Z`;
-                }
-                return (
-                  <>
-                    {dArea && <path d={dArea} fill="url(#dbProfitGrad)" style={{ transition: 'all 0.5s ease' }} />}
-                    {dPath && <path d={dPath} fill="none" stroke="url(#dbLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'all 0.5s ease' }} />}
-                    {points.length > 0 && (
-                      <circle cx={`${points[points.length - 1].x}%`} cy={points[points.length - 1].y} r="4" fill="var(--success-color)" stroke="#FFF" strokeWidth="1.5" style={{ transition: 'all 0.5s ease' }} filter="url(#dbGlow)" />
-                    )}
-                  </>
-                );
-              })()}
-            </svg>
-          </div>
-        </div>
+        <SutPriceCard 
+          sutPrice={sutPrice}
+          sutChange24h={sutChange24h}
+          krwRate={portfolio.krwRate}
+          priceHistory={priceHistory}
+          sutHigh24h={portfolio.sutHigh24h}
+          sutLow24h={portfolio.sutLow24h}
+          isMobile={true}
+        />
       ) : (
         <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
       )}
@@ -353,37 +268,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         </div>
       </div>
 
-      {/* 🏛️ AI Council (의회) 독립 페이지 퀵 링크 */}
-      <div
-        className="glass-card glow-active"
-        onClick={() => navigate('/council')}
-        style={{
-          padding: '16px 20px',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(20, 16, 45, 0.4) 100%)',
-          border: '1px solid rgba(139, 92, 246, 0.25)',
-          borderRadius: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: 'pointer',
-          transition: 'transform 0.2s',
-          textAlign: 'left',
-          marginTop: '5px'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '20px' }}>🏛️</span>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: '800', color: '#A78BFA' }}>AI 의회 (AI Council) 현황</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>500인의 분파 지분율 및 오늘의 11인 의정 지표 조회</div>
-          </div>
-        </div>
-        <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)', border: 'none', color: '#FFF' }}>
-          의정 보기 &gt;
-        </button>
-      </div>
+
 
       {showTxModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>

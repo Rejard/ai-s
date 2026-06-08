@@ -5,7 +5,7 @@ const { queries } = require('../database');
 
 // SUT price memory cache (default market price for simulation)
 let cachedPrices = {
-  sut: { usd: 1.0, usd_24h_change: 0.0 }
+  sut: { usd: 1.0, usd_24h_change: 0.0, usd_24h_high: 1.0, usd_24h_low: 1.0 }
 };
 let lastPriceFetchTime = 0;
 let cachedHistory = [];
@@ -27,6 +27,8 @@ async function getLivePrices() {
       const ticker = response.data[0];
       cachedPrices.sut.usd = parseFloat(ticker.last);
       cachedPrices.sut.usd_24h_change = parseFloat(ticker.change_percentage);
+      cachedPrices.sut.usd_24h_high = parseFloat(ticker.high_24h || ticker.last);
+      cachedPrices.sut.usd_24h_low = parseFloat(ticker.low_24h || ticker.last);
       lastPriceFetchTime = now;
     }
   } catch (err) {
@@ -39,12 +41,12 @@ async function getLivePrices() {
 async function getSutHistory() {
   const now = Date.now();
 
-  if (now - lastHistoryFetchTime < 30000 && cachedHistory.length > 0) {
+  if (now - lastHistoryFetchTime < 60000 && cachedHistory.length > 0) {
     return cachedHistory;
   }
   try {
     const res = await axios.get(
-      'https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&interval=1m&limit=20',
+      'https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&interval=30m&limit=48',
       { timeout: 3000 }
     );
     if (res.data) {
@@ -142,6 +144,8 @@ router.get('/portfolio/:walletAddress', async (req, res) => {
         sutHistory,
         krwRate,
         sutChange24h: prices.sut.usd_24h_change,
+        sutHigh24h: prices.sut.usd_24h_high,
+        sutLow24h: prices.sut.usd_24h_low,
         assets: {
           SUT: {
             ratio: 100,
@@ -264,13 +268,13 @@ let cachedBriefing = null;
 let lastBriefingUpdate = 0;
 const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours cache (aligns with daily evolutionary cycle)
 
-async function generateCouncilOpinionBriefing(factionStats, activeMembers) {
+async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats) {
   try {
     const apiKeyRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_gemini_api_key'");
     const modelRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_model'");
     
     if (!apiKeyRow || !apiKeyRow.value) {
-      return generateFallbackBriefing(factionStats, activeMembers);
+      return generateFallbackBriefing(factionStats, activeMembers, generationStats);
     }
     
     const apiKey = apiKeyRow.value;
@@ -295,12 +299,15 @@ async function generateCouncilOpinionBriefing(factionStats, activeMembers) {
 
     const factionInfo = factionStats.map(f => `${f.faction}: ${f.count}석 (${f.percentage}%)`).join(', ');
 
+    const generationInfo = generationStats ? generationStats.map(g => `${g.generation}세대: ${g.count}명 (${g.percentage}%)`).join(', ') : '1세대: 500명 (100%)';
+
     const promptText = `
 You are an expert system analyst observing the "AiS Virtual Council" (an AI assembly of 500 neural net trading bots evolving via genetic algorithms).
-Based on the current faction distribution and top leaders of the 500-member AI Council, write a lively briefing (2-3 sentences in Korean) describing the genetic/philosophical characteristics, general sentiment, and historical evolvement of this current generation of AiS candidates.
+Based on the current faction distribution, generation composition, and top leaders of the 500-member AI candidate pool, analyze the overall genetic and philosophical characteristics of these 500 AI candidates. Write a comprehensive, long-form briefing in Korean. (Output example: "이번 세대 교체를 통해 2세대 AI가 N명으로 새롭게 등장했으며... 특히 기술반등파가 다수를 차지하게 된 배경에는... 반면 추세추종파가 소수로 전락한 이유는...")
 
 Input data:
 - Faction Counts (500 candidates): ${factionInfo}
+- Generation Distribution: ${generationInfo}
 - Top 3 Leaders in Office (Chairman, Vice Chairman, Committee Chair): ${leadersInfo}
 
 Rules:
@@ -309,33 +316,35 @@ Rules:
    - VALUE_SEEKER: 기술반등파 (RSI/역추세)
    - CONSERVATIVE_WATCHER: 변동성방어파 (안정지향)
    - MUTANT_ROOKIE: 돌연변이 혁신파 (진화/알고리즘)
-2. Explain what the current dominant faction and leaders' profiles tell us about the council's overall behavior for this generation (e.g., "이번 세대는 안정지향적인 변동성방어파가 의장단을 포함해 과반을 장악하여, 유전적으로 매우 조심스러운 거래를 지향하는 구조로 진화했습니다. 반면...").
-3. Do NOT talk about real-time market trends or recent trades. Focus purely on their genetic character, dominant factions, and historical evolution traits.
-4. Be concise (2-3 sentences max). Return ONLY the raw text response in Korean without any formatting or markdown.
+2. MUST explicitly mention the current generation landscape based on Generation Distribution (e.g. "현재 1세대가 500명을 100% 점유하고 있으며..." or "이번 진화를 통해 새로운 2세대가 O명으로 주류를 이루었고 살아남은 1세대는 O명뿐입니다...").
+3. Deeply analyze the REASONS behind the current distribution. Why are the dominant factions succeeding and multiplying in this generation? Why did the minority factions fail to secure seats or dwindle? Create a logical evolutionary narrative explaining these market-survival dynamics in detail.
+4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what kind of market crash or bull run birthed the Value Seekers or Mutant Rookies).
+5. Do NOT talk about real-time market trends or recent trades. Focus purely on their genetic character, dominant factions, and historical evolution traits.
+6. The content can be LONG and detailed (e.g., 4 to 6 paragraphs). Feel free to be descriptive and analytical. Return ONLY the raw text response in Korean without any formatting or markdown.
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
     const response = await axios.post(url, {
       contents: [{ parts: [{ text: promptText }] }],
       generationConfig: {
-        maxOutputTokens: 200,
+        maxOutputTokens: 2000,
         temperature: 0.7
       }
-    }, { timeout: 8000 });
+    }, { timeout: 60000 });
 
     if (response.data && response.data.candidates && response.data.candidates[0].content) {
       const text = response.data.candidates[0].content.parts[0].text.trim();
       return text;
     }
     
-    return generateFallbackBriefing(factionStats, activeMembers);
+    return generateFallbackBriefing(factionStats, activeMembers, generationStats);
   } catch (err) {
     console.error("❌ Gemini Council Opinion Briefing Error:", err.message);
-    return generateFallbackBriefing(factionStats, activeMembers);
+    return generateFallbackBriefing(factionStats, activeMembers, generationStats);
   }
 }
 
-function generateFallbackBriefing(factionStats, activeMembers) {
+function generateFallbackBriefing(factionStats, activeMembers, generationStats) {
   if (!factionStats || factionStats.length === 0) {
     return "현재 AI 의회 데이터 집계 중입니다. 잠시 후 여론이 형성됩니다.";
   }
@@ -402,20 +411,40 @@ router.get('/council-stats', async (req, res) => {
       LIMIT 12
     `);
 
+    const generationRows = await queries.all(`
+      SELECT generation, COUNT(*) as count 
+      FROM ais_council_members 
+      GROUP BY generation
+      ORDER BY generation DESC
+    `);
+    const generationStats = generationRows.map(r => ({
+      generation: r.generation,
+      count: r.count,
+      percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
+    }));
+
     const now = Date.now();
-    if (!cachedBriefing || (now - lastBriefingUpdate > BRIEFING_CACHE_DURATION)) {
-      const isFirstLoad = !cachedBriefing;
-      if (isFirstLoad) {
-        cachedBriefing = await generateCouncilOpinionBriefing(factionStats, activeMembers);
-        lastBriefingUpdate = now;
-      } else {
-        generateCouncilOpinionBriefing(factionStats, activeMembers).then(result => {
-          cachedBriefing = result;
-          lastBriefingUpdate = Date.now();
-        }).catch(err => {
-          console.error("Background briefing fetch failed:", err.message);
-        });
+    let lastEvoTime = 0;
+    try {
+      const evoRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
+      if (evoRow && evoRow.value) lastEvoTime = parseInt(evoRow.value, 10);
+    } catch(e) {}
+    
+    if (!cachedBriefing || (now - lastBriefingUpdate > BRIEFING_CACHE_DURATION) || (lastBriefingUpdate < lastEvoTime)) {
+      if (!cachedBriefing) {
+        cachedBriefing = "현재 500명 AI 의원들의 세대 진화 및 파벌 탄생 배경에 대한 심층 분석을 백그라운드에서 진행 중입니다. 약 15~30초 후 새로고침해 주십시오...";
       }
+      
+      lastBriefingUpdate = now; // 중복 호출 방지를 위해 미리 갱신
+      
+      generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats).then(result => {
+        cachedBriefing = result;
+        lastBriefingUpdate = Date.now();
+      }).catch(err => {
+        console.error("Background briefing fetch failed:", err.message);
+        // 실패 시 다시 시도할 수 있도록 초기화
+        if (cachedBriefing.includes("진행 중")) cachedBriefing = null; 
+      });
     }
 
     res.json({
@@ -424,7 +453,7 @@ router.get('/council-stats', async (req, res) => {
       factionStats,
       activeMembers,
       recentVotes,
-      briefing: cachedBriefing || generateFallbackBriefing(factionStats, activeMembers)
+      briefing: cachedBriefing || generateFallbackBriefing(factionStats, activeMembers, generationStats)
     });
   } catch (err) {
     console.error("❌ investment council-stats API 에러:", err);

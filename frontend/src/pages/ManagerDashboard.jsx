@@ -6,6 +6,7 @@ import {
   Eye, ShieldAlert, BarChart3, Receipt, ExternalLink, ShieldCheck, Wallet, Settings,
   ArrowUpDown
 } from 'lucide-react';
+import SutPriceCard from '../components/SutPriceCard';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
 import {
@@ -24,8 +25,8 @@ import {
 } from '../lib/managerDashboard';
 import {
   loadUserDashboardData,
-  buildNextPriceHistory,
 } from '../lib/userDashboard';
+import SutPriceChart from '../components/SutPriceChart';
 
 function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -353,8 +354,8 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           });
           if (userData.sutPrice !== undefined) setSutPrice(userData.sutPrice);
           if (userData.sutChange24h !== undefined) setSutChange24h(userData.sutChange24h);
-          if (userData.sutPrice !== undefined) {
-            setPriceHistory((prev) => buildNextPriceHistory(prev, userData.sutPrice, userData.portfolio?.sutHistory || []));
+          if (userData.priceHistory !== undefined) {
+            setPriceHistory(userData.priceHistory);
           }
         } catch (err) {
           console.error('Failed to load SUT price for manager:', err);
@@ -731,106 +732,15 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       </div>
 
       {portfolio ? (
-        <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>📊 SUT 실시간 시세 (Gate.io)</span>
-              <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '24px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)' }}>
-                  ${sutPrice.toFixed(4)} <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-muted)' }}>USD</span>
-                </span>
-
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  color: sutChange24h >= 0 ? 'var(--success-color)' : 'var(--danger-color)',
-                  background: sutChange24h >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  padding: '3px 6px',
-                  borderRadius: '6px',
-                  border: sutChange24h >= 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
-                  display: 'inline-flex',
-                  alignItems: 'center'
-                }}>
-                  {sutChange24h >= 0 ? '▲' : '▼'} {sutChange24h >= 0 ? '+' : ''}{sutChange24h.toFixed(2)}%
-                </span>
-
-                <span style={{ fontSize: '13px', color: 'var(--success-color)', fontWeight: '600' }}>
-                  (≈ {(sutPrice * (portfolio.krwRate || 1400)).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원)
-                </span>
-              </div>
-              <div style={{ marginTop: '5px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                <span>24H 고점: <span style={{ color: 'var(--success-color)', fontFamily: 'var(--font-title)', fontSize: '12px' }}>${performance?.sutHigh24h ? performance.sutHigh24h.toFixed(4) : sutPrice.toFixed(4)}</span></span>
-                <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-                <span>24H 저점: <span style={{ color: 'var(--danger-color)', fontFamily: 'var(--font-title)', fontSize: '12px' }}>${performance?.sutLow24h ? performance.sutLow24h.toFixed(4) : sutPrice.toFixed(4)}</span></span>
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '10px', color: 'var(--success-color)', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '10px', fontWeight: '700' }}>
-                ● LIVE
-              </span>
-            </div>
-          </div>
-
-          <div style={{ width: '100%', height: '120px', position: 'relative', display: 'block', padding: '0 10px 10px 10px' }}>
-            <svg width="100%" height="110" viewBox="0 0 220 110" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible' }}>
-              <defs>
-                <linearGradient id="managerDbSutPriceGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
-                </linearGradient>
-                <linearGradient id="managerDbSutPriceLineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#8B5CF6" />
-                  <stop offset="100%" stopColor="#10B981" />
-                </linearGradient>
-                <filter id="managerDbSutPriceGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-
-              <line x1="0" y1="20" x2="220" y2="20" stroke="rgba(255,255,255,0.15)" strokeDasharray="3,3" />
-              <line x1="0" y1="55" x2="220" y2="55" stroke="rgba(255,255,255,0.25)" />
-              <line x1="0" y1="90" x2="220" y2="90" stroke="rgba(255,255,255,0.15)" strokeDasharray="3,3" />
-
-              {(() => {
-                const data = priceHistory.length > 0 ? priceHistory : [0.19];
-                const height = 110;
-                const minVal = Math.min(...data) * 0.999;
-                const maxVal = Math.max(...data) * 1.001;
-                const valRange = maxVal - minVal || 0.01;
-                const points = data.map((val, idx) => {
-                  const x = data.length > 1 ? (idx / (data.length - 1)) * 220 : 110;
-                  const y = height - 20 - ((val - minVal) / valRange) * (height - 40);
-                  return { x, y, val };
-                });
-                let dPath = '';
-                let dArea = '';
-                if (points.length > 0) {
-                  dPath = `M ${points[0].x} ${points[0].y}`;
-                  for (let i = 0; i < points.length - 1; i++) {
-                    const p0 = points[i];
-                    const p1 = points[i + 1];
-                    const cpX1 = p0.x + (p1.x - p0.x) / 2;
-                    const cpY1 = p0.y;
-                    const cpX2 = p0.x + (p1.x - p0.x) / 2;
-                    const cpY2 = p1.y;
-                    dPath += ` C ${cpX1} ${cpY1} ${cpX2} ${cpY2} ${p1.x} ${p1.y}`;
-                  }
-                  dArea = `${dPath} L ${points[points.length - 1].x} 110 L ${points[0].x} 110 Z`;
-                }
-                return (
-                  <>
-                    {dArea && <path d={dArea} fill="url(#managerDbSutPriceGrad)" style={{ transition: 'all 0.5s ease' }} />}
-                    {dPath && <path d={dPath} fill="none" stroke="url(#managerDbSutPriceLineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'all 0.5s ease' }} />}
-                    {points.length > 0 && (
-                      <circle cx={`${points[points.length - 1].x}%`} cy={points[points.length - 1].y} r="4" fill="var(--success-color)" stroke="#FFF" strokeWidth="1.5" style={{ transition: 'all 0.5s ease' }} filter="url(#managerDbSutPriceGlow)" />
-                    )}
-                  </>
-                );
-              })()}
-            </svg>
-          </div>
-        </div>
+        <SutPriceCard 
+          sutPrice={sutPrice}
+          sutChange24h={sutChange24h}
+          krwRate={portfolio.krwRate}
+          priceHistory={priceHistory}
+          sutHigh24h={performance?.sutHigh24h || portfolio.sutHigh24h}
+          sutLow24h={performance?.sutLow24h || portfolio.sutLow24h}
+          isMobile={true}
+        />
       ) : (
         <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
       )}
@@ -980,100 +890,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(59, 130, 246, 0.02)', border: '1px solid rgba(59, 130, 246, 0.15)', margin: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '14px' }}>🤖</span>
-              <h4 style={{ fontSize: '12px', color: '#F3F4F6', margin: 0, fontWeight: '700' }}>실시간 AI 엔진 의사결정 브리핑</h4>
-            </div>
-            <span className="pulse-indicator" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#3B82F6', fontWeight: '700' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3B82F6', display: 'inline-block', boxShadow: '0 0 6px #3B82F6' }}></span>
-              실시간
-            </span>
-          </div>
 
-          <p style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0, textAlign: 'left' }}>
-            글로벌 AI 두뇌가 5분마다 실시간 가격 추이와 잔고를 분석하여 의사결정을 내린 결과 보고서입니다.
-          </p>
-
-          {aiLogs.length === 0 ? (
-            <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '11px' }}>
-              📡 AI 엔진이 시장 데이터를 분석 중입니다. 최초 실행 완료까지 약 5분 정도 소요됩니다.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto', paddingRight: '2px' }}>
-              {aiLogs.slice(0, 5).map((log, index) => {
-                let badgeColor = 'var(--text-muted)';
-                let badgeBg = 'rgba(255,255,255,0.05)';
-                let borderCol = 'rgba(255,255,255,0.05)';
-
-                if (log.decision === 'BUY') {
-                  badgeColor = 'var(--success-color)';
-                  badgeBg = 'rgba(16, 185, 129, 0.1)';
-                  borderCol = 'rgba(16, 185, 129, 0.15)';
-                } else if (log.decision === 'SELL') {
-                  badgeColor = 'var(--danger-color)';
-                  badgeBg = 'rgba(239, 68, 68, 0.1)';
-                  borderCol = 'rgba(239, 68, 68, 0.15)';
-                } else if (log.decision === 'HOLD') {
-                  badgeColor = '#F59E0B';
-                  badgeBg = 'rgba(245, 158, 11, 0.1)';
-                  borderCol = 'rgba(245, 158, 11, 0.15)';
-                }
-
-                return (
-                  <div
-                    key={log.id || index}
-                    style={{
-                      background: 'rgba(0,0,0,0.3)',
-                      border: `1px solid ${borderCol}`,
-                      borderRadius: '8px',
-                      padding: '10px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{
-                          fontSize: '9px',
-                          fontWeight: '950',
-                          color: badgeColor,
-                          background: badgeBg,
-                          padding: '1px 6px',
-                          borderRadius: '4px'
-                        }}>
-                          {log.decision === 'BUY' ? '매수' : log.decision === 'SELL' ? '매도' : '관망'}
-                        </span>
-                        {log.decision !== 'HOLD' && (
-                          <span style={{ fontSize: '9px', color: '#E5E7EB', fontWeight: 'bold' }}>
-                            {log.proposed_price} USDT / {log.proposed_amount} SUT
-                          </span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '8px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
-                        {(() => {
-                          const dateStr = String(log.created_at || '').replace(' ', 'T') + 'Z';
-                          const dateObj = new Date(dateStr);
-                          if (isNaN(dateObj.getTime())) return log.created_at;
-                          const utcFormatted = `${String(dateObj.getUTCMonth() + 1).padStart(2, '0')}/${String(dateObj.getUTCDate()).padStart(2, '0')} ${String(dateObj.getUTCHours()).padStart(2, '0')}:${String(dateObj.getUTCMinutes()).padStart(2, '0')}`;
-                          const kstFormatted = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-                          return `현지시간 : ${utcFormatted} (한국시간: ${kstFormatted})`;
-                        })()}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: '10px', color: '#D1D5DB', lineHeight: '1.4', background: 'rgba(0,0,0,0.15)', padding: '8px', borderRadius: '6px' }}>
-                      {log.reason}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
           <div>
@@ -1192,201 +1009,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </div>
       </div>
 
-      {/* 🏛️ AI Council (의회) 현황 및 분파 의석 지분율 섹션 */}
-      <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(59, 130, 246, 0.25)', textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <span style={{ fontSize: '18px' }}>🏛️</span>
-          </div>
-          <div>
-            <h3 style={{ fontSize: '15px', color: '#F3F4F6', margin: 0, fontWeight: '800' }}>🏛️ AI Council (의회) 지분율 및 의정 현황</h3>
-            <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>유전적 진화 풀 500인과 현역 의원 탑 11인의 분파 지분 현황입니다.</p>
-          </div>
-        </div>
 
-        {loadingCouncilStats ? (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>의원 명부를 분석 중입니다...</span>
-          </div>
-        ) : !councilStats ? (
-          <p style={{ color: 'var(--text-muted)', fontSize: '11px' }}>의회 정보를 불러오지 못했습니다.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            {/* 1. 500인 전체 의회 분파 점유율 게이지 */}
-            <div>
-              <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
-                📊 500인 후보군 분파별 점유율 (의석)
-              </h4>
-              <div style={{ display: 'flex', height: '20px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                {councilStats.factionStats.map((f, idx) => {
-                  let color = '#6B7280'; // Default
-                  if (f.faction === 'TREND_FOLLOWER') color = '#EF4444'; // Red
-                  if (f.faction === 'VALUE_SEEKER') color = '#3B82F6'; // Blue
-                  if (f.faction === 'CONSERVATIVE_WATCHER') color = '#10B981'; // Green
-                  if (f.faction === 'MUTANT_ROOKIE') color = '#8B5CF6'; // Purple
-
-                  return (
-                    <div
-                      key={f.faction}
-                      style={{
-                        width: `${f.percentage}%`,
-                        background: color,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        color: '#FFF',
-                        fontSize: '9px',
-                        fontWeight: 'bold',
-                        transition: 'width 0.5s ease'
-                      }}
-                      title={`${f.faction}: ${f.count}석 (${f.percentage}%)`}
-                    >
-                      {f.percentage >= 12 ? `${f.percentage}%` : ''}
-                    </div>
-                  );
-                })}
-              </div>
-              
-              {/* 범례 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
-                {[
-                  { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA)', color: '#EF4444' },
-                  { key: 'VALUE_SEEKER', label: '기술반등파 (RSI)', color: '#3B82F6' },
-                  { key: 'CONSERVATIVE_WATCHER', label: '변동방어파 (안정)', color: '#10B981' },
-                  { key: 'MUTANT_ROOKIE', label: '돌연변이 혁신파 (진화)', color: '#8B5CF6' }
-                ].map(item => {
-                  const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
-                  return (
-                    <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color }} />
-                      <span><b>{item.label}:</b> {stat.count}석 ({stat.percentage}%)</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 2. 현재 당선된 11인의 ACTIVE 의원 명부 */}
-            <div>
-              <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
-                🏛️ 현직 라이브 의원 탑 11 (ACTIVE)
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {councilStats.activeMembers.map((member, i) => {
-                  let borderCol = 'rgba(255,255,255,0.06)';
-                  let badgeBg = 'rgba(255,255,255,0.05)';
-                  let factionColor = '#6B7280';
-                  let factionName = '무소속';
-
-                  if (member.faction === 'TREND_FOLLOWER') {
-                    borderCol = 'rgba(239, 68, 68, 0.15)';
-                    badgeBg = 'rgba(239, 68, 68, 0.03)';
-                    factionColor = '#EF4444';
-                    factionName = '추세추종';
-                  } else if (member.faction === 'VALUE_SEEKER') {
-                    borderCol = 'rgba(59, 130, 246, 0.15)';
-                    badgeBg = 'rgba(59, 130, 246, 0.03)';
-                    factionColor = '#3B82F6';
-                    factionName = '기술반등';
-                  } else if (member.faction === 'CONSERVATIVE_WATCHER') {
-                    borderCol = 'rgba(16, 185, 129, 0.15)';
-                    badgeBg = 'rgba(16, 185, 129, 0.03)';
-                    factionColor = '#10B981';
-                    factionName = '변동방어';
-                  } else if (member.faction === 'MUTANT_ROOKIE') {
-                    borderCol = 'rgba(139, 92, 246, 0.15)';
-                    badgeBg = 'rgba(139, 92, 246, 0.03)';
-                    factionColor = '#8B5CF6';
-                    factionName = '돌연변이';
-                  }
-
-                  // 특별 직책 및 스타일링 계산
-                  let titleLabel = '🏛️ 의원';
-                  let titleColor = '#9CA3AF';
-                  let cardBg = 'rgba(0,0,0,0.2)';
-                  if (i === 0) {
-                    titleLabel = '👑 의장';
-                    titleColor = '#F59E0B'; // Gold
-                    cardBg = 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
-                    borderCol = 'rgba(245, 158, 11, 0.25)';
-                  } else if (i === 1) {
-                    titleLabel = '🥈 부의장';
-                    titleColor = '#E5E7EB'; // Silver
-                    cardBg = 'linear-gradient(135deg, rgba(229, 231, 235, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
-                    borderCol = 'rgba(229, 231, 235, 0.25)';
-                  } else if (i === 2) {
-                    titleLabel = '🥉 상임위원장';
-                    titleColor = '#B45309'; // Bronze
-                    cardBg = 'linear-gradient(135deg, rgba(180, 83, 9, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
-                    borderCol = 'rgba(180, 83, 9, 0.25)';
-                  }
-
-                  return (
-                    <div key={member.member_id} style={{ border: `1px solid ${borderCol}`, background: cardBg, padding: '12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: i < 3 ? '0 2px 8px rgba(0,0,0,0.1)' : 'none' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', color: titleColor, fontWeight: '900', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          {titleLabel}
-                        </span>
-                        <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.06)', color: '#A78BFA', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
-                          🧬 {member.generation || 1}세대
-                        </span>
-                      </div>
-                      
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                        <div style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
-                          <span style={{ fontSize: '13px', color: '#FFF', fontWeight: 'bold' }}>{member.name}</span>
-                        </div>
-                        <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.08)', color: factionColor, padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
-                          {factionName}
-                        </span>
-                      </div>
-
-                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)' }}>
-                        <span>지분: <b style={{ color: '#FFF' }}>{member.voting_power.toFixed(2)}표</b></span>
-                        <span>정확도: <b style={{ color: '#10B981' }}>{member.correct_count}%</b></span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. 최근 의결 투표 흐름 */}
-            <div>
-              <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700' }}>
-                🔔 최근 AI 의원 투표 현황
-              </h4>
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-                {councilStats.recentVotes.map(v => {
-                  let voteColor = '#6B7280';
-                  let voteBg = 'rgba(255,255,255,0.05)';
-                  if (v.decision_vote === 'BUY') {
-                    voteColor = 'var(--success-color)';
-                    voteBg = 'rgba(16, 185, 129, 0.1)';
-                  } else if (v.decision_vote === 'SELL') {
-                    voteColor = 'var(--danger-color)';
-                    voteBg = 'rgba(239, 68, 68, 0.1)';
-                  } else {
-                    voteColor = 'var(--text-muted)';
-                    voteBg = 'rgba(255,255,255,0.08)';
-                  }
-
-                  return (
-                    <div key={v.id} style={{ flexShrink: 0, width: '120px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '3px', textAlign: 'left' }}>
-                      <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{v.timestamp.substring(11)}</span>
-                      <span style={{ fontSize: '10px', color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1px' }}>
-                        <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>{v.faction === 'TREND_FOLLOWER' ? '추세' : v.faction === 'VALUE_SEEKER' ? '기술' : v.faction === 'CONSERVATIVE_WATCHER' ? '방어' : '변동'}</span>
-                        <span style={{ fontSize: '9px', color: voteColor, background: voteBg, padding: '1px 4px', borderRadius: '4px', fontWeight: '800' }}>{v.decision_vote}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}>
         <div>
