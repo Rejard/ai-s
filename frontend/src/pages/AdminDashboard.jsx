@@ -6,6 +6,7 @@ import {
   ArrowLeft, BarChart3, Loader2, Home, Settings, Receipt
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
+import { formatKoreanDateTime } from '../lib/dateTime';
 
 function AdminDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -471,13 +472,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                             </div>
                             
                             <span style={{ fontSize: '8px', color: 'var(--text-dark)', fontFamily: 'monospace' }}>
-                              {(() => {
-                                const dateStr = String(log.created_at || '').replace(' ', 'T') + 'Z';
-                                const dateObj = new Date(dateStr);
-                                if (isNaN(dateObj.getTime())) return log.created_at;
-                                const kstFormatted = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
-                                return kstFormatted;
-                              })()}
+                              {formatKoreanDateTime(log.created_at)}
                             </span>
                           </div>
 

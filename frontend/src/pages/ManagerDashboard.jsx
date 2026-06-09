@@ -27,6 +27,8 @@ import {
   loadUserDashboardData,
 } from '../lib/userDashboard';
 import SutPriceChart from '../components/SutPriceChart';
+import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
+import EditUserModal from '../components/EditUserModal';
 
 function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -86,6 +88,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   }, []);
 
   const [selectedIdCard, setSelectedIdCard] = useState(null);
+  const [editingUserWallet, setEditingUserWallet] = useState(null);
   const [submittingId, setSubmittingId] = useState(null);
 
   const [orderAmount, setOrderAmount] = useState('');
@@ -851,6 +854,8 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           </div>
         )}
       </div>
+
+      <ManagerAiDecisionHistory logs={aiLogs} isMobile />
 
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
 
@@ -1668,7 +1673,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                   return (
                     <tr
                       key={user.id}
-                      onClick={() => navigate(`/manager/edit-user/${user.wallet_address}`)}
+                      onClick={() => setEditingUserWallet(user.wallet_address)}
                       style={{
                         borderBottom: '1px solid rgba(255,255,255,0.03)',
                         fontSize: '11px',
@@ -1754,6 +1759,15 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
             이미지 뷰어 닫기
           </button>
         </div>
+      )}
+
+      {editingUserWallet && (
+        <EditUserModal
+          walletAddress={editingUserWallet}
+          managerEmail={managerEmail}
+          onClose={() => setEditingUserWallet(null)}
+          onSuccess={fetchManagerData}
+        />
       )}
 
       {/* 👑 For Manager Real Deposit/Withdrawal Modal Popup */}

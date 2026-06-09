@@ -26,6 +26,8 @@ import {
   loadUserDashboardData,
 } from '../lib/userDashboard';
 import SutPriceChart from '../components/SutPriceChart';
+import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
+import EditUserModal from '../components/EditUserModal';
 
 function PcManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -130,6 +132,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [sendingSut, setSendingSut] = useState(false);
 
   const [selectedIdCard, setSelectedIdCard] = useState(null);
+  const [editingUserWallet, setEditingUserWallet] = useState(null);
   const [submittingId, setSubmittingId] = useState(null);
 
   const getManagerHeaders = () => {
@@ -1040,6 +1043,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             )}
           </div>
 
+          <ManagerAiDecisionHistory logs={aiLogs} />
+
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1657,7 +1662,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 return (
                   <div
                     key={user.id}
-                    onClick={() => navigate(`/manager/edit-user/${user.wallet_address}`)}
+                    onClick={() => setEditingUserWallet(user.wallet_address)}
                     style={{
                       background: isMaster ? 'rgba(139,92,246,0.06)' : 'rgba(255,255,255,0.01)',
                       border: '1px solid rgba(255,255,255,0.04)',
@@ -1821,6 +1826,15 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             이미지 확인 완료 (닫기)
           </button>
         </div>
+      )}
+
+      {editingUserWallet && (
+        <EditUserModal
+          walletAddress={editingUserWallet}
+          managerEmail={managerEmail}
+          onClose={() => setEditingUserWallet(null)}
+          onSuccess={fetchManagerData}
+        />
       )}
 
       {showTxModal && (

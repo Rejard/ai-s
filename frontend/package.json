@@ -8,7 +8,7 @@
     "build": "vite build",
     "test": "npm run test:wallet && npm run test:ai",
     "test:wallet": "node src/lib/walletProvider.test.mjs && node src/lib/sutApproval.test.mjs && node src/lib/accountIdentity.test.mjs && node src/lib/onboardingVisibility.test.mjs && node src/lib/dashboardCopy.test.mjs",
-    "test:ai": "node src/lib/aiTrading.test.mjs && node src/lib/managerDashboard.test.mjs && node src/lib/userDashboard.test.mjs",
+    "test:ai": "node src/lib/aiTrading.test.mjs && node src/lib/dateTime.test.mjs && node src/lib/managerDashboard.test.mjs && node src/lib/managerEditModal.test.mjs && node src/lib/userDashboard.test.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
