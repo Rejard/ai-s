@@ -1,4 +1,14 @@
 const GATEIO_MIN_ORDER_USDT = 3;
+const GATEIO_SAFE_ORDER_USDT = GATEIO_MIN_ORDER_USDT + 0.1;
+const GATEIO_AMOUNT_STEP = 0.1;
+
+function floorToAmountStep(amount) {
+  return parseFloat((Math.floor((amount + Number.EPSILON) / GATEIO_AMOUNT_STEP) * GATEIO_AMOUNT_STEP).toFixed(1));
+}
+
+function ceilToAmountStep(amount) {
+  return parseFloat((Math.ceil((amount - Number.EPSILON) / GATEIO_AMOUNT_STEP) * GATEIO_AMOUNT_STEP).toFixed(1));
+}
 
 function buildTradePlan({ decision, proposedPrice, amountRatio, balances, lower, upper, count, oneTimeOverride = null }) {
   const normalizedDecision = String(decision || '').toUpperCase();
@@ -44,41 +54,42 @@ function buildTradePlan({ decision, proposedPrice, amountRatio, balances, lower,
   }
 
   if (normalizedDecision === 'BUY') {
-    let amount = parseFloat(((usdtBalance * ratio) / price).toFixed(4));
+    let amount = floorToAmountStep((usdtBalance * ratio) / price);
     let orderNotional = amount * price;
     if (amount <= 0) {
       return { executable: false, side: 'buy', amount: 0, orderNotional: 0, message: 'Insufficient USDT balance for server auto trade.' };
     }
 
-    if (orderNotional < GATEIO_MIN_ORDER_USDT && usdtBalance >= GATEIO_MIN_ORDER_USDT) {
-      amount = parseFloat((GATEIO_MIN_ORDER_USDT / price).toFixed(4));
+    if (orderNotional < GATEIO_SAFE_ORDER_USDT && usdtBalance >= GATEIO_SAFE_ORDER_USDT) {
+      amount = ceilToAmountStep(GATEIO_SAFE_ORDER_USDT / price);
       orderNotional = amount * price;
     }
 
-    if (orderNotional < GATEIO_MIN_ORDER_USDT) {
-      return { executable: false, side: 'buy', amount, orderNotional, message: `Order value ${orderNotional.toFixed(5)} USDT is below Gate.io minimum ${GATEIO_MIN_ORDER_USDT} USDT.` };
+    if (orderNotional < GATEIO_SAFE_ORDER_USDT || orderNotional > usdtBalance) {
+      return { executable: false, side: 'buy', amount, orderNotional, message: `Available balance cannot meet the Gate.io safe minimum ${GATEIO_SAFE_ORDER_USDT} USDT order value.` };
     }
     return { executable: true, dryRun: false, side: 'buy', amount, orderNotional, message: 'Server auto trade order ready.' };
   }
 
-  let amount = parseFloat((sutBalance * ratio).toFixed(4));
+  let amount = floorToAmountStep(sutBalance * ratio);
   let orderNotional = amount * price;
   if (amount <= 0) {
     return { executable: false, side: 'sell', amount: 0, orderNotional: 0, message: 'Insufficient SUT balance for server auto trade.' };
   }
 
-  if (orderNotional < GATEIO_MIN_ORDER_USDT && (sutBalance * price) >= GATEIO_MIN_ORDER_USDT) {
-    amount = parseFloat((GATEIO_MIN_ORDER_USDT / price).toFixed(4));
+  if (orderNotional < GATEIO_SAFE_ORDER_USDT && (sutBalance * price) >= GATEIO_SAFE_ORDER_USDT) {
+    amount = ceilToAmountStep(GATEIO_SAFE_ORDER_USDT / price);
     orderNotional = amount * price;
   }
 
-  if (orderNotional < GATEIO_MIN_ORDER_USDT) {
-    return { executable: false, side: 'sell', amount, orderNotional, message: `Order value ${orderNotional.toFixed(5)} USDT is below Gate.io minimum ${GATEIO_MIN_ORDER_USDT} USDT.` };
+  if (orderNotional < GATEIO_SAFE_ORDER_USDT || amount > sutBalance) {
+    return { executable: false, side: 'sell', amount, orderNotional, message: `Available balance cannot meet the Gate.io safe minimum ${GATEIO_SAFE_ORDER_USDT} USDT order value.` };
   }
   return { executable: true, dryRun: false, side: 'sell', amount, orderNotional, message: 'Server auto trade order ready.' };
 }
 
 module.exports = {
   GATEIO_MIN_ORDER_USDT,
+  GATEIO_SAFE_ORDER_USDT,
   buildTradePlan
 };
