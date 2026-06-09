@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { encryptText } = require('./secureCredentials');
+const { migrateAisEvaluationSchema } = require('./aisEvaluation');
 
 const dbPath = path.resolve(__dirname, 'platform.db');
 const db = new sqlite3.Database(dbPath);
@@ -528,10 +529,16 @@ function initializeDatabase() {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (member_id) REFERENCES ais_council_members (member_id)
         )
-      `, (err) => { if (err) return reject(err); });
-
-      console.log('✔ SQLite Database initialized successfully with Root Referrers.');
-      resolve();
+      `, async (err) => {
+        if (err) return reject(err);
+        try {
+          await migrateAisEvaluationSchema(db);
+          console.log('✔ SQLite Database initialized successfully with Root Referrers.');
+          resolve();
+        } catch (migrationError) {
+          reject(migrationError);
+        }
+      });
     });
   });
 }

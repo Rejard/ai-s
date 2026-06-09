@@ -4,6 +4,12 @@ const { createGateIoOrder, getGateIoBalances, getGateIoOpenOrders, cancelGateIoO
 const { decryptText } = require('./secureCredentials');
 const { runDailyEvolution } = require('./evolution');
 const { buildTradePlan } = require('./autoTradeMath');
+const {
+  LABEL_VERSION,
+  addMinutesToSqliteTimestamp,
+  labelDueTrainingRows,
+  toKstSqliteTimestamp,
+} = require('./aisEvaluation');
 const { exec } = require('child_process');
 const os = require('os');
 
@@ -424,15 +430,19 @@ async function runAiGridBot() {
   console.log(`[🤖 AI GRID BOT] 글로벌 시황 분석 스케줄러 실행 중... (시간: ${new Date().toLocaleString()})`);
 
   try {
-    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'ai_grid_status', 'global_ai_engine')");
+    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'ai_grid_status', 'global_ai_engine')");
     let globalModel = 'Gemini 1.5 Pro';
     let globalApiKey = '';
+    let globalAiInterval = 5;
     let aiStatus = 'OFF';
     let aiEngineMode = 'GEMINI_ONLY';
 
     dbSettings.forEach(s => {
       if (s.key === 'global_ai_model') globalModel = s.value;
       if (s.key === 'global_gemini_api_key') globalApiKey = s.value;
+      if (s.key === 'global_ai_interval') {
+        globalAiInterval = Math.max(1, Math.min(60, parseInt(s.value, 10) || 5));
+      }
       if (s.key === 'ai_grid_status') aiStatus = s.value;
       if (s.key === 'global_ai_engine') aiEngineMode = s.value;
     });
@@ -460,6 +470,20 @@ async function runAiGridBot() {
     }
 
     const currentSutPrice = await getSutCurrentPrice();
+    const observedAtKst = toKstSqliteTimestamp();
+    try {
+      const labelResult = await labelDueTrainingRows(
+        queries,
+        observedAtKst,
+        currentSutPrice
+      );
+      if (labelResult.labeled > 0) {
+        console.log(`[AI GRID BOT] Labeled ${labelResult.labeled} due AiS observations.`);
+      }
+    } catch (labelError) {
+      console.error('[AI GRID BOT] Failed to label due AiS observations:', labelError.message);
+    }
+
     global.priceHistory.push(currentSutPrice);
     if (global.priceHistory.length > 30) {
       global.priceHistory.shift();
@@ -613,16 +637,19 @@ async function runAiGridBot() {
       // 1. Shadow 학습 혹은 AiS 전담 상태일 때 SQLite ais_training_data 테이블에 무제한 적재
       if (aiEngineMode === 'GEMINI_AIS_SHADOW' || aiEngineMode === 'AIS_ONLY') {
         try {
-          const kstDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
-          const timestampKstFormatted = kstDate.toISOString().replace('T', ' ').substring(0, 19);
+          const evaluationDueAt = addMinutesToSqliteTimestamp(
+            observedAtKst,
+            globalAiInterval
+          );
           
           await queries.run(`
             INSERT INTO ais_training_data (
               timestamp, current_price, price_change_ratio, rsi_14, sma_5, sma_20,
-              gemini_decision, gemini_proposed_price, gemini_amount_ratio, gemini_reason
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              gemini_decision, gemini_proposed_price, gemini_amount_ratio, gemini_reason,
+              evaluation_due_at, evaluation_status, label_version
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
           `, [
-            timestampKstFormatted,
+            observedAtKst,
             currentSutPrice,
             parseFloat(priceChangeRatio.toFixed(4)),
             rsi14,
@@ -631,52 +658,14 @@ async function runAiGridBot() {
             aiResult.decision,
             parseFloat(aiResult.price) || 0,
             parseFloat(aiResult.amount_ratio) || 0.1,
-            aiResult.reason || '판단 근거 없음'
+            aiResult.reason || '판단 근거 없음',
+            evaluationDueAt,
+            LABEL_VERSION
           ]);
           console.log(`[🤖 AI GRID BOT] AiS 학습용 데이터셋 무제한 SQLite 적재 완료.`);
         } catch (dbTrainErr) {
           console.error("[🤖 AI GRID BOT] SQLite 학습 데이터셋 적재 오류:", dbTrainErr.message);
         }
-      }
-
-      // 2. 사후 피드백 라벨링 스케줄링 (직전 틱 t-1의 next_price_5m 채워주기)
-      try {
-        const lastUnfilled = await queries.get(`
-          SELECT id, current_price, gemini_decision, gemini_proposed_price 
-          FROM ais_training_data 
-          WHERE next_price_5m = 0.0 
-          ORDER BY id DESC 
-          LIMIT 1
-        `);
-        if (lastUnfilled) {
-          const realizedPriceChange = ((currentSutPrice - lastUnfilled.current_price) / lastUnfilled.current_price) * 100;
-          
-          let isCorrect = 0;
-          const decision = lastUnfilled.gemini_decision;
-          if (decision === 'BUY') {
-            isCorrect = currentSutPrice > lastUnfilled.current_price ? 1 : 0;
-          } else if (decision === 'SELL') {
-            isCorrect = currentSutPrice < lastUnfilled.current_price ? 1 : 0;
-          } else if (decision === 'HOLD') {
-            isCorrect = Math.abs(realizedPriceChange) < 1.0 ? 1 : 0;
-          }
-          
-          await queries.run(`
-            UPDATE ais_training_data
-            SET next_price_5m = ?,
-                realized_price_change = ?,
-                is_correct_decision = ?
-            WHERE id = ?
-          `, [
-            currentSutPrice,
-            parseFloat(realizedPriceChange.toFixed(4)),
-            isCorrect,
-            lastUnfilled.id
-          ]);
-          console.log(`[🤖 AI GRID BOT] 직전 틱(ID: ${lastUnfilled.id}) 피드백 라벨링 업데이트 성공: next_price=${currentSutPrice}, 채점=${isCorrect}`);
-        }
-      } catch (feedbackErr) {
-        console.error("[🤖 AI GRID BOT] 피드백 라벨링 업데이트 실패:", feedbackErr.message);
       }
 
       // 💾 CSV 파일에 학습 데이터 저장 로직 추가 (호환성 보존)
@@ -715,7 +704,10 @@ async function runAiGridBot() {
 
     // 3. AiS 모델 백그라운드 자동 학습 트리거 검사
     try {
-      const statsRow = await queries.get("SELECT COUNT(*) as total FROM ais_training_data WHERE next_price_5m > 0.0");
+      const statsRow = await queries.get(
+        "SELECT COUNT(*) as total FROM ais_training_data WHERE evaluation_status = 'LABELED' AND label_version = ?",
+        [LABEL_VERSION]
+      );
       const totalUnfilled = statsRow ? statsRow.total : 0;
       
       const lastTrainedRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'ais_last_trained_at'");
