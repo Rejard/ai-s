@@ -149,3 +149,25 @@ To ensure seamless collaboration with AI coding assistants, this project enforce
 1. **AI-First & Exception-Only Commenting Philosophy**: All comments are written **exclusively** for AI/LLM context recovery, semantic indexing, and logical reasoning. They are **NOT** intended for human reading. The default rule is **zero-comment (100% no comments)**. Comments are written **only** in exceptional circumstances involving non-standard workarounds, API rate-limit bypasses, or fallback triggers. When exceptions apply, write only a single line of concise technical English explaining the *why*.
 2. **Standard Terminology**: Always use standard English business terms (Manager, Platform Owner/Admin, Active Member/Approved User, Distribution, Registration Fee/Deposit, Withdrawal, Grid Bot) in all code naming conventions and exception comments.
 3. **Safety Policies**: Never modify global system configuration templates (like `ai_models.json`), never run `pm2 delete all`, and never auto-commit to git without human supervision. Refer to [.cursorrules](file:///c:/home/ai-s/.cursorrules) for full details.
+
+## AiS Evolutionary Philosophy: Safe Gated RSI
+
+This project is named **AiS Safe RSI**, leveraging the financial **Relative Strength Index (RSI)** for our 5D normalized feature vectors, while simultaneously implementing a fully functional **Recursive Self-Improvement (RSI)** loop.
+
+### 1. The Critique of Silicon Valley's Safe Alignment (Anachronistic Control)
+Frontier labs like Anthropic argue for a highly conservative "safety alignment" approach, warning that autonomous recursive self-improvement loops will inevitably lead to a loss of human control. They advocate for coordinate development pauses or restrictive barriers.
+
+We strongly disagree. **Over-regulation in evolution is an evolutionary dead end.** 
+- When you restrict AI exploration to a narrow band of "pre-approved safety parameters," you lock the system into a local minimum.
+- If an unprecedented black swan event (e.g., an extreme market crash) strikes, a unified, over-secured model pool will suffer complete extinction because no outliers exist with the traits necessary to survive the new reality.
+- Survival and intelligence do not emerge from sterile parameters; they emerge from the survival of outliers through chaotic adaptation. 
+
+### 2. Our Architecture: Safe Gated RSI (Air-Gapped Mutation)
+Rather than suppressing mutation to enforce safety, we decouple mutation from exploitation. 
+
+- **Wild Mutation in the Sandbox**: We force 75 raw, randomized 1st-generation mutant rookies into the 500-candidate pool during every evolutionary cycle. Crossover offspring have a 50% chance of mutation with random feature noise. AI candidates are allowed to mutate wildly and test radical strategies.
+- **Air-Gapped Gating (Shadow-only Mode)**: Safety is enforced not by controlling the AI's mind, but by controlling its environment. Candidates evolve in a secure **Shadow Mode (Simulation)** without access to live capital. 
+- **Human-in-the-loop (Natural Selection)**: Only when a candidate satisfies rigid statistical criteria (300 labeled observations, 3%p margin over holdout benchmark, zero label contamination) does it present promotion eligibility evidence to the Administrator. The AI never promotes itself; the human remains the final arbiter of selection.
+
+We invite like-minded developers who believe in **survival through wild diversity rather than sterile over-regulation** to join our movement.
+
