@@ -3,6 +3,7 @@ import os
 import json
 import random
 import urllib.request
+import uuid
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'platform.db')
@@ -251,7 +252,7 @@ def main():
             
             new_inserts = []
             for k in range(needed):
-                new_id = f"ais_member_{total_in_db + k + 1:04d}"
+                new_id = f"ais_member_{uuid.uuid4().hex}"
                 
                 # Apply mutation to seeds if available, else generate fresh random
                 if seed_weights and random.random() > 0.3:
@@ -334,13 +335,13 @@ def main():
                 offspring_weights = mutate_weights(offspring_weights)
                 
             offspring_gen = max(p1["generation"], p2["generation"]) + 1
-            new_id = f"offspring_{datetime.now().strftime('%Y%m%d%H%M')}_{idx:02d}"
+            new_id = f"offspring_{uuid.uuid4().hex}"
             name = f"Offspring Gen-{idx+1} ({offspring_gen}세대)"
             faction = determine_faction_from_weights(offspring_weights, p1["name"])
             new_offspring_inserts.append((new_id, name, json.dumps(offspring_weights), 1.0, 'CANDIDATE', faction, offspring_gen))
             
         for idx in range(75):
-            new_id = f"mutant_{datetime.now().strftime('%Y%m%d%H%M')}_{idx:02d}"
+            new_id = f"mutant_{uuid.uuid4().hex}"
             name = f"Mutant Rookie Gen-{idx+1} (1세대)"
             weights = generate_random_weights()
             faction = determine_faction_from_weights(weights, name)
@@ -351,7 +352,25 @@ def main():
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, new_offspring_inserts)
         conn.commit()
-        print(f"[+] Spawned 75 crossover offsprings and 75 fresh mutants to refill 500 pool.")
+
+        cursor.execute("SELECT COUNT(*) FROM ais_council_members")
+        pool_count = cursor.fetchone()[0]
+        while pool_count < 500:
+            weights = generate_random_weights()
+            name = f"Mutant Pool Refill {pool_count + 1} (1세대)"
+            cursor.execute("""
+                INSERT INTO ais_council_members
+                (member_id, name, weights_json, voting_power, status, faction, generation)
+                VALUES (?, ?, ?, 1.0, 'CANDIDATE', ?, 1)
+            """, (
+                f"mutant_{uuid.uuid4().hex}",
+                name,
+                json.dumps(weights),
+                determine_faction_from_weights(weights, name)
+            ))
+            pool_count += 1
+        conn.commit()
+        print(f"[+] Spawned candidates and verified exact pool size: {pool_count}/500.")
         
         # 7. Election: Elect Top 11 best performers as ACTIVE Council Members
         # Downgrade all current active members to CANDIDATE status first

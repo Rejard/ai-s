@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { encryptText } = require('./secureCredentials');
 
 const dbPath = path.resolve(__dirname, 'platform.db');
@@ -495,11 +496,16 @@ function initializeDatabase() {
           }
         ];
         
-        initialMembers.forEach(m => {
-          db.run(`
-            INSERT OR IGNORE INTO ais_council_members (member_id, name, weights_json, voting_power, status, faction, generation)
-            VALUES (?, ?, ?, 1.0, 'ACTIVE', ?, 1)
-          `, [m.id, m.name, JSON.stringify(m.weights), m.faction]);
+        db.get("SELECT COUNT(*) AS count FROM ais_council_members", (countErr, row) => {
+          if (countErr) return reject(countErr);
+          if (row.count > 0) return;
+
+          initialMembers.forEach(m => {
+            db.run(`
+              INSERT INTO ais_council_members (member_id, name, weights_json, voting_power, status, faction, generation)
+              VALUES (?, ?, ?, 1.0, 'ACTIVE', ?, 1)
+            `, [m.id, m.name, JSON.stringify(m.weights), m.faction]);
+          });
         });
       });
 
@@ -548,8 +554,55 @@ const queries = {
   }
 };
 
+async function repairAiCouncilState() {
+  const totalRow = await queries.get("SELECT COUNT(*) AS count FROM ais_council_members");
+  let total = totalRow ? totalRow.count : 0;
+  if (total <= 11) return { total, active: total, repaired: false };
+
+  const initialIds = Array.from(
+    { length: 11 },
+    (_, index) => `ais_member_${String(index + 1).padStart(2, '0')}`
+  );
+  const placeholders = initialIds.map(() => '?').join(',');
+  await queries.run(
+    `UPDATE ais_council_members
+     SET status = 'CANDIDATE'
+     WHERE status = 'ACTIVE'
+       AND total_count = 0
+       AND member_id IN (${placeholders})`,
+    initialIds
+  );
+
+  while (total < 500) {
+    const seed = await queries.get(`
+      SELECT weights_json, faction, generation
+      FROM ais_council_members
+      ORDER BY RANDOM()
+      LIMIT 1
+    `);
+    await queries.run(`
+      INSERT INTO ais_council_members
+        (member_id, name, weights_json, voting_power, status, faction, generation)
+      VALUES (?, ?, ?, 1.0, 'CANDIDATE', ?, ?)
+    `, [
+      `mutant_refill_${crypto.randomUUID().replace(/-/g, '')}`,
+      `Mutant Pool Refill ${total + 1}`,
+      seed.weights_json,
+      seed.faction || 'MUTANT_ROOKIE',
+      seed.generation || 1
+    ]);
+    total += 1;
+  }
+
+  const activeRow = await queries.get(
+    "SELECT COUNT(*) AS count FROM ais_council_members WHERE status = 'ACTIVE'"
+  );
+  return { total, active: activeRow.count, repaired: true };
+}
+
 module.exports = {
   db,
   initializeDatabase,
-  queries
+  queries,
+  repairAiCouncilState
 };

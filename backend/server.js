@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
-const { initializeDatabase } = require('./database');
+const { initializeDatabase, repairAiCouncilState } = require('./database');
 const { autoDeployContracts } = require('./contractHelper');
 const { initGridBotScheduler } = require('./gridBot');
 
@@ -46,6 +46,8 @@ async function bootstrap() {
   try {
 
     await initializeDatabase();
+    const councilState = await repairAiCouncilState();
+    console.log(`[AI COUNCIL] Pool verified: ${councilState.total}/500, active voters: ${councilState.active}/11`);
 
     // 2. Smart contract deployment automation (includes automatic Mock mode switching based on network balance)
     await autoDeployContracts();
