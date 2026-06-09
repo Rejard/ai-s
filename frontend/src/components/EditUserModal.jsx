@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../App';
 import { formatKoreanDateTime } from '../lib/dateTime';
+import { buildAuthHeaders } from '../lib/authSession';
 
 const EMPTY_FORM = {
   walletAddress: '',
@@ -34,6 +35,7 @@ function EditUserModal({ walletAddress, managerEmail, onClose, onSuccess }) {
 
   const headers = {
     headers: {
+      ...buildAuthHeaders(),
       'x-manager-email': managerEmail || 'lemaiiisk@gmail.com',
     },
   };

@@ -424,7 +424,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
 
   const fetchCouncilStats = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/admin/council-stats`);
+      const res = await axios.get(`${API_BASE}/investment/council-stats`);
       if (res.data.success) {
         setCouncilStats({
           totalCount: res.data.totalCount || 0,

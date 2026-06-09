@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
 import { formatKoreanDateTime } from '../lib/dateTime';
+import { downloadAuthenticatedFile } from '../lib/authSession';
 
 function PcAdminDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -244,9 +245,12 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              <a
-                href={`${API_BASE}/admin/export-training-csv?x-admin-email=lemaiiisk@gmail.com`}
-                download="ais_training_dataset.csv"
+              <button
+                type="button"
+                onClick={() => downloadAuthenticatedFile(
+                  `${API_BASE}/admin/export-training-csv`,
+                  'ais_training_dataset.csv'
+                )}
                 style={{
                   display: 'flex',
                   justifyContent: 'center',
@@ -267,7 +271,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 }}
               >
                 📥 AI 학습용 CSV 데이터셋 다운로드
-              </a>
+              </button>
             </div>
           </div>
 

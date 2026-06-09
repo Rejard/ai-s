@@ -4,12 +4,13 @@ const axios = require('axios');
 const { queries } = require('../database');
 const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades, getGateIoOpenOrders, cancelGateIoOrder, getGateIoDeposits, getGateIoWithdrawals } = require('../gateioHelper');
 const { decryptText, encryptText } = require('../secureCredentials');
+const { requireAuthenticatedSession } = require('../authSession');
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
 // Ironclad security middleware that completely blocks illegal viewing and control of other Managers' data!
 
-const getRequestManagerEmail = (req) => (req.headers['x-manager-email'] || '').toLowerCase().trim();
+const getRequestManagerEmail = (req) => req.authEmail || '';
 
 const managerAuthMiddleware = async (req, res, next) => {
   const managerEmail = getRequestManagerEmail(req);
@@ -44,6 +45,7 @@ const managerAuthMiddleware = async (req, res, next) => {
 };
 
 // Force mount security blocking middleware on all Manager routes!
+router.use(requireAuthenticatedSession);
 router.use(managerAuthMiddleware);
 
 const isMaskedCredential = (value) => {

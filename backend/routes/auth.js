@@ -3,7 +3,65 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
 const { queries } = require('../database');
+const {
+  issueAuthToken,
+  requireAuthenticatedSession,
+} = require('../authSession');
+
+const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
+
+router.post('/google-session', async (req, res) => {
+  const { credential, accessToken } = req.body || {};
+  if (!credential && !accessToken) {
+    return res.status(400).json({ success: false, message: 'Google login proof is required.' });
+  }
+
+  try {
+    let profile;
+    if (credential) {
+      const response = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
+        params: { id_token: credential },
+        timeout: 10000,
+      });
+      if (response.data.aud !== GOOGLE_CLIENT_ID || String(response.data.email_verified) !== 'true') {
+        return res.status(401).json({ success: false, message: 'Google identity verification failed.' });
+      }
+      profile = response.data;
+    } else {
+      const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 10000,
+      });
+      if (!response.data.email || response.data.email_verified === false) {
+        return res.status(401).json({ success: false, message: 'Google identity verification failed.' });
+      }
+      profile = response.data;
+    }
+
+    const email = profile.email.toLowerCase().trim();
+    const name = profile.name || profile.given_name || email;
+    res.json({
+      success: true,
+      token: issueAuthToken(email, name),
+      profile: { email, name },
+    });
+  } catch (error) {
+    const status = [400, 401].includes(error.response?.status) ? 401 : 502;
+    res.status(status).json({ success: false, message: 'Google identity verification failed.' });
+  }
+});
+
+router.get('/session', requireAuthenticatedSession, (req, res) => {
+  res.json({
+    success: true,
+    profile: {
+      email: req.authSession.email,
+      name: req.authSession.name || req.authSession.email,
+    },
+  });
+});
 
 const uploadDir = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {

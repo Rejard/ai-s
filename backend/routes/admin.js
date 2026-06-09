@@ -7,6 +7,7 @@ const {
   extractCompleteGeminiText,
   makeCouncilBriefingGenerationConfig
 } = require('../councilBriefing');
+const { requireAuthenticatedSession } = require('../authSession');
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
@@ -25,8 +26,7 @@ const sutInterface = new ethers.Interface([
 ]);
 
 const adminAuthMiddleware = (req, res, next) => {
-  const adminEmail = req.headers['x-admin-email'] || req.headers['x-manager-email'];
-  if (!adminEmail || adminEmail.toLowerCase().trim() !== 'lemaiiisk@gmail.com'.toLowerCase()) {
+  if (req.authEmail !== 'lemaiiisk@gmail.com') {
     return res.status(403).json({
       success: false,
       message: '보안 경보: 관리자 권한이 존재하지 않습니다. 어드민 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.'
@@ -36,6 +36,7 @@ const adminAuthMiddleware = (req, res, next) => {
 };
 
 // Mount security middleware on all Admin-specific API routes
+router.use(requireAuthenticatedSession);
 router.use(adminAuthMiddleware);
 
 router.get('/managers', async (req, res) => {

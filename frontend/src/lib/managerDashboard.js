@@ -1,3 +1,5 @@
+import { buildAuthHeaders } from './authSession.js';
+
 const DEFAULT_MANAGER_EMAIL = 'lemaiiisk@gmail.com';
 
 export function getManagerIdentityEmail(managerEmail) {
@@ -10,11 +12,13 @@ export function isMaskedCredential(value) {
 
 export function buildManagerHeaders({ managerEmail, getStorageItem }) {
   const readStorage = typeof getStorageItem === 'function' ? getStorageItem : () => '';
+  const storage = { getItem: readStorage };
   const apiKey = readStorage('gateio_api_key') || '';
   const apiSecret = readStorage('gateio_api_secret') || '';
 
   return {
     headers: {
+      ...buildAuthHeaders(storage),
       'x-manager-email': getManagerIdentityEmail(managerEmail),
       'x-gateio-api-key': isMaskedCredential(apiKey) ? '' : apiKey,
       'x-gateio-api-secret': isMaskedCredential(apiSecret) ? '' : apiSecret,

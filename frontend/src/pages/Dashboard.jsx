@@ -19,7 +19,7 @@ import { isAdminGoogleAccount, isManagerAccount } from '../lib/accountIdentity';
 
 function Dashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
-  const googleEmail = localStorage.getItem('google_email');
+  const googleEmail = userData?.email;
   const canAccessManager = isManagerAccount(userData, googleEmail, walletAddress);
   const canAccessAdmin = isAdminGoogleAccount(googleEmail || userData?.email);
 

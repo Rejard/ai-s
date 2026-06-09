@@ -21,6 +21,7 @@ import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
+import { clearAuthSession, getAuthToken, saveAuthSession } from './lib/authSession';
 
 export const API_BASE = 'https://edenai.alonics.com/api';
 
@@ -39,8 +40,6 @@ function AppContent() {
   const [googleLoggedIn, setGoogleLoggedIn] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
-
-  const [showGPassModal, setShowGPassModal] = useState(false);
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const isAdminViewer = googleLoggedIn && isAdminGoogleAccount(googleEmail);
@@ -121,11 +120,12 @@ function AppContent() {
     return null;
   };
 
-  const applyGoogleProfile = async (profile) => {
+  const applyGoogleProfile = async (profile, authToken) => {
     const email = profile.email?.toLowerCase().trim();
     if (!email) throw new Error('Google profile did not include an email address.');
 
     const name = profile.name || profile.given_name || email;
+    saveAuthSession(authToken, { email, name });
 
     setLoading(true);
     const restoredWallet = await restoreSessionByEmail(email);
@@ -137,8 +137,14 @@ function AppContent() {
     setGoogleEmail(email);
     setGoogleName(name);
     setGoogleLoggedIn(true);
-    localStorage.setItem('google_email', email);
-    localStorage.setItem('google_name', name);
+  };
+
+  const createGoogleSession = async (proof) => {
+    const response = await axios.post(`${API_BASE}/auth/google-session`, proof);
+    if (!response.data.success || !response.data.token) {
+      throw new Error('Google session creation failed.');
+    }
+    return response.data;
   };
 
   const restoreGoogleOAuthRedirect = async () => {
@@ -149,12 +155,8 @@ function AppContent() {
     const accessToken = params.get('access_token');
     if (!accessToken) return false;
 
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) throw new Error(`Google userinfo failed with ${res.status}`);
-
-    await applyGoogleProfile(await res.json());
+    const session = await createGoogleSession({ accessToken });
+    await applyGoogleProfile(session.profile, session.token);
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     return true;
   };
@@ -173,32 +175,34 @@ function AppContent() {
         searchString = searchString.replace(/&amp;/g, '&');
       }
       const params = new URLSearchParams(searchString);
-      const paramEmail = params.get('google_email');
-      const paramName = params.get('google_name');
+      const hashParams = new URLSearchParams(window.location.hash.startsWith('#')
+        ? window.location.hash.slice(1)
+        : '');
+      const handoffToken = hashParams.get('auth_token');
 
       let currentEmail = '';
       let currentName = '';
-
-      if (paramEmail && paramName) {
-        currentEmail = decodeURIComponent(paramEmail).toLowerCase().trim();
-        currentName = decodeURIComponent(paramName);
-      } else {
-        const savedEmail = localStorage.getItem('google_email');
-        const savedName = localStorage.getItem('google_name');
-        if (savedEmail && savedName) {
-          currentEmail = savedEmail;
-          currentName = savedName;
-        }
-      }
+      const authToken = handoffToken || getAuthToken();
 
       let _googleLoggedIn = false;
-      if (currentEmail && currentName) {
-        setGoogleEmail(currentEmail);
-        setGoogleName(currentName);
-        setGoogleLoggedIn(true);
-        _googleLoggedIn = true;
-        localStorage.setItem('google_email', currentEmail);
-        localStorage.setItem('google_name', currentName);
+      if (authToken) {
+        try {
+          const sessionResponse = await axios.get(`${API_BASE}/auth/session`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+          });
+          currentEmail = sessionResponse.data.profile.email;
+          currentName = sessionResponse.data.profile.name;
+          saveAuthSession(authToken, { email: currentEmail, name: currentName });
+          setGoogleEmail(currentEmail);
+          setGoogleName(currentName);
+          setGoogleLoggedIn(true);
+          _googleLoggedIn = true;
+          if (handoffToken) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch {
+          clearAuthSession();
+        }
       }
 
       const promises = [];
@@ -247,36 +251,12 @@ function AppContent() {
 
   const handleGoogleCredentialResponse = async (response) => {
     try {
-      const token = response.credential;
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-
-      const payload = JSON.parse(jsonPayload);
-
-      const email = payload.email.toLowerCase().trim();
-      const name = payload.name || payload.given_name || '사용자';
-
-      localStorage.setItem('google_email', email);
-      localStorage.setItem('google_name', name);
-
-      setLoading(true);
-      const restoredWallet = await restoreSessionByEmail(email);
-      if (!restoredWallet && walletAddress) {
-        await checkUserStatus(walletAddress, email);
-      }
-      setLoading(false);
-
-      setGoogleEmail(email);
-      setGoogleName(name);
-      setGoogleLoggedIn(true);
-
-      alert(`🎉 Google 연동 성공: ${email} 계정으로 정상 연동되었습니다.`);
+      const session = await createGoogleSession({ credential: response.credential });
+      await applyGoogleProfile(session.profile, session.token);
+      alert(`Google 계정 연동 완료: ${session.profile.email}`);
     } catch (e) {
-      console.error("구글 JWT 디코딩 실패:", e);
-      alert("구글 로그인 처리 중 문제가 발생했습니다.");
+      console.error('Google login verification failed:', e);
+      alert('Google 로그인 인증에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -390,13 +370,10 @@ function AppContent() {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         const baseUrl = window.location.origin + window.location.pathname;
-        const queryParams = new URLSearchParams();
-        if (googleLoggedIn && googleEmail) {
-          queryParams.set('google_email', googleEmail);
-          queryParams.set('google_name', googleName);
-        }
-
-        const finalUrl = `${baseUrl}?${queryParams.toString()}`;
+        const authFragment = googleLoggedIn && getAuthToken()
+          ? `#auth_token=${encodeURIComponent(getAuthToken())}`
+          : '';
+        const finalUrl = `${baseUrl}${authFragment}`;
         const trustDeepLink = buildTrustWalletOpenUrl(finalUrl);
 
         alert('Trust Wallet 앱으로 이동합니다. Trust Wallet에서 AiS를 열어 지갑을 연결해 주세요.');
@@ -408,8 +385,7 @@ function AppContent() {
   };
 
   const disconnectWallet = () => {
-    localStorage.removeItem('google_email');
-    localStorage.removeItem('google_name');
+    clearAuthSession();
     alert('계정이 안전하게 초기화되었습니다.');
     window.location.reload();
   };
@@ -477,13 +453,12 @@ function AppContent() {
                     alignItems: 'center',
                     gap: '8px'
                   }}
-                  onClick={() => setShowGPassModal(true)}
+                  onClick={startGoogleRedirectLogin}
                 >
-                  ⚡ 1초 구글 계정 간편 연동 (DApp 퀵패스)
+                  Google 계정으로 안전하게 로그인
                 </button>
                 <div style={{ fontSize: '10px', color: '#A78BFA', lineHeight: '1.4', padding: '0 10px' }}>
-                  💡 모바일 DApp 브라우저 환경입니다.<br />
-                  구글 OAuth 백화 오류 방지를 위해 <strong>1초 퀵패스</strong>가 자동으로 개통되었습니다.
+                  Google 인증을 완료한 계정만 접근할 수 있습니다.
                 </div>
               </div>
             ) : (
@@ -551,7 +526,7 @@ function AppContent() {
               </div>
               <div>
                 <h4>안전한 구글 로그인 & DApp 연동</h4>
-                <p>2단계 구글 퀵패스 및 폴리곤 Web3 다이렉트 연계를 결합하여 빈틈없는 신원 증명을 제공합니다.</p>
+                <p>Google 공식 인증 및 폴리곤 Web3 다이렉트 연계를 결합하여 계정 권한을 안전하게 확인합니다.</p>
               </div>
             </div>
 
@@ -849,86 +824,6 @@ function AppContent() {
         )}
       </main>
 
-      {showGPassModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 9999,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px'
-        }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '30px', background: '#111827' }}>
-            <h3 style={{ fontSize: '18px', color: '#FFF', marginBottom: '10px' }}>⚡ DApp Quick Pass Easy Integration</h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
-              현재 보안을 위해 인앱 브라우저로 접속하셨습니다.<br/>
-              구글 팝업 오류 방지를 위해, 사용하실 <strong>구글 이메일 주소</strong>와 성함을 직접 입력하시면 즉시 연동됩니다.
-            </p>
-            <div className="form-group" style={{ marginBottom: '15px' }}>
-              <label className="form-label" style={{ color: '#A78BFA' }}>Google Email Address</label>
-              <input
-                type="email"
-                className="form-input"
-                id="gpass-email"
-                placeholder="예: email@gmail.com"
-              />
-            </div>
-            <div className="form-group" style={{ marginBottom: '25px' }}>
-              <label className="form-label" style={{ color: '#A78BFA' }}>Name (Full Name)</label>
-              <input
-                type="text"
-                className="form-input"
-                id="gpass-name"
-                placeholder="예: 홍길동"
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                className="btn-secondary"
-                style={{ flex: 1, padding: '12px' }}
-                onClick={() => setShowGPassModal(false)}
-              >
-                취소
-              </button>
-              <button
-                className="btn-primary"
-                style={{ flex: 1, padding: '12px', background: 'var(--primary-gradient)' }}
-                onClick={async () => {
-                  const email = document.getElementById('gpass-email').value.trim();
-                  const name = document.getElementById('gpass-name').value.trim();
-                  if (!email || !email.includes('@')) {
-                    alert('유효한 구글 이메일 주소를 입력해주세요.');
-                    return;
-                  }
-                  if (!name) {
-                    alert('성함을 입력해주세요.');
-                    return;
-                  }
-                  setGoogleEmail(email.toLowerCase());
-                  setGoogleName(name);
-                  setGoogleLoggedIn(true);
-                  localStorage.setItem('google_email', email.toLowerCase());
-                  localStorage.setItem('google_name', name);
-                  setShowGPassModal(false);
-
-                  const restoredWallet = await restoreSessionByEmail(email);
-                  if (!restoredWallet && walletAddress) {
-                    await checkUserStatus(walletAddress, email);
-                  }
-                }}
-              >
-                연동 완료
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

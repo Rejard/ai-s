@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
+import { buildAuthHeaders } from '../lib/authSession';
 
 export function useAdminLogic(managerEmail) {
 
@@ -39,6 +40,7 @@ export function useAdminLogic(managerEmail) {
   const getAdminHeaders = () => {
     return {
       headers: {
+        ...buildAuthHeaders(),
         'x-admin-email': ADMIN_EMAIL
       }
     };
@@ -94,6 +96,7 @@ export function useAdminLogic(managerEmail) {
     try {
       const res = await axios.get(`${API_BASE}/manager/stats`, {
         headers: {
+          ...buildAuthHeaders(),
           'x-manager-email': ADMIN_EMAIL
         }
       });
@@ -110,6 +113,7 @@ export function useAdminLogic(managerEmail) {
     try {
       const res = await axios.get(`${API_BASE}/manager/ai-logs?limit=50`, {
         headers: {
+          ...buildAuthHeaders(),
           'x-manager-email': ADMIN_EMAIL
         }
       });
