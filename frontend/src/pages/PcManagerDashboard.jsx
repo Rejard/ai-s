@@ -1050,6 +1050,93 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           <ManagerAiDecisionHistory logs={aiLogs} />
           <ManagerTradeExecutions executions={tradeExecutions} />
 
+          {/* 최근 Gate.io 실거래 미체결 대기 주문 카드 (PC용) */}
+          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
+            <h4 style={{ fontSize: '14px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>⏳</span>
+              실거래 미체결 대기 주문 (Open Orders)
+            </h4>
+
+            {!openOrders || openOrders.length === 0 ? (
+              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
+                현재 거래소 호가창에 대기 중인 주문이 없습니다. (체결 완료 혹은 미접수)
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#D1D5DB', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)' }}>
+                      <th style={{ padding: '10px 8px', fontWeight: '600' }}>주문 접수 시각 (한국 시간)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600' }}>주문 구분</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>주문 가격 (USDT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>주문 수량 (SUT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>남은 수량 (SUT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>총액 (USDT)</th>
+                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'center' }}>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openOrders.map((order, idx) => {
+                      const isBuy = order.side === 'buy';
+                      const formattedTime = (() => {
+                        try {
+                          const ts = parseFloat(order.create_time_ms || (order.create_time * 1000));
+                          const date = new Date(ts);
+                          return date.toLocaleString();
+                        } catch (e) {
+                          return '-';
+                        }
+                      })();
+                      const amount = parseFloat(order.amount).toFixed(2);
+                      const price = parseFloat(order.price).toFixed(4);
+                      const left = parseFloat(order.left || 0).toFixed(2);
+                      const total = (parseFloat(order.amount) * parseFloat(order.price)).toFixed(4);
+
+                      return (
+                        <tr key={order.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                          <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{formattedTime}</td>
+                          <td style={{ padding: '12px 8px' }}>
+                            <span style={{
+                              color: isBuy ? 'var(--success-color)' : 'var(--danger-color)',
+                              background: isBuy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                              fontSize: '11px'
+                            }}>
+                              {isBuy ? '🟢 매수 대기' : '🔴 매도 대기'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#FFF' }}>{price}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#FFF' }}>{amount}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--warning-color)' }}>{left}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#10B981' }}>{total}</td>
+                          <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.15)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                color: '#EF4444',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              취소
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1356,92 +1443,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
           </div>
 
-          {/* 최근 Gate.io 실거래 미체결 대기 주문 카드 추가 (PC용) */}
-          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
-            <h4 style={{ fontSize: '14px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>⏳</span>
-              실거래 미체결 대기 주문 (Open Orders)
-            </h4>
 
-            {!openOrders || openOrders.length === 0 ? (
-              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '13px' }}>
-                현재 거래소 호가창에 대기 중인 주문이 없습니다. (체결 완료 혹은 미접수)
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#D1D5DB', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '10px 8px', fontWeight: '600' }}>주문 접수 시각 (한국 시간)</th>
-                      <th style={{ padding: '10px 8px', fontWeight: '600' }}>주문 구분</th>
-                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>주문 가격 (USDT)</th>
-                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>주문 수량 (SUT)</th>
-                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>남은 수량 (SUT)</th>
-                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'right' }}>총액 (USDT)</th>
-                      <th style={{ padding: '10px 8px', fontWeight: '600', textAlign: 'center' }}>작업</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {openOrders.map((order, idx) => {
-                      const isBuy = order.side === 'buy';
-                      const formattedTime = (() => {
-                        try {
-                          const ts = parseFloat(order.create_time_ms || (order.create_time * 1000));
-                          const date = new Date(ts);
-                          return date.toLocaleString();
-                        } catch (e) {
-                          return '-';
-                        }
-                      })();
-                      const amount = parseFloat(order.amount).toFixed(2);
-                      const price = parseFloat(order.price).toFixed(4);
-                      const left = parseFloat(order.left || 0).toFixed(2);
-                      const total = (parseFloat(order.amount) * parseFloat(order.price)).toFixed(4);
-
-                      return (
-                        <tr key={order.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                          <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{formattedTime}</td>
-                          <td style={{ padding: '12px 8px' }}>
-                            <span style={{
-                              color: isBuy ? 'var(--success-color)' : 'var(--danger-color)',
-                              background: isBuy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                              padding: '2px 8px',
-                              borderRadius: '6px',
-                              fontWeight: 'bold',
-                              fontSize: '11px'
-                            }}>
-                              {isBuy ? '🟢 매수 대기' : '🔴 매도 대기'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#FFF' }}>{price}</td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#FFF' }}>{amount}</td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--warning-color)' }}>{left}</td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#10B981' }}>{total}</td>
-                          <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                            <button
-                              onClick={() => handleCancelOrder(order.id)}
-                              style={{
-                                background: 'rgba(239, 68, 68, 0.15)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                color: '#EF4444',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              취소
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
 
           {/* 최근 Gate.io 실거래 체결 내역 카드 추가 */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
