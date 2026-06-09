@@ -22,6 +22,8 @@ This log is strictly for AI self-reference to avoid repeating developer mistakes
   1. **Import Checklist**: Double-check the top 40 lines of modified page files to ensure all imported modules are correctly listed.
   2. **Bundler Check**: Run `npm run build` in `frontend/` to spot compilation warnings or unresolved imports.
   3. **Browser Check**: Always fire `browser_subagent` to navigate to the target site (`https://edenai.alonics.com/`) and inspect console logs for reference errors.
+- **Case Example**:
+  * *2026-06-09*: `SutPriceCard` and `ManagerTradeExecutions` imports were missing in `PcManagerDashboard.jsx` and `ManagerDashboard.jsx`, resulting in a runtime `ReferenceError` post-build. Resolved by restoring imports, rebuilding, and restarting `ai-s`.
 
 ---
 
@@ -31,6 +33,24 @@ This log is strictly for AI self-reference to avoid repeating developer mistakes
 - **Action**:
   1. **Path injection**: Add `module.paths.push(path.resolve(__dirname, '../backend/node_modules'));` (or appropriate sub-folder) at the very top of utility scripts.
   2. **Working Directory**: Run execution commands with target `Cwd` set to `backend/` or `frontend/` where node modules reside.
+
+---
+
+## ⚠️ [ERR_CODE_04] past_incident_syntax_error (과거 식별자 중복 선언 구문 에러)
+- **Sym**: Node.js backend server crashes and does not start, causing entire site down.
+- **Cause**: Variable redeclaration error (`SyntaxError: Identifier 'sortedTrades' has already been declared`) in `backend/routes/manager.js` inside `/gateio-performance` endpoint.
+- **Action**:
+  1. **Identifier Check**: Avoid declaring identical variable names within the same block scope. Use distinct local names like `chronTrades`.
+  2. **Process Check**: Always monitor backend server status via `pm2 status` or logs when site goes down, and run `pm2 restart ai-s`.
+
+---
+
+## ⚠️ [ERR_CODE_05] past_incident_reference_error (과거 미사용 함수 호출 참조 에러)
+- **Sym**: Manager dashboard fails to load, blank screen.
+- **Cause**: Calling undeclared/removed function `buildNextPriceHistory` inside `PcManagerDashboard.jsx` and `ManagerDashboard.jsx`.
+- **Action**:
+  1. **Dead Code Elimination**: Remove dead/undeclared function calls.
+  2. **Vite Compile Check**: Verify components compile properly using `npm run build` before deploying.
 
 ---
 
