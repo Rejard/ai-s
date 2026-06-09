@@ -26,6 +26,7 @@ import {
   loadUserDashboardData,
 } from '../lib/userDashboard';
 import SutPriceChart from '../components/SutPriceChart';
+import SutPriceCard from '../components/SutPriceCard';
 import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
 import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
 import EditUserModal from '../components/EditUserModal';
