@@ -12,3 +12,5 @@ backend/uploads/
 
 # Scratch Files
 scratch/
+backend/data/ai_decisions.csv
+
