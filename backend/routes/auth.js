@@ -11,6 +11,25 @@ const {
 } = require('../authSession');
 
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
+const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
+
+const findApprovedManager = (walletAddress) => queries.get(
+  `SELECT name, wallet_address, status
+   FROM users
+   WHERE LOWER(wallet_address) = LOWER(?)
+     AND status = 'APPROVED'
+     AND is_manager = 1`,
+  [walletAddress]
+);
+
+const countManagerMembers = (walletAddress) => queries.get(
+  `SELECT COUNT(*) as total
+   FROM users
+   WHERE status IN ('APPROVED', 'PENDING_KYC')
+     AND LOWER(manager_address) = LOWER(?)
+     AND COALESCE(is_manager, 0) = 0`,
+  [walletAddress]
+);
 
 router.post('/google-session', async (req, res) => {
   const { credential, accessToken } = req.body || {};
@@ -95,7 +114,12 @@ const upload = multer({
 
 router.get('/check-limit', async (req, res) => {
   try {
-    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'");
+    const managerAddress = String(req.query.managerAddress || MASTER_MANAGER_WALLET).trim();
+    const manager = await findApprovedManager(managerAddress);
+    if (!manager) {
+      return res.status(400).json({ success: false, message: '승인된 매니저 지갑이 아닙니다.' });
+    }
+    const countRow = await countManagerMembers(manager.wallet_address);
     const totalCount = countRow ? countRow.total : 0;
 
     res.json({
@@ -112,10 +136,7 @@ router.get('/check-limit', async (req, res) => {
 router.get('/verify-manager/:walletAddress', async (req, res) => {
   const cleanWallet = req.params.walletAddress.toLowerCase().trim();
   try {
-    const user = await queries.get(
-      "SELECT name, status FROM users WHERE LOWER(wallet_address) = ?",
-      [cleanWallet]
-    );
+    const user = await findApprovedManager(cleanWallet);
 
     if (!user) {
       return res.json({ success: false, message: '등록되지 않은 지갑 주소입니다.' });
@@ -142,9 +163,21 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
     const cleanWallet = walletAddress.trim();
     const cleanEmail = email.toLowerCase().trim();
 
-    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status IN ('APPROVED', 'PENDING_KYC') AND wallet_address != '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'");
+    const requestedManager = managerAddress ? managerAddress.trim() : MASTER_MANAGER_WALLET;
+    const manager = await findApprovedManager(requestedManager);
+    if (!manager) {
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
+      return res.status(400).json({ success: false, message: '승인된 매니저 지갑이 아닙니다.' });
+    }
+
+    const countRow = await countManagerMembers(manager.wallet_address);
     const totalCount = countRow ? countRow.total : 0;
     if (totalCount >= 500) {
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
       return res.status(400).json({ success: false, message: '1차 한정 모집 인원 500명이 마감되었습니다.' });
     }
 
@@ -172,7 +205,7 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
     }
     const idCardPath = `/uploads/${req.file.filename}`;
 
-    const assignedManager = managerAddress ? managerAddress.trim().toLowerCase() : 'none';
+    const assignedManager = manager.wallet_address.toLowerCase();
 
     await queries.run(`
       INSERT INTO users (

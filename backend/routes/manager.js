@@ -5,8 +5,11 @@ const { queries } = require('../database');
 const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades, getGateIoOpenOrders, cancelGateIoOrder, getGateIoDeposits, getGateIoWithdrawals } = require('../gateioHelper');
 const { decryptText, encryptText } = require('../secureCredentials');
 const { requireAuthenticatedSession } = require('../authSession');
-
-const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
+const {
+  getManagerAccount,
+  getManagedUser,
+  getManagedWithdrawal,
+} = require('../managerOrganization');
 
 // Ironclad security middleware that completely blocks illegal viewing and control of other Managers' data!
 
@@ -21,23 +24,16 @@ const managerAuthMiddleware = async (req, res, next) => {
     });
   }
 
-  if (managerEmail === 'lemaiiisk@gmail.com') {
-    req.managerEmail = managerEmail;
-    return next();
-  }
-
   try {
-    const manager = await queries.get(
-      "SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND is_manager = 1 AND status = 'APPROVED'",
-      [managerEmail]
-    );
+    const manager = await getManagerAccount(queries, managerEmail);
     if (!manager) {
       return res.status(403).json({
         success: false,
         message: '매니저 권한이 존재하지 않습니다.'
       });
     }
-    req.managerEmail = managerEmail;
+    req.managerEmail = manager.email.toLowerCase().trim();
+    req.managerWallet = manager.wallet_address;
     next();
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -87,8 +83,10 @@ router.get('/pending-users', async (req, res) => {
       SELECT id, wallet_address, email, name, phone, country, id_card_path, joined_at
       FROM users
       WHERE status = 'PENDING_KYC'
+        AND LOWER(manager_address) = LOWER(?)
+        AND COALESCE(is_manager, 0) = 0
       ORDER BY joined_at DESC
-    `);
+    `, [req.managerWallet]);
     res.json({ success: true, users: pendingUsers });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -100,8 +98,10 @@ router.get('/users', async (req, res) => {
     const allUsers = await queries.all(`
       SELECT id, wallet_address, email, name, phone, country, status, joined_at, approved_at
       FROM users
+      WHERE LOWER(manager_address) = LOWER(?)
+        AND COALESCE(is_manager, 0) = 0
       ORDER BY joined_at DESC
-    `);
+    `, [req.managerWallet]);
     res.json({ success: true, users: allUsers });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -116,7 +116,7 @@ router.post('/approve-user', async (req, res) => {
   const cleanWallet = walletAddress.trim();
 
   try {
-    const user = await queries.get("SELECT id, status FROM users WHERE wallet_address = ?", [cleanWallet]);
+    const user = await getManagedUser(queries, req.managerWallet, cleanWallet);
     if (!user) {
       return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
     }
@@ -124,10 +124,10 @@ router.post('/approve-user', async (req, res) => {
       return res.status(400).json({ success: false, message: '이미 승인된 회원입니다.' });
     }
 
-    const userRow = await queries.get("SELECT manager_address FROM users WHERE wallet_address = ?", [cleanWallet]);
-    const managerAddr = userRow ? userRow.manager_address : 'none';
-
-    const countRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status = 'APPROVED' AND LOWER(manager_address) = LOWER(?)", [managerAddr]);
+    const countRow = await queries.get(
+      "SELECT COUNT(*) as total FROM users WHERE status = 'APPROVED' AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [req.managerWallet]
+    );
     const totalCount = countRow ? countRow.total : 0;
     if (totalCount >= 500) {
       return res.status(400).json({ success: false, message: '해당 매니저 하위의 1차 승인 제한 인원 500명이 이미 가득 찼습니다.' });
@@ -137,8 +137,10 @@ router.post('/approve-user', async (req, res) => {
       UPDATE users
       SET status = 'APPROVED',
           approved_at = datetime('now', 'localtime')
-      WHERE wallet_address = ?
-    `, [cleanWallet]);
+      WHERE LOWER(wallet_address) = LOWER(?)
+        AND LOWER(manager_address) = LOWER(?)
+        AND COALESCE(is_manager, 0) = 0
+    `, [cleanWallet, req.managerWallet]);
 
     res.json({
       success: true,
@@ -158,12 +160,15 @@ router.post('/reject-user', async (req, res) => {
   const cleanWallet = walletAddress.trim();
 
   try {
-    const user = await queries.get("SELECT id FROM users WHERE wallet_address = ?", [cleanWallet]);
+    const user = await getManagedUser(queries, req.managerWallet, cleanWallet);
     if (!user) {
       return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
     }
 
-    await queries.run("UPDATE users SET status = 'REJECTED' WHERE wallet_address = ?", [cleanWallet]);
+    await queries.run(
+      "UPDATE users SET status = 'REJECTED' WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [cleanWallet, req.managerWallet]
+    );
     res.json({ success: true, message: '회원의 가입 신청이 성공적으로 반려되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -173,17 +178,26 @@ router.post('/reject-user', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
 
-    const approvedCountRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status = 'APPROVED' AND wallet_address != '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'");
-    const pendingCountRow = await queries.get("SELECT COUNT(*) as total FROM users WHERE status = 'PENDING_KYC'");
+    const approvedCountRow = await queries.get(
+      "SELECT COUNT(*) as total FROM users WHERE status = 'APPROVED' AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [req.managerWallet]
+    );
+    const pendingCountRow = await queries.get(
+      "SELECT COUNT(*) as total FROM users WHERE status = 'PENDING_KYC' AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [req.managerWallet]
+    );
 
     const paymentStats = await queries.get(`
       SELECT
         SUM(CASE WHEN type IN ('DEPOSIT', 'AI_TRADING_PROFIT') THEN amount ELSE 0 END) as totalRevenue,
         SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END) as totalDeposited,
         SUM(CASE WHEN type = 'WITHDRAW_REQUEST' THEN amount ELSE 0 END) as totalDistributed
-      FROM payments
-      WHERE status = 'SUCCESS'
-    `);
+      FROM payments p
+      JOIN users u ON LOWER(p.wallet_address) = LOWER(u.wallet_address)
+      WHERE p.status = 'SUCCESS'
+        AND LOWER(u.manager_address) = LOWER(?)
+        AND COALESCE(u.is_manager, 0) = 0
+    `, [req.managerWallet]);
 
     const totalRevenue = paymentStats.totalRevenue || 0;
     const totalDeposited = paymentStats.totalDeposited || 0;
@@ -195,9 +209,11 @@ router.get('/stats', async (req, res) => {
       FROM payments p
       JOIN users u ON LOWER(p.wallet_address) = LOWER(u.wallet_address)
       WHERE p.status = 'SUCCESS'
+        AND LOWER(u.manager_address) = LOWER(?)
+        AND COALESCE(u.is_manager, 0) = 0
       ORDER BY p.created_at DESC
       LIMIT 10
-    `);
+    `, [req.managerWallet]);
 
     res.json({
       success: true,
@@ -237,20 +253,26 @@ router.post('/update-user', async (req, res) => {
 
   try {
 
-    const user = await queries.get("SELECT id FROM users WHERE wallet_address = ?", [cleanTarget]);
+    const user = await getManagedUser(queries, req.managerWallet, cleanTarget);
     if (!user) {
       return res.status(404).json({ success: false, message: '수정할 회원을 찾을 수 없습니다.' });
     }
 
     if (cleanTarget !== cleanNewWallet) {
-      const duplicateUser = await queries.get("SELECT id FROM users WHERE wallet_address = ?", [cleanNewWallet]);
+      const duplicateUser = await queries.get(
+        "SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?)",
+        [cleanNewWallet]
+      );
       if (duplicateUser) {
         return res.status(400).json({ success: false, message: '변경하려는 지갑 주소는 이미 등록된 타 회원의 지갑 주소입니다.' });
       }
     }
 
     if (cleanTarget !== cleanNewWallet) {
-      await queries.run("UPDATE payments SET wallet_address = ? WHERE wallet_address = ?", [cleanNewWallet, cleanTarget]);
+      await queries.run(
+        "UPDATE payments SET wallet_address = ? WHERE LOWER(wallet_address) = LOWER(?)",
+        [cleanNewWallet, cleanTarget]
+      );
     }
 
     await queries.run(`
@@ -261,7 +283,9 @@ router.post('/update-user', async (req, res) => {
           phone = ?,
           country = ?,
           status = ?
-      WHERE wallet_address = ?
+      WHERE LOWER(wallet_address) = LOWER(?)
+        AND LOWER(manager_address) = LOWER(?)
+        AND COALESCE(is_manager, 0) = 0
     `, [
       cleanNewWallet,
       email.toLowerCase().trim(),
@@ -269,7 +293,8 @@ router.post('/update-user', async (req, res) => {
       phone,
       country,
       status,
-      cleanTarget
+      cleanTarget,
+      req.managerWallet
     ]);
 
     res.json({ success: true, message: '회원 상세 정보가 완벽하게 수정 반영되었습니다!' });
@@ -287,8 +312,10 @@ router.get('/withdrawals', async (req, res) => {
       FROM payments p
       JOIN users u ON LOWER(p.wallet_address) = LOWER(u.wallet_address)
       WHERE p.type = 'WITHDRAW_REQUEST' AND p.status = 'PENDING'
+        AND LOWER(u.manager_address) = LOWER(?)
+        AND COALESCE(u.is_manager, 0) = 0
       ORDER BY p.created_at DESC
-    `);
+    `, [req.managerWallet]);
     res.json({ success: true, withdrawals });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -300,7 +327,7 @@ router.post('/withdrawals/:id/approve', async (req, res) => {
   const { actualPayoutAmount } = req.body;
   try {
 
-    const request = await queries.get("SELECT * FROM payments WHERE id = ? AND type = 'WITHDRAW_REQUEST' AND status = 'PENDING'", [id]);
+    const request = await getManagedWithdrawal(queries, req.managerWallet, id);
     if (!request) return res.status(404).json({ success: false, message: '유효한 출금 요청을 찾을 수 없습니다.' });
 
     const ledgerDeduction = request.amount;
@@ -324,7 +351,7 @@ router.post('/withdrawals/:id/approve', async (req, res) => {
 router.post('/withdrawals/:id/reject', async (req, res) => {
   const { id } = req.params;
   try {
-    const request = await queries.get("SELECT * FROM payments WHERE id = ? AND type = 'WITHDRAW_REQUEST' AND status = 'PENDING'", [id]);
+    const request = await getManagedWithdrawal(queries, req.managerWallet, id);
     if (!request) return res.status(404).json({ success: false, message: '유효한 출금 요청을 찾을 수 없습니다.' });
 
     await queries.run("UPDATE payments SET status = 'FAILED' WHERE id = ?", [id]);
@@ -347,6 +374,10 @@ router.post('/manual-adjustment', async (req, res) => {
 
   try {
     const cleanWallet = targetWallet.toLowerCase().trim();
+    const user = await getManagedUser(queries, req.managerWallet, cleanWallet);
+    if (!user) {
+      return res.status(403).json({ success: false, message: '해당 회원은 이 매니저의 조직에 속하지 않습니다.' });
+    }
 
     await queries.run(`
       INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
@@ -374,7 +405,10 @@ router.post('/trigger-ai-profit', async (req, res) => {
 
   try {
 
-    const activeUsers = await queries.all("SELECT wallet_address FROM users WHERE status = 'APPROVED'");
+    const activeUsers = await queries.all(
+      "SELECT wallet_address FROM users WHERE status = 'APPROVED' AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [req.managerWallet]
+    );
 
     if (activeUsers.length === 0) {
       return res.json({ success: true, message: '현재 수익을 배분할 정회원이 없습니다.' });
@@ -977,16 +1011,19 @@ router.get('/trade-executions', async (req, res) => {
   }
 });
 
-router.post('/sync-transactions', managerAuthMiddleware, async (req, res) => {
+router.post('/sync-transactions', async (req, res) => {
   try {
     const { ethers } = require('ethers');
     const rpcUrl = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
     const sutAddress = process.env.SUT_CONTRACT_ADDRESS || '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
     const vaultAddress = process.env.VAULT_CONTRACT_ADDRESS || '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
-    const managerAddress = req.body.managerAddress || MASTER_MANAGER_WALLET;
+    const managerAddress = req.managerWallet;
 
     // 1. 가입 승인된 모든 회원의 지갑 주소 조회
-    const approvedUsers = await queries.all("SELECT LOWER(wallet_address) as wallet FROM users WHERE status = 'APPROVED'");
+    const approvedUsers = await queries.all(
+      "SELECT LOWER(wallet_address) as wallet FROM users WHERE status = 'APPROVED' AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [managerAddress]
+    );
     const userWallets = new Set(approvedUsers.map(u => u.wallet));
 
     if (userWallets.size === 0) {
@@ -1031,7 +1068,6 @@ router.post('/sync-transactions', managerAuthMiddleware, async (req, res) => {
     const step = 10000;
     const targetAddresses = new Set([
       vaultAddress.toLowerCase(),
-      MASTER_MANAGER_WALLET.toLowerCase(),
       managerAddress.toLowerCase()
     ]);
 

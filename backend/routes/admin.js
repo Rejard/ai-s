@@ -125,7 +125,10 @@ router.post('/promote-manager', async (req, res) => {
 
   try {
 
-    const user = await queries.get("SELECT id, status, is_manager FROM users WHERE wallet_address = ?", [cleanWallet]);
+    const user = await queries.get(
+      "SELECT id, status, is_manager FROM users WHERE LOWER(wallet_address) = LOWER(?)",
+      [cleanWallet]
+    );
     if (!user) {
       return res.status(444).json({ success: false, message: '등록되지 않은 회원 지갑 주소입니다. 가입을 먼저 완료해 주십시오.' });
     }
@@ -139,8 +142,9 @@ router.post('/promote-manager', async (req, res) => {
     await queries.run(`
       UPDATE users
       SET is_manager = 1,
-          manager_address = 'none'
-      WHERE wallet_address = ?
+          manager_address = 'none',
+          referrer_address = 'none'
+      WHERE LOWER(wallet_address) = LOWER(?)
     `, [cleanWallet]);
 
     res.json({

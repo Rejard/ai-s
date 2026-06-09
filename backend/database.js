@@ -302,9 +302,18 @@ function initializeDatabase() {
         SET email = 'lemaiiisk@gmail.com',
             name = '이명학',
             status = 'APPROVED',
-            is_manager = 1
+            is_manager = 1,
+            manager_address = 'none',
+            referrer_address = 'none'
         WHERE wallet_address = ?
       `, [rootReferrerAddress]);
+
+      db.run(`
+        UPDATE users
+        SET manager_address = 'none',
+            referrer_address = 'none'
+        WHERE is_manager = 1
+      `);
 
       // payments table schema update migration: if type constraint is old, migrate to new schema
       db.serialize(() => {

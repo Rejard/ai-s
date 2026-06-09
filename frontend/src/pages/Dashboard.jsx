@@ -350,6 +350,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         🔌 {DASHBOARD_COPY.logout}
       </button>
 
+      {!canAccessManager && (
       <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', color: 'var(--text-dark)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
           <div>💬 담당 매니저 문의</div>
@@ -364,6 +365,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
       </div>
+      )}
 
     </div>
   );

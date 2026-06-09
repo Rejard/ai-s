@@ -442,6 +442,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
+        {!canAccessManager && (
         <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.25)' }}>
           <h4 style={{ fontSize: '13px', color: '#A78BFA', fontWeight: '700', marginBottom: '10px' }}>
             💬 실시간 매니저 고객센터
@@ -464,6 +465,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             </div>
           </div>
         </div>
+        )}
 
       </div>
 
