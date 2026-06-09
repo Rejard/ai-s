@@ -169,5 +169,37 @@ Rather than suppressing mutation to enforce safety, we decouple mutation from ex
 - **Air-Gapped Gating (Shadow-only Mode)**: Safety is enforced not by controlling the AI's mind, but by controlling its environment. Candidates evolve in a secure **Shadow Mode (Simulation)** without access to live capital. 
 - **Human-in-the-loop (Natural Selection)**: Only when a candidate satisfies rigid statistical criteria (300 labeled observations, 3%p margin over holdout benchmark, zero label contamination) does it present promotion eligibility evidence to the Administrator. The AI never promotes itself; the human remains the final arbiter of selection.
 
+### 3. Architecture Sequence & Evolution Flow
+
+```mermaid
+graph TD
+    subgraph Sandbox [Shadow Simulation Environment (Air-Gapped Sandbox)]
+        A[500 Candidate Models Pool] --> B(Crossover & 50% Mutation Noise)
+        C[75 Mutant Rookies per Gen] --> A
+        B --> D{Evaluation on Sandbox Data}
+        D -->|Failed| E[Discard / Repopulate]
+        D -->|Passed Statistical Filters| F[Candidate Evidence Ledger]
+    end
+    
+    subgraph Live [Live Production Environment]
+        H[Live Engine Execution & Capital Allocation]
+    end
+    
+    F -->|Promotion Proposal Report| G{Human Admin: Rejard Approval}
+    G -->|Approved| H
+    G -->|Rejected| E
+```
+
+### 4. Acknowledging Our Limitations (Humility in Evolutionary Design)
+
+We do not claim that our framework is infallible, nor do we pretend to hold absolute answers. Acknowledging the weaknesses of our architecture is a core part of our philosophy. Evolution is not about starting with a perfect design; it is about recognizing flaws and adapting through trial and error.
+
+*   **The Human Bottleneck**:
+    Because the final gating mechanism requires manual review and promotion by the Administrator (Rejard), our system cannot achieve instantaneous, fully automated real-time redeployments. The speed of evolution is ultimately bounded by human judgment.
+*   **The Simulation-Reality Gap**:
+    No matter how rigorous our Shadow simulation is, it cannot perfectly model the chaotic dynamics, systemic contagion, or liquidity slippage of the live market. Outperforming the benchmark in the sandbox does not guarantee risk-free returns in the live environment.
+*   **Inefficiency of Wild Mutations**:
+    Injecting 75 completely unproven 1st-generation mutant rookies and forcing a 50% mutation noise rate inevitably generates a large volume of low-performing candidates in the early generations. This results in significant computational waste and training overhead.
+
 We invite like-minded developers who believe in **survival through wild diversity rather than sterile over-regulation** to join our movement.
 
