@@ -8,6 +8,7 @@ const {
   makeCouncilBriefingGenerationConfig
 } = require('../councilBriefing');
 const { requireAuthenticatedSession } = require('../authSession');
+const { getAisTrainingStats } = require('../aisAdminStats');
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
@@ -281,8 +282,7 @@ router.post('/save-ai-engine', async (req, res) => {
  */
 router.get('/training-stats', async (req, res) => {
   try {
-    const row = await queries.get("SELECT COUNT(*) as total FROM ais_training_data");
-    const count = row ? row.total : 0;
+    const trainingStats = await getAisTrainingStats(queries);
 
     const settings = await queries.all(`
       SELECT key, value FROM platform_settings 
@@ -299,9 +299,12 @@ router.get('/training-stats', async (req, res) => {
 
     res.json({ 
       success: true, 
-      count,
+      count: trainingStats.total,
       lastTrainedAt,
-      modelAccuracy
+      modelAccuracy: trainingStats.latestRun
+        ? trainingStats.latestRun.holdoutScore.toFixed(2)
+        : modelAccuracy,
+      ...trainingStats
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -317,13 +320,14 @@ router.get('/export-training-csv', async (req, res) => {
     const rows = await queries.all(`
       SELECT timestamp, current_price, price_change_ratio, rsi_14, sma_5, sma_20,
              gemini_decision, gemini_proposed_price, gemini_amount_ratio, gemini_reason,
-             next_price_5m, realized_price_change, is_correct_decision
+             next_price_5m, realized_price_change, is_correct_decision,
+             evaluation_due_at, evaluation_status, label_version
       FROM ais_training_data
       ORDER BY id ASC
     `);
 
     // Build CSV compliant header and body rows
-    const header = 'timestamp,current_price,price_change_ratio,rsi_14,sma_5,sma_20,gemini_decision,gemini_proposed_price,gemini_amount_ratio,gemini_reason,next_price_5m,realized_price_change,is_correct_decision\n';
+    const header = 'timestamp,current_price,price_change_ratio,rsi_14,sma_5,sma_20,gemini_decision,gemini_proposed_price,gemini_amount_ratio,gemini_reason,next_price_5m,realized_price_change,is_correct_decision,evaluation_due_at,evaluation_status,label_version\n';
     
     let csvContent = header;
     rows.forEach(r => {
@@ -332,7 +336,7 @@ router.get('/export-training-csv', async (req, res) => {
         .replace(/"/g, '""')
         .replace(/\r?\n|\r/g, ' ');
       
-      const line = `"${r.timestamp}",${r.current_price},${r.price_change_ratio},${r.rsi_14},${r.sma_5},${r.sma_20},"${r.gemini_decision}",${r.gemini_proposed_price},${r.gemini_amount_ratio},"${escapedReason}",${r.next_price_5m},${r.realized_price_change},${r.is_correct_decision}\n`;
+      const line = `"${r.timestamp}",${r.current_price},${r.price_change_ratio},${r.rsi_14},${r.sma_5},${r.sma_20},"${r.gemini_decision}",${r.gemini_proposed_price},${r.gemini_amount_ratio},"${escapedReason}",${r.next_price_5m},${r.realized_price_change},${r.is_correct_decision},"${r.evaluation_due_at || ''}","${r.evaluation_status || ''}",${r.label_version || ''}\n`;
       csvContent += line;
     });
 

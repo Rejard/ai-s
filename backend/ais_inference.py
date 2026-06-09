@@ -1,24 +1,12 @@
 import sys
 import json
 import base64
-import math
 
-def predict_for_member(features, weights):
-    """
-    Calculate Euclidean distance to find the closest decision centroid
-    for a given member's weights dictionary.
-    """
-    best_decision = "HOLD"
-    min_dist = float('inf')
-    for dec, mean_vec in weights.items():
-        # Check matching length just in case
-        if len(mean_vec) < 5:
-            continue
-        dist = sum((f - m) ** 2 for f, m in zip(features, mean_vec[:5]))
-        if dist < min_dist:
-            min_dist = dist
-            best_decision = dec
-    return best_decision
+from ais_features import (
+    build_features,
+    predict_from_centroids,
+    validate_centroids,
+)
 
 def main():
     try:
@@ -51,7 +39,13 @@ def main():
                 # Fallback to empty if decoding fails
                 members_data = []
 
-        features = [current_price, price_change_ratio, rsi_value, sma_5, sma_20]
+        features = build_features(
+            current_price,
+            price_change_ratio,
+            rsi_value,
+            sma_5,
+            sma_20,
+        )
         votes_result = []
 
         if members_data:
@@ -68,14 +62,8 @@ def main():
                 
                 # Predict closest class (Centroid distance fallback heuristics)
                 decision = "HOLD"
-                if weights:
-                    decision = predict_for_member(features, weights)
-                else:
-                    # Heuristic fallback if weights missing
-                    if rsi_value < 35:
-                        decision = "BUY"
-                    elif rsi_value > 65:
-                        decision = "SELL"
+                if validate_centroids(weights):
+                    decision = predict_from_centroids(features, weights)
 
                 # Construct Korean reason reflecting individual member profile
                 reason = f"[{name}] 분석: 현재가 {current_price} USDT, RSI {rsi_value:.1f} 기준으로 "

@@ -5,7 +5,9 @@ const crypto = require('crypto');
 const { encryptText } = require('./secureCredentials');
 const { migrateAisEvaluationSchema } = require('./aisEvaluation');
 
-const dbPath = path.resolve(__dirname, 'platform.db');
+const dbPath = process.env.AIS_DB_PATH
+  ? path.resolve(process.env.AIS_DB_PATH)
+  : path.resolve(__dirname, 'platform.db');
 const db = new sqlite3.Database(dbPath);
 
 function initializeDatabase() {
@@ -166,7 +168,10 @@ function initializeDatabase() {
           gemini_reason TEXT,
           next_price_5m REAL DEFAULT 0.0,
           realized_price_change REAL DEFAULT 0.0,
-          is_correct_decision INTEGER DEFAULT -1
+          is_correct_decision INTEGER DEFAULT -1,
+          evaluation_due_at TEXT,
+          evaluation_status TEXT DEFAULT 'PENDING',
+          label_version INTEGER DEFAULT 2
         )
       `, (err) => {
         if (err) return reject(err);

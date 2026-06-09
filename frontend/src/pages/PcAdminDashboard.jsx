@@ -6,6 +6,7 @@ import {
   ArrowLeft, BarChart3, HelpCircle, Loader2, Receipt
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
+import AisTrainingEvidence from '../components/AisTrainingEvidence';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
 
@@ -38,6 +39,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     trainingDataCount,
     aisLastTrainedAt,
     aisModelAccuracy,
+    aisTrainingStats,
     savingAiEngine,
     handleSaveAiEngine,
     councilStats,
@@ -244,6 +246,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                   * 매 5분 틱마다 시장 지표(RSI_14, SMA_5/20) 및 사후 채점(next_price) 피드백이 실시간 자동 빌드되어 SQLite DB에 무제한 누적됩니다.
                 </div>
               </div>
+
+              <AisTrainingEvidence stats={aisTrainingStats} />
 
               <button
                 type="button"

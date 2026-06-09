@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
 import { buildAuthHeaders } from '../lib/authSession';
+import { normalizeAisTrainingStats } from '../lib/aisTrainingView';
 
 export function useAdminLogic(managerEmail) {
 
@@ -27,6 +28,9 @@ export function useAdminLogic(managerEmail) {
   const [trainingDataCount, setTrainingDataCount] = useState(0);
   const [aisLastTrainedAt, setAisLastTrainedAt] = useState('');
   const [aisModelAccuracy, setAisModelAccuracy] = useState('0.00');
+  const [aisTrainingStats, setAisTrainingStats] = useState(
+    normalizeAisTrainingStats()
+  );
   const [savingAiEngine, setSavingAiEngine] = useState(false);
 
   // AI 의회 관련 추가 상태
@@ -145,6 +149,7 @@ export function useAdminLogic(managerEmail) {
         setTrainingDataCount(res.data.count || 0);
         setAisLastTrainedAt(res.data.lastTrainedAt || '');
         setAisModelAccuracy(res.data.modelAccuracy || '0.00');
+        setAisTrainingStats(normalizeAisTrainingStats(res.data));
       }
     } catch (err) {
       console.error('Failed to load training dataset count:', err.message);
@@ -326,6 +331,7 @@ export function useAdminLogic(managerEmail) {
     trainingDataCount,
     aisLastTrainedAt,
     aisModelAccuracy,
+    aisTrainingStats,
     savingAiEngine,
     handleSaveAiEngine,
     councilStats,
