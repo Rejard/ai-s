@@ -44,22 +44,34 @@ function buildTradePlan({ decision, proposedPrice, amountRatio, balances, lower,
   }
 
   if (normalizedDecision === 'BUY') {
-    const amount = parseFloat(((usdtBalance * ratio) / price).toFixed(4));
-    const orderNotional = amount * price;
+    let amount = parseFloat(((usdtBalance * ratio) / price).toFixed(4));
+    let orderNotional = amount * price;
     if (amount <= 0) {
       return { executable: false, side: 'buy', amount: 0, orderNotional: 0, message: 'Insufficient USDT balance for server auto trade.' };
     }
+
+    if (orderNotional < GATEIO_MIN_ORDER_USDT && usdtBalance >= GATEIO_MIN_ORDER_USDT) {
+      amount = parseFloat((GATEIO_MIN_ORDER_USDT / price).toFixed(4));
+      orderNotional = amount * price;
+    }
+
     if (orderNotional < GATEIO_MIN_ORDER_USDT) {
       return { executable: false, side: 'buy', amount, orderNotional, message: `Order value ${orderNotional.toFixed(5)} USDT is below Gate.io minimum ${GATEIO_MIN_ORDER_USDT} USDT.` };
     }
     return { executable: true, dryRun: false, side: 'buy', amount, orderNotional, message: 'Server auto trade order ready.' };
   }
 
-  const amount = parseFloat((sutBalance * ratio).toFixed(4));
-  const orderNotional = amount * price;
+  let amount = parseFloat((sutBalance * ratio).toFixed(4));
+  let orderNotional = amount * price;
   if (amount <= 0) {
     return { executable: false, side: 'sell', amount: 0, orderNotional: 0, message: 'Insufficient SUT balance for server auto trade.' };
   }
+
+  if (orderNotional < GATEIO_MIN_ORDER_USDT && (sutBalance * price) >= GATEIO_MIN_ORDER_USDT) {
+    amount = parseFloat((GATEIO_MIN_ORDER_USDT / price).toFixed(4));
+    orderNotional = amount * price;
+  }
+
   if (orderNotional < GATEIO_MIN_ORDER_USDT) {
     return { executable: false, side: 'sell', amount, orderNotional, message: `Order value ${orderNotional.toFixed(5)} USDT is below Gate.io minimum ${GATEIO_MIN_ORDER_USDT} USDT.` };
   }

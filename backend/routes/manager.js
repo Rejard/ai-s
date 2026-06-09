@@ -960,6 +960,23 @@ router.get('/ai-logs', async (req, res) => {
   }
 });
 
+router.get('/trade-executions', async (req, res) => {
+  try {
+    const managerEmail = req.managerEmail;
+    const limit = parseInt(req.query.limit) || 50;
+    const executions = await queries.all(`
+      SELECT id, manager_email, ai_log_id, side, amount, price, status, gateio_order_id, message, created_at
+      FROM manager_trade_executions
+      WHERE LOWER(manager_email) = LOWER(?)
+      ORDER BY created_at DESC
+      LIMIT ?
+    `, [managerEmail, limit]);
+    res.json({ success: true, executions });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/sync-transactions', managerAuthMiddleware, async (req, res) => {
   try {
     const { ethers } = require('ethers');

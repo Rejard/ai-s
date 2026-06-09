@@ -27,6 +27,7 @@ import {
 } from '../lib/userDashboard';
 import SutPriceChart from '../components/SutPriceChart';
 import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
+import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
 import EditUserModal from '../components/EditUserModal';
 
 function PcManagerDashboard({ walletAddress, managerEmail }) {
@@ -67,6 +68,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [performance, setPerformance] = useState(null);
   const [yieldHistory, setYieldHistory] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
+  const [tradeExecutions, setTradeExecutions] = useState([]);
   const [openOrders, setOpenOrders] = useState([]);
 
   // New: Strategy ID reference for preventing duplicate execution
@@ -401,6 +403,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       if (managerData.performance !== undefined) setPerformance(managerData.performance);
       if (managerData.yieldHistory !== undefined) setYieldHistory(managerData.yieldHistory);
       if (managerData.aiLogs !== undefined) setAiLogs(managerData.aiLogs);
+      if (managerData.tradeExecutions !== undefined) setTradeExecutions(managerData.tradeExecutions);
       if (managerData.gateioOpenOrders !== undefined) setOpenOrders(managerData.gateioOpenOrders);
 
       if (managerData.credentialUpdates.clearApiKey) setLocalApiKey('');
@@ -1044,6 +1047,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           </div>
 
           <ManagerAiDecisionHistory logs={aiLogs} />
+          <ManagerTradeExecutions executions={tradeExecutions} />
 
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
 

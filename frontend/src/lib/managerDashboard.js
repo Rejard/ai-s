@@ -52,6 +52,7 @@ export async function loadManagerDashboardData({
     performance: undefined,
     yieldHistory: undefined,
     aiLogs: undefined,
+    tradeExecutions: undefined,
     gateioOpenOrders: undefined,
     credentialUpdates: {
       clearApiKey: false,
@@ -155,6 +156,15 @@ export async function loadManagerDashboardData({
     }
   } catch {
     data.aiLogs = undefined;
+  }
+
+  try {
+    const execsRes = await axiosClient.get(`${apiBase}/manager/trade-executions`, headers);
+    if (execsRes.data.success) {
+      data.tradeExecutions = execsRes.data.executions || [];
+    }
+  } catch {
+    data.tradeExecutions = undefined;
   }
 
   try {
