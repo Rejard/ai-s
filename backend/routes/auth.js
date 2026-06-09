@@ -138,7 +138,7 @@ router.get('/status/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address
+      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address, is_manager
       FROM users WHERE wallet_address = ?
     `, [walletAddress]);
 
@@ -168,6 +168,7 @@ router.get('/status/:walletAddress', async (req, res) => {
         joinedAt: user.joined_at,
         approvedAt: user.approved_at,
         selectedCoins: JSON.parse(user.selected_coins),
+        isManager: user.is_manager === 1,
         managerEmail,
         managerPhone
       }
@@ -182,7 +183,7 @@ router.get('/status-by-email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase().trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address
+      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address, is_manager
       FROM users WHERE email = ?
     `, [email]);
 
@@ -212,6 +213,7 @@ router.get('/status-by-email/:email', async (req, res) => {
         joinedAt: user.joined_at,
         approvedAt: user.approved_at,
         selectedCoins: user.selected_coins ? JSON.parse(user.selected_coins) : { POL: 50, USDT: 50 },
+        isManager: user.is_manager === 1,
         managerEmail,
         managerPhone
       }

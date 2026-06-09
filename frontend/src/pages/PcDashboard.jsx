@@ -15,9 +15,13 @@ import {
 import { DASHBOARD_COPY } from '../lib/dashboardCopy';
 import SutPriceCard from '../components/SutPriceCard';
 import SutPriceChart from '../components/SutPriceChart';
+import { isAdminGoogleAccount, isManagerAccount } from '../lib/accountIdentity';
 
 function PcDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
+  const googleEmail = localStorage.getItem('google_email');
+  const canAccessManager = isManagerAccount(userData, googleEmail, walletAddress);
+  const canAccessAdmin = isAdminGoogleAccount(googleEmail || userData?.email);
 
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
@@ -189,9 +193,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
 
-        {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
-          (walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
-          (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
+        {canAccessManager && (
           <div
             className="glass-card glow-active"
             onClick={() => navigate('/manager')}
@@ -221,8 +223,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
           </div>
         )}
 
-        {((userData && userData.email && userData.email.toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase()) ||
-          (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
+        {canAccessAdmin && (
           <div
             className="glass-card glow-active"
             onClick={() => navigate('/admin')}

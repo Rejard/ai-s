@@ -19,7 +19,7 @@ import PcWaitingPage from './pages/PcWaitingPage';
 import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
-import { isAdminGoogleAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
+import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
 
 export const API_BASE = 'https://edenai.alonics.com/api';
@@ -44,12 +44,37 @@ function AppContent() {
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const isAdminViewer = googleLoggedIn && isAdminGoogleAccount(googleEmail);
+  const isManagerViewer = googleLoggedIn && isManagerAccount(userData, googleEmail, walletAddress);
 
   useEffect(() => {
     const handleResize = () => setScreenWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!googleLoggedIn || !googleEmail || !isRegistered) return undefined;
+
+    let cancelled = false;
+    const refreshAccountRole = async () => {
+      try {
+        const response = await axios.get(`${API_BASE}/auth/status-by-email/${encodeURIComponent(googleEmail)}`);
+        if (!cancelled && response.data.success && response.data.registered) {
+          setUserData(response.data.user);
+          setUserStatus(response.data.user.status);
+        }
+      } catch (error) {
+        console.error('Failed to refresh account role:', error.message);
+      }
+    };
+
+    refreshAccountRole();
+    const interval = setInterval(refreshAccountRole, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [googleLoggedIn, googleEmail, isRegistered]);
 
   // 🌟 [PC Exclusive Manager Security] Mobile device (smartphone/tablet) connection judgment
   const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -668,7 +693,7 @@ function AppContent() {
         ) : (
           <Routes>
             <Route path="/manager" element={
-              isAdminViewer ? (
+              isManagerViewer ? (
                 isPcView ? (
                   <PcManagerDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 ) : (
