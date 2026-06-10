@@ -230,9 +230,10 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                     onChange={(e) => setGlobalAiModel(e.target.value)}
                     style={{ padding: '14px', fontSize: '13px' }}
                   >
-                    <option value="Gemini 2.0 Flash">Gemini 2.0 Flash (최신/초고속)</option>
-                    <option value="Gemini 1.5 Pro">Gemini 1.5 Pro (고성능 추론)</option>
-                    <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (예상 모델)</option>
+                    <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (Latest/Ultra-fast)</option>
+                    <option value="Gemini 2.5 Pro">Gemini 2.5 Pro (Ultra-high Performance/Inference)</option>
+                    <option value="Gemini 2.5 Flash">Gemini 2.5 Flash (Basic/Fast)</option>
+                    <option value="Gemini 3.1 Flash Lite">Gemini 3.1 Flash Lite (Lightweight/Ultra-fast)</option>
                   </select>
                 </div>
 
