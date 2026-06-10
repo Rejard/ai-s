@@ -27,6 +27,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     setGlobalGeminiApiKey,
     globalAiInterval,
     setGlobalAiInterval,
+    globalAiIntervalAuto,
+    setGlobalAiIntervalAuto,
     savingAiConfig,
     isAdmin,
     handlePromoteManager,
@@ -170,18 +172,19 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
 
               <div>
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AI 분석 주기 (분)</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', opacity: globalAiIntervalAuto === 'ON' ? 0.4 : 1, pointerEvents: globalAiIntervalAuto === 'ON' ? 'none' : 'auto' }}>
                   {['1', '3', '5', '10', '15', '30', '60'].map(mins => (
                     <button
                       key={mins}
                       type="button"
+                      disabled={globalAiIntervalAuto === 'ON'}
                       onClick={() => setGlobalAiInterval(mins)}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
                         fontSize: '11px',
                         fontWeight: 'bold',
-                        cursor: 'pointer',
+                        cursor: globalAiIntervalAuto === 'ON' ? 'not-allowed' : 'pointer',
                         border: globalAiInterval === mins ? '1px solid #3B82F6' : '1px solid rgba(255,255,255,0.1)',
                         background: globalAiInterval === mins ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.2)',
                         color: globalAiInterval === mins ? '#60A5FA' : '#9CA3AF',
@@ -191,6 +194,19 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                       {mins}분
                     </button>
                   ))}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginTop: '12px' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: '11px', color: '#FFF', fontWeight: 'bold' }}>⚡ AI 분석 주기 자동 최적화</div>
+                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>시장 변동성에 맞춰 5m/15m/30m 자동 전환</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={globalAiIntervalAuto === 'ON'}
+                    onChange={(e) => setGlobalAiIntervalAuto(e.target.checked ? 'ON' : 'OFF')}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#3B82F6' }}
+                  />
                 </div>
               </div>
 

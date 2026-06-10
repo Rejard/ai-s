@@ -16,6 +16,7 @@ export function useAdminLogic(managerEmail) {
   const [globalAiModel, setGlobalAiModel] = useState('Gemini 3.5 Flash');
   const [globalGeminiApiKey, setGlobalGeminiApiKey] = useState('');
   const [globalAiInterval, setGlobalAiInterval] = useState('5');
+  const [globalAiIntervalAuto, setGlobalAiIntervalAuto] = useState('OFF');
   const [savingAiConfig, setSavingAiConfig] = useState(false);
 
   // 새로 추가된 상태
@@ -72,6 +73,7 @@ export function useAdminLogic(managerEmail) {
         setGlobalAiModel(res.data.config.model || 'Gemini 3.5 Flash');
         setGlobalGeminiApiKey(res.data.config.apiKey || '');
         setGlobalAiInterval(res.data.config.interval || '5');
+        setGlobalAiIntervalAuto(res.data.config.intervalAuto || 'OFF');
       }
     } catch (err) {
       console.error('글로벌 AI 설정 로드 실패:', err);
@@ -209,7 +211,8 @@ export function useAdminLogic(managerEmail) {
       const res = await axios.post(`${API_BASE}/admin/save-ai-config`, {
         model: globalAiModel,
         apiKey: globalGeminiApiKey.trim(),
-        interval: globalAiInterval
+        interval: globalAiInterval,
+        intervalAuto: globalAiIntervalAuto
       }, getAdminHeaders());
 
       if (res.data.success) {
@@ -318,6 +321,8 @@ export function useAdminLogic(managerEmail) {
     setGlobalGeminiApiKey,
     globalAiInterval,
     setGlobalAiInterval,
+    globalAiIntervalAuto,
+    setGlobalAiIntervalAuto,
     savingAiConfig,
     isAdmin,
     handlePromoteManager,

@@ -19,8 +19,8 @@ DB_PATH = os.environ.get(
     os.path.join(os.path.dirname(__file__), "platform.db"),
 )
 
-def fetch_gateio_candles():
-    url = "https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&limit=1000&interval=5m"
+def fetch_gateio_candles(interval="15m"):
+    url = f"https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&limit=1000&interval={interval}"
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as response:
@@ -28,7 +28,7 @@ def fetch_gateio_candles():
             data.sort(key=lambda x: int(x[0]))
             return data
     except Exception as e:
-        print(f"[-] Failed to fetch candlesticks from Gate.io: {str(e)}")
+        print(f"[-] Failed to fetch candlesticks from Gate.io with interval {interval}: {str(e)}")
         return []
 
 def calculate_rsi(prices, period=14):
@@ -229,8 +229,28 @@ def main():
         """, (run_key,))
         conn.commit()
 
+        # Get global AI interval to fetch matching candles
+        interval_str = "15m"
+        try:
+            cursor.execute("SELECT value FROM platform_settings WHERE key = 'global_ai_interval'")
+            row = cursor.fetchone()
+            if row and row[0]:
+                val = int(row[0])
+                if val == 5:
+                    interval_str = "5m"
+                elif val == 15:
+                    interval_str = "15m"
+                elif val == 30:
+                    interval_str = "30m"
+                else:
+                    interval_str = f"{val}m"
+        except Exception as db_ex:
+            print(f"[-] Failed to read global_ai_interval from DB: {str(db_ex)}. Fallback to 15m")
+
+        print(f"[*] Fetching Gate.io candles with interval: {interval_str}")
+
         # 1. Fetch SUT past candles from Gate.io for backtest exam
-        candles = fetch_gateio_candles()
+        candles = fetch_gateio_candles(interval_str)
         if len(candles) < 30:
             raise RuntimeError("Not enough Gate.io candlestick data for AiS evaluation")
             

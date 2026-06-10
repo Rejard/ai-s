@@ -430,12 +430,13 @@ async function runAiGridBot() {
   console.log(`[🤖 AI GRID BOT] 글로벌 시황 분석 스케줄러 실행 중... (시간: ${new Date().toLocaleString()})`);
 
   try {
-    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'ai_grid_status', 'global_ai_engine')");
+    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'ai_grid_status', 'global_ai_engine', 'global_ai_interval_auto')");
     let globalModel = 'Gemini 1.5 Pro';
     let globalApiKey = '';
     let globalAiInterval = 5;
     let aiStatus = 'OFF';
     let aiEngineMode = 'GEMINI_ONLY';
+    let intervalAuto = 'OFF';
 
     dbSettings.forEach(s => {
       if (s.key === 'global_ai_model') globalModel = s.value;
@@ -445,6 +446,7 @@ async function runAiGridBot() {
       }
       if (s.key === 'ai_grid_status') aiStatus = s.value;
       if (s.key === 'global_ai_engine') aiEngineMode = s.value;
+      if (s.key === 'global_ai_interval_auto') intervalAuto = s.value;
     });
 
     const activeManagerRow = await queries.get("SELECT COUNT(*) AS total FROM manager_ai_settings WHERE ai_grid_status = 'ON'");
@@ -487,6 +489,30 @@ async function runAiGridBot() {
     global.priceHistory.push(currentSutPrice);
     if (global.priceHistory.length > 30) {
       global.priceHistory.shift();
+    }
+
+    // 변동성 기반 동적 주기 연산
+    if (intervalAuto === 'ON' && global.priceHistory.length >= 5) {
+      const recentPrices = global.priceHistory.slice(-10); // 최근 최대 10개
+      const maxPrice = Math.max(...recentPrices);
+      const minPrice = Math.min(...recentPrices);
+      if (minPrice > 0) {
+        const volRatio = (maxPrice - minPrice) / minPrice;
+        let newInterval = 15;
+        if (volRatio >= 0.03) {
+          newInterval = 5;
+        } else if (volRatio >= 0.01) {
+          newInterval = 15;
+        } else {
+          newInterval = 30;
+        }
+
+        if (newInterval !== globalAiInterval) {
+          console.log(`[🤖 AI GRID BOT] 변동성 감지 동적 주기 변경: ${globalAiInterval}분 -> ${newInterval}분 (변동률: ${(volRatio * 100).toFixed(2)}%)`);
+          globalAiInterval = newInterval;
+          await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval', ?)", [newInterval.toString()]);
+        }
+      }
     }
 
     const rsi14 = calculateRSI(global.priceHistory, 14);
@@ -751,6 +777,11 @@ function initGridBotScheduler() {
   console.log(`[🤖 AI GRID BOT] AI 엔진 중앙 스케줄러 마운트 완료 (동적 주기 적용)`);
 
   const scheduleNext = async () => {
+    if (global.gridBotTimeout) {
+      clearTimeout(global.gridBotTimeout);
+      global.gridBotTimeout = null;
+    }
+
     try {
       await runAiGridBot();
 
@@ -788,10 +819,16 @@ function initGridBotScheduler() {
     intervalMinutes = Math.max(1, Math.min(60, intervalMinutes));
     const nextTickMs = intervalMinutes * 60 * 1000;
 
-    setTimeout(scheduleNext, nextTickMs);
+    if (global.gridBotTimeout) {
+      clearTimeout(global.gridBotTimeout);
+    }
+    global.gridBotTimeout = setTimeout(scheduleNext, nextTickMs);
   };
 
-  setTimeout(scheduleNext, 5000);
+  if (global.gridBotTimeout) {
+    clearTimeout(global.gridBotTimeout);
+  }
+  global.gridBotTimeout = setTimeout(scheduleNext, 5000);
 }
 
 module.exports = {

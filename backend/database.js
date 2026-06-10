@@ -56,6 +56,7 @@ function initializeDatabase() {
         // Insert default mock yield (initial value 0.0)
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_engine', 'GEMINI_ONLY')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_interval_auto', 'OFF')`);
       });
 
       db.run(`
