@@ -150,10 +150,10 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                   onChange={(e) => setGlobalAiModel(e.target.value)}
                   style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                 >
-                  <option value="Gemini 3.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.5 Flash (Latest/Ultra-fast)</option>
-                  <option value="Gemini 2.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Pro (Ultra-high Performance/Inference)</option>
-                  <option value="Gemini 2.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Flash (Basic/Fast)</option>
-                  <option value="Gemini 3.1 Flash Lite" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.1 Flash Lite (Lightweight/Ultra-fast)</option>
+                  <option value="Gemini 3.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.5 Flash (입력 $0.075 / 출력 $0.30 / 1M 토큰)</option>
+                  <option value="Gemini 2.5 Pro" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Pro (입력 $1.25 / 출력 $5.00 / 1M 토큰)</option>
+                  <option value="Gemini 2.5 Flash" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 2.5 Flash (입력 $0.075 / 출력 $0.30 / 1M 토큰)</option>
+                  <option value="Gemini 3.1 Flash Lite" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 3.1 Flash Lite (입력 $0.0375 / 출력 $0.15 / 1M 토큰)</option>
                 </select>
               </div>
 
