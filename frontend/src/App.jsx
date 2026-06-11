@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Shield, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
+import { ethers } from 'ethers';
 
 import ConsentPage from './pages/ConsentPage';
 import RegisterPage from './pages/RegisterPage';
@@ -27,6 +28,12 @@ export const API_BASE = 'https://edenai.alonics.com/api';
 
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
 const GOOGLE_OAUTH_SCOPE = 'openid email profile';
+
+const sanitizeAndValidateAddress = (address) => {
+  if (!address || typeof address !== 'string') return null;
+  const cleaned = address.replace(/\s+/g, '').replace(/^Ox/i, '0x');
+  return ethers.isAddress(cleaned) ? cleaned : null;
+};
 
 function AppContent() {
   const navigate = useNavigate();
@@ -320,9 +327,18 @@ function AppContent() {
 
   const checkUserStatus = async (address, authenticatedEmail = googleEmail) => {
     if (!address) return { registered: false, conflict: false };
+    const cleanedAddress = sanitizeAndValidateAddress(address);
+    if (!cleanedAddress) {
+      alert('연결된 지갑 주소 형식이 올바르지 않습니다. 지갑 설정을 확인해 주세요.');
+      setWalletAddress('');
+      setIsRegistered(false);
+      setUserStatus('');
+      setUserData(null);
+      return { registered: false, conflict: false };
+    }
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE}/auth/status/${address}`);
+      const res = await axios.get(`${API_BASE}/auth/status/${cleanedAddress}`);
       if (res.data.success) {
         if (res.data.registered) {
           if (authenticatedEmail && !isWalletOwnedByGoogleAccount(res.data.user, authenticatedEmail)) {
@@ -334,13 +350,13 @@ function AppContent() {
             return { registered: true, conflict: true };
           }
 
-          setWalletAddress(address);
+          setWalletAddress(cleanedAddress);
           setIsRegistered(true);
           setUserStatus(res.data.user.status);
           setUserData(res.data.user);
           return { registered: true, conflict: false };
         } else {
-          setWalletAddress(address);
+          setWalletAddress(cleanedAddress);
           setIsRegistered(false);
           setUserStatus('');
           setUserData(null);
