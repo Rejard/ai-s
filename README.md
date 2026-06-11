@@ -185,7 +185,7 @@ graph TD
         H[Live Engine Execution & Capital Allocation]
     end
     
-    F -->|Promotion Proposal Report| G{Human Admin: Rejard Approval}
+    F -->|Promotion Proposal Report| G{Human Admin: Approval}
     G -->|Approved| H
     G -->|Rejected| E
 ```
@@ -195,7 +195,7 @@ graph TD
 We do not claim that our framework is infallible, nor do we pretend to hold absolute answers. Acknowledging the weaknesses of our architecture is a core part of our philosophy. Evolution is not about starting with a perfect design; it is about recognizing flaws and adapting through trial and error.
 
 *   **The Human Bottleneck**:
-    Because the final gating mechanism requires manual review and promotion by the Administrator (Rejard), our system cannot achieve instantaneous, fully automated real-time redeployments. The speed of evolution is ultimately bounded by human judgment.
+    Because the final gating mechanism requires manual review and promotion by the Administrator, our system cannot achieve instantaneous, fully automated real-time redeployments. The speed of evolution is ultimately bounded by human judgment.
 *   **The Simulation-Reality Gap**:
     No matter how rigorous our Shadow simulation is, it cannot perfectly model the chaotic dynamics, systemic contagion, or liquidity slippage of the live market. Outperforming the benchmark in the sandbox does not guarantee risk-free returns in the live environment.
 *   **Inefficiency of Wild Mutations**:
