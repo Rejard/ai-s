@@ -1,5 +1,5 @@
 const COUNCIL_BRIEFING_MAX_OUTPUT_TOKENS = 8192;
-const COUNCIL_BRIEFING_MAX_CHARS = 500;
+const COUNCIL_BRIEFING_MAX_CHARS = 600;
 
 function makeCouncilBriefingGenerationConfig() {
   return {

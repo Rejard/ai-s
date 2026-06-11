@@ -277,7 +277,7 @@ function CouncilPage() {
                     </div>
 
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)' }}>
-                      <span>지분: <b style={{ color: '#FFF' }}>{member.voting_power.toFixed(2)}표</b></span>
+                      <span>의결권: <b style={{ color: '#FFF' }}>{member.voting_power.toFixed(2)}표</b></span>
                       <span>정확도: <b style={{ color: '#10B981' }}>{member.correct_count}%</b></span>
                     </div>
                   </div>

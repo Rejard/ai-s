@@ -529,7 +529,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '14px', color: '#F3F4F6', margin: 0, fontWeight: '800' }}>🏛️ AI Council (의회) 의정 현황</h3>
-                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>500인 후보군과 11인 현역 의원의 정당 지분 현황입니다.</p>
+                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>500인 후보군과 11인 현역 의원의 정당 분파 및 의결권 현황입니다.</p>
                 </div>
               </div>
 
@@ -693,7 +693,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
                             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>
-                                <span>지분:</span>
+                                <span>의결권:</span>
                                 <span style={{ color: '#FFF', fontWeight: 'bold' }}>{member.voting_power.toFixed(1)}표</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>

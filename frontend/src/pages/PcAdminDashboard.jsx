@@ -421,8 +421,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 <span style={{ fontSize: '20px' }}>🏛️</span>
               </div>
               <div>
-                <h3 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '800' }}>🏛️ AI Council (의회) 분파 지분율 및 의정 현황</h3>
-                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>유전적 도태와 교차 수혈을 통해 진화하는 500인 가상 후보군과 탑 11인 현역 의원의 정당(분파) 지분 현황입니다.</p>
+                <h3 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '800' }}>🏛️ AI Council (의회) 분파 의결권 및 의정 현황</h3>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>유전적 도태와 교차 수혈을 통해 진화하는 500인 가상 후보군과 탑 11인 현역 의원의 정당(분파) 의결권 현황입니다.</p>
               </div>
             </div>
 
@@ -566,7 +566,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
 
                           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)' }}>
-                              <span>의결 지분(가중치):</span>
+                              <span>의결권:</span>
                               <span style={{ color: '#FFF', fontWeight: 'bold' }}>{member.voting_power.toFixed(2)}표</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)' }}>

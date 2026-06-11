@@ -58,7 +58,7 @@ assert.deepEqual(
   }
 );
 
-const longText = '가'.repeat(600);
+const longText = '가'.repeat(700);
 const longResponse = {
   candidates: [
     {
@@ -72,7 +72,7 @@ const longResponse = {
   ]
 };
 
-assert.equal(COUNCIL_BRIEFING_MAX_CHARS, 500);
+assert.equal(COUNCIL_BRIEFING_MAX_CHARS, 600);
 assert.equal(
   extractCompleteGeminiText(longResponse).length,
   COUNCIL_BRIEFING_MAX_CHARS
