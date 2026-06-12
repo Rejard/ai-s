@@ -24,6 +24,11 @@ const tests = [
 
     assert.equal(getPreferredInjectedProvider({ providers: [metaMaskProvider, trustProvider] }), trustProvider);
   }],
+  ['falls back to the first injected provider when Trust Wallet flags are absent', () => {
+    const genericProvider = { request: async () => [] };
+
+    assert.equal(getPreferredInjectedProvider(genericProvider), genericProvider);
+  }],
 
   ['recognizes Trust Wallet provider variants', () => {
     assert.equal(findTrustWalletProvider([{ isTrust: true }]).isTrust, true);
@@ -56,6 +61,21 @@ const tests = [
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
       }),
       trustProvider
+    );
+  }],
+  ['accepts bare injected provider in mobile PWA-style environments', async () => {
+    const bareProvider = {
+      async request() {
+        return [];
+      },
+    };
+
+    assert.equal(
+      await resolveWalletTransactionProvider({
+        ethereum: bareProvider,
+        userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36',
+      }),
+      bareProvider
     );
   }],
   ['rejects missing Trust Wallet provider without alternate wallet fallbacks', async () => {

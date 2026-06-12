@@ -8,10 +8,19 @@ import {
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
 import {
+  FINALIZE_SUT_DEPOSIT_PARAM,
+  FINALIZE_SUT_TX_HASH_PARAM,
+  finalizePendingDepositTransaction,
   loadUserDashboardData,
   loadUserTxHistory,
   submitUserInvestmentTransaction,
+  RESUME_SUT_AMOUNT_PARAM,
+  RESUME_SUT_DEPOSIT_PARAM,
 } from '../lib/userDashboard';
+import {
+  executeSutApprovalFlow,
+  hasApprovalRecoveryResumeFlag,
+} from '../lib/sutApprovalFlow';
 import { DASHBOARD_COPY } from '../lib/dashboardCopy';
 import SutPriceCard from '../components/SutPriceCard';
 import SutPriceChart from '../components/SutPriceChart';
@@ -35,6 +44,10 @@ function Dashboard({ walletAddress, userData, onLogout }) {
   const [txType, setTxType] = useState('DEPOSIT');
   const [txAmount, setTxAmount] = useState('');
   const [processingTx, setProcessingTx] = useState(false);
+  const [recoveringApproval, setRecoveringApproval] = useState(false);
+  const [autoRecoveryAttempted, setAutoRecoveryAttempted] = useState(false);
+  const [autoDepositAttempted, setAutoDepositAttempted] = useState(false);
+  const [autoDepositFinalizeAttempted, setAutoDepositFinalizeAttempted] = useState(false);
 
   const [txHistory, setTxHistory] = useState([]);
 
@@ -76,7 +89,7 @@ function Dashboard({ walletAddress, userData, onLogout }) {
     return () => clearInterval(refreshTimer);
   }, [walletAddress]);
 
-  const handleTxSubmit = async (e, explicitAmount = null, explicitType = null) => {
+  const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
     if (e && e.preventDefault) e.preventDefault();
 
     const finalAmount = explicitAmount !== null ? explicitAmount : txAmount;
@@ -95,11 +108,19 @@ function Dashboard({ walletAddress, userData, onLogout }) {
         amount: finalAmount,
         type: finalType,
         portfolio,
+        currentUrl: explicitCurrentUrl || window.location.href,
         ethereum: window.ethereum,
         userAgent: navigator.userAgent,
         axiosClient: axios,
         ethersLib: ethers,
       });
+
+      if (result.code === 'MOBILE_TRUST_WALLET_RETURN' && result.redirectUrl) {
+        setShowTxModal(false);
+        setTxAmount('');
+        window.location.replace(result.redirectUrl);
+        return;
+      }
 
       if (finalType === 'DEPOSIT') {
         if (result.response.data.success) {
@@ -114,11 +135,121 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       fetchDashboardData();
       fetchTxHistory();
     } catch (err) {
+      if (err.code === 'MOBILE_TRUST_WALLET_REDIRECT' && err.redirectUrl) {
+        setShowTxModal(false);
+        setTxAmount('');
+        window.location.href = err.redirectUrl;
+        return;
+      }
       alert('거래 처리에 실패했습니다: ' + err.message);
     } finally {
       setProcessingTx(false);
     }
   };
+
+  const handleApprovalRecovery = async ({ allowRedirectOnMissingWallet = true } = {}) => {
+    setRecoveringApproval(true);
+    try {
+      await executeSutApprovalFlow({
+        ethereum: window.ethereum,
+        currentUrl: window.location.href,
+        userAgent: navigator.userAgent,
+        expectedWalletAddress: walletAddress,
+        alertFn: window.alert,
+        confirmFn: window.confirm,
+        setLocationHref: (url) => {
+          window.location.href = url;
+        },
+        allowRedirectOnMissingWallet,
+      });
+    } finally {
+      setRecoveringApproval(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!walletAddress || autoRecoveryAttempted || !hasApprovalRecoveryResumeFlag(window.location.href)) {
+      return;
+    }
+
+    setAutoRecoveryAttempted(true);
+
+    const resumeUrl = new URL(window.location.href);
+    resumeUrl.searchParams.delete('recover_sut_approval');
+    window.history.replaceState(null, '', `${resumeUrl.pathname}${resumeUrl.search}${resumeUrl.hash}`);
+
+    handleApprovalRecovery({ allowRedirectOnMissingWallet: false });
+  }, [walletAddress, autoRecoveryAttempted]);
+
+  useEffect(() => {
+    if (!walletAddress || autoDepositAttempted) {
+      return;
+    }
+
+    const resumeUrl = new URL(window.location.href);
+    const shouldResumeDeposit = resumeUrl.searchParams.get(RESUME_SUT_DEPOSIT_PARAM) === '1';
+    const resumeAmount = resumeUrl.searchParams.get(RESUME_SUT_AMOUNT_PARAM);
+
+    if (!shouldResumeDeposit || !resumeAmount) {
+      return;
+    }
+
+    setAutoDepositAttempted(true);
+    const resumeExecutionUrl = window.location.href;
+    resumeUrl.searchParams.delete(RESUME_SUT_DEPOSIT_PARAM);
+    resumeUrl.searchParams.delete(RESUME_SUT_AMOUNT_PARAM);
+    window.history.replaceState(null, '', `${resumeUrl.pathname}${resumeUrl.search}${resumeUrl.hash}`);
+    setShowTxModal(false);
+    setTxType('DEPOSIT');
+    setTxAmount(resumeAmount);
+    handleTxSubmit(null, resumeAmount, 'DEPOSIT', resumeExecutionUrl);
+  }, [walletAddress, autoDepositAttempted]);
+
+  useEffect(() => {
+    if (!walletAddress || autoDepositFinalizeAttempted) {
+      return;
+    }
+
+    const finalizeUrl = new URL(window.location.href);
+    const shouldFinalize = finalizeUrl.searchParams.get(FINALIZE_SUT_DEPOSIT_PARAM) === '1';
+    const txHash = finalizeUrl.searchParams.get(FINALIZE_SUT_TX_HASH_PARAM);
+    const amount = finalizeUrl.searchParams.get(RESUME_SUT_AMOUNT_PARAM);
+
+    if (!shouldFinalize || !txHash || !amount) {
+      return;
+    }
+
+    setAutoDepositFinalizeAttempted(true);
+    setProcessingTx(true);
+    setShowTxModal(false);
+    finalizeUrl.searchParams.delete(FINALIZE_SUT_DEPOSIT_PARAM);
+    finalizeUrl.searchParams.delete(FINALIZE_SUT_TX_HASH_PARAM);
+    finalizeUrl.searchParams.delete(RESUME_SUT_AMOUNT_PARAM);
+    window.history.replaceState(null, '', `${finalizeUrl.pathname}${finalizeUrl.search}${finalizeUrl.hash}`);
+
+    finalizePendingDepositTransaction({
+      apiBase: API_BASE,
+      walletAddress,
+      amount,
+      txHash,
+      axiosClient: axios,
+      ethersLib: ethers,
+    })
+      .then((response) => {
+        if (response.data.success) {
+          alert(`${amount} SUT 입금이 완료되었습니다.\n거래 해시: ${txHash}`);
+        }
+        fetchDashboardData();
+        fetchTxHistory();
+      })
+      .catch((error) => {
+        alert('거래 처리에 실패했습니다: ' + error.message);
+      })
+      .finally(() => {
+        setProcessingTx(false);
+        setTxAmount('');
+      });
+  }, [walletAddress, autoDepositFinalizeAttempted]);
 
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -217,10 +348,27 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       )}
 
       <div className="glass-card" style={{ padding: '20px' }}>
-        <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Wallet size={18} color="#8B5CF6" />
-          {DASHBOARD_COPY.assetOverview}
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
+          <h3 style={{ fontSize: '16px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <Wallet size={18} color="#8B5CF6" />
+            {DASHBOARD_COPY.assetOverview}
+          </h3>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleApprovalRecovery}
+            disabled={recoveringApproval}
+            style={{
+              width: 'auto',
+              padding: '6px 10px',
+              fontSize: '11px',
+              borderRadius: '999px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {recoveringApproval ? '복구 중...' : '위임 복구'}
+          </button>
+        </div>
 
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
           {(() => {
@@ -265,6 +413,9 @@ function Dashboard({ walletAddress, userData, onLogout }) {
             <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>{DASHBOARD_COPY.depositAction}</button>
             <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>{DASHBOARD_COPY.withdrawAction}</button>
           </div>
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '12px 2px 0' }}>
+            Trust Wallet에서 기존 Polygon SUT 위임을 삭제하거나 수량을 바꾼 뒤 거래가 막히면 위임 복구로 1,000,000 SUT 위임을 다시 등록해 주세요.
+          </p>
         </div>
       </div>
 

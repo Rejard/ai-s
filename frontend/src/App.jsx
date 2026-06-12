@@ -21,6 +21,7 @@ import PcDashboard from './pages/PcDashboard';
 import PcManagerDashboard from './pages/PcManagerDashboard';
 import PcAdminDashboard from './pages/PcAdminDashboard';
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
+import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
 import { clearAuthSession, getAuthToken, saveAuthSession } from './lib/authSession';
 
@@ -235,7 +236,7 @@ function AppContent() {
               }
               if (accounts.length > 0) {
                 const address = accounts[0];
-                if (emailWalletAddress) {
+                if (emailWalletAddress && !hasApprovalRecoveryResumeFlag(window.location.href)) {
                   console.log("[AUTO-CONNECT] Email session already established. Skipping injected wallet overwrite.");
                 } else {
                   await checkUserStatus(address, currentEmail);

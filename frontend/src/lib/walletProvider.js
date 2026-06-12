@@ -47,14 +47,27 @@ export function findTrustWalletProvider(providers) {
 
 export function getPreferredInjectedProvider(ethereum) {
   const providers = getInjectedProviders(ethereum);
-  return findTrustWalletProvider(providers);
+  return findTrustWalletProvider(providers) || providers[0] || null;
+}
+
+function isTrustWalletUserAgent(userAgent = '') {
+  return /TrustWallet/i.test(String(userAgent || ''));
 }
 
 export async function resolveWalletTransactionProvider({
   ethereum,
+  userAgent = '',
 }) {
   const provider = getPreferredInjectedProvider(ethereum);
   if (provider) return provider;
+
+  if (
+    ethereum &&
+    typeof ethereum.request === 'function' &&
+    isTrustWalletUserAgent(userAgent)
+  ) {
+    return ethereum;
+  }
 
   throw new Error('NO_TRUST_WALLET');
 }
