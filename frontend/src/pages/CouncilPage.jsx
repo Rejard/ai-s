@@ -99,10 +99,10 @@ function CouncilPage() {
             <div style={{ display: 'flex', height: '22px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
               {councilStats.factionStats.map((f, idx) => {
                 let color = '#6B7280';
-                if (f.faction === 'TREND_FOLLOWER') color = '#EF4444';
-                if (f.faction === 'VALUE_SEEKER') color = '#3B82F6';
-                if (f.faction === 'CONSERVATIVE_WATCHER') color = '#10B981';
-                if (f.faction === 'MUTANT_ROOKIE') color = '#8B5CF6';
+                if (f.faction === 'TREND_FOLLOWER') color = '#2563EB'; // Blue (진보)
+                if (f.faction === 'VALUE_SEEKER') color = '#F97316'; // Orange (중도)
+                if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626'; // Red (보수)
+                if (f.faction === 'MUTANT_ROOKIE') color = '#9CA3AF'; // Gray (무소속)
 
                 return (
                   <div
@@ -129,10 +129,10 @@ function CouncilPage() {
             {/* 범례 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
               {[
-                { key: 'TREND_FOLLOWER', label: '추세추종 (SMA)', color: '#EF4444' },
-                { key: 'VALUE_SEEKER', label: '기술반등 (RSI)', color: '#3B82F6' },
-                { key: 'CONSERVATIVE_WATCHER', label: '변동방어 (안정)', color: '#10B981' },
-                { key: 'MUTANT_ROOKIE', label: '돌연변이 (진화)', color: '#8B5CF6' }
+                { key: 'TREND_FOLLOWER', label: '추세추종 (SMA)', color: '#2563EB' },
+                { key: 'VALUE_SEEKER', label: '기술반등 (RSI)', color: '#F97316' },
+                { key: 'CONSERVATIVE_WATCHER', label: '변동방어 (안정)', color: '#DC2626' },
+                { key: 'MUTANT_ROOKIE', label: '돌연변이 (진화)', color: '#9CA3AF' }
               ].map(item => {
                 const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
                 return (
@@ -214,24 +214,24 @@ function CouncilPage() {
                 let factionName = '무소속';
 
                 if (member.faction === 'TREND_FOLLOWER') {
-                  borderCol = 'rgba(239, 68, 68, 0.15)';
-                  badgeBg = 'rgba(239, 68, 68, 0.03)';
-                  factionColor = '#EF4444';
+                  borderCol = 'rgba(37, 99, 235, 0.15)';
+                  badgeBg = 'rgba(37, 99, 235, 0.03)';
+                  factionColor = '#2563EB';
                   factionName = '추세추종';
                 } else if (member.faction === 'VALUE_SEEKER') {
-                  borderCol = 'rgba(59, 130, 246, 0.15)';
-                  badgeBg = 'rgba(59, 130, 246, 0.03)';
-                  factionColor = '#3B82F6';
+                  borderCol = 'rgba(249, 115, 22, 0.15)';
+                  badgeBg = 'rgba(249, 115, 22, 0.03)';
+                  factionColor = '#F97316';
                   factionName = '기술반등';
                 } else if (member.faction === 'CONSERVATIVE_WATCHER') {
-                  borderCol = 'rgba(16, 185, 129, 0.15)';
-                  badgeBg = 'rgba(16, 185, 129, 0.03)';
-                  factionColor = '#10B981';
+                  borderCol = 'rgba(220, 38, 38, 0.15)';
+                  badgeBg = 'rgba(220, 38, 38, 0.03)';
+                  factionColor = '#DC2626';
                   factionName = '변동방어';
                 } else if (member.faction === 'MUTANT_ROOKIE') {
-                  borderCol = 'rgba(139, 92, 246, 0.15)';
-                  badgeBg = 'rgba(139, 92, 246, 0.03)';
-                  factionColor = '#8B5CF6';
+                  borderCol = 'rgba(156, 163, 175, 0.15)';
+                  badgeBg = 'rgba(156, 163, 175, 0.03)';
+                  factionColor = '#9CA3AF';
                   factionName = '돌연변이';
                 }
 
