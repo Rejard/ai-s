@@ -552,7 +552,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                       {councilStats.factionStats.map((f) => {
                         let color = '#6B7280';
                         if (f.faction === 'TREND_FOLLOWER') color = '#2563EB'; // Blue (진보)
-                        if (f.faction === 'VALUE_SEEKER') color = '#F97316'; // Orange (중도)
+                        if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6'; // Purple (시스템 컬러)
                         if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626'; // Red (보수)
                         if (f.faction === 'MUTANT_ROOKIE') color = '#9CA3AF'; // Gray (무소속)
 
@@ -582,7 +582,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
                       {[
                         { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA/모멘텀)', color: '#2563EB' },
-                        { key: 'VALUE_SEEKER', label: '기술반등파 (RSI/역추세)', color: '#F97316' },
+                        { key: 'VALUE_SEEKER', label: '기술반등파 (RSI/역추세)', color: '#8B5CF6' },
                         { key: 'CONSERVATIVE_WATCHER', label: '변동성방어파 (안정지향)', color: '#DC2626' },
                         { key: 'MUTANT_ROOKIE', label: '돌연변이 혁신파 (알고리즘)', color: '#9CA3AF' }
                       ].map(item => {
@@ -635,9 +635,9 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                           factionColor = '#2563EB';
                           factionName = '추세추종';
                         } else if (member.faction === 'VALUE_SEEKER') {
-                          borderCol = 'rgba(249, 115, 22, 0.2)';
-                          badgeBg = 'rgba(249, 115, 22, 0.05)';
-                          factionColor = '#F97316';
+                          borderCol = 'rgba(139, 92, 246, 0.2)';
+                          badgeBg = 'rgba(139, 92, 246, 0.05)';
+                          factionColor = '#8B5CF6';
                           factionName = '기술반등';
                         } else if (member.faction === 'CONSERVATIVE_WATCHER') {
                           borderCol = 'rgba(220, 38, 38, 0.2)';
