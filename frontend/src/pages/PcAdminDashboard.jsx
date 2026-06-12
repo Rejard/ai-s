@@ -446,7 +446,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                       if (f.faction === 'TREND_FOLLOWER') color = '#2563EB'; // Blue (진보)
                       if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6'; // Purple (시스템 컬러)
                       if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626'; // Red (보수)
-                      if (f.faction === 'MUTANT_ROOKIE') color = '#9CA3AF'; // Gray (무소속)
+                      if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE'; // Neon Cyan/Mint (미지)
 
                       return (
                         <div
@@ -476,7 +476,7 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                       { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA/모멘텀)', color: '#2563EB' },
                       { key: 'VALUE_SEEKER', label: '기술반등파 (RSI/역추세)', color: '#8B5CF6' },
                       { key: 'CONSERVATIVE_WATCHER', label: '변동성방어파 (안정지향)', color: '#DC2626' },
-                      { key: 'MUTANT_ROOKIE', label: '돌연변이 혁신파 (진화/알고리즘)', color: '#9CA3AF' }
+                      { key: 'MUTANT_ROOKIE', label: '돌연변이 혁신파 (진화/알고리즘)', color: '#00F2FE' }
                     ].map(item => {
                       const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
                       return (
@@ -517,9 +517,9 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                         factionColor = '#DC2626';
                         factionName = '변동방어';
                       } else if (member.faction === 'MUTANT_ROOKIE') {
-                        borderCol = 'rgba(156, 163, 175, 0.2)';
-                        badgeBg = 'rgba(156, 163, 175, 0.05)';
-                        factionColor = '#9CA3AF';
+                        borderCol = 'rgba(0, 242, 254, 0.2)';
+                        badgeBg = 'rgba(0, 242, 254, 0.05)';
+                        factionColor = '#00F2FE';
                         factionName = '돌연변이';
                       }
 
