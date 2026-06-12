@@ -17,9 +17,11 @@ function Metric({ label, value, color = '#F3F4F6' }) {
   );
 }
 
-export default function AisTrainingEvidence({ stats }) {
+export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggleAutomaticPromotion }) {
   const latest = stats?.latestRun;
   const decisions = stats?.byDecision || {};
+  const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
+  const isPromoEnabled = stats?.automaticPromotionEnabled;
 
   return (
     <div style={{
@@ -33,17 +35,61 @@ export default function AisTrainingEvidence({ stats }) {
       fontSize: '10px',
       color: 'var(--text-muted)'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
         <strong style={{ color: '#C4B5FD' }}>Shadow Challenger 검증</strong>
-        <span style={{
-          color: '#FBBF24',
-          background: 'rgba(245,158,11,0.12)',
-          borderRadius: '6px',
-          padding: '2px 6px',
-          fontWeight: '800'
-        }}>
-          자동 실전 승격 OFF
-        </span>
+        
+        {!isEngineEligible ? (
+          <button
+            type="button"
+            disabled
+            title="작동 엔진이 [공동 합의] 또는 [AiS 독자] 모드일 때만 자동 승격을 활성화할 수 있습니다."
+            style={{
+              color: 'var(--text-dark)',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontWeight: '800',
+              fontSize: '9px',
+              cursor: 'not-allowed',
+              opacity: 0.6,
+              transition: 'all 0.2s'
+            }}
+          >
+            자동 실전 승격 OFF (엔진 모드 제한)
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleToggleAutomaticPromotion}
+            title={isPromoEnabled ? "클릭 시 자동 승격 비활성화" : "클릭 시 자동 승격 활성화"}
+            style={{
+              color: isPromoEnabled ? '#10B981' : '#FBBF24',
+              background: isPromoEnabled ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.06)',
+              border: isPromoEnabled ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(245,158,11,0.2)',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontWeight: '900',
+              fontSize: '9px',
+              cursor: 'pointer',
+              boxShadow: isPromoEnabled ? '0 0 10px rgba(16,185,129,0.1)' : 'none',
+              transition: 'all 0.2s ease-in-out',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.03)';
+              e.currentTarget.style.background = isPromoEnabled ? 'rgba(16,185,129,0.14)' : 'rgba(245,158,11,0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = isPromoEnabled ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.06)';
+            }}
+          >
+            <span>자동 실전 승격 {isPromoEnabled ? 'ON 🟢' : 'OFF 🟡'}</span>
+          </button>
+        )}
       </div>
 
       <Metric label="라벨 상태" value={`유효 ${stats?.labeled || 0} / 대기 ${stats?.pending || 0} / 무효 ${stats?.invalid || 0}`} />

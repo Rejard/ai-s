@@ -486,6 +486,20 @@ def main():
         cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_last_trained_at', ?)", (now_str,))
         cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_model_accuracy', ?)", (f"{challenger_holdout_score:.2f}",))
         cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_training_data_count', ?)", (str(labeled_count),))
+
+        # Check for automatic promotion settings and target active engine constraint
+        cursor.execute("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'")
+        auto_promo_row = cursor.fetchone()
+        auto_promotion = auto_promo_row[0] if auto_promo_row else 'OFF'
+
+        cursor.execute("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'")
+        engine_row = cursor.fetchone()
+        current_engine = engine_row[0] if engine_row else 'GEMINI_ONLY'
+
+        if auto_promotion == 'ON' and promotion_eligible == 1 and current_engine in ('HYBRID_COOP', 'AIS_ONLY'):
+            cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_engine', 'HYBRID_COOP')")
+            print("[+] Automatic Promotion Triggered: global_ai_engine automatically promoted/bound to HYBRID_COOP")
+
         cursor.execute("""
             UPDATE ais_model_runs
             SET status = 'SHADOW_CHALLENGER',

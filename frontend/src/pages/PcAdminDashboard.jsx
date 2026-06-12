@@ -45,7 +45,8 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
     savingAiEngine,
     handleSaveAiEngine,
     councilStats,
-    loadingCouncilStats
+    loadingCouncilStats,
+    handleToggleAutomaticPromotion
   } = useAdminLogic(managerEmail);
 
 
@@ -263,7 +264,11 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              <AisTrainingEvidence stats={aisTrainingStats} />
+              <AisTrainingEvidence 
+                stats={aisTrainingStats} 
+                globalAiEngine={globalAiEngine}
+                handleToggleAutomaticPromotion={handleToggleAutomaticPromotion}
+              />
 
               <button
                 type="button"

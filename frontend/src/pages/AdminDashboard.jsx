@@ -46,7 +46,8 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     savingAiEngine,
     handleSaveAiEngine,
     councilStats,
-    loadingCouncilStats
+    loadingCouncilStats,
+    handleToggleAutomaticPromotion
   } = useAdminLogic(managerEmail);
 
 
@@ -347,7 +348,11 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                <AisTrainingEvidence stats={aisTrainingStats} />
+                <AisTrainingEvidence 
+                  stats={aisTrainingStats} 
+                  globalAiEngine={globalAiEngine}
+                  handleToggleAutomaticPromotion={handleToggleAutomaticPromotion}
+                />
 
                 <button
                   type="button"

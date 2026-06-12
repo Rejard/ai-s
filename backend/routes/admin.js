@@ -203,12 +203,15 @@ router.post('/delete-manager', async (req, res) => {
 });
 
 router.post('/save-ai-config', async (req, res) => {
-  const { model, apiKey, interval, intervalAuto } = req.body;
+  const { model, apiKey, interval, intervalAuto, automaticPromotionEnabled } = req.body;
   try {
     if (model) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_model', ?)`, [model.trim()]);
     if (apiKey) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_gemini_api_key', ?)`, [apiKey.trim()]);
     if (interval) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval', ?)`, [interval.toString()]);
     if (intervalAuto) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval_auto', ?)`, [intervalAuto.toString()]);
+    if (automaticPromotionEnabled !== undefined) {
+      await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', ?)`, [automaticPromotionEnabled.toString()]);
+    }
 
     res.json({ success: true, message: '글로벌 AI 두뇌 및 API Key 설정이 서버 DB에 안전하게 저장되었습니다.' });
   } catch (err) {
@@ -218,13 +221,14 @@ router.post('/save-ai-config', async (req, res) => {
 
 router.get('/ai-config', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto')");
+    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'automatic_promotion_enabled')");
     const config = {
       model: 'Gemini 3.5 Flash',
       hasApiKey: false,
       apiKey: '',
       interval: '5',
-      intervalAuto: 'OFF'
+      intervalAuto: 'OFF',
+      automaticPromotionEnabled: 'OFF'
     };
 
     settings.forEach(s => {
@@ -235,6 +239,7 @@ router.get('/ai-config', async (req, res) => {
       }
       if (s.key === 'global_ai_interval') config.interval = s.value;
       if (s.key === 'global_ai_interval_auto') config.intervalAuto = s.value;
+      if (s.key === 'automatic_promotion_enabled') config.automaticPromotionEnabled = s.value;
     });
 
     res.json({ success: true, config });
@@ -273,7 +278,52 @@ router.post('/save-ai-engine', async (req, res) => {
       VALUES ('global_ai_engine', ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `, [engineMode]);
+
+    if (engineMode === 'GEMINI_ONLY' || engineMode === 'GEMINI_AIS_SHADOW') {
+      await queries.run(`
+        INSERT INTO platform_settings (key, value)
+        VALUES ('automatic_promotion_enabled', 'OFF')
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+      `);
+    }
+
     res.json({ success: true, message: `🎉 글로벌 AI 작동 엔진이 성공적으로 [${engineMode}] 모드로 저장되었습니다.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * @route POST /api/admin/toggle-automatic-promotion
+ * @desc Toggle automatic promotion enabled mode (ON/OFF)
+ */
+router.post('/toggle-automatic-promotion', async (req, res) => {
+  try {
+    const engineRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
+    const engineMode = engineRow ? engineRow.value : 'GEMINI_ONLY';
+    
+    if (engineMode === 'GEMINI_ONLY' || engineMode === 'GEMINI_AIS_SHADOW') {
+      return res.status(400).json({
+        success: false,
+        message: '작동 엔진이 [공동 합의] 또는 [AiS 독자 모델] 모드일 때만 자동 실전 승격을 활성화할 수 있습니다.'
+      });
+    }
+
+    const promoRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
+    const currentStatus = promoRow ? promoRow.value : 'OFF';
+    const nextStatus = currentStatus === 'ON' ? 'OFF' : 'ON';
+
+    await queries.run(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('automatic_promotion_enabled', ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `, [nextStatus]);
+
+    res.json({
+      success: true,
+      enabled: nextStatus === 'ON',
+      message: `자동 실전 승격 설정이 [${nextStatus}] 상태로 성공적으로 변경되었습니다.`
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

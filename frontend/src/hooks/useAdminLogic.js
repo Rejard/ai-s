@@ -18,6 +18,7 @@ export function useAdminLogic(managerEmail) {
   const [globalAiInterval, setGlobalAiInterval] = useState('5');
   const [globalAiIntervalAuto, setGlobalAiIntervalAuto] = useState('OFF');
   const [savingAiConfig, setSavingAiConfig] = useState(false);
+  const [automaticPromotionEnabled, setAutomaticPromotionEnabled] = useState(false);
 
   // 새로 추가된 상태
   const [vaultSutBalance, setVaultSutBalance] = useState(0);
@@ -74,6 +75,7 @@ export function useAdminLogic(managerEmail) {
         setGlobalGeminiApiKey(res.data.config.apiKey || '');
         setGlobalAiInterval(res.data.config.interval || '5');
         setGlobalAiIntervalAuto(res.data.config.intervalAuto || 'OFF');
+        setAutomaticPromotionEnabled(res.data.config.automaticPromotionEnabled === 'ON');
       }
     } catch (err) {
       console.error('글로벌 AI 설정 로드 실패:', err);
@@ -187,6 +189,9 @@ export function useAdminLogic(managerEmail) {
       }, getAdminHeaders());
       if (res.data.success) {
         setGlobalAiEngine(engineMode);
+        if (engineMode === 'GEMINI_ONLY' || engineMode === 'GEMINI_AIS_SHADOW') {
+          setAutomaticPromotionEnabled(false);
+        }
         alert(res.data.message);
         fetchTrainingStats();
       }
@@ -195,6 +200,22 @@ export function useAdminLogic(managerEmail) {
       alert('AI 엔진 설정 저장 실패: ' + err.message);
     } finally {
       setSavingAiEngine(false);
+    }
+  };
+
+  const handleToggleAutomaticPromotion = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.post(`${API_BASE}/admin/toggle-automatic-promotion`, {}, getAdminHeaders());
+      if (res.data.success) {
+        setAutomaticPromotionEnabled(res.data.enabled);
+        fetchTrainingStats();
+      }
+    } catch (err) {
+      const errMsg = err.response && err.response.data && err.response.data.message
+        ? err.response.data.message
+        : err.message;
+      alert(`자동 실전 승격 전환 실패: ${errMsg}`);
     }
   };
 
@@ -212,7 +233,8 @@ export function useAdminLogic(managerEmail) {
         model: globalAiModel,
         apiKey: globalGeminiApiKey.trim(),
         interval: globalAiInterval,
-        intervalAuto: globalAiIntervalAuto
+        intervalAuto: globalAiIntervalAuto,
+        automaticPromotionEnabled: automaticPromotionEnabled ? 'ON' : 'OFF'
       }, getAdminHeaders());
 
       if (res.data.success) {
@@ -341,7 +363,10 @@ export function useAdminLogic(managerEmail) {
     handleSaveAiEngine,
     councilStats,
     loadingCouncilStats,
-    fetchCouncilStats
+    fetchCouncilStats,
+    automaticPromotionEnabled,
+    setAutomaticPromotionEnabled,
+    handleToggleAutomaticPromotion
   };
 
 }

@@ -71,6 +71,9 @@ async function getAisTrainingStats(store) {
     };
   }
 
+  const promoEnabledRow = await store.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
+  const automaticPromotionEnabled = promoEnabledRow ? (promoEnabledRow.value === 'ON') : false;
+
   return {
     total: Number(totals?.total || 0),
     labeled: Number(totals?.labeled || 0),
@@ -80,7 +83,7 @@ async function getAisTrainingStats(store) {
     latestRun,
     labelVersion: LABEL_VERSION,
     shadowOnly: true,
-    automaticPromotionEnabled: false,
+    automaticPromotionEnabled,
   };
 }
 

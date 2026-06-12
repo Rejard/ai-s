@@ -41,6 +41,15 @@ async function main() {
     )
   `);
   await store.run(`
+    CREATE TABLE platform_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+  await store.run(`
+    INSERT INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', 'OFF')
+  `);
+  await store.run(`
     CREATE TABLE ais_model_runs (
       id INTEGER PRIMARY KEY,
       run_key TEXT,
