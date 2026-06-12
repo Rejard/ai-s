@@ -170,7 +170,8 @@ export function useAdminLogic(managerEmail) {
           factionStats: res.data.factionStats || [],
           activeMembers: res.data.activeMembers || [],
           recentVotes: res.data.recentVotes || [],
-          briefing: res.data.briefing || ''
+          briefing: res.data.briefing || '',
+          healthReport: res.data.healthReport || null
         });
       }
     } catch (err) {

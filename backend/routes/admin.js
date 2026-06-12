@@ -569,6 +569,98 @@ router.get('/council-stats', async (req, res) => {
       percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
     }));
 
+    // 1. 유전 다양성 계산 (Shannon/Euclidean Variance)
+    const allMembers = await queries.all("SELECT weights_json FROM ais_council_members");
+    let diversityScore = 100;
+    let rawStdDev = 0.15;
+    
+    if (allMembers && allMembers.length > 0) {
+      const vectors = [];
+      allMembers.forEach(m => {
+        try {
+          const w = JSON.parse(m.weights_json);
+          const buyVec = Array.isArray(w.BUY) ? w.BUY : [];
+          const sellVec = Array.isArray(w.SELL) ? w.SELL : [];
+          const holdVec = Array.isArray(w.HOLD) ? w.HOLD : [];
+          const flat = [...buyVec, ...sellVec, ...holdVec];
+          if (flat.length > 0) {
+            vectors.push(flat);
+          }
+        } catch (e) {}
+      });
+
+      if (vectors.length > 1) {
+        const numDimensions = vectors[0].length;
+        const numSamples = vectors.length;
+        let totalStdDev = 0;
+        let validDimensions = 0;
+
+        for (let d = 0; d < numDimensions; d++) {
+          let sum = 0;
+          for (let s = 0; s < numSamples; s++) {
+            sum += vectors[s][d] || 0;
+          }
+          const mean = sum / numSamples;
+
+          let varianceSum = 0;
+          for (let s = 0; s < numSamples; s++) {
+            varianceSum += Math.pow((vectors[s][d] || 0) - mean, 2);
+          }
+          const variance = varianceSum / (numSamples - 1);
+          const stdDev = Math.sqrt(variance);
+          
+          if (!isNaN(stdDev)) {
+            totalStdDev += stdDev;
+            validDimensions++;
+          }
+        }
+
+        rawStdDev = validDimensions > 0 ? (totalStdDev / validDimensions) : 0.15;
+        // 표준편차가 0.25 이상이면 100% 다양성, 0에 가까우면 0%로 매핑
+        diversityScore = Math.min(100, Math.max(0, Math.round((rawStdDev / 0.25) * 100)));
+      }
+    }
+
+    // 2. 학습 연산 여유 마진 계산
+    const latestRun = await queries.get(`
+      SELECT created_at, completed_at 
+      FROM ais_model_runs 
+      WHERE status = 'SHADOW_CHALLENGER' 
+      ORDER BY id DESC 
+      LIMIT 1
+    `);
+    
+    let computationMargin = 90.0;
+    let elapsedSeconds = 30.0;
+    
+    if (latestRun && latestRun.created_at && latestRun.completed_at) {
+      const createdTime = new Date(latestRun.created_at).getTime();
+      const completedTime = new Date(latestRun.completed_at).getTime();
+      if (!isNaN(createdTime) && !isNaN(completedTime)) {
+        elapsedSeconds = Math.max(1, (completedTime - createdTime) / 1000);
+        computationMargin = Math.max(0, parseFloat(((300 - elapsedSeconds) / 300 * 100).toFixed(1)));
+      }
+    }
+
+    // 3. 진단 메시지 및 등급 판단
+    let diversityGrade = 'GOOD';
+    let recommendationText = `현재 ${totalCount}명 정원은 유전자 다양성(${diversityScore}%)과 서버 연산 마진(${computationMargin}%) 모두 최상의 밸런스를 유지하고 있습니다. 무작정 정원을 늘릴 필요가 없는 매우 이상적인 규모입니다.`;
+    let diagnosticClass = 'success';
+
+    if (diversityScore < 20) {
+      diversityGrade = 'CRITICAL';
+      diagnosticClass = 'danger';
+      recommendationText = `⚠️ 경고: AI 의원들의 유전적 다양성(${diversityScore}%)이 바닥나 거의 똑같이 판단하는 획일화 현상이 감지되었습니다. 다양성 확보를 위해 의원 정원을 800~1,000명으로 확장하거나, 돌연변이 수혈 비중을 강제로 높여야 합니다.`;
+    } else if (diversityScore < 40) {
+      diversityGrade = 'WARNING';
+      diagnosticClass = 'warning';
+      recommendationText = `⚠️ 주의: 유전자 수렴 현상이 시작되었습니다. 현재 ${totalCount}명 정원은 유지 가능하나, 성적이 정체될 경우 정원을 800명 수준으로 늘려 다양성을 수급하는 것을 권장합니다.`;
+    } else if (computationMargin < 20) {
+      diversityGrade = 'WARNING';
+      diagnosticClass = 'warning';
+      recommendationText = `⚠️ 서버 과부하 주의: 매 5분 틱당 AI 학습 연산 소요 시간(${elapsedSeconds}초)이 한계에 달해 여유 마진이 부족합니다. 정원을 더 이상 늘리면 실거래 판단 지연이 발생할 수 있으므로, 현재의 ${totalCount}명 정원 유지가 적극 권장됩니다.`;
+    }
+
     const now = Date.now();
     let lastEvoTime = 0;
     try {
@@ -588,7 +680,6 @@ router.get('/council-stats', async (req, res) => {
         lastBriefingUpdate = Date.now();
       }).catch(err => {
         console.error("Background briefing fetch failed:", err.message);
-        // 실패 시 다시 시도할 수 있도록 초기화
         if (cachedBriefing.includes("진행 중")) cachedBriefing = null; 
       });
     }
@@ -599,7 +690,16 @@ router.get('/council-stats', async (req, res) => {
       factionStats,
       activeMembers,
       recentVotes,
-      briefing: cachedBriefing || generateFallbackBriefing(factionStats, activeMembers, generationStats)
+      briefing: cachedBriefing || generateFallbackBriefing(factionStats, activeMembers, generationStats),
+      healthReport: {
+        diversityScore,
+        rawStdDev: parseFloat(rawStdDev.toFixed(4)),
+        computationMargin,
+        elapsedSeconds: Math.round(elapsedSeconds),
+        diversityGrade,
+        diagnosticClass,
+        recommendationText
+      }
     });
   } catch (err) {
     console.error("Admin /council-stats Error:", err);

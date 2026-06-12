@@ -602,6 +602,94 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
+                  {/* 🏛️ AI 의회 표본 적합성 및 다양성 건강도 진단 카드 (모바일) */}
+                  {councilStats.healthReport && (
+                    <div style={{ 
+                      background: 'rgba(0,0,0,0.3)', 
+                      border: '1px solid rgba(139, 92, 246, 0.15)', 
+                      borderRadius: '12px', 
+                      padding: '16px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: '12px',
+                      boxShadow: 'inset 0 0 10px rgba(139, 92, 246, 0.05)',
+                      marginBottom: '10px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '14px' }}>🔬</span>
+                          <h4 style={{ fontSize: '12px', color: '#E4E4E7', margin: 0, fontWeight: '800' }}>
+                            AI 의회 표본 및 다양성 진단
+                          </h4>
+                        </div>
+                        <span style={{
+                          fontSize: '9px',
+                          fontWeight: 'bold',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: councilStats.healthReport.diversityGrade === 'GOOD' ? 'rgba(16, 185, 129, 0.15)' : councilStats.healthReport.diversityGrade === 'WARNING' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                          color: councilStats.healthReport.diversityGrade === 'GOOD' ? '#10B981' : councilStats.healthReport.diversityGrade === 'WARNING' ? '#FBBF24' : '#EF4444',
+                          border: councilStats.healthReport.diversityGrade === 'GOOD' ? '1px solid rgba(16, 185, 129, 0.2)' : councilStats.healthReport.diversityGrade === 'WARNING' ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                        }}>
+                          {councilStats.healthReport.diversityGrade === 'GOOD' ? '적정 🟢' : councilStats.healthReport.diversityGrade === 'WARNING' ? '경고 🟡' : '위험 🔴'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {/* 다양성 수치 게이지 */}
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>🧬 유전적 다양성 지수</span>
+                            <strong style={{ color: '#A78BFA' }}>{councilStats.healthReport.diversityScore}%</strong>
+                          </div>
+                          <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{
+                              width: `${councilStats.healthReport.diversityScore}%`,
+                              height: '100%',
+                              background: 'linear-gradient(90deg, #8B5CF6 0%, #A78BFA 100%)',
+                              borderRadius: '2px'
+                            }} />
+                          </div>
+                          <div style={{ fontSize: '8px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left' }}>
+                            의원별 가중치 표준편차: {councilStats.healthReport.rawStdDev}
+                          </div>
+                        </div>
+
+                        {/* 연산 여유 마진 게이지 */}
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>⚡ 5분 틱 연산 여유율</span>
+                            <strong style={{ color: '#3B82F6' }}>{councilStats.healthReport.computationMargin}%</strong>
+                          </div>
+                          <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{
+                              width: `${councilStats.healthReport.computationMargin}%`,
+                              height: '100%',
+                              background: 'linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%)',
+                              borderRadius: '2px'
+                            }} />
+                          </div>
+                          <div style={{ fontSize: '8px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left' }}>
+                            최근 학습 소요 시간: {councilStats.healthReport.elapsedSeconds}초 / 300초
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ 
+                        fontSize: '10px', 
+                        lineHeight: '1.5', 
+                        color: 'var(--text-muted)', 
+                        padding: '10px 12px', 
+                        borderRadius: '6px', 
+                        background: councilStats.healthReport.diagnosticClass === 'danger' ? 'rgba(239, 68, 68, 0.04)' : councilStats.healthReport.diagnosticClass === 'warning' ? 'rgba(245, 158, 11, 0.04)' : 'rgba(16, 185, 129, 0.04)',
+                        borderLeft: `3px solid ${councilStats.healthReport.diagnosticClass === 'danger' ? '#EF4444' : councilStats.healthReport.diagnosticClass === 'warning' ? '#FBBF24' : '#10B981'}`,
+                        textAlign: 'left'
+                      }}>
+                        {councilStats.healthReport.recommendationText}
+                      </div>
+                    </div>
+                  )}
+
                   {/* 500인 후보군의 특징 분석 */}
                   {councilStats.briefing && (
                     <div style={{
