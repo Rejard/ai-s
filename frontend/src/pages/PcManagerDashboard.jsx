@@ -30,6 +30,7 @@ import SutPriceCard from '../components/SutPriceCard';
 import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
 import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
 import EditUserModal from '../components/EditUserModal';
+import { saveIdCardLocally, getIdCardLocally, deleteIdCardLocally } from '../lib/idCardStorage';
 
 function PcManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -41,6 +42,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
   const [syncing, setSyncing] = useState(false);
+  const [hasDownloadedId, setHasDownloadedId] = useState({});
+  const [idCardViewerUrl, setIdCardViewerUrl] = useState(null);
+  const [idCardViewerName, setIdCardViewerName] = useState(null);
 
   const [gridSettings, setGridSettings] = useState({
     ai_grid_status: 'OFF',
@@ -435,8 +439,31 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     lastExecutedStrategyIdRef.current = latestStrategy.id;
   }, [aiLogs, gridSettings.ai_grid_status]);
 
+  const handleDownloadIdCard = async (userId, name) => {
+    try {
+      let blob = await getIdCardLocally(userId);
+      if (!blob) {
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('sut_token') || localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE}/manager/download-id-card/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        });
+        blob = new Blob([res.data]);
+        await saveIdCardLocally(userId, blob);
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      setIdCardViewerUrl(url);
+      setIdCardViewerName(name);
+      setHasDownloadedId(prev => ({ ...prev, [userId]: true }));
+    } catch (err) {
+      console.error(err);
+      alert('신분증 이미지를 불러오지 못했습니다. 이미 확인 완료되어 삭제되었을 수 있습니다.');
+    }
+  };
+
   const handleApprove = async (walletAddressToApprove) => {
-    if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) {
+    if (!confirm('해당 회원의 신분증·지갑 계정을 확인하고 10일 무료 체험(TRIAL) 등급으로 가입을 승인하시겠습니까?')) {
       return;
     }
     setSubmittingId(walletAddressToApprove);
@@ -450,6 +477,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       });
       if (res.data.success) {
         alert(res.data.message);
+        const u = pendingUsers.find(u => u.wallet_address === walletAddressToApprove);
+        if (u) await deleteIdCardLocally(u.id);
         fetchManagerData();
       }
     } catch (err) {
@@ -477,6 +506,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       });
       if (res.data.success) {
         alert(res.data.message);
+        const u = pendingUsers.find(u => u.wallet_address === walletAddressToReject);
+        if (u) await deleteIdCardLocally(u.id);
         fetchManagerData();
       }
     } catch (err) {
@@ -1554,6 +1585,17 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
                         <div>구글: {user.email}</div>
                         <div style={{ fontFamily: 'monospace', color: '#A7F3D0', fontSize: '10px' }}>Wallet: {user.wallet_address.substring(0, 10)}...</div>
+                        {(() => {
+                          const diffHours = 24 - (Date.now() - new Date(user.joined_at).getTime()) / (1000 * 60 * 60);
+                          const remainingHours = Math.max(0, Math.floor(diffHours));
+                          const remainingMins = Math.max(0, Math.floor((diffHours - remainingHours) * 60));
+                          const isExpired = diffHours <= 0;
+                          return (
+                            <div style={{ color: isExpired ? 'var(--danger-color)' : '#FCD34D', fontSize: '11px', fontWeight: 'bold', marginTop: '4px' }}>
+                              {isExpired ? '⏳ 기한 만료 (자동 취소 대상)' : `⏳ 승인 기한: ${remainingHours}시간 ${remainingMins}분 남음`}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -1561,11 +1603,8 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       <button
                         type="button"
                         className="btn-secondary"
-                        style={{ padding: '6px', fontSize: '10px', gap: '4px', borderRadius: '6px' }}
-                        onClick={() => {
-                          const backendOrigin = API_BASE.replace('/api', '');
-                          setSelectedIdCard(`${backendOrigin}${user.id_card_path}`);
-                        }}
+                        style={{ padding: '6px', fontSize: '10px', gap: '4px', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.2)', color: '#93C5FD' }}
+                        onClick={() => handleDownloadIdCard(user.id, user.name)}
                       >
                         신분증 확인
                       </button>
@@ -1573,9 +1612,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                         <button
                           type="button"
                           className="btn-primary"
-                          style={{ flex: 1, padding: '6px', fontSize: '10px', background: 'var(--success-color)', borderRadius: '6px', boxShadow: 'none' }}
+                          style={{ flex: 1, padding: '6px', fontSize: '10px', background: 'var(--success-color)', borderRadius: '6px', boxShadow: 'none', opacity: hasDownloadedId[user.id] ? 1 : 0.4 }}
                           onClick={() => handleApprove(user.wallet_address)}
-                          disabled={submittingId === user.wallet_address}
+                          disabled={submittingId === user.wallet_address || !hasDownloadedId[user.id]}
                         >
                           승인
                         </button>
@@ -1981,6 +2020,38 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {idCardViewerUrl && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#1E293B', padding: '20px', borderRadius: '12px', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #3B82F6', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ color: 'white', margin: '0 0 10px 0', fontSize: '18px' }}>[{idCardViewerName}] 회원 신분증 확인</h3>
+            
+            <div style={{ overflow: 'auto', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginBottom: '15px', minHeight: '200px', background: '#0F172A', borderRadius: '8px', padding: '10px' }}>
+              <img src={idCardViewerUrl} alt="신분증" style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', borderRadius: '8px' }} />
+            </div>
+
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '8px', marginBottom: '15px', display: 'flex', alignItems: 'flex-start', gap: '8px', width: '100%' }}>
+              <span style={{ fontSize: '16px', marginTop: '2px' }}>⚠️</span>
+              <p style={{ color: '#F87171', fontSize: '12px', margin: 0, lineHeight: 1.4 }}>
+                보안을 위해 서버에서 원본 신분증 파일이 영구 삭제되었습니다.<br/>
+                <strong>창을 닫으면 다시 볼 수 없습니다.</strong> 가입 심사를 완료해주세요.
+              </p>
+            </div>
+            
+            <button 
+              type="button"
+              className="btn-primary"
+              style={{ padding: '12px 30px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+              onClick={() => {
+                window.URL.revokeObjectURL(idCardViewerUrl);
+                setIdCardViewerUrl(null);
+              }}
+            >
+              확인 완료 (창 닫기)
+            </button>
           </div>
         </div>
       )}

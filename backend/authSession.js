@@ -60,13 +60,17 @@ function getRequestAuthToken(req) {
 
 function requireAuthenticatedSession(req, res, next) {
   let session;
+  const token = getRequestAuthToken(req);
+  console.log(`[AUTH] Path: ${req.path}, Token length: ${token.length}`);
   try {
-    session = verifyAuthToken(getRequestAuthToken(req));
+    session = verifyAuthToken(token);
   } catch (error) {
+    console.log(`[AUTH] Verify error: ${error.message}`);
     return res.status(500).json({ success: false, message: error.message });
   }
 
   if (!session) {
+    console.log(`[AUTH] Blocked: No session (Invalid or missing token)`);
     return res.status(401).json({
       success: false,
       message: 'A valid authenticated session is required.',

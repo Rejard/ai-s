@@ -11,7 +11,9 @@ function ManagerManagementSection({
   handleApproveWithdrawal,
   handleRejectWithdrawal,
   setSelectedIdCard,
-  API_BASE
+  API_BASE,
+  handleDownloadIdCard,
+  hasDownloadedId
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -80,17 +82,25 @@ function ManagerManagementSection({
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
                   <div style={{ wordBreak: 'break-all' }}>지갑: <b>{user.wallet_address}</b></div>
                   <div>전화번호: {user.phone}</div>
+                  {(() => {
+                    const diffHours = 24 - (Date.now() - new Date(user.joined_at).getTime()) / (1000 * 60 * 60);
+                    const remainingHours = Math.max(0, Math.floor(diffHours));
+                    const remainingMins = Math.max(0, Math.floor((diffHours - remainingHours) * 60));
+                    const isExpired = diffHours <= 0;
+                    return (
+                      <div style={{ color: isExpired ? 'var(--danger-color)' : '#FCD34D', fontSize: '11px', fontWeight: 'bold', marginTop: '4px' }}>
+                        {isExpired ? '⏳ 기한 만료 (자동 취소 대상)' : `⏳ 승인 기한: ${remainingHours}시간 ${remainingMins}분 남음`}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   <button
                     type="button"
                     className="btn-secondary"
-                    style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                    onClick={() => {
-                      const backendOrigin = API_BASE.replace('/api', '');
-                      setSelectedIdCard(`${backendOrigin}/download-id-card/${user.id}`);
-                    }}
+                    style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px', background: 'rgba(59, 130, 246, 0.2)', color: '#93C5FD', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                    onClick={() => handleDownloadIdCard(user.id, user.name)}
                   >
                     <Eye size={12} />
                     신분증 확인
@@ -98,9 +108,9 @@ function ManagerManagementSection({
                   <button
                     type="button"
                     className="btn-primary"
-                    style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px', background: 'var(--success-color)', boxShadow: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                    style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px', background: 'var(--success-color)', boxShadow: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: hasDownloadedId[user.id] ? 1 : 0.4 }}
                     onClick={() => handleApprove(user.wallet_address)}
-                    disabled={submittingId === user.wallet_address}
+                    disabled={submittingId === user.wallet_address || !hasDownloadedId[user.id]}
                   >
                     <Check size={12} />
                     승인

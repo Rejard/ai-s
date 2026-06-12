@@ -16,11 +16,20 @@ const {
 
 // Ironclad security middleware that completely blocks illegal viewing and control of other Managers' data!
 
+router.use((req, res, next) => {
+  if (req.path.includes('/download-id-card')) {
+    console.log(`[MANAGER ROUTER] Request received: ${req.method} ${req.path}`);
+  }
+  next();
+});
+
 const getRequestManagerEmail = (req) => req.authEmail || '';
 
 const managerAuthMiddleware = async (req, res, next) => {
   const managerEmail = getRequestManagerEmail(req);
+  console.log(`[MANAGER AUTH] Path: ${req.path}, Email extracted: ${managerEmail}`);
   if (!managerEmail) {
+    console.log(`[MANAGER AUTH] Blocked: No email`);
     return res.status(403).json({
       success: false,
       message: '매니저 이메일 인증 정보가 없습니다.'
@@ -30,6 +39,7 @@ const managerAuthMiddleware = async (req, res, next) => {
   try {
     const manager = await getManagerAccount(queries, managerEmail);
     if (!manager) {
+      console.log(`[MANAGER AUTH] Blocked: No manager account for ${managerEmail}`);
       return res.status(403).json({
         success: false,
         message: '매니저 권한이 존재하지 않습니다.'
@@ -37,8 +47,10 @@ const managerAuthMiddleware = async (req, res, next) => {
     }
     req.managerEmail = manager.email.toLowerCase().trim();
     req.managerWallet = manager.wallet_address;
+    console.log(`[MANAGER AUTH] Success for ${managerEmail}, Wallet: ${req.managerWallet}`);
     next();
   } catch (err) {
+    console.log(`[MANAGER AUTH] Error: ${err.message}`);
     res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -89,24 +101,37 @@ router.get('/download-id-card/:userId', async (req, res) => {
     );
 
     if (!user) {
+      console.log(`[KYC DOWNLOAD-ONCE] User ${userId} not found`);
       return res.status(404).json({ success: false, message: '해당 가입 신청 회원을 찾을 수 없습니다.' });
     }
 
     const isMaster = req.managerWallet.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase();
+    
+    // SAFEGUARD: Check if manager_address is null before calling toLowerCase
+    if (!user.manager_address) {
+       console.log(`[KYC DOWNLOAD-ONCE] User ${userId} has no manager_address in DB`);
+       return res.status(403).json({ success: false, message: '권한 경보: 본인 하위 지참 회원의 신분증 파일만 조회 가능합니다.' });
+    }
+
     const isAssigned = user.manager_address.toLowerCase() === req.managerWallet.toLowerCase();
 
     if (!isMaster && !isAssigned) {
+      console.log(`[KYC DOWNLOAD-ONCE] Auth failed: Master? ${isMaster}, Assigned? ${isAssigned}. User manager: ${user.manager_address}, Req manager: ${req.managerWallet}`);
       return res.status(403).json({ success: false, message: '권한 경보: 본인 하위 지참 회원의 신분증 파일만 조회 가능합니다.' });
     }
 
     if (!user.id_card_path) {
+      console.log(`[KYC DOWNLOAD-ONCE] No id_card_path found for user ${userId}`);
       return res.status(404).json({ success: false, message: '이미 이관 및 삭제가 완료된 신분증 파일입니다.' });
     }
 
     const fileName = path.basename(user.id_card_path);
     const fullPath = path.join(tempUploadDir, fileName);
 
+    console.log(`[KYC DOWNLOAD-ONCE] Request to download: ${fullPath}, exists: ${fs.existsSync(fullPath)}`);
+
     if (!fs.existsSync(fullPath)) {
+      console.log(`[KYC DOWNLOAD-ONCE] File missing from disk!`);
       await queries.run("UPDATE users SET id_card_path = NULL WHERE id = ?", [userId]);
       return res.status(404).json({ success: false, message: '해당 신분증 파일이 서버에 존재하지 않습니다. 이미 정리되었을 수 있습니다.' });
     }
@@ -131,6 +156,7 @@ router.get('/download-id-card/:userId', async (req, res) => {
     res.send(fileBuffer);
 
   } catch (err) {
+    console.error(`[KYC DOWNLOAD-ONCE] Exception!`, err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -158,6 +184,7 @@ router.get('/users', async (req, res) => {
       FROM users
       WHERE LOWER(manager_address) = LOWER(?)
         AND COALESCE(is_manager, 0) = 0
+        AND status = 'APPROVED'
       ORDER BY joined_at DESC
     `, [req.managerWallet]);
     res.json({ success: true, users: allUsers });

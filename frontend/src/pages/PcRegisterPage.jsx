@@ -424,7 +424,8 @@ function PcRegisterPage({ walletAddress, googleEmail, googleName, onRegisterComp
             <div style={{ display: 'flex', gap: '10px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '14px', borderRadius: '12px' }}>
               <ShieldAlert size={20} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>
-                KYC 서류 접수 후 플랫폼 어드민 심사 완료 시까지 평균 1시간 내외가 소요됩니다. 허위 서류나 위조 신분증 제출 시 즉시 영구 정지 처분됩니다.
+                KYC 서류 접수 후 배심단 수동 심사 완료 시까지 평균 1~2시간 내외가 소요됩니다.<br/>
+                <strong style={{ color: 'var(--danger-color)' }}>※ 가입 신청 후 24시간 이내에 매니저 승인이 완료되지 않을 경우, 신청 내역은 자동 취소되며 서버에 업로드된 신분증 사진은 복구 불가능하게 영구 삭제됩니다.</strong>
               </p>
             </div>
 

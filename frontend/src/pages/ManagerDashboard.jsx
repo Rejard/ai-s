@@ -30,6 +30,7 @@ import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
 import EditUserModal from '../components/EditUserModal';
 import ManagerManagementSection from '../components/ManagerManagementSection';
 import ManagerAiConfigSection from '../components/ManagerAiConfigSection';
+import { saveIdCardLocally, getIdCardLocally, deleteIdCardLocally } from '../lib/idCardStorage';
 
 function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -42,6 +43,9 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [syncing, setSyncing] = useState(false);
 
   const [withdrawals, setWithdrawals] = useState([]);
+  const [hasDownloadedId, setHasDownloadedId] = useState({});
+  const [idCardViewerUrl, setIdCardViewerUrl] = useState(null);
+  const [idCardViewerName, setIdCardViewerName] = useState(null);
 
   const [gridSettings, setGridSettings] = useState({
     ai_grid_status: 'OFF',
@@ -59,6 +63,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [vaultSutBalance, setVaultSutBalance] = useState(0);
+
   const [sutPrice, setSutPrice] = useState(0.19);
   const [sutChange24h, setSutChange24h] = useState(0);
   const [priceHistory, setPriceHistory] = useState([]);
@@ -196,8 +201,10 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         getStorageItem: (key) => localStorage.getItem(key),
       });
       if (res.data.success) {
-        alert('주문이 정상적으로 취소되었습니다.');
-        fetchManagerData();
+        alert('가입이 승인되었습니다.');
+        // Remove ID card from IndexedDB upon approval
+        await deleteIdCardLocally(userWallet);
+        fetchDashboardData();
       } else {
         alert('주문 취소 실패: ' + (res.data.error || '알 수 없는 오류'));
       }
@@ -459,6 +466,32 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     if (lastExecutedStrategyIdRef.current === latestStrategy.id) return;
     lastExecutedStrategyIdRef.current = latestStrategy.id;
   }, [aiLogs, gridSettings.ai_grid_status]);
+  const handleDownloadIdCard = async (userId, name) => {
+    try {
+      // 1. Try to load from IndexedDB first
+      let blob = await getIdCardLocally(userId);
+
+      // 2. If not in IndexedDB, fetch from server and save to IndexedDB
+      if (!blob) {
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('sut_token') || localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE}/manager/download-id-card/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        });
+        blob = new Blob([res.data]);
+        await saveIdCardLocally(userId, blob);
+      }
+      
+      const url = window.URL.createObjectURL(blob);
+      setIdCardViewerUrl(url);
+      setIdCardViewerName(name);
+      setHasDownloadedId(prev => ({ ...prev, [userId]: true }));
+    } catch (err) {
+      console.error(err);
+      alert('신분증 이미지를 불러오지 못했습니다. 이미 확인 완료되어 삭제되었을 수 있습니다.');
+    }
+  };
+
 
   const handleApprove = async (walletAddressToApprove) => {
     if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) {
@@ -1122,6 +1155,8 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         handleRejectWithdrawal={handleRejectWithdrawal}
         setSelectedIdCard={setSelectedIdCard}
         API_BASE={API_BASE}
+        handleDownloadIdCard={handleDownloadIdCard}
+        hasDownloadedId={hasDownloadedId}
       />
 
       {/* 최근 자산 예치/정산 내역 */}
@@ -1470,6 +1505,38 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {idCardViewerUrl && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 99999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#1E293B', padding: '20px', borderRadius: '12px', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #3B82F6', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+            <h3 style={{ color: 'white', margin: '0 0 10px 0', fontSize: '18px' }}>[{idCardViewerName}] 회원 신분증 확인</h3>
+            
+            <div style={{ overflow: 'auto', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginBottom: '15px', minHeight: '200px', background: '#0F172A', borderRadius: '8px', padding: '10px' }}>
+              <img src={idCardViewerUrl} alt="신분증" style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', borderRadius: '8px' }} />
+            </div>
+
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '8px', marginBottom: '15px', display: 'flex', alignItems: 'flex-start', gap: '8px', width: '100%' }}>
+              <span style={{ fontSize: '16px', marginTop: '2px' }}>⚠️</span>
+              <p style={{ color: '#F87171', fontSize: '12px', margin: 0, lineHeight: 1.4 }}>
+                보안을 위해 서버에서 원본 신분증 파일이 영구 삭제되었습니다.<br/>
+                <strong>창을 닫으면 다시 볼 수 없습니다.</strong> 가입 심사를 완료해주세요.
+              </p>
+            </div>
+            
+            <button 
+              type="button"
+              className="btn-primary"
+              style={{ padding: '12px 30px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+              onClick={() => {
+                window.URL.revokeObjectURL(idCardViewerUrl);
+                setIdCardViewerUrl(null);
+              }}
+            >
+              확인 완료 (창 닫기)
+            </button>
           </div>
         </div>
       )}

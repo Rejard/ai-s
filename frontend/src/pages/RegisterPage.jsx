@@ -460,7 +460,8 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
         <div style={{ display: 'flex', gap: '8px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', padding: '12px', borderRadius: '10px' }}>
           <ShieldAlert size={18} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            가입 접수 완료 시 본사 배심단의 수동 심사 단계로 진입합니다. 심사 및 가입 최종 승인까지 평균 1~2시간이 소요됩니다.
+            가입 접수 완료 시 본사 배심단의 수동 심사 단계로 진입합니다. 심사 및 가입 최종 승인까지 평균 1~2시간이 소요됩니다.<br/>
+            <strong style={{ color: 'var(--danger-color)' }}>※ 가입 신청 후 24시간 이내에 매니저 승인이 완료되지 않을 경우, 신청 내역은 자동 취소되며 서버에 업로드된 신분증 사진은 복구 불가능하게 영구 삭제됩니다.</strong>
           </p>
         </div>
 
