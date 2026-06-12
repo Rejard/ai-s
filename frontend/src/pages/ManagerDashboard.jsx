@@ -742,6 +742,16 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
       )}
 
+      <div className="glass-card" style={{ padding: '16px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '12px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+        <div style={{ fontSize: '20px' }}>🛡️</div>
+        <div>
+          <h4 style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#10B981', fontWeight: '800' }}>고급 보안 및 양자 알고리즘 탑재</h4>
+          <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.4', wordBreak: 'keep-all' }}>
+            본 시스템은 <strong>제로 트러스트(Zero Trust)</strong> 이상 탐지 필터로 스팸 및 외부 위협을 실시간 차단하며, 최신 <strong>시장 변동성 기반 동적 세대교체(QAOA-inspired)</strong> 로직으로 급변장에서도 강력한 수익 방어 구조를 유지합니다.
+          </p>
+        </div>
+      </div>
+
       <div className="glass-card" style={{ padding: '0', overflow: 'hidden', position: 'relative', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <div style={{ padding: '16px 16px 10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>

@@ -753,6 +753,17 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <div className="shimmer-loading" style={{ height: '230px', borderRadius: '20px' }}></div>
           )}
 
+          <div className="glass-card" style={{ padding: '16px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)', border: '1px solid rgba(16, 185, 129, 0.3)', marginBottom: '24px', borderRadius: '12px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: '24px' }}>🛡️</div>
+            <div>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#10B981', fontWeight: '800' }}>고급 보안 및 양자 알고리즘 탑재 (Advanced Security & QAOA)</h4>
+              <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>
+                본 매니저 시스템은 <strong>제로 트러스트(Zero Trust)</strong> 이상 탐지 필터를 통해 스팸 및 외부 위협을 실시간 원천 차단합니다.<br/>
+                또한, 최신 퀀트 연구인 <strong>시장 변동성 기반 동적 세대교체(QAOA-inspired Dynamic Culling)</strong> 로직이 적용되어 급변장에서도 더욱 강력한 수익 방어 구조를 유지합니다.
+              </p>
+            </div>
+          </div>
+
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '16px' }}>💰</span> SUT 자산 통합 관리 현황

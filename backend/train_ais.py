@@ -346,22 +346,46 @@ def main():
         
         print(f"[+] Grading complete. Max Acc: {best_accuracy:.2f}%, Min Acc: {worst_accuracy:.2f}%, Avg: {avg_accuracy:.2f}%")
         
-        # 5. Culling: Delete worst 150 candidates (30% cull)
-        culled_targets = candidates_results[-150:]
+        # Calculate dynamic culling ratio based on market volatility
+        volatility = 0.2
+        if validation_rows:
+            change_ratios = [r["features"][0] for r in validation_rows]
+            if len(change_ratios) > 1:
+                mean_cr = sum(change_ratios) / len(change_ratios)
+                variance_cr = sum((x - mean_cr) ** 2 for x in change_ratios) / len(change_ratios)
+                volatility = variance_cr ** 0.5
+        
+        # Dynamic Cull logic (10% to 40% based on volatility threshold)
+        if volatility < 0.15:
+            cull_ratio = 0.10
+        elif volatility < 0.35:
+            cull_ratio = 0.30
+        else:
+            cull_ratio = 0.40
+            
+        cull_count = int(len(candidates_results) * cull_ratio)
+        cull_count = max(50, min(200, cull_count))
+        
+        print(f"[+] Market Volatility: {volatility:.3f}%, Dynamic Culling Ratio: {cull_ratio*100:.0f}% (Target: {cull_count})")
+        
+        # 5. Culling: Delete worst candidates dynamically
+        culled_targets = candidates_results[-cull_count:]
         culled_ids = [c["id"] for c in culled_targets]
         
         cursor.executemany("DELETE FROM ais_council_members WHERE member_id = ?", [(cid,) for cid in culled_ids])
-        print(f"[x] Culled & Retired 150 low-performing candidates from DB.")
+        print(f"[x] Culled & Retired {cull_count} low-performing candidates from DB.")
         
         # Remaining survivors
-        survivors = candidates_results[:-150]
+        survivors = candidates_results[:-cull_count]
         
-        # 6. Breeding Crossover (75 offsprings) & Fresh Mutants (75 newcomers)
-        # Select from top 50 survivors as parents
+        # 6. Breeding Crossover & Fresh Mutants dynamically
         parents = survivors[:50]
         new_offspring_inserts = []
         
-        for idx in range(75):
+        offspring_count = cull_count // 2
+        mutant_count = cull_count - offspring_count
+        
+        for idx in range(offspring_count):
             p1 = random.choice(parents)
             p2 = random.choice(parents)
             offspring_weights = crossover_weights(p1["weights"], p2["weights"])
@@ -376,7 +400,7 @@ def main():
             faction = determine_faction_from_weights(offspring_weights, p1["name"])
             new_offspring_inserts.append((new_id, name, json.dumps(offspring_weights), 1.0, 'CANDIDATE', faction, offspring_gen))
             
-        for idx in range(75):
+        for idx in range(mutant_count):
             new_id = f"mutant_{uuid.uuid4().hex}"
             name = f"Mutant Rookie Gen-{idx+1} (1세대)"
             weights = generate_random_weights()

@@ -9,6 +9,7 @@ const {
 } = require('../councilBriefing');
 const { requireAuthenticatedSession } = require('../authSession');
 const { getAisTrainingStats } = require('../aisAdminStats');
+const { zeroTrustMiddleware } = require('../zeroTrustFilter');
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
@@ -37,6 +38,7 @@ const adminAuthMiddleware = (req, res, next) => {
 };
 
 // Mount security middleware on all Admin-specific API routes
+router.use(zeroTrustMiddleware);
 router.use(requireAuthenticatedSession);
 router.use(adminAuthMiddleware);
 
