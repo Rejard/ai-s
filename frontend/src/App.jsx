@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Shield, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
+import { Shield, ShieldCheck, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
 import { ethers } from 'ethers';
 
 import ConsentPage from './pages/ConsentPage';
@@ -25,7 +25,7 @@ import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
 import { clearAuthSession, getAuthToken, saveAuthSession } from './lib/authSession';
 
-export const API_BASE = 'https://edenai.alonics.com/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || 'https://edenai.alonics.com/api';
 
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
 const GOOGLE_OAUTH_SCOPE = 'openid email profile';

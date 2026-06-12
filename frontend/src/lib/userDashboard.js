@@ -148,7 +148,9 @@ export async function loadUserDashboardData({
     priceHistory: undefined,
   };
 
-  const portRes = await axiosClient.get(`${apiBase}/investment/portfolio/${walletAddress}`);
+  const token = localStorage.getItem('auth_token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const portRes = await axiosClient.get(`${apiBase}/investment/portfolio/${walletAddress}`, { headers });
   if (portRes.data.success) {
     const portfolio = portRes.data.portfolio;
     const currentPrice = portfolio.assets.SUT.price;
@@ -173,7 +175,9 @@ export async function loadUserDashboardData({
 }
 
 export async function loadUserTxHistory({ apiBase, walletAddress, axiosClient }) {
-  const res = await axiosClient.get(`${apiBase}/investment/history/${walletAddress}`);
+  const token = localStorage.getItem('auth_token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await axiosClient.get(`${apiBase}/investment/history/${walletAddress}`, { headers });
   return res.data.success ? res.data.history : [];
 }
 

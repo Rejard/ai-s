@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const { initializeDatabase, repairAiCouncilState } = require('./database');
 const { autoDeployContracts } = require('./contractHelper');
 const { initGridBotScheduler } = require('./gridBot');
+const { initIdCardCleanupScheduler } = require('./idCardHelper');
 
 dotenv.config();
 
@@ -18,8 +19,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
@@ -43,6 +42,11 @@ app.use((err, req, res, next) => {
 });
 
 async function bootstrap() {
+  if (!process.env.AUTH_SESSION_SECRET) {
+    console.error('❌ CRITICAL ERROR: AUTH_SESSION_SECRET is not set in environment variables. Server startup aborted.');
+    process.exit(1);
+  }
+
   try {
 
     await initializeDatabase();
@@ -50,7 +54,6 @@ async function bootstrap() {
     console.log(`[AI COUNCIL] Pool verified: ${councilState.total}/500, active voters: ${councilState.active}/11`);
 
     // 2. Smart contract deployment automation (includes automatic Mock mode switching based on network balance)
-    await autoDeployContracts();
 
     app.listen(PORT, () => {
       console.log(`==================================================================`);
@@ -61,6 +64,7 @@ async function bootstrap() {
     });
 
     initGridBotScheduler();
+    initIdCardCleanupScheduler();
   } catch (err) {
     console.error('❌ Failed to bootstrap the backend server:', err);
     process.exit(1);

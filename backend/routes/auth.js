@@ -82,17 +82,13 @@ router.get('/session', requireAuthenticatedSession, (req, res) => {
   });
 });
 
-const uploadDir = path.resolve(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const { tempUploadDir: uploadDir } = require('../idCardHelper');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, 'kyc-' + uniqueSuffix + path.extname(file.originalname));
   }
@@ -315,9 +311,37 @@ router.get('/status-by-email/:email', async (req, res) => {
   }
 });
 
-router.get('/payments/:walletAddress', async (req, res) => {
+router.get('/payments/:walletAddress', requireAuthenticatedSession, async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {
+    const isMaster = req.authEmail === 'lemaiiisk@gmail.com';
+    let isOwner = false;
+    
+    if (!isMaster) {
+      const sessionUser = await queries.get(
+        "SELECT wallet_address, is_manager FROM users WHERE LOWER(email) = LOWER(?)",
+        [req.authEmail]
+      );
+      
+      if (sessionUser) {
+        if (sessionUser.wallet_address.toLowerCase() === walletAddress.toLowerCase()) {
+          isOwner = true;
+        } else if (sessionUser.is_manager === 1) {
+          const managedUser = await queries.get(
+            "SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?)",
+            [walletAddress.toLowerCase(), sessionUser.wallet_address]
+          );
+          if (managedUser) {
+            isOwner = true;
+          }
+        }
+      }
+    }
+    
+    if (!isMaster && !isOwner) {
+      return res.status(403).json({ success: false, message: '권한 경보: 본인 혹은 소속 하위 회원의 이력만 조회 가능합니다.' });
+    }
+
     const payments = await queries.all(`
       SELECT amount, type, status, tx_hash, created_at FROM payments
       WHERE wallet_address = ? ORDER BY created_at DESC

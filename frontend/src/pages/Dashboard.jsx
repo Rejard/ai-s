@@ -50,6 +50,8 @@ function Dashboard({ walletAddress, userData, onLogout }) {
   const [autoDepositFinalizeAttempted, setAutoDepositFinalizeAttempted] = useState(false);
 
   const [txHistory, setTxHistory] = useState([]);
+  const [councilStats, setCouncilStats] = useState(null);
+  const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
@@ -81,13 +83,63 @@ function Dashboard({ walletAddress, userData, onLogout }) {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchTxHistory();
-    const refreshTimer = setInterval(() => {
+    let intervalId = null;
+
+    const startPolling = () => {
       fetchDashboardData();
-    }, 5000);
-    return () => clearInterval(refreshTimer);
+      fetchTxHistory();
+      fetchCouncilStats();
+      
+      intervalId = setInterval(() => {
+        fetchDashboardData();
+        fetchCouncilStats();
+      }, 12000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    if (walletAddress) {
+      startPolling();
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [walletAddress]);
+
+  const fetchCouncilStats = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/investment/council-stats`);
+      if (res.data.success) {
+        setCouncilStats({
+          totalCount: res.data.totalCount,
+          factionStats: res.data.factionStats,
+          activeMembers: res.data.activeMembers,
+          recentVotes: res.data.recentVotes,
+          briefing: res.data.briefing
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load council stats in User Dashboard:', err.message);
+    } finally {
+      setLoadingCouncilStats(false);
+    }
+  };
 
   const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -491,6 +543,8 @@ function Dashboard({ walletAddress, userData, onLogout }) {
           </div>
         )}
       </div>
+
+
 
       <button
         type="button"

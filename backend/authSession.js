@@ -3,9 +3,9 @@ const crypto = require('crypto');
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 function getSessionSecret() {
-  const secret = process.env.AUTH_SESSION_SECRET || process.env.PRIVATE_KEY;
+  const secret = process.env.AUTH_SESSION_SECRET;
   if (!secret) {
-    throw new Error('AUTH_SESSION_SECRET or PRIVATE_KEY is required for authenticated sessions.');
+    throw new Error('AUTH_SESSION_SECRET is required for authenticated sessions.');
   }
   return secret;
 }

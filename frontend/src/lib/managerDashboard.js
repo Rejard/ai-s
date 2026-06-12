@@ -88,7 +88,7 @@ export async function loadManagerDashboardData({
   }
 
   if (walletAddress) {
-    const portRes = await axiosClient.get(`${apiBase}/investment/portfolio/${walletAddress}`);
+    const portRes = await axiosClient.get(`${apiBase}/investment/portfolio/${walletAddress}`, headers);
     if (portRes.data.success) {
       data.portfolio = portRes.data.portfolio;
     }

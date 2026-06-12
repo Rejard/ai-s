@@ -5,9 +5,10 @@ const crypto = require('crypto');
 const { encryptText } = require('./secureCredentials');
 const { migrateAisEvaluationSchema } = require('./aisEvaluation');
 
+const defaultDbName = process.env.NODE_ENV === 'development' ? 'platform_dev.db' : 'platform.db';
 const dbPath = process.env.AIS_DB_PATH
   ? path.resolve(process.env.AIS_DB_PATH)
-  : path.resolve(__dirname, 'platform.db');
+  : path.resolve(__dirname, defaultDbName);
 const db = new sqlite3.Database(dbPath);
 
 function initializeDatabase() {

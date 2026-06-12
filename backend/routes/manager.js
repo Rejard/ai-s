@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const { queries } = require('../database');
 const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades, getGateIoOpenOrders, cancelGateIoOrder, getGateIoDeposits, getGateIoWithdrawals } = require('../gateioHelper');
 const { decryptText, encryptText } = require('../secureCredentials');
 const { requireAuthenticatedSession } = require('../authSession');
+const { tempUploadDir } = require('../idCardHelper');
 const {
   getManagerAccount,
   getManagedUser,
@@ -72,6 +75,61 @@ router.get('/gateio-balance', async (req, res) => {
     const { apiKey, apiSecret } = await resolveGateIoCredentials(req);
     const balanceRes = await getGateIoBalances(apiKey, apiSecret);
     res.json(balanceRes);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/download-id-card/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await queries.get(
+      "SELECT id, wallet_address, name, id_card_path, manager_address FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: '해당 가입 신청 회원을 찾을 수 없습니다.' });
+    }
+
+    const isMaster = req.managerWallet.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase();
+    const isAssigned = user.manager_address.toLowerCase() === req.managerWallet.toLowerCase();
+
+    if (!isMaster && !isAssigned) {
+      return res.status(403).json({ success: false, message: '권한 경보: 본인 하위 지참 회원의 신분증 파일만 조회 가능합니다.' });
+    }
+
+    if (!user.id_card_path) {
+      return res.status(404).json({ success: false, message: '이미 이관 및 삭제가 완료된 신분증 파일입니다.' });
+    }
+
+    const fileName = path.basename(user.id_card_path);
+    const fullPath = path.join(tempUploadDir, fileName);
+
+    if (!fs.existsSync(fullPath)) {
+      await queries.run("UPDATE users SET id_card_path = NULL WHERE id = ?", [userId]);
+      return res.status(404).json({ success: false, message: '해당 신분증 파일이 서버에 존재하지 않습니다. 이미 정리되었을 수 있습니다.' });
+    }
+
+    const fileBuffer = fs.readFileSync(fullPath);
+    try {
+      fs.unlinkSync(fullPath);
+    } catch (unlinkErr) {
+      console.error(`[KYC DOWNLOAD-ONCE] Disk unlink failed for ${fullPath}:`, unlinkErr.message);
+    }
+
+    await queries.run("UPDATE users SET id_card_path = NULL WHERE id = ?", [userId]);
+
+    const auditLogPath = path.resolve(__dirname, '../kyc_audit.log');
+    const auditMsg = `[${new Date().toISOString()}] Manager: ${req.managerEmail} (${req.managerWallet}) downloaded and unlinked ID card for User ID: ${userId} (${user.wallet_address}, ${user.name})\n`;
+    fs.appendFileSync(auditLogPath, auditMsg, 'utf8');
+
+    console.log(`[KYC DOWNLOAD-ONCE] Read, unlinked from disk, and logged download audit: ${fullPath}`);
+
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(fileBuffer);
+
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

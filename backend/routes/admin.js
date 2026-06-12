@@ -504,7 +504,7 @@ router.get('/council-stats', async (req, res) => {
       FROM ais_council_voting_history h 
       LEFT JOIN ais_council_members m ON h.member_id = m.member_id 
       ORDER BY h.id DESC 
-      LIMIT 12
+      LIMIT 11
     `);
 
     const generationRows = await queries.all(`

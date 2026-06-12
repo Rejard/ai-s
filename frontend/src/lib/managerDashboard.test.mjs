@@ -90,8 +90,10 @@ const fakeEthers = {
   JsonRpcProvider: class {},
   Contract: class {
     async balanceOf(address) {
-      assert.equal(address, '0xabc');
-      return 123000000000000000000n;
+      if (address === '0xabc' || address === '0x855c880d538892fd899eecb72d4b1ac5b46089ea') {
+        return 123000000000000000000n;
+      }
+      assert.fail(`Unexpected address in balanceOf: ${address}`);
     }
   },
   formatUnits(value, decimals) {

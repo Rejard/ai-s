@@ -101,14 +101,43 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchTxHistory();
-    fetchCouncilStats();
-    const refreshTimer = setInterval(() => {
+    let intervalId = null;
+
+    const startPolling = () => {
       fetchDashboardData();
+      fetchTxHistory();
       fetchCouncilStats();
-    }, 5000);
-    return () => clearInterval(refreshTimer);
+      
+      intervalId = setInterval(() => {
+        fetchDashboardData();
+        fetchCouncilStats();
+      }, 12000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    if (walletAddress) {
+      startPolling();
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [walletAddress]);
 
   const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
@@ -118,7 +147,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
     const finalType = explicitType !== null ? explicitType : txType;
 
     if (!finalAmount || parseFloat(finalAmount) <= 0) {
-      alert('?щ컮瑜?SUT ?섎웾???낅젰??二쇱꽭??');
+      alert('올바른 SUT 수량을 입력해 주세요.');
       return;
     }
 
@@ -146,10 +175,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
       if (finalType === 'DEPOSIT') {
         if (result.response.data.success) {
-          alert(`${finalAmount} SUT ?낃툑???꾨즺?섏뿀?듬땲??\n嫄곕옒 ?댁떆: ${result.txHash}`);
+          alert(`${finalAmount} SUT 입금이 완료되었습니다.\n거래 해시: ${result.txHash}`);
         }
       } else if (result.response.data.success) {
-        alert(`${finalAmount} SUT 異쒓툑 ?좎껌???묒닔?섏뿀?듬땲??`);
+        alert(`${finalAmount} SUT 출금 신청이 접수되었습니다.`);
       }
 
       setShowTxModal(false);
@@ -284,13 +313,13 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             display: 'flex', justifyContent: 'center', alignItems: 'center',
             fontSize: '26px', fontWeight: '700', color: '#FFFFFF', margin: '0 auto 16px'
           }}>
-            {(userData && userData.name ? userData.name.substring(0, 1).toUpperCase() : '?뫀')}
+            {(userData && userData.name ? userData.name.substring(0, 1).toUpperCase() : '👤')}
           </div>
           <h3 style={{ fontSize: '18px', color: '#F3F4F6', marginBottom: '6px', fontWeight: '700' }}>
-            {userData ? userData.name : '?뚯뒪???뚯썝'} ??
+            {userData ? userData.name : '테스트 회원'} 님
           </h3>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '14px' }}>
-            {userData ? userData.email : '?대찓???뺣낫 ?놁쓬'}
+            {userData ? userData.email : '이메일 정보 없음'}
           </span>
           <div style={{
             display: 'inline-flex',
@@ -305,13 +334,13 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             fontWeight: '700'
           }}>
             <ShieldCheck size={14} />
-            KYC ?몄쬆?뚯썝
+            KYC 인증회원
           </div>
         </div>
 
         <div className="glass-card" style={{ padding: '20px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-            ?뵎 ???곕룞 吏媛?二쇱냼
+            연동 지갑 주소
           </span>
           <div style={{
             fontSize: '12px',
@@ -345,10 +374,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>?몣</span>
+              <span style={{ fontSize: '20px' }}>👑</span>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '13px', fontWeight: '700', color: '#C084FC' }}>{DASHBOARD_COPY.managerPage}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>?뚯썝 愿由??붾㈃?쇰줈 ?대룞</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>회원 관리 화면으로 이동</div>
               </div>
             </div>
             <button className="btn-primary" style={{ padding: '8px', fontSize: '12px' }}>
@@ -376,10 +405,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>?뵎</span>
+              <span style={{ fontSize: '20px' }}>🔑</span>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '13px', fontWeight: '700', color: '#F87171' }}>{DASHBOARD_COPY.adminPage}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>?쒖뒪??愿由??붾㈃?쇰줈 ?대룞</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>시스템 관리 화면으로 이동</div>
               </div>
             </div>
             <button className="btn-primary" style={{ padding: '8px', fontSize: '12px', background: 'linear-gradient(90deg, #EF4444, #DC2626)', border: 'none', color: '#FFF' }}>
@@ -445,7 +474,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                 whiteSpace: 'nowrap',
               }}
             >
-              {recoveringApproval ? '蹂듦뎄 以?..' : '?꾩엫 蹂듦뎄'}
+              {recoveringApproval ? '복구 중...' : '위임 복구'}
             </button>
           </div>
 
@@ -480,7 +509,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                         gap: '6px'
                       }}>
                         <AlertTriangle size={16} />
-                        異쒓툑 ?뱀씤 ?湲곗쨷: {portfolio.pendingWithdrawalAmount.toFixed(2)} SUT
+                        출금 승인 대기중: {portfolio.pendingWithdrawalAmount.toFixed(2)} SUT
                       </div>
                     )}
                   </div>
@@ -514,7 +543,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                 style={{ flex: 1, padding: '15px', fontSize: '14px' }}
                 onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}
               >
-                ?뱿 {DASHBOARD_COPY.depositAction}
+                📥 {DASHBOARD_COPY.depositAction}
               </button>
               <button
                 className="btn-secondary"
@@ -528,14 +557,16 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                 }}
                 onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}
               >
-                ?뱾 {DASHBOARD_COPY.withdrawAction}
+                📤 {DASHBOARD_COPY.withdrawAction}
               </button>
             </div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', margin: '14px 2px 0' }}>
-              Trust Wallet?먯꽌 湲곗〈 Polygon SUT ?꾩엫????젣?섍굅???섎웾??諛붽씔 ??嫄곕옒媛 留됲엳硫??꾩엫 蹂듦뎄濡?1,000,000 SUT ?꾩엫???ㅼ떆 ?깅줉??二쇱꽭??
+              Trust Wallet에서 기존 Polygon SUT 위임을 삭제하거나 수량을 바꾼 뒤 거래가 막히면 위임 복구로 1,000,000 SUT 위임을 다시 등록해 주세요.
             </p>
           </div>
         </div>
+
+
 
       </div>
 
@@ -543,7 +574,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
         <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '400px' }}>
           <h3 style={{ fontSize: '16px', color: '#F3F4F6', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
-            ?뱶 {DASHBOARD_COPY.allTransactions}
+            📜 {DASHBOARD_COPY.allTransactions}
           </h3>
 
           <div style={{ flex: 1, overflowY: 'auto', maxHeight: '500px', paddingRight: '4px' }}>
@@ -566,7 +597,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                     >
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: '700', color: '#F3F4F6', marginBottom: '4px' }}>
-                          {isDeposit ? `?뱿 ${DASHBOARD_COPY.depositCompleted}` : `?뱾 ${DASHBOARD_COPY.withdrawalPending}`}
+                          {isDeposit ? `📥 ${DASHBOARD_COPY.depositCompleted}` : `📤 ${DASHBOARD_COPY.withdrawalPending}`}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                           {new Date(tx.createdAt).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
@@ -597,10 +628,10 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
         {!canAccessManager && (
         <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.25)' }}>
           <h4 style={{ fontSize: '13px', color: '#A78BFA', fontWeight: '700', marginBottom: '10px' }}>
-            ?뮠 ?ㅼ떆媛?留ㅻ땲? 怨좉컼?쇳꽣
+            💬 실시간 매니저 고객센터
           </h4>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '14px' }}>
-            ?몃젅?대뵫 ?댁껜 吏?? KYC ?섎룞 ?쒕챸 蹂대쪟 ??紐⑤뱺 愿由?臾몄쓽??諛곗젙???붾젅洹몃옩 ?대떦 留ㅻ땲??먭쾶 利됱떆 臾몄쓽??二쇱떗?쒖삤.
+            트레이딩 이체 지연, KYC 수동 서명 보류 등 모든 관리 문의는 배정된 텔레그램 담당 매니저에게 즉시 문의해 주십시오.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -637,7 +668,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '420px', background: '#111827', padding: '30px' }}>
             <h3 style={{ fontSize: '20px', marginBottom: '14px', color: '#FFF', fontWeight: '700' }}>
-              {txType === 'DEPOSIT' ? `?뮯 ${DASHBOARD_COPY.depositAction}` : `?뱾 ${DASHBOARD_COPY.withdrawAction}`}
+              {txType === 'DEPOSIT' ? `📥 ${DASHBOARD_COPY.depositAction}` : `📤 ${DASHBOARD_COPY.withdrawAction}`}
             </h3>
 
             <form onSubmit={handleTxSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -648,7 +679,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                 <input
                   type="number"
                   className="form-input"
-                  placeholder="?? 500"
+                  placeholder="예: 500"
                   value={txAmount}
                   onChange={(e) => setTxAmount(e.target.value)}
                   min="1"
@@ -658,13 +689,13 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px' }}>
                 {txType === 'DEPOSIT'
-                  ? '?뮕 ?낃툑??SUT???댁슜 ?먯궛??諛섏쁺?⑸땲??'
-                  : '?뮕 異쒓툑 ?붿껌 ??遊?嫄곕옒 ?뺤궛???섎룞?쇰줈 吏꾪뻾?섎ŉ, 蹂몄궗 留ㅻ땲? 理쒖쥌 ?뱀씤 ???낅젰?섏떊 媛??吏媛?二쇱냼濡?SUT媛 ?꾨떖?⑸땲??'}
+                  ? '입금한 SUT는 운용 자산에 반영됩니다.'
+                  : '출금 신청 금액은 운용 자산에서 차감되며 승인 후 연결된 지갑으로 전송됩니다.'}
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowTxModal(false)} style={{ flex: 1 }}>
-                  痍⑥냼
+                  취소
                 </button>
                 <button
                   type="submit"
@@ -672,7 +703,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
                   style={{ flex: 1, background: txType === 'DEPOSIT' ? 'var(--primary-gradient)' : 'var(--danger-color)' }}
                   disabled={processingTx}
                 >
-                  {processingTx ? '泥섎━ 以?..' : txType === 'DEPOSIT' ? DASHBOARD_COPY.depositSubmit : DASHBOARD_COPY.withdrawSubmit}
+                  {processingTx ? '처리 중...' : txType === 'DEPOSIT' ? DASHBOARD_COPY.depositSubmit : DASHBOARD_COPY.withdrawSubmit}
                 </button>
               </div>
             </form>

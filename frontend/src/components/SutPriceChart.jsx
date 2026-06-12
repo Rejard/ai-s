@@ -1,7 +1,10 @@
 import React from 'react';
 
 function SutPriceChart({ data = [], height = 160, gradientId = 'sutPriceGrad', lineGradientId = 'sutPriceLineGrad' }) {
-  const chartData = data.length > 0 ? data : [0.19];
+  let chartData = (data && Array.isArray(data) && data.length > 0) ? [...data] : [0.19];
+  if (chartData.length === 1) {
+    chartData = [chartData[0], chartData[0]];
+  }
   const minVal = Math.min(...chartData) * 0.999;
   const maxVal = Math.max(...chartData) * 1.001;
   const valRange = maxVal - minVal || 0.01;
