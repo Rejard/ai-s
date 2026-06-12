@@ -828,7 +828,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
               로컬 전용 Gate.io API 키 및 주소 설정
             </h4>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-              보안 유지를 위해 입력 정보는 <strong>현재 기기 브라우저에만 저장</strong>되며 서버 DB나 설정 파일에 등록되지 않습니다.
+              보안 유지를 위해 입력 정보는 <strong>현재 기기 브라우저에만 저장</strong>되며 서버 DB나 설정 파일에 등록되지 않습니다. <br/><span style={{ color: '#10B981', fontWeight: 'bold' }}>(해당 정보 전송 시 AES-256-GCM 군사급 암호화 알고리즘이 적용 중입니다.)</span>
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input
