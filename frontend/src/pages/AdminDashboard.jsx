@@ -710,7 +710,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                   {/* 3. 최근 의결 투표 흐름 */}
                   <div>
                     <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700' }}>
-                      🔔 최근 11건의 AI 의원 개별 투표 결과
+                      🔔 최근 매매 의사 결정 11명 AI 의원들의 개별 투표 결과
                     </h4>
                     <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
                       {councilStats.recentVotes.map(v => {
