@@ -7,6 +7,7 @@ const {
   extractCompleteGeminiText,
   makeCouncilBriefingGenerationConfig
 } = require('../councilBriefing');
+const { buildCouncilHealthReport } = require('../councilHealthReport');
 const { requireAuthenticatedSession } = require('../authSession');
 const { getAisTrainingStats } = require('../aisAdminStats');
 const { zeroTrustMiddleware } = require('../zeroTrustFilter');
@@ -625,7 +626,7 @@ router.get('/council-stats', async (req, res) => {
 
     // 2. 학습 연산 여유 마진 계산
     const latestRun = await queries.get(`
-      SELECT created_at, completed_at 
+      SELECT run_key, created_at, completed_at 
       FROM ais_model_runs 
       WHERE status = 'SHADOW_CHALLENGER' 
       ORDER BY id DESC 
@@ -663,6 +664,7 @@ router.get('/council-stats', async (req, res) => {
       recommendationText = `⚠️ 서버 과부하 주의: 매 5분 틱당 AI 학습 연산 소요 시간(${elapsedSeconds}초)이 한계에 달해 여유 마진이 부족합니다. 정원을 더 이상 늘리면 실거래 판단 지연이 발생할 수 있으므로, 현재의 ${totalCount}명 정원 유지가 적극 권장됩니다.`;
     }
 
+    const healthReport = buildCouncilHealthReport({ totalCount, allMembers, latestRun });
     const now = Date.now();
     let lastEvoTime = 0;
     try {
@@ -693,15 +695,7 @@ router.get('/council-stats', async (req, res) => {
       activeMembers,
       recentVotes,
       briefing: cachedBriefing || generateFallbackBriefing(factionStats, activeMembers, generationStats),
-      healthReport: {
-        diversityScore,
-        rawStdDev: parseFloat(rawStdDev.toFixed(4)),
-        computationMargin,
-        elapsedSeconds: Math.round(elapsedSeconds),
-        diversityGrade,
-        diagnosticClass,
-        recommendationText
-      }
+      healthReport
     });
   } catch (err) {
     console.error("Admin /council-stats Error:", err);
