@@ -111,7 +111,7 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
       intervalId = setInterval(() => {
         fetchDashboardData();
         fetchCouncilStats();
-      }, 12000);
+      }, 60000); // 60초 주기로 변경 (기존 12초)
     };
 
     const stopPolling = () => {

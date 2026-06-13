@@ -34,7 +34,7 @@ function CouncilPage() {
     fetchCouncilStats();
     const refreshTimer = setInterval(() => {
       fetchCouncilStats();
-    }, 5000);
+    }, 60000); // 60초 주기로 변경 (기존 5초)
     return () => clearInterval(refreshTimer);
   }, []);
 
