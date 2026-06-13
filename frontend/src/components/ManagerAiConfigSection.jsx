@@ -4,6 +4,7 @@ import { BarChart3, ShieldAlert, ArrowUpDown, Settings } from 'lucide-react';
 function ManagerAiConfigSection({
   gridSettings,
   setGridSettings,
+  handleToggleAutoRangePreview,
   handleToggleAiStatus,
   handleTriggerAIProfit,
   handleSaveGridSettings,
@@ -65,6 +66,19 @@ function ManagerAiConfigSection({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#F3F4F6', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={gridSettings.ai_grid_auto_range === 'ON'}
+                onChange={(e) => handleToggleAutoRangePreview(e.target.checked)}
+              />
+              <span>상한가/하한가 자동 적용</span>
+            </label>
+            <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '6px 0 0 0', textAlign: 'left' }}>
+              기본은 체크 해제입니다. 체크하면 AI 추천 범위를 다음 실행부터 자동 반영합니다.
+            </p>
+          </div>
           <div>
             <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px', textAlign: 'left' }}>하한가 (최저)</label>
             <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '6px 10px' }}>
@@ -73,6 +87,7 @@ function ManagerAiConfigSection({
                 type="number"
                 value={gridSettings.ai_grid_lower}
                 onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_lower: e.target.value })}
+                disabled={gridSettings.ai_grid_auto_range === 'ON'}
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
             </div>
@@ -85,6 +100,7 @@ function ManagerAiConfigSection({
                 type="number"
                 value={gridSettings.ai_grid_upper}
                 onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_upper: e.target.value })}
+                disabled={gridSettings.ai_grid_auto_range === 'ON'}
                 style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
               />
             </div>

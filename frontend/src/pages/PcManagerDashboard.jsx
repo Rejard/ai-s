@@ -15,6 +15,8 @@ import {
   buildManagerHeaders,
   clearManagerGateIoCredentials,
   loadManagerDashboardData,
+  normalizeManagerGridSettings,
+  toggleManagerAutoRangePreview,
   rejectManagerUser,
   saveManagerAiSettings,
   saveManagerGateIoCredentials,
@@ -50,6 +52,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     ai_grid_status: 'OFF',
     ai_grid_lower: '0.15',
     ai_grid_upper: '0.30',
+    ai_grid_auto_range: 'OFF',
     ai_grid_count: '5',
     ai_grid_frequency: '5'
   });
@@ -380,6 +383,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         setStorageItem: (key, value) => localStorage.setItem(key, value),
         removeStorageItem: (key) => localStorage.removeItem(key),
         previousYieldHistory: yieldHistory,
+        previousGridSettings: gridSettingsRef.current,
       });
 
       if (currentRequestId !== lastRequestIdRef.current) {
@@ -396,6 +400,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
         const isDirty = lastServerGridSettingsRef.current && (
           currentSettings.ai_grid_lower !== lastServerGridSettingsRef.current.ai_grid_lower ||
           currentSettings.ai_grid_upper !== lastServerGridSettingsRef.current.ai_grid_upper ||
+          currentSettings.ai_grid_auto_range !== (lastServerGridSettingsRef.current.ai_grid_auto_range || 'OFF') ||
           currentSettings.ai_grid_count !== lastServerGridSettingsRef.current.ai_grid_count ||
           currentSettings.ai_grid_frequency !== lastServerGridSettingsRef.current.ai_grid_frequency ||
           currentSettings.ai_grid_status !== lastServerGridSettingsRef.current.ai_grid_status
@@ -438,6 +443,15 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
     if (lastExecutedStrategyIdRef.current === latestStrategy.id) return;
     lastExecutedStrategyIdRef.current = latestStrategy.id;
   }, [aiLogs, gridSettings.ai_grid_status]);
+
+  const handleToggleAutoRangePreview = (enabled) => {
+    setGridSettings((currentSettings) => toggleManagerAutoRangePreview({
+      enabled,
+      currentSettings,
+      serverSettings: lastServerGridSettingsRef.current || currentSettings,
+      latestAiLog: aiLogs?.[0] || null,
+    }));
+  };
 
   const handleDownloadIdCard = async (userId, name) => {
     try {
@@ -584,7 +598,12 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       });
 
       if (res.data.success) {
-        lastServerGridSettingsRef.current = null;
+        const savedSettings = normalizeManagerGridSettings(
+          res.data.settings || { ai_grid_status: newStatus },
+          { ...gridSettingsRef.current, ai_grid_status: newStatus }
+        );
+        setGridSettings(savedSettings);
+        lastServerGridSettingsRef.current = savedSettings;
         alert(newStatus === 'ON' ? '🤖 완전 자동화 AI 트레이딩 봇이 가동되었습니다!' : 'AI 트레이딩 봇이 정지되었습니다.');
         fetchManagerData();
       }
@@ -602,6 +621,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
           status: gridSettings.ai_grid_status,
           lower: gridSettings.ai_grid_lower,
           upper: gridSettings.ai_grid_upper,
+          autoRange: gridSettings.ai_grid_auto_range,
           count: gridSettings.ai_grid_count,
           frequency: gridSettings.ai_grid_frequency,
         },
@@ -610,7 +630,9 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
       });
 
       if (res.data.success) {
-        lastServerGridSettingsRef.current = null;
+        const savedSettings = normalizeManagerGridSettings(res.data.settings || {}, gridSettingsRef.current);
+        setGridSettings(savedSettings);
+        lastServerGridSettingsRef.current = savedSettings;
         alert('그리드 봇 설정 변경사항이 정상적으로 적용되었습니다.');
         fetchManagerData();
       }
@@ -711,6 +733,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   const hasUnsavedChanges = !!(lastServerGridSettingsRef.current && (
     gridSettings.ai_grid_lower !== lastServerGridSettingsRef.current.ai_grid_lower ||
     gridSettings.ai_grid_upper !== lastServerGridSettingsRef.current.ai_grid_upper ||
+    gridSettings.ai_grid_auto_range !== (lastServerGridSettingsRef.current.ai_grid_auto_range || 'OFF') ||
     gridSettings.ai_grid_count !== lastServerGridSettingsRef.current.ai_grid_count ||
     gridSettings.ai_grid_frequency !== lastServerGridSettingsRef.current.ai_grid_frequency
   ));
@@ -1206,6 +1229,20 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(0,0,0,0.25)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
 
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#F3F4F6', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={gridSettings.ai_grid_auto_range === 'ON'}
+                    onChange={(e) => handleToggleAutoRangePreview(e.target.checked)}
+                  />
+                  <span>상한가/하한가 자동 적용</span>
+                </label>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '6px 0 0 0' }}>
+                  기본은 체크 해제입니다. 체크하면 AI 추천 범위를 다음 실행부터 자동 반영합니다.
+                </p>
+              </div>
+
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>하한가 (최저)</label>
@@ -1216,6 +1253,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       className="grid-setting-input"
                       value={gridSettings.ai_grid_lower}
                       onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_lower: e.target.value })}
+                      disabled={gridSettings.ai_grid_auto_range === 'ON'}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
                     />
                   </div>
@@ -1230,6 +1268,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
                       className="grid-setting-input"
                       value={gridSettings.ai_grid_upper}
                       onChange={(e) => setGridSettings({ ...gridSettings, ai_grid_upper: e.target.value })}
+                      disabled={gridSettings.ai_grid_auto_range === 'ON'}
                       style={{ background: 'transparent', border: 'none', color: '#FFF', width: '100%', fontSize: '13px', outline: 'none' }}
                     />
                   </div>

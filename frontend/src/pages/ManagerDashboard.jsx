@@ -15,6 +15,8 @@ import {
   buildManagerHeaders,
   clearManagerGateIoCredentials,
   loadManagerDashboardData,
+  normalizeManagerGridSettings,
+  toggleManagerAutoRangePreview,
   rejectManagerUser,
   saveManagerAiSettings,
   saveManagerGateIoCredentials,
@@ -51,6 +53,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     ai_grid_status: 'OFF',
     ai_grid_lower: '0.15',
     ai_grid_upper: '0.30',
+    ai_grid_auto_range: 'OFF',
     ai_grid_count: '5',
     ai_grid_frequency: '5'
   });
@@ -383,6 +386,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         setStorageItem: (key, value) => localStorage.setItem(key, value),
         removeStorageItem: (key) => localStorage.removeItem(key),
         previousYieldHistory: yieldHistory,
+        previousGridSettings: gridSettingsRef.current,
       });
 
       if (currentRequestId !== lastRequestIdRef.current) {
@@ -399,6 +403,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         const isDirty = lastServerGridSettingsRef.current && (
           currentSettings.ai_grid_lower !== lastServerGridSettingsRef.current.ai_grid_lower ||
           currentSettings.ai_grid_upper !== lastServerGridSettingsRef.current.ai_grid_upper ||
+          currentSettings.ai_grid_auto_range !== (lastServerGridSettingsRef.current.ai_grid_auto_range || 'OFF') ||
           currentSettings.ai_grid_count !== lastServerGridSettingsRef.current.ai_grid_count ||
           currentSettings.ai_grid_frequency !== lastServerGridSettingsRef.current.ai_grid_frequency ||
           currentSettings.ai_grid_status !== lastServerGridSettingsRef.current.ai_grid_status
@@ -466,6 +471,15 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     if (lastExecutedStrategyIdRef.current === latestStrategy.id) return;
     lastExecutedStrategyIdRef.current = latestStrategy.id;
   }, [aiLogs, gridSettings.ai_grid_status]);
+
+  const handleToggleAutoRangePreview = (enabled) => {
+    setGridSettings((currentSettings) => toggleManagerAutoRangePreview({
+      enabled,
+      currentSettings,
+      serverSettings: lastServerGridSettingsRef.current || currentSettings,
+      latestAiLog: aiLogs?.[0] || null,
+    }));
+  };
   const handleDownloadIdCard = async (userId, name) => {
     try {
       // 1. Try to load from IndexedDB first
@@ -609,7 +623,12 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       });
 
       if (res.data.success) {
-        lastServerGridSettingsRef.current = null;
+        const savedSettings = normalizeManagerGridSettings(
+          res.data.settings || { ai_grid_status: newStatus },
+          { ...gridSettingsRef.current, ai_grid_status: newStatus }
+        );
+        setGridSettings(savedSettings);
+        lastServerGridSettingsRef.current = savedSettings;
         alert(newStatus === 'ON' ? '🤖 완전 자동화 AI 트레이딩 봇이 가동되었습니다!' : 'AI 트레이딩 봇이 정지되었습니다.');
         fetchManagerData();
       }
@@ -627,6 +646,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           status: gridSettings.ai_grid_status,
           lower: gridSettings.ai_grid_lower,
           upper: gridSettings.ai_grid_upper,
+          autoRange: gridSettings.ai_grid_auto_range,
           count: gridSettings.ai_grid_count,
           frequency: gridSettings.ai_grid_frequency,
         },
@@ -635,7 +655,9 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       });
 
       if (res.data.success) {
-        lastServerGridSettingsRef.current = null;
+        const savedSettings = normalizeManagerGridSettings(res.data.settings || {}, gridSettingsRef.current);
+        setGridSettings(savedSettings);
+        lastServerGridSettingsRef.current = savedSettings;
         alert('그리드 봇 설정 변경사항이 정상적으로 적용되었습니다.');
         fetchManagerData();
       }
@@ -731,6 +753,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const hasUnsavedChanges = !!(lastServerGridSettingsRef.current && (
     gridSettings.ai_grid_lower !== lastServerGridSettingsRef.current.ai_grid_lower ||
     gridSettings.ai_grid_upper !== lastServerGridSettingsRef.current.ai_grid_upper ||
+    gridSettings.ai_grid_auto_range !== (lastServerGridSettingsRef.current.ai_grid_auto_range || 'OFF') ||
     gridSettings.ai_grid_count !== lastServerGridSettingsRef.current.ai_grid_count ||
     gridSettings.ai_grid_frequency !== lastServerGridSettingsRef.current.ai_grid_frequency
   ));
@@ -951,6 +974,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       <ManagerAiConfigSection
         gridSettings={gridSettings}
         setGridSettings={setGridSettings}
+        handleToggleAutoRangePreview={handleToggleAutoRangePreview}
         handleToggleAiStatus={handleToggleAiStatus}
         handleTriggerAIProfit={handleTriggerAIProfit}
         handleSaveGridSettings={handleSaveGridSettings}

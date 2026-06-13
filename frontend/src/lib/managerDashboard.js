@@ -26,6 +26,48 @@ export function buildManagerHeaders({ managerEmail, getStorageItem }) {
   };
 }
 
+export function normalizeManagerGridSettings(settings = {}, previousSettings = {}) {
+  return {
+    ai_grid_status: settings.ai_grid_status ?? previousSettings.ai_grid_status ?? 'OFF',
+    ai_grid_lower: settings.ai_grid_lower ?? previousSettings.ai_grid_lower ?? '0.15',
+    ai_grid_upper: settings.ai_grid_upper ?? previousSettings.ai_grid_upper ?? '0.30',
+    ai_grid_auto_range: settings.ai_grid_auto_range ?? previousSettings.ai_grid_auto_range ?? 'OFF',
+    ai_grid_count: settings.ai_grid_count ?? previousSettings.ai_grid_count ?? '5',
+    ai_grid_frequency: settings.ai_grid_frequency ?? previousSettings.ai_grid_frequency ?? '5',
+    hasApiKey: settings.hasApiKey ?? previousSettings.hasApiKey,
+    hasApiSecret: settings.hasApiSecret ?? previousSettings.hasApiSecret,
+    hasDepositAddress: settings.hasDepositAddress ?? previousSettings.hasDepositAddress,
+  };
+}
+
+export function toggleManagerAutoRangePreview({
+  enabled,
+  currentSettings = {},
+  serverSettings = {},
+  latestAiLog = null,
+}) {
+  const base = normalizeManagerGridSettings(currentSettings, serverSettings);
+
+  if (!enabled) {
+    return {
+      ...base,
+      ai_grid_lower: serverSettings.ai_grid_lower ?? base.ai_grid_lower,
+      ai_grid_upper: serverSettings.ai_grid_upper ?? base.ai_grid_upper,
+      ai_grid_auto_range: 'OFF',
+    };
+  }
+
+  const proposedLower = latestAiLog ? Number(latestAiLog.proposed_lower) : Number.NaN;
+  const proposedUpper = latestAiLog ? Number(latestAiLog.proposed_upper) : Number.NaN;
+
+  return {
+    ...base,
+    ai_grid_lower: Number.isFinite(proposedLower) ? String(proposedLower) : base.ai_grid_lower,
+    ai_grid_upper: Number.isFinite(proposedUpper) ? String(proposedUpper) : base.ai_grid_upper,
+    ai_grid_auto_range: 'ON',
+  };
+}
+
 export async function loadManagerDashboardData({
   apiBase,
   managerEmail,
@@ -36,6 +78,7 @@ export async function loadManagerDashboardData({
   setStorageItem,
   removeStorageItem,
   previousYieldHistory = [],
+  previousGridSettings = {},
 }) {
   const headers = buildManagerHeaders({ managerEmail, getStorageItem });
   const data = {
@@ -84,7 +127,7 @@ export async function loadManagerDashboardData({
 
   const aiRes = await axiosClient.get(`${apiBase}/manager/ai-settings?_t=${Date.now()}`, headers);
   if (aiRes.data.success) {
-    data.gridSettings = aiRes.data.settings;
+    data.gridSettings = normalizeManagerGridSettings(aiRes.data.settings, previousGridSettings);
   }
 
   if (walletAddress) {

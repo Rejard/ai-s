@@ -4,6 +4,7 @@ const { createGateIoOrder, getGateIoBalances, getGateIoOpenOrders, cancelGateIoO
 const { decryptText } = require('./secureCredentials');
 const { runDailyEvolution } = require('./evolution');
 const { buildTradePlan } = require('./autoTradeMath');
+const { applyManagerAutoRangeSettings } = require('./managerAutoRange');
 const {
   LABEL_VERSION,
   addMinutesToSqliteTimestamp,
@@ -661,6 +662,15 @@ async function runAiGridBot() {
       console.log(`[🤖 AI GRID BOT] 글로벌 전략 DB 저장 완료.`);
 
       // 1. Shadow 학습 혹은 AiS 전담 상태일 때 SQLite ais_training_data 테이블에 무제한 적재
+      const autoRangeUpdated = await applyManagerAutoRangeSettings({
+        queries,
+        proposedLower,
+        proposedUpper,
+      });
+      if (autoRangeUpdated > 0) {
+        console.log(`[AI GRID BOT] Applied auto upper/lower range to ${autoRangeUpdated} manager setting(s).`);
+      }
+
       if (aiEngineMode === 'GEMINI_AIS_SHADOW' || aiEngineMode === 'AIS_ONLY') {
         try {
           const evaluationDueAt = addMinutesToSqliteTimestamp(

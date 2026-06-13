@@ -99,6 +99,7 @@ function initializeDatabase() {
           ai_grid_status TEXT NOT NULL DEFAULT 'OFF',
           ai_grid_lower TEXT NOT NULL DEFAULT '0.15',
           ai_grid_upper TEXT NOT NULL DEFAULT '0.30',
+          ai_grid_auto_range TEXT NOT NULL DEFAULT 'OFF',
           ai_grid_count TEXT NOT NULL DEFAULT '5',
           ai_grid_frequency TEXT NOT NULL DEFAULT '5',
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -245,6 +246,12 @@ function initializeDatabase() {
       db.run("ALTER TABLE manager_ai_logs ADD COLUMN proposed_upper REAL DEFAULT 0.30", (err) => {
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ manager_ai_logs 테이블 proposed_upper 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
+      db.run("ALTER TABLE manager_ai_settings ADD COLUMN ai_grid_auto_range TEXT NOT NULL DEFAULT 'OFF'", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("??manager_ai_settings ?뚯씠釉?ai_grid_auto_range 而щ읆 留덉씠洹몃젅?댁뀡 ?ㅽ뙣:", err.message);
         }
       });
 

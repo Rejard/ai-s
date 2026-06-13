@@ -5,6 +5,8 @@ import {
   getManagerIdentityEmail,
   isMaskedCredential,
   loadManagerDashboardData,
+  normalizeManagerGridSettings,
+  toggleManagerAutoRangePreview,
   clearManagerGateIoCredentials,
   approveManagerUser,
   approveManagerWithdrawal,
@@ -22,6 +24,98 @@ assert.equal(getManagerIdentityEmail(null), 'lemaiiisk@gmail.com');
 assert.equal(isMaskedCredential('abc******xyz'), true);
 assert.equal(isMaskedCredential('plain-secret'), false);
 assert.equal(isMaskedCredential(null), false);
+
+assert.deepEqual(
+  normalizeManagerGridSettings(
+    { ai_grid_status: 'ON', ai_grid_lower: '0.15' },
+    { ai_grid_auto_range: 'ON', ai_grid_upper: '0.30', ai_grid_count: '5', ai_grid_frequency: '5' }
+  ),
+  {
+    ai_grid_status: 'ON',
+    ai_grid_lower: '0.15',
+    ai_grid_upper: '0.30',
+    ai_grid_count: '5',
+    ai_grid_frequency: '5',
+    ai_grid_auto_range: 'ON',
+    hasApiKey: undefined,
+    hasApiSecret: undefined,
+    hasDepositAddress: undefined,
+  }
+);
+
+assert.deepEqual(
+  toggleManagerAutoRangePreview({
+    enabled: true,
+    currentSettings: {
+      ai_grid_status: 'ON',
+      ai_grid_lower: '0.15',
+      ai_grid_upper: '0.30',
+      ai_grid_auto_range: 'OFF',
+      ai_grid_count: '5',
+      ai_grid_frequency: '5',
+    },
+    serverSettings: {
+      ai_grid_status: 'ON',
+      ai_grid_lower: '0.15',
+      ai_grid_upper: '0.30',
+      ai_grid_auto_range: 'OFF',
+      ai_grid_count: '5',
+      ai_grid_frequency: '5',
+    },
+    latestAiLog: {
+      proposed_lower: 0.12,
+      proposed_upper: 0.34,
+    },
+  }),
+  {
+    ai_grid_status: 'ON',
+    ai_grid_lower: '0.12',
+    ai_grid_upper: '0.34',
+    ai_grid_auto_range: 'ON',
+    ai_grid_count: '5',
+    ai_grid_frequency: '5',
+    hasApiKey: undefined,
+    hasApiSecret: undefined,
+    hasDepositAddress: undefined,
+  }
+);
+
+assert.deepEqual(
+  toggleManagerAutoRangePreview({
+    enabled: false,
+    currentSettings: {
+      ai_grid_status: 'ON',
+      ai_grid_lower: '0.12',
+      ai_grid_upper: '0.34',
+      ai_grid_auto_range: 'ON',
+      ai_grid_count: '5',
+      ai_grid_frequency: '5',
+    },
+    serverSettings: {
+      ai_grid_status: 'ON',
+      ai_grid_lower: '0.15',
+      ai_grid_upper: '0.30',
+      ai_grid_auto_range: 'OFF',
+      ai_grid_count: '5',
+      ai_grid_frequency: '5',
+    },
+    latestAiLog: {
+      proposed_lower: 0.11,
+      proposed_upper: 0.35,
+    },
+  }),
+  {
+    ai_grid_status: 'ON',
+    ai_grid_lower: '0.15',
+    ai_grid_upper: '0.30',
+    ai_grid_auto_range: 'OFF',
+    ai_grid_count: '5',
+    ai_grid_frequency: '5',
+    hasApiKey: undefined,
+    hasApiSecret: undefined,
+    hasDepositAddress: undefined,
+  }
+);
 
 const storage = new Map([
   ['gateio_api_key', 'key-123'],
@@ -71,7 +165,16 @@ const fakeAxios = {
       'https://api.test/manager/stats': { success: true, stats: { users: 1 }, recentPayments: [{ id: 2 }] },
       'https://api.test/manager/users': { success: true, users: [{ id: 3 }] },
       'https://api.test/manager/withdrawals': { success: true, withdrawals: [{ id: 4 }] },
-      'https://api.test/manager/ai-settings': { success: true, settings: { ai_grid_status: 'ON' } },
+      'https://api.test/manager/ai-settings': {
+        success: true,
+        settings: {
+          ai_grid_status: 'ON',
+          ai_grid_lower: '0.15',
+          ai_grid_upper: '0.30',
+          ai_grid_count: '5',
+          ai_grid_frequency: '5',
+        },
+      },
       'https://api.test/investment/portfolio/0xabc': { success: true, portfolio: { total: 10 } },
       'https://api.test/manager/gateio-balance': { success: true, balances: { USDT: 5 } },
       'https://api.test/manager/gateio-performance': {
@@ -118,6 +221,7 @@ const managerData = await loadManagerDashboardData({
   },
   setStorageItem: (key, value) => storedValues.push([key, value]),
   removeStorageItem: (key) => removedKeys.push(key),
+  previousGridSettings: { ai_grid_auto_range: 'ON' },
 });
 
 assert.deepEqual(managerData.pendingUsers, [{ id: 1 }]);
@@ -125,7 +229,17 @@ assert.deepEqual(managerData.stats, { users: 1 });
 assert.deepEqual(managerData.recentPayments, [{ id: 2 }]);
 assert.deepEqual(managerData.allUsers, [{ id: 3 }]);
 assert.deepEqual(managerData.withdrawals, [{ id: 4 }]);
-assert.deepEqual(managerData.gridSettings, { ai_grid_status: 'ON' });
+assert.deepEqual(managerData.gridSettings, {
+  ai_grid_status: 'ON',
+  ai_grid_lower: '0.15',
+  ai_grid_upper: '0.30',
+  ai_grid_count: '5',
+  ai_grid_frequency: '5',
+  ai_grid_auto_range: 'ON',
+  hasApiKey: undefined,
+  hasApiSecret: undefined,
+  hasDepositAddress: undefined,
+});
 assert.deepEqual(managerData.portfolio, { total: 10 });
 assert.equal(managerData.walletSutBalance, 123);
 assert.deepEqual(managerData.gateioBalance, { USDT: 5 });
@@ -267,6 +381,7 @@ await saveManagerAiSettings({
     upper: '0.30',
     count: '10',
     frequency: '5',
+    autoRange: 'ON',
   },
   axiosClient: settingsAxios,
   getStorageItem: () => '',
@@ -278,6 +393,7 @@ assert.deepEqual(settingsPosts[0].body, {
   upper: '0.30',
   count: '10',
   frequency: '5',
+  autoRange: 'ON',
 });
 assert.equal(settingsPosts[0].url, 'https://api.test/manager/ai-settings');
 assert.equal(settingsPosts[0].config.headers['x-manager-email'], 'boss@example.com');

@@ -576,6 +576,7 @@ router.get('/ai-settings', async (req, res) => {
       ai_grid_status: 'OFF',
       ai_grid_lower: '0.15',
       ai_grid_upper: '0.30',
+      ai_grid_auto_range: 'OFF',
       ai_grid_count: '5',
       ai_grid_frequency: '5',
       hasApiKey: !!credentials,
@@ -587,6 +588,7 @@ router.get('/ai-settings', async (req, res) => {
       config.ai_grid_status = row.ai_grid_status;
       config.ai_grid_lower = row.ai_grid_lower;
       config.ai_grid_upper = row.ai_grid_upper;
+      config.ai_grid_auto_range = row.ai_grid_auto_range || 'OFF';
       config.ai_grid_count = row.ai_grid_count;
       config.ai_grid_frequency = row.ai_grid_frequency;
     }
@@ -599,7 +601,7 @@ router.get('/ai-settings', async (req, res) => {
 
 router.post('/ai-settings', async (req, res) => {
   console.log('[DEBUG /ai-settings POST] req.body:', req.body);
-  const { status, lower, upper, count, frequency } = req.body;
+  const { status, lower, upper, count, frequency, autoRange } = req.body;
   try {
     const managerEmail = req.managerEmail;
     const current = await queries.get(
@@ -611,22 +613,24 @@ router.post('/ai-settings', async (req, res) => {
       status: isValid(status) ? status : (current ? current.ai_grid_status : 'OFF'),
       lower: isValid(lower) ? lower : (current ? current.ai_grid_lower : '0.15'),
       upper: isValid(upper) ? upper : (current ? current.ai_grid_upper : '0.30'),
+      autoRange: isValid(autoRange) ? autoRange : (current ? (current.ai_grid_auto_range || 'OFF') : 'OFF'),
       count: isValid(count) ? count : (current ? current.ai_grid_count : '5'),
       frequency: isValid(frequency) ? frequency : (current ? current.ai_grid_frequency : '5')
     };
 
     await queries.run(`
       INSERT INTO manager_ai_settings
-        (manager_email, ai_grid_status, ai_grid_lower, ai_grid_upper, ai_grid_count, ai_grid_frequency, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        (manager_email, ai_grid_status, ai_grid_lower, ai_grid_upper, ai_grid_auto_range, ai_grid_count, ai_grid_frequency, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
       ON CONFLICT(manager_email) DO UPDATE SET
         ai_grid_status = excluded.ai_grid_status,
         ai_grid_lower = excluded.ai_grid_lower,
         ai_grid_upper = excluded.ai_grid_upper,
+        ai_grid_auto_range = excluded.ai_grid_auto_range,
         ai_grid_count = excluded.ai_grid_count,
         ai_grid_frequency = excluded.ai_grid_frequency,
         updated_at = datetime('now')
-    `, [managerEmail, next.status, next.lower, next.upper, next.count, next.frequency]);
+    `, [managerEmail, next.status, next.lower, next.upper, next.autoRange, next.count, next.frequency]);
 
     if (next.status !== 'ON') {
       await queries.run("DELETE FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)", [managerEmail]);
