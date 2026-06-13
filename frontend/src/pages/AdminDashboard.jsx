@@ -708,7 +708,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
                         {councilStats.briefingGeneratedAt && (
-                          <span>분석 일시: {new Date(councilStats.briefingGeneratedAt).toLocaleString('ko-KR')}</span>
+                          <span>분석 일시: {formatKoreanDateTime(councilStats.briefingGeneratedAt)}</span>
                         )}
                         {councilStats.briefingRefreshing && (
                           <span style={{
