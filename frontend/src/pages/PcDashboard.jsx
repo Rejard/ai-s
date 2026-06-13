@@ -51,9 +51,6 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
 
   const [txHistory, setTxHistory] = useState([]);
 
-  const [councilStats, setCouncilStats] = useState(null);
-  const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
-
   const fetchDashboardData = async () => {
     try {
       const data = await loadUserDashboardData({
@@ -83,34 +80,15 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
     }
   };
 
-  const fetchCouncilStats = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/investment/council-stats`);
-      if (res.data.success) {
-        setCouncilStats({
-          factionStats: res.data.factionStats,
-          activeMembers: res.data.activeMembers,
-          recentVotes: res.data.recentVotes
-        });
-      }
-    } catch (err) {
-      console.error('Failed to load council stats in User PC Dashboard:', err.message);
-    } finally {
-      setLoadingCouncilStats(false);
-    }
-  };
-
   useEffect(() => {
     let intervalId = null;
 
     const startPolling = () => {
       fetchDashboardData();
       fetchTxHistory();
-      fetchCouncilStats();
       
       intervalId = setInterval(() => {
         fetchDashboardData();
-        fetchCouncilStats();
       }, 60000); // 60초 주기로 변경 (기존 12초)
     };
 

@@ -50,8 +50,6 @@ function Dashboard({ walletAddress, userData, onLogout }) {
   const [autoDepositFinalizeAttempted, setAutoDepositFinalizeAttempted] = useState(false);
 
   const [txHistory, setTxHistory] = useState([]);
-  const [councilStats, setCouncilStats] = useState(null);
-  const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
@@ -88,11 +86,9 @@ function Dashboard({ walletAddress, userData, onLogout }) {
     const startPolling = () => {
       fetchDashboardData();
       fetchTxHistory();
-      fetchCouncilStats();
       
       intervalId = setInterval(() => {
         fetchDashboardData();
-        fetchCouncilStats();
       }, 60000); // 60초 주기로 변경 (기존 12초)
     };
 
@@ -121,28 +117,6 @@ function Dashboard({ walletAddress, userData, onLogout }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [walletAddress]);
-
-  const fetchCouncilStats = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/investment/council-stats`);
-      if (res.data.success) {
-        setCouncilStats({
-          totalCount: res.data.totalCount,
-          factionStats: res.data.factionStats,
-          activeMembers: res.data.activeMembers,
-          recentVotes: res.data.recentVotes,
-          briefing: res.data.briefing,
-          briefingGeneratedAt: res.data.briefingGeneratedAt || '',
-          briefingStatus: res.data.briefingStatus || '',
-          briefingRefreshing: Boolean(res.data.briefingRefreshing)
-        });
-      }
-    } catch (err) {
-      console.error('Failed to load council stats in User Dashboard:', err.message);
-    } finally {
-      setLoadingCouncilStats(false);
-    }
-  };
 
   const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
     if (e && e.preventDefault) e.preventDefault();

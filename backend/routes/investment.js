@@ -57,6 +57,17 @@ const verifyWalletOwnership = async (req, res, next) => {
   }
 };
 
+const requireAdminCouncilAccess = (req, res, next) => {
+  if (req.authEmail !== 'lemaiiisk@gmail.com') {
+    return res.status(403).json({
+      success: false,
+      message: 'Council stats are restricted to the admin console.'
+    });
+  }
+
+  next();
+};
+
 // SUT price memory cache (default market price for simulation)
 let cachedPrices = {
   sut: { usd: 1.0, usd_24h_change: 0.0, usd_24h_high: 1.0, usd_24h_low: 1.0 }
@@ -451,7 +462,7 @@ function generateFallbackBriefing(factionStats, activeMembers, generationStats) 
  * @route GET /api/investment/council-stats
  * @desc Retrieve AI Council members faction statistics, active members, and voting histories
  */
-router.get('/council-stats', async (req, res) => {
+router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
   try {
     const factionRows = await queries.all(`
       SELECT faction, COUNT(*) as count 

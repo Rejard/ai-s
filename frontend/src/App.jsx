@@ -8,7 +8,6 @@ import ConsentPage from './pages/ConsentPage';
 import RegisterPage from './pages/RegisterPage';
 import WaitingPage from './pages/WaitingPage';
 import Dashboard from './pages/Dashboard';
-import CouncilPage from './pages/CouncilPage';
 import ManagerDashboard from './pages/ManagerDashboard';
 
 import HistoryPage from './pages/HistoryPage';
@@ -811,14 +810,6 @@ function AppContent() {
                 ) : (
                   <Dashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
                 )
-              ) : (
-                <Navigate to="/" replace />
-              )
-            } />
-
-            <Route path="/council" element={
-              googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED' ? (
-                <CouncilPage />
               ) : (
                 <Navigate to="/" replace />
               )

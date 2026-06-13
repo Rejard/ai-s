@@ -433,33 +433,10 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     }
   };
 
-  const [councilStats, setCouncilStats] = useState(null);
-  const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
-
-  const fetchCouncilStats = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/investment/council-stats`);
-      if (res.data.success) {
-        setCouncilStats({
-          totalCount: res.data.totalCount || 0,
-          factionStats: res.data.factionStats || [],
-          activeMembers: res.data.activeMembers || [],
-          recentVotes: res.data.recentVotes || []
-        });
-      }
-    } catch (err) {
-      console.error('Failed to load council stats in Manager:', err.message);
-    } finally {
-      setLoadingCouncilStats(false);
-    }
-  };
-
   useEffect(() => {
     fetchManagerData();
-    fetchCouncilStats();
     const interval = setInterval(() => {
       fetchManagerData();
-      fetchCouncilStats();
     }, 60000); // 60초 주기 (기존 5초)
     return () => clearInterval(interval);
   }, []);

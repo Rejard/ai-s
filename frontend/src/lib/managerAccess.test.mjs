@@ -4,7 +4,9 @@ import { readFile } from 'node:fs/promises';
 const appSource = await readFile(new URL('../App.jsx', import.meta.url), 'utf8');
 const mobileDashboardSource = await readFile(new URL('../pages/Dashboard.jsx', import.meta.url), 'utf8');
 const pcDashboardSource = await readFile(new URL('../pages/PcDashboard.jsx', import.meta.url), 'utf8');
+const managerDashboardSource = await readFile(new URL('../pages/ManagerDashboard.jsx', import.meta.url), 'utf8');
 const authRouteSource = await readFile(new URL('../../../backend/routes/auth.js', import.meta.url), 'utf8');
+const investmentRouteSource = await readFile(new URL('../../../backend/routes/investment.js', import.meta.url), 'utf8');
 
 assert.equal(
   appSource.includes('isManagerViewer ? ('),
@@ -23,7 +25,24 @@ for (const [name, source] of [
 ]) {
   assert.equal(source.includes('const canAccessManager = isManagerAccount('), true, `${name} must use manager role`);
   assert.equal(source.includes('{canAccessManager && ('), true, `${name} must show the manager shortcut`);
+  assert.equal(source.includes('/investment/council-stats'), false, `${name} must not request admin-only council stats`);
 }
+
+assert.equal(
+  managerDashboardSource.includes('/investment/council-stats'),
+  false,
+  'manager dashboard must not request admin-only council stats'
+);
+assert.equal(
+  appSource.includes("path=\"/council\""),
+  false,
+  'general member routes must not expose the council page'
+);
+assert.match(
+  investmentRouteSource,
+  /router\.get\('\/council-stats',\s*requireAuthenticatedSession,/,
+  'investment council stats must require an authenticated session'
+);
 
 assert.equal(
   authRouteSource.match(/manager_address, is_manager/g)?.length,
