@@ -4,6 +4,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { encryptText } = require('./secureCredentials');
 const { migrateAisEvaluationSchema } = require('./aisEvaluation');
+const { ensureCouncilBriefingHistorySchema } = require('./councilBriefingHistory');
 
 const defaultDbName = process.env.NODE_ENV === 'development' ? 'platform_dev.db' : 'platform.db';
 const dbPath = process.env.AIS_DB_PATH
@@ -547,6 +548,7 @@ function initializeDatabase() {
       `, async (err) => {
         if (err) return reject(err);
         try {
+          await ensureCouncilBriefingHistorySchema(queries);
           await migrateAisEvaluationSchema(db);
           console.log('✔ SQLite Database initialized successfully with Root Referrers.');
           resolve();

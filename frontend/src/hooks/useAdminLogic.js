@@ -171,6 +171,9 @@ export function useAdminLogic(managerEmail) {
           activeMembers: res.data.activeMembers || [],
           recentVotes: res.data.recentVotes || [],
           briefing: res.data.briefing || '',
+          briefingGeneratedAt: res.data.briefingGeneratedAt || '',
+          briefingStatus: res.data.briefingStatus || '',
+          briefingRefreshing: Boolean(res.data.briefingRefreshing),
           healthReport: res.data.healthReport || null
         });
       }

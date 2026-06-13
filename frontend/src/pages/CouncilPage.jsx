@@ -19,7 +19,10 @@ function CouncilPage() {
           factionStats: res.data.factionStats,
           activeMembers: res.data.activeMembers,
           recentVotes: res.data.recentVotes,
-          briefing: res.data.briefing || ''
+          briefing: res.data.briefing || '',
+          briefingGeneratedAt: res.data.briefingGeneratedAt || '',
+          briefingStatus: res.data.briefingStatus || '',
+          briefingRefreshing: Boolean(res.data.briefingRefreshing)
         });
       }
     } catch (err) {

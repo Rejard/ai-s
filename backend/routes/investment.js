@@ -6,6 +6,14 @@ const {
   extractCompleteGeminiText,
   makeCouncilBriefingGenerationConfig
 } = require('../councilBriefing');
+const {
+  createRefreshCoordinator,
+  getLatestSuccessfulBriefing,
+  shouldRefreshBriefing,
+  startBriefingRefresh,
+  finishBriefingRefreshSuccess,
+  finishBriefingRefreshFailure
+} = require('../councilBriefingHistory');
 const { requireAuthenticatedSession } = require('../authSession');
 
 const verifyWalletOwnership = async (req, res, next) => {
@@ -320,8 +328,8 @@ router.get('/history/:walletAddress', requireAuthenticatedSession, verifyWalletO
 }
 });
 
-let cachedBriefing = null;
-let lastBriefingUpdate = 0;
+const investmentBriefingRefreshCoordinator = createRefreshCoordinator();
+const INVESTMENT_BRIEFING_SCOPE = 'INVESTMENT';
 const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours cache (aligns with daily evolutionary cycle)
 
 async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats) {
@@ -486,29 +494,50 @@ router.get('/council-stats', async (req, res) => {
       count: r.count,
       percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
     }));
-
     const now = Date.now();
     let lastEvoTime = 0;
+    const modelRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_model'");
     try {
       const evoRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
       if (evoRow && evoRow.value) lastEvoTime = parseInt(evoRow.value, 10);
     } catch(e) {}
-    
-    if (!cachedBriefing || (now - lastBriefingUpdate > BRIEFING_CACHE_DURATION) || (lastBriefingUpdate < lastEvoTime)) {
-      if (!cachedBriefing) {
-        cachedBriefing = "현재 500명 AI 의원들의 세대 진화 및 파벌 탄생 배경에 대한 심층 분석을 백그라운드에서 진행 중입니다. 분석이 완료되기까지 약 3분이 소요될 수 있으니 잠시 후 새로고침해 주십시오...";
+
+    const latestBriefing = await getLatestSuccessfulBriefing(queries, INVESTMENT_BRIEFING_SCOPE);
+    const lastBriefingUpdate = latestBriefing && latestBriefing.generatedAt
+      ? new Date(latestBriefing.generatedAt).getTime()
+      : 0;
+    const refreshNeeded = shouldRefreshBriefing({
+      latestSuccess: latestBriefing,
+      now,
+      lastEvolutionTime: lastEvoTime,
+      cacheDurationMs: BRIEFING_CACHE_DURATION
+    });
+
+    const visibleBriefing = latestBriefing
+      ? latestBriefing.briefingText
+      : generateFallbackBriefing(factionStats, activeMembers, generationStats);
+
+    if (!latestBriefing || (now - lastBriefingUpdate > BRIEFING_CACHE_DURATION) || (lastBriefingUpdate < lastEvoTime)) {
+      if (investmentBriefingRefreshCoordinator.start(INVESTMENT_BRIEFING_SCOPE)) {
+        const refreshRow = await startBriefingRefresh(queries, {
+          scope: INVESTMENT_BRIEFING_SCOPE,
+          triggeredBy: latestBriefing ? 'CACHE_REFRESH' : 'INITIAL',
+          evolutionTime: lastEvoTime ? String(lastEvoTime) : null,
+          modelName: modelRow && modelRow.value ? modelRow.value : null
+        });
+
+        generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats).then(async (result) => {
+          await finishBriefingRefreshSuccess(queries, refreshRow.id, {
+            briefingText: result,
+            generatedAt: new Date().toISOString()
+          });
+        }).catch(async (err) => {
+          console.error("Background briefing fetch failed:", err.message);
+          await finishBriefingRefreshFailure(queries, refreshRow.id, err.message);
+        }).finally(() => {
+          investmentBriefingRefreshCoordinator.finish(INVESTMENT_BRIEFING_SCOPE);
+        });
       }
-      
-      lastBriefingUpdate = now; // 중복 호출 방지를 위해 미리 갱신
-      
-      generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats).then(result => {
-        cachedBriefing = result;
-        lastBriefingUpdate = Date.now();
-      }).catch(err => {
-        console.error("Background briefing fetch failed:", err.message);
-        // 실패 시 다시 시도할 수 있도록 초기화
-        if (cachedBriefing.includes("진행 중")) cachedBriefing = null; 
-      });
     }
 
     res.json({
@@ -517,7 +546,10 @@ router.get('/council-stats', async (req, res) => {
       factionStats,
       activeMembers,
       recentVotes,
-      briefing: cachedBriefing || generateFallbackBriefing(factionStats, activeMembers, generationStats)
+      briefing: visibleBriefing,
+      briefingGeneratedAt: latestBriefing ? latestBriefing.generatedAt : null,
+      briefingStatus: latestBriefing ? latestBriefing.status : 'FALLBACK',
+      briefingRefreshing: refreshNeeded || investmentBriefingRefreshCoordinator.isRefreshing(INVESTMENT_BRIEFING_SCOPE)
     });
   } catch (err) {
     console.error("❌ investment council-stats API 에러:", err);

@@ -706,6 +706,22 @@ function AdminDashboard({ walletAddress, managerEmail }) {
                         <span>🎙️</span>
                         <span>500인 후보군의 특징 분석</span>
                       </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {councilStats.briefingGeneratedAt && (
+                          <span>분석 일시: {new Date(councilStats.briefingGeneratedAt).toLocaleString('ko-KR')}</span>
+                        )}
+                        {councilStats.briefingRefreshing && (
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: 'rgba(59, 130, 246, 0.12)',
+                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                            color: '#60A5FA'
+                          }}>
+                            업데이트 중
+                          </span>
+                        )}
+                      </div>
                       <div style={{ wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>{councilStats.briefing}</div>
                     </div>
                   )}
