@@ -5,7 +5,7 @@
  */
 
 const WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 50; // max 50 requests per minute
+const MAX_REQUESTS_PER_WINDOW = 500; // max 500 requests per minute to allow aggressive admin polling
 const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes block for anomalies
 
 // In-memory store for rate limiting and IP blocking

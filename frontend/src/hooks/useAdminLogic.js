@@ -269,7 +269,7 @@ export function useAdminLogic(managerEmail) {
       fetchAiLogs();
       fetchTrainingStats();
       fetchCouncilStats();
-    }, 5000);
+    }, 60000); // 60초 주기로 변경 (기존 5초)
     return () => clearInterval(interval);
   }, [managerEmail]);
 
