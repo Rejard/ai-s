@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 
+globalThis.localStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 import {
   buildDepositFinalizeUrl,
   buildDepositResumeUrl,
