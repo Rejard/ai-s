@@ -455,7 +455,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     const interval = setInterval(() => {
       fetchManagerData();
       fetchCouncilStats();
-    }, 5000);
+    }, 60000); // 60초 주기 (기존 5초)
     return () => clearInterval(interval);
   }, []);
 
