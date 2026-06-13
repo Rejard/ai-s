@@ -1379,7 +1379,7 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
             <div className="glass-card" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.04) 0%, rgba(20, 16, 45, 0.4) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)', margin: 0 }}>
               <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <ArrowUpDown size={16} color="#8B5CF6" />
-                SUT 실거래 수동 주문
+                Gate.io SUT 직접 수동 주문
               </h4>
 
               <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
