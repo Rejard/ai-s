@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ShieldCheck, AlertTriangle, ChevronRight, CheckSquare, Square, Shield } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function PcConsentPage({ walletAddress, onLogout }) {
+function UserPcConsent({ walletAddress, onLogout }) {
   const navigate = useNavigate();
   const [agreements, setAgreements] = useState({
     lossLiability: false,
@@ -240,4 +240,4 @@ function PcConsentPage({ walletAddress, onLogout }) {
   );
 }
 
-export default PcConsentPage;
+export default UserPcConsent;

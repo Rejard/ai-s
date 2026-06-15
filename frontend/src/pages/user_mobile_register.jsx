@@ -10,7 +10,7 @@ import {
 
 const DEFAULT_MANAGER_ADDRESS = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
-function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
+function UserMobileRegister({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
   const [email] = useState(googleEmail || '');
@@ -493,4 +493,4 @@ function RegisterPage({ walletAddress, googleEmail, googleName, onRegisterComple
   );
 }
 
-export default RegisterPage;
+export default UserMobileRegister;

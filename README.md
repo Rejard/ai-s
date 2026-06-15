@@ -25,6 +25,34 @@ contracts/  Solidity contract sources
 cfg/        Local configuration files, ignored from git
 ```
 
+### Frontend Page Naming Convention
+
+To allow AI agents/assistants to accurately identify and maintain web pages for different roles and platforms without confusion, we have refactored the frontend components according to a strict naming convention:
+
+```text
+[Role]_[Platform]_[PageName].jsx
+```
+
+* **Role**: `user` (Active Members), `manager` (Managers), `admin` (Platform Owner/Admin)
+* **Platform**: `pc` (PC View), `mobile` (Mobile View)
+* **PageName**: Specific page identifier (e.g., `dashboard`, `onboarding`, `referral`, `trade`, etc.)
+
+#### Refactored Pages List
+1. **admin_mobile_council.jsx** (Admin Mobile Council)
+2. **admin_mobile_dashboard.jsx** (Admin Mobile Dashboard)
+3. **admin_pc_dashboard.jsx** (Admin PC Dashboard)
+4. **manager_mobile_dashboard.jsx** (Manager Mobile Dashboard)
+5. **manager_pc_dashboard.jsx** (Manager PC Dashboard)
+6. **user_mobile_dashboard.jsx** (User Mobile Dashboard)
+7. **user_mobile_login.jsx** (User Mobile Login)
+8. **user_mobile_onboarding.jsx** (User Mobile Onboarding)
+9. **user_mobile_referral.jsx** (User Mobile Referral)
+10. **user_mobile_trade.jsx** (User Mobile Trade)
+11. **user_pc_dashboard.jsx** (User PC Dashboard)
+12. **user_pc_login.jsx** (User PC Login)
+13. **user_pc_onboarding.jsx** (User PC Onboarding)
+14. **user_pc_referral.jsx** (User PC Referral)
+
 ## Important Runtime Settings
 
 Create `frontend/.env` for frontend-only environment variables:

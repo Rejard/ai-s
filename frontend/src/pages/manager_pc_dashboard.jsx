@@ -34,7 +34,7 @@ import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
 import EditUserModal from '../components/EditUserModal';
 import { saveIdCardLocally, getIdCardLocally, deleteIdCardLocally } from '../lib/idCardStorage';
 
-function PcManagerDashboard({ walletAddress, managerEmail }) {
+function ManagerPcDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
 
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -2099,4 +2099,4 @@ function PcManagerDashboard({ walletAddress, managerEmail }) {
   );
 }
 
-export default PcManagerDashboard;
+export default ManagerPcDashboard;

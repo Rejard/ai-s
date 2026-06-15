@@ -26,7 +26,7 @@ import SutPriceCard from '../components/SutPriceCard';
 import SutPriceChart from '../components/SutPriceChart';
 import { isAdminGoogleAccount, isManagerAccount } from '../lib/accountIdentity';
 
-function PcDashboard({ walletAddress, userData, onLogout }) {
+function UserPcDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
   const googleEmail = userData?.email;
   const canAccessManager = isManagerAccount(userData, googleEmail, walletAddress);
@@ -693,4 +693,4 @@ function PcDashboard({ walletAddress, userData, onLogout }) {
   );
 }
 
-export default PcDashboard;
+export default UserPcDashboard;

@@ -10,7 +10,7 @@ import AisTrainingEvidence from '../components/AisTrainingEvidence';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
 
-function AdminDashboard({ walletAddress, managerEmail }) {
+function AdminMobileDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('home');
   const [historyFilter, setHistoryFilter] = useState('ALL');
@@ -899,4 +899,4 @@ function AdminDashboard({ walletAddress, managerEmail }) {
   );
 }
 
-export default AdminDashboard;
+export default AdminMobileDashboard;

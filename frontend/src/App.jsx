@@ -4,21 +4,21 @@ import axios from 'axios';
 import { Shield, ShieldCheck, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
 import { ethers } from 'ethers';
 
-import ConsentPage from './pages/ConsentPage';
-import RegisterPage from './pages/RegisterPage';
-import WaitingPage from './pages/WaitingPage';
-import Dashboard from './pages/Dashboard';
-import ManagerDashboard from './pages/ManagerDashboard';
+import UserMobileConsent from './pages/user_mobile_consent';
+import UserMobileRegister from './pages/user_mobile_register';
+import UserMobileWaiting from './pages/user_mobile_waiting';
+import UserMobileDashboard from './pages/user_mobile_dashboard';
+import ManagerMobileDashboard from './pages/manager_mobile_dashboard';
 
-import HistoryPage from './pages/HistoryPage';
-import AdminDashboard from './pages/AdminDashboard';
+import UserMobileHistory from './pages/user_mobile_history';
+import AdminMobileDashboard from './pages/admin_mobile_dashboard';
 
-import PcConsentPage from './pages/PcConsentPage';
-import PcRegisterPage from './pages/PcRegisterPage';
-import PcWaitingPage from './pages/PcWaitingPage';
-import PcDashboard from './pages/PcDashboard';
-import PcManagerDashboard from './pages/PcManagerDashboard';
-import PcAdminDashboard from './pages/PcAdminDashboard';
+import UserPcConsent from './pages/user_pc_consent';
+import UserPcRegister from './pages/user_pc_register';
+import UserPcWaiting from './pages/user_pc_waiting';
+import UserPcDashboard from './pages/user_pc_dashboard';
+import ManagerPcDashboard from './pages/manager_pc_dashboard';
+import AdminPcDashboard from './pages/admin_pc_dashboard';
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
@@ -686,9 +686,9 @@ function AppContent() {
             <Route path="/manager" element={
               isManagerViewer ? (
                 isPcView ? (
-                  <PcManagerDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                  <ManagerPcDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 ) : (
-                  <ManagerDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                  <ManagerMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -698,9 +698,9 @@ function AppContent() {
             <Route path="/admin" element={
               isAdminViewer ? (
                 isPcView ? (
-                  <PcAdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                  <AdminPcDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 ) : (
-                  <AdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                  <AdminMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -760,9 +760,9 @@ function AppContent() {
             <Route path="/consent" element={
               isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
                 isPcView ? (
-                  <PcConsentPage walletAddress={walletAddress} onLogout={disconnectWallet} />
+                  <UserPcConsent walletAddress={walletAddress} onLogout={disconnectWallet} />
                 ) : (
-                  <ConsentPage walletAddress={walletAddress} onLogout={disconnectWallet} />
+                  <UserMobileConsent walletAddress={walletAddress} onLogout={disconnectWallet} />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -772,14 +772,14 @@ function AppContent() {
             <Route path="/register" element={
               isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
                 isPcView ? (
-                  <PcRegisterPage
+                  <UserPcRegister
                     walletAddress={walletAddress}
                     googleEmail={googleEmail}
                     googleName={googleName}
                     onRegisterComplete={() => checkUserStatus(walletAddress)}
                   />
                 ) : (
-                  <RegisterPage
+                  <UserMobileRegister
                     walletAddress={walletAddress}
                     googleEmail={googleEmail}
                     googleName={googleName}
@@ -794,9 +794,9 @@ function AppContent() {
             <Route path="/waiting" element={
               isAdminViewer || (googleLoggedIn && walletAddress && isRegistered && userStatus === 'PENDING_KYC') ? (
                 isPcView ? (
-                  <PcWaitingPage walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
+                  <UserPcWaiting walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
                 ) : (
-                  <WaitingPage walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
+                  <UserMobileWaiting walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -806,9 +806,9 @@ function AppContent() {
             <Route path="/dashboard" element={
               googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED' ? (
                 isPcView ? (
-                  <PcDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
+                  <UserPcDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
                 ) : (
-                  <Dashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
+                  <UserMobileDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
                 )
               ) : (
                 <Navigate to="/" replace />
@@ -820,7 +820,7 @@ function AppContent() {
                 isPcView && !isAdminViewer ? (
                   <Navigate to="/dashboard" replace />
                 ) : (
-                  <HistoryPage walletAddress={walletAddress} />
+                  <UserMobileHistory walletAddress={walletAddress} />
                 )
               ) : (
                 <Navigate to="/" replace />

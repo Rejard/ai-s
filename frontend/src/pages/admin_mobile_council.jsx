@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function CouncilPage() {
+function AdminMobileCouncil() {
   const navigate = useNavigate();
   const [councilStats, setCouncilStats] = useState(null);
   const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
@@ -295,4 +295,4 @@ function CouncilPage() {
   );
 }
 
-export default CouncilPage;
+export default AdminMobileCouncil;

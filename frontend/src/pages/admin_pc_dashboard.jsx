@@ -10,7 +10,7 @@ import AisTrainingEvidence from '../components/AisTrainingEvidence';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
 
-function PcAdminDashboard({ walletAddress, managerEmail }) {
+function AdminPcDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
   const [historyFilter, setHistoryFilter] = React.useState('ALL');
 
@@ -855,4 +855,4 @@ function PcAdminDashboard({ walletAddress, managerEmail }) {
   );
 }
 
-export default PcAdminDashboard;
+export default AdminPcDashboard;

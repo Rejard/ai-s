@@ -34,7 +34,7 @@ import ManagerManagementSection from '../components/ManagerManagementSection';
 import ManagerAiConfigSection from '../components/ManagerAiConfigSection';
 import { saveIdCardLocally, getIdCardLocally, deleteIdCardLocally } from '../lib/idCardStorage';
 
-function ManagerDashboard({ walletAddress, managerEmail }) {
+function ManagerMobileDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
 
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -1547,4 +1547,4 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   );
 }
 
-export default ManagerDashboard;
+export default ManagerMobileDashboard;

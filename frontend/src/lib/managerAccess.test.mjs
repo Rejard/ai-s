@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const appSource = await readFile(new URL('../App.jsx', import.meta.url), 'utf8');
-const mobileDashboardSource = await readFile(new URL('../pages/Dashboard.jsx', import.meta.url), 'utf8');
-const pcDashboardSource = await readFile(new URL('../pages/PcDashboard.jsx', import.meta.url), 'utf8');
-const managerDashboardSource = await readFile(new URL('../pages/ManagerDashboard.jsx', import.meta.url), 'utf8');
+const mobileDashboardSource = await readFile(new URL('../pages/user_mobile_dashboard.jsx', import.meta.url), 'utf8');
+const pcDashboardSource = await readFile(new URL('../pages/user_pc_dashboard.jsx', import.meta.url), 'utf8');
+const managerDashboardSource = await readFile(new URL('../pages/manager_mobile_dashboard.jsx', import.meta.url), 'utf8');
 const authRouteSource = await readFile(new URL('../../../backend/routes/auth.js', import.meta.url), 'utf8');
 const investmentRouteSource = await readFile(new URL('../../../backend/routes/investment.js', import.meta.url), 'utf8');
 

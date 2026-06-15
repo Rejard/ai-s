@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const pageFiles = [
-  '../pages/ConsentPage.jsx',
-  '../pages/PcConsentPage.jsx',
-  '../pages/WaitingPage.jsx',
-  '../pages/PcWaitingPage.jsx',
+  '../pages/user_mobile_consent.jsx',
+  '../pages/user_pc_consent.jsx',
+  '../pages/user_mobile_waiting.jsx',
+  '../pages/user_pc_waiting.jsx',
 ];
 
 for (const pageFile of pageFiles) {

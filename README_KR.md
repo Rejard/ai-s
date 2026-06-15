@@ -16,6 +16,37 @@ https://edenai.alonics.com/
 
 ---
 
+## 프론트엔드 페이지 명명 규칙
+
+AI 어시스턴트(AI Agent)가 여러 역할군과 플랫폼(기기)에 대한 웹 페이지를 혼동 없이 정확히 식별하고 유지보수할 수 있도록 프론트엔드 컴포넌트 파일명에 다음과 같은 엄격한 규칙(2안)을 정립하여 리팩토링을 완료했습니다.
+
+### 파일 명명 규칙
+파일명은 전부 소문자로 작성하며, 언더바(`_`)로 구분하여 역할, 플랫폼, 페이지명을 명시합니다.
+```text
+[Role]_[Platform]_[PageName].jsx
+```
+* **Role**: `user` (일반 사용자), `manager` (매니저), `admin` (관리자)
+* **Platform**: `pc` (PC 화면), `mobile` (모바일 화면)
+* **PageName**: 페이지 고유 이름 (예: `dashboard`, `onboarding`, `referral`, `trade` 등)
+
+### 적용 대상 파일 리스트
+1. **admin_mobile_council.jsx** (Admin Mobile Council)
+2. **admin_mobile_dashboard.jsx** (Admin Mobile Dashboard)
+3. **admin_pc_dashboard.jsx** (Admin PC Dashboard)
+4. **manager_mobile_dashboard.jsx** (Manager Mobile Dashboard)
+5. **manager_pc_dashboard.jsx** (Manager PC Dashboard)
+6. **user_mobile_dashboard.jsx** (User Mobile Dashboard)
+7. **user_mobile_login.jsx** (User Mobile Login)
+8. **user_mobile_onboarding.jsx** (User Mobile Onboarding)
+9. **user_mobile_referral.jsx** (User Mobile Referral)
+10. **user_mobile_trade.jsx** (User Mobile Trade)
+11. **user_pc_dashboard.jsx** (User PC Dashboard)
+12. **user_pc_login.jsx** (User PC Login)
+13. **user_pc_onboarding.jsx** (User PC Onboarding)
+14. **user_pc_referral.jsx** (User PC Referral)
+
+---
+
 ## AiS 진화 철학 선언: Safe Gated RSI
 
 본 프로젝트는 금융 시장의 **RSI (Relative Strength Index, 상대강도지수)** 지표를 5차원 입력 피처로 삼아 동작하면서, 동시에 스스로 세대를 거듭하며 개선되는 **RSI (Recursive Self-Improvement, 재재적 자가 개선)** 루프를 갖추고 있습니다.

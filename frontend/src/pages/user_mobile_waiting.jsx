@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function WaitingPage({ walletAddress, onApproved }) {
+function UserMobileWaiting({ walletAddress, onApproved }) {
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -121,4 +121,4 @@ function WaitingPage({ walletAddress, onApproved }) {
   );
 }
 
-export default WaitingPage;
+export default UserMobileWaiting;

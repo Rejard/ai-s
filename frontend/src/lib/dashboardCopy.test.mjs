@@ -24,7 +24,7 @@ assert.deepEqual(DASHBOARD_COPY, {
   logout: '로그아웃',
 });
 
-for (const pageFile of ['../pages/Dashboard.jsx', '../pages/PcDashboard.jsx']) {
+for (const pageFile of ['../pages/user_mobile_dashboard.jsx', '../pages/user_pc_dashboard.jsx']) {
   const source = await readFile(new URL(pageFile, import.meta.url), 'utf8');
 
   assert.match(source, /DASHBOARD_COPY/);

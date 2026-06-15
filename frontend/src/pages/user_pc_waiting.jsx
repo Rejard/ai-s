@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Clock, ShieldAlert, CheckCircle2, Shield } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function PcWaitingPage({ walletAddress, onApproved }) {
+function UserPcWaiting({ walletAddress, onApproved }) {
   useEffect(() => {
     const checkInterval = setInterval(async () => {
       try {
@@ -131,4 +131,4 @@ function PcWaitingPage({ walletAddress, onApproved }) {
   );
 }
 
-export default PcWaitingPage;
+export default UserPcWaiting;

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function HistoryPage({ walletAddress }) {
+function UserMobileHistory({ walletAddress }) {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,4 +113,4 @@ function HistoryPage({ walletAddress }) {
   );
 }
 
-export default HistoryPage;
+export default UserMobileHistory;
