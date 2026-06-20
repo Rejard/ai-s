@@ -14,6 +14,7 @@ FEATURE_ORDER = [
 ]
 
 AIDL_STATES = {"A", "I", "D", "L"}
+AIDL_CONTEXTS = {"BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"}
 ACTIONS = ("BUY", "SELL", "HOLD")
 
 
@@ -113,6 +114,11 @@ def validate_dna(dna):
             return False
         if strategy.get("state") not in AIDL_STATES:
             return False
+        context_mask = strategy.get("context_mask")
+        if not isinstance(context_mask, list):
+            return False
+        if not all(c in AIDL_CONTEXTS for c in context_mask):
+            return False
         if not _is_finite_number(strategy.get("dominance")):
             return False
         if not _is_positive_finite_number(strategy.get("copy_number")):
@@ -154,6 +160,7 @@ def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
         "state": "A",
         "dominance": 1.0,
         "copy_number": 1,
+        "context_mask": ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"],
         "length": len(FEATURE_ORDER),
         "subgenes": [],
     }
@@ -191,11 +198,15 @@ def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
     }
 
 
-def build_expression_plan(dna):
+def build_expression_plan(dna, current_context=None):
     expressed = []
     for strategy in dna.get("strategy_genes", []):
         if strategy.get("state") in ("I", "L"):
             continue
+        if current_context is not None:
+            mask = strategy.get("context_mask", [])
+            if current_context not in mask:
+                continue
         for subgene in strategy.get("subgenes", []):
             state = subgene.get("state")
             if state not in ("A", "D"):
@@ -210,8 +221,8 @@ def build_expression_plan(dna):
     }
 
 
-def build_phenotype_from_dna(dna):
-    plan = build_expression_plan(dna)
+def build_phenotype_from_dna(dna, current_context=None):
+    plan = build_expression_plan(dna, current_context)
     phenotype = {action: [0.0] * len(FEATURE_ORDER) for action in ACTIONS}
     counts = {action: [0] * len(FEATURE_ORDER) for action in ACTIONS}
 
@@ -230,6 +241,7 @@ def build_phenotype_from_dna(dna):
 
 
 def mutate_dna(dna, preserve_parent_ids=False):
+    import random
     parent_genome_id = dna.get("genome_id")
     existing_lineage = dna.get("lineage", {})
     existing_parents = list(existing_lineage.get("parent_ids", []))
@@ -244,11 +256,38 @@ def mutate_dna(dna, preserve_parent_ids=False):
         "ancestor_ids": list(existing_lineage.get("ancestor_ids", [])),
         "innovation_ids": list(existing_lineage.get("innovation_ids", [])),
     }
+
+    # 10% chance of Context Mask Mutation
+    context_mutated = False
+    if random.random() < 0.10:
+        contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+        for strategy in mutated.get("strategy_genes", []):
+            mask = list(strategy.get("context_mask", []))
+            target = random.choice(contexts)
+            if target in mask:
+                if len(mask) > 1:
+                    mask.remove(target)
+                    context_mutated = True
+            else:
+                mask.append(target)
+                context_mutated = True
+            strategy["context_mask"] = mask
+            if context_mutated:
+                mutated.setdefault("mutation_log", []).append(
+                    {
+                        "generation": mutated.get("generation", 1),
+                        "event": "context_mask_mutation",
+                        "gene_id": strategy.get("gene_id"),
+                    }
+                )
+                break
+
     for strategy in mutated.get("strategy_genes", []):
         for subgene in strategy.get("subgenes", []):
             if subgene.get("state") == "A":
+                nudge = 0.02 if random.random() > 0.5 else -0.02
                 subgene["weight"] = round(
-                    _clamp_feature_weight(subgene["feature"], float(subgene["weight"]) + 0.02),
+                    _clamp_feature_weight(subgene["feature"], float(subgene["weight"]) + nudge),
                     4,
                 )
                 mutated.setdefault("mutation_log", []).append(
@@ -298,6 +337,13 @@ def crossover_dna(first, second):
         if strategy_index >= len(sibling_strategies):
             continue
         sibling = sibling_strategies[strategy_index]
+
+        # Combine context masks (union)
+        parent_a_mask = strategy.get("context_mask", [])
+        parent_b_mask = sibling.get("context_mask", [])
+        combined_mask = sorted(list(set(parent_a_mask + parent_b_mask)))
+        strategy["context_mask"] = combined_mask
+
         sibling_subgenes = sibling.get("subgenes", [])
         for subgene_index, subgene in enumerate(strategy.get("subgenes", [])):
             if subgene_index >= len(sibling_subgenes):

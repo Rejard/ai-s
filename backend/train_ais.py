@@ -26,6 +26,34 @@ DB_PATH = os.environ.get(
     os.path.join(os.path.dirname(__file__), "platform.db"),
 )
 
+def detect_market_context(close_prices, high_prices, low_prices, index):
+    if index < 240:
+        return "BULL_SQUEEZE"
+        
+    # 1. SMA240 계산
+    window = close_prices[index - 240 + 1 : index + 1]
+    sma240 = sum(window) / 240
+    current_price = close_prices[index]
+    is_bull = current_price >= sma240
+    
+    # 2. ATR14 대용 밴드폭 계산 (고가 - 저가 14일 이동평균)
+    high_low_ranges = [
+        float(high_prices[j]) - float(low_prices[j])
+        for j in range(index - 14 + 1, index + 1)
+    ]
+    current_hl_range = high_low_ranges[-1]
+    avg_hl_range = sum(high_low_ranges) / 14
+    is_expansion = current_hl_range > avg_hl_range
+    
+    if is_bull and is_expansion:
+        return "BULL_EXPANSION"
+    elif is_bull and not is_expansion:
+        return "BULL_SQUEEZE"
+    elif not is_bull and is_expansion:
+        return "BEAR_EXPANSION"
+    else:
+        return "BEAR_SQUEEZE"
+
 def fetch_gateio_candles(interval="15m"):
     url = f"https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&limit=1000&interval={interval}"
     try:
@@ -241,8 +269,13 @@ def _parse_centroids(value):
 def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, faction, generation, fallback_weights):
     try:
         parsed = json.loads(dna_json) if dna_json else None
-        if validate_dna(parsed):
-            return parsed
+        if parsed and isinstance(parsed, dict) and "strategy_genes" in parsed:
+            # Self-healing migration for legacy DNA
+            for strategy in parsed.get("strategy_genes", []):
+                if "context_mask" not in strategy or not isinstance(strategy["context_mask"], list):
+                    strategy["context_mask"] = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+            if validate_dna(parsed):
+                return parsed
     except Exception:
         pass
 
@@ -263,8 +296,11 @@ def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, factio
         _safe_generation(generation),
     )
 
-def build_market_rows(prices, rsi, sma5, sma20):
+def build_market_rows(candles, prices, rsi, sma5, sma20):
     rows = []
+    high_prices = [float(c[3]) for c in candles]
+    low_prices = [float(c[4]) for c in candles]
+    
     for i in range(20, len(prices) - 1):
         price = prices[i]
         prev_price = prices[i-1]
@@ -277,12 +313,15 @@ def build_market_rows(prices, rsi, sma5, sma20):
             target = "BUY"
         elif realized_change < -0.2:
             target = "SELL"
-        rows.append({"features": features, "target": target})
+        
+        context = detect_market_context(prices, high_prices, low_prices, i)
+        rows.append({"features": features, "target": target, "context": context})
     return rows
 
 
-def evaluate_candidate(candidate_weights, rows):
-    if not rows or not validate_centroids(candidate_weights):
+def evaluate_candidate(candidate_weights_or_dna, rows):
+    is_dna = isinstance(candidate_weights_or_dna, dict) and "strategy_genes" in candidate_weights_or_dna
+    if not rows:
         return {
             "accuracy": 0.0,
             "balanced_accuracy": 0.0,
@@ -291,11 +330,28 @@ def evaluate_candidate(candidate_weights, rows):
             "recall": {"BUY": 0.0, "SELL": 0.0, "HOLD": 0.0},
             "action_counts": {"BUY": 0, "SELL": 0, "HOLD": 0},
         }
+    
     targets = [row["target"] for row in rows]
-    predictions = [
-        predict_from_centroids(row["features"], candidate_weights)
-        for row in rows
-    ]
+    predictions = []
+    
+    if is_dna:
+        for row in rows:
+            context = row.get("context", "BULL_SQUEEZE")
+            weights = build_phenotype_from_dna(candidate_weights_or_dna, context)
+            predictions.append(predict_from_centroids(row["features"], weights))
+    else:
+        if not validate_centroids(candidate_weights_or_dna):
+            return {
+                "accuracy": 0.0,
+                "balanced_accuracy": 0.0,
+                "utility_score": 0.0,
+                "collapse_penalty": 0.0,
+                "recall": {"BUY": 0.0, "SELL": 0.0, "HOLD": 0.0},
+                "action_counts": {"BUY": 0, "SELL": 0, "HOLD": 0},
+            }
+        for row in rows:
+            predictions.append(predict_from_centroids(row["features"], candidate_weights_or_dna))
+            
     return score_predictions(targets, predictions)
 
 def main():
@@ -341,7 +397,7 @@ def main():
         rsi_14 = calculate_rsi(close_prices, 14)
         sma_5 = calculate_sma(close_prices, 5)
         sma_20 = calculate_sma(close_prices, 20)
-        market_rows = build_market_rows(close_prices, rsi_14, sma_5, sma_20)
+        market_rows = build_market_rows(candles, close_prices, rsi_14, sma_5, sma_20)
         training_rows, validation_rows, holdout_rows = chronological_split(market_rows)
         if min(len(training_rows), len(validation_rows), len(holdout_rows)) == 0:
             raise RuntimeError("Chronological AiS partitions are empty")
@@ -458,7 +514,7 @@ def main():
                     _safe_generation(gen),
                 )
                 
-            validation_metrics = evaluate_candidate(weights, validation_rows)
+            validation_metrics = evaluate_candidate(dna, validation_rows)
             candidates_results.append({
                 "id": m_id,
                 "name": name,
@@ -606,7 +662,7 @@ def main():
             print(f"{idx+1}등. [{name}] - 정확도: {acc:.2f}%, 투표권 지분: {v_power:.2f}표")
             
         holdout_metrics = [
-            evaluate_candidate(e["weights"], holdout_rows)
+            evaluate_candidate(e["dna"], holdout_rows)
             for e in elected
         ]
         challenger_holdout_score = (
