@@ -191,6 +191,33 @@
             0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 2px currentColor); }
             50% { opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
         }
+
+        /* VEP Laser Sweep Animation */
+        @keyframes laser-sweep {
+            0%, 100% { top: 0%; opacity: 0.1; }
+            50% { top: 100%; opacity: 0.9; }
+        }
+        .scanner-laser {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ef4444, transparent);
+            box-shadow: 0 0 8px #ef4444;
+            animation: laser-sweep 1.5s ease-in-out infinite;
+            display: none;
+        }
+        .scanner-laser.scanning {
+            display: block;
+        }
+
+        @keyframes warning-blink {
+            0%, 100% { opacity: 0.4; border-color: rgba(239, 68, 68, 0.4); }
+            50% { opacity: 1; border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        }
+        .lethal-blink {
+            animation: warning-blink 1s ease-in-out infinite;
+        }
     </style>
 </head>
 
@@ -468,6 +495,86 @@
                         <span class="text-pink-400">★ 최종 변이 유전자:</span>
                         <span class="text-pink-400">["BULL_EXP", "BULL_SQZ", "BEAR_EXP"]</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New: Bio-Science Inspired Logic & AI-VEP Simulator -->
+    <div class="px-6 mb-8">
+        <h3 class="text-base font-bold text-slate-400 mb-3 px-1 uppercase tracking-wider">🧬 과학 분야 생명정보학 연구의 실질적 접목</h3>
+        
+        <!-- VEP Scanner Widget -->
+        <div class="evolution-box border-red-500/25 transition-all duration-500" id="vep-scanner-box">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-red-500/10 border border-red-500/30 text-[10px] text-red-400 font-bold mb-3">
+                <i class="fas fa-stethoscope animate-pulse"></i> AI-VEP (Variant Effect Predictor) 스캐너
+            </span>
+            <h4 class="text-xs font-bold text-white mb-2">변이 유전자 위험성 선제 스크리닝</h4>
+            <p class="text-[10px] text-slate-400 mb-4 leading-relaxed">
+                돌연변이 발생 시 해당 변이가 하락 폭주장 등 위기 국면에서 치명적 오작동을 유발할 가능성이 있는지 백테스팅 전에 미리 시뮬레이션하여 걸러냅니다.
+            </p>
+
+            <!-- VEP Visual Scanning Screen -->
+            <div class="relative bg-slate-950 border border-slate-900 rounded-lg p-4 mb-4 overflow-hidden min-h-[130px] flex flex-col justify-between">
+                <!-- Laser Line -->
+                <div id="scanner-laser" class="scanner-laser"></div>
+
+                <div class="flex justify-between items-center text-[9px] font-mono text-slate-500">
+                    <span>Target Variant: <strong class="text-slate-300">BUY_RsiOversold_Weight</strong></span>
+                    <span id="vep-status-badge" class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">READY</span>
+                </div>
+
+                <!-- Simulation Sequence Values -->
+                <div class="my-3 font-mono text-xs flex justify-around items-center gap-2">
+                    <div class="text-center">
+                        <span class="text-[8px] text-slate-500 block mb-0.5">변이 전</span>
+                        <span class="text-slate-400 font-bold" id="vep-before-val">-0.45</span>
+                    </div>
+                    <div class="text-slate-600"><i class="fas fa-arrow-right"></i></div>
+                    <div class="text-center relative">
+                        <span class="text-[8px] text-slate-500 block mb-0.5">변이 후 (Rookie)</span>
+                        <span class="text-pink-400 font-bold animate-pulse" id="vep-after-val">1.82</span>
+                    </div>
+                    <div class="text-slate-600"><i class="fas fa-arrow-right"></i></div>
+                    <div class="text-center">
+                        <span class="text-[8px] text-slate-500 block mb-0.5">AI-VEP 조치</span>
+                        <span class="text-slate-500 font-bold" id="vep-action-val">대기 중</span>
+                    </div>
+                </div>
+
+                <!-- Progess Bar -->
+                <div class="w-full bg-slate-900 rounded-full h-1.5 mb-1">
+                    <div id="vep-progress" class="bg-red-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div class="flex justify-between items-center text-[9px] font-bold text-slate-400 mt-2">
+                    <span id="vep-log-text">변이 스캔을 대기 중입니다.</span>
+                    <span id="vep-result-badge" class="hidden px-2 py-0.5 rounded border">LETHAL DETECTED</span>
+                </div>
+            </div>
+
+            <!-- Scanner Start Button -->
+            <button onclick="runVepSimulation()" id="btn-run-vep" class="w-full py-2 px-3 rounded-lg text-xs font-bold transition-all border border-red-500 bg-red-500/10 text-red-400 hover:bg-red-500/20 focus:outline-none flex items-center justify-center gap-1.5">
+                <i class="fas fa-microscope"></i> AI-VEP 가상 변이 시뮬레이션 가동
+            </button>
+        </div>
+
+        <!-- AISG Accession Card -->
+        <div class="evolution-box">
+            <h4 class="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                <i class="fas fa-barcode text-blue-400"></i> AISG Accession ID 명세 체계
+            </h4>
+            <p class="text-[10px] text-slate-400 mb-3 leading-relaxed">
+                NCBI Entrez 및 Ensembl DB의 생물 서열 Accessioning을 벤치마킹하여, AiS 의회에 등재되는 모든 유전자에 세대와 계보 정보를 각인한 고유 식별 번호를 발급해 관리합니다.
+            </p>
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-900 flex justify-between items-center gap-4">
+                <div class="font-mono text-xs">
+                    <span class="text-slate-500 text-[8px] block mb-0.5">AIS ACCESSION NO.</span>
+                    <span class="font-bold text-blue-400 tracking-wider animate-pulse">AISG-G3-826D6A65</span>
+                </div>
+                <div class="flex-1 max-w-[120px] text-right font-mono text-[9px] text-slate-500 leading-tight">
+                    <span>LINEAGE: REF_03</span><br>
+                    <span>CLIMATE: ALL_MASK</span>
                 </div>
             </div>
         </div>
@@ -776,6 +883,76 @@
         window.onload = function() {
             setMarketContext('BULL_EXPANSION');
         };
+
+        // AI-VEP Simulator Script
+        let vepRunning = false;
+        function runVepSimulation() {
+            if (vepRunning) return;
+            vepRunning = true;
+            
+            const btn = document.getElementById('btn-run-vep');
+            const laser = document.getElementById('scanner-laser');
+            const statusBadge = document.getElementById('vep-status-badge');
+            const progress = document.getElementById('vep-progress');
+            const logText = document.getElementById('vep-log-text');
+            const resultBadge = document.getElementById('vep-result-badge');
+            const actionVal = document.getElementById('vep-action-val');
+            const scannerBox = document.getElementById('vep-scanner-box');
+            
+            // Reset UI
+            btn.disabled = true;
+            btn.className = "w-full py-2 px-3 rounded-lg text-xs font-bold border border-slate-700 bg-slate-800 text-slate-500 focus:outline-none flex items-center justify-center gap-1.5";
+            laser.classList.add('scanning');
+            statusBadge.className = "px-1.5 py-0.2 rounded bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse";
+            statusBadge.innerText = "SCANNING";
+            progress.style.width = "0%";
+            progress.className = "bg-red-500 h-1.5 rounded-full transition-all duration-300";
+            logText.innerText = "변이 유전자 가중치 스캔 중...";
+            logText.className = "text-[9px] font-bold text-slate-400 mt-2";
+            resultBadge.classList.add('hidden');
+            actionVal.innerText = "대기 중";
+            actionVal.className = "text-slate-500 font-bold";
+            scannerBox.className = "evolution-box border-red-500/40 transition-all duration-500";
+            
+            // Progress Bar simulation steps
+            setTimeout(() => {
+                progress.style.width = "40%";
+                logText.innerText = "시장 맥락 BEAR_EXPANSION 대조 분석 중...";
+            }, 1000);
+            
+            setTimeout(() => {
+                progress.style.width = "80%";
+                logText.innerText = "위험성 평가 (RSI 과매도 가중치 과적합 감지)...";
+            }, 2000);
+            
+            setTimeout(() => {
+                progress.style.width = "100%";
+                laser.classList.remove('scanning');
+                
+                // Set Lethal Result
+                statusBadge.className = "px-1.5 py-0.2 rounded bg-red-500 text-white font-bold";
+                statusBadge.innerText = "LETHAL";
+                
+                logText.innerText = "AI-VEP 경고: 위험 변이가 감지되어 강제 차단되었습니다.";
+                logText.className = "text-[9px] font-bold text-red-400 mt-2 animate-pulse";
+                
+                resultBadge.className = "px-2 py-0.5 rounded border border-red-500 bg-red-500/10 text-red-400 text-[9px] font-bold lethal-blink";
+                resultBadge.innerText = "LETHAL DETECTED";
+                resultBadge.classList.remove('hidden');
+                
+                actionVal.innerText = "FILTERED & ROLLED BACK";
+                actionVal.className = "text-emerald-400 font-bold animate-pulse";
+                scannerBox.className = "evolution-box border-red-500 transition-all duration-500";
+                
+                // Reset button after brief pause
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.className = "w-full py-2 px-3 rounded-lg text-xs font-bold transition-all border border-red-500 bg-red-500/10 text-red-400 hover:bg-red-500/20 focus:outline-none flex items-center justify-center gap-1.5";
+                    vepRunning = false;
+                }, 3000);
+                
+            }, 3500);
+        }
     </script>
 </body>
 
