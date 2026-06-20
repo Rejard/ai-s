@@ -10,12 +10,15 @@ from ais_features import validate_centroids
 
 
 class AiSDnaTests(unittest.TestCase):
-    def test_bootstrap_from_legacy_centroids_builds_valid_dna(self):
-        legacy = {
+    def _legacy_centroids(self):
+        return {
             "BUY": [-0.5, -0.4, 0.1, 0.0, 0.05],
             "SELL": [0.4, 0.3, -0.1, -0.05, 0.02],
             "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
         }
+
+    def test_bootstrap_from_legacy_centroids_builds_valid_dna(self):
+        legacy = self._legacy_centroids()
 
         dna = bootstrap_dna_from_legacy(
             legacy,
@@ -27,6 +30,75 @@ class AiSDnaTests(unittest.TestCase):
         self.assertTrue(validate_dna(dna))
         self.assertEqual(dna["generation"], 2)
         self.assertGreaterEqual(len(dna["strategy_genes"]), 1)
+
+    def test_bootstrap_preserves_legacy_centroid_values_in_phenotype(self):
+        legacy = self._legacy_centroids()
+
+        dna = bootstrap_dna_from_legacy(
+            legacy,
+            member_id="legacy_member_01",
+            faction="VALUE_SEEKER",
+            generation=2,
+        )
+        phenotype = build_phenotype_from_dna(dna)
+
+        self.assertEqual(phenotype, legacy)
+
+    def test_bootstrap_rejects_short_legacy_vector(self):
+        legacy = self._legacy_centroids()
+        legacy["BUY"] = legacy["BUY"][:4]
+
+        with self.assertRaises(ValueError):
+            bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
+
+    def test_bootstrap_rejects_missing_legacy_action(self):
+        legacy = self._legacy_centroids()
+        del legacy["SELL"]
+
+        with self.assertRaises(ValueError):
+            bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
+
+    def test_bootstrap_rejects_non_finite_legacy_weight(self):
+        for invalid_weight in (float("nan"), float("inf")):
+            with self.subTest(invalid_weight=invalid_weight):
+                legacy = self._legacy_centroids()
+                legacy["HOLD"][2] = invalid_weight
+
+                with self.assertRaises(ValueError):
+                    bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
+
+    def test_validate_dna_rejects_malformed_strategy_gene(self):
+        dna = bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_03",
+            faction="VALUE_SEEKER",
+            generation=1,
+        )
+        del dna["strategy_genes"][0]["innovation_id"]
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_empty_strategy_subgenes(self):
+        dna = bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_03",
+            faction="VALUE_SEEKER",
+            generation=1,
+        )
+        dna["strategy_genes"][0]["subgenes"] = []
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_malformed_subgene(self):
+        dna = bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_03",
+            faction="VALUE_SEEKER",
+            generation=1,
+        )
+        dna["strategy_genes"][0]["subgenes"][0]["weight"] = float("inf")
+
+        self.assertFalse(validate_dna(dna))
 
     def test_expression_plan_excludes_inactive_and_lethal_genes(self):
         dna = {

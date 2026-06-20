@@ -79,6 +79,7 @@ class AiSFeatureTests(unittest.TestCase):
         dna = bootstrap_dna_from_legacy(legacy, "legacy_member_x", "VALUE_SEEKER", 1)
         phenotype = build_phenotype_from_dna(dna)
 
+        self.assertEqual(phenotype, legacy)
         self.assertTrue(validate_centroids(phenotype))
 
 

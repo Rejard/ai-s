@@ -29,7 +29,26 @@ def _base_profile():
 
 
 def _is_finite_number(value):
-    return isinstance(value, (int, float)) and math.isfinite(float(value))
+    return type(value) in (int, float) and math.isfinite(float(value))
+
+
+def _is_non_empty_string(value):
+    return isinstance(value, str) and bool(value)
+
+
+def _is_positive_int(value):
+    return type(value) is int and value > 0
+
+
+def _validate_legacy_centroids(legacy_centroids):
+    if not isinstance(legacy_centroids, dict) or set(legacy_centroids.keys()) != set(ACTIONS):
+        raise ValueError("Legacy centroids must contain BUY, SELL, and HOLD vectors")
+    for action in ACTIONS:
+        vector = legacy_centroids.get(action)
+        if not isinstance(vector, list) or len(vector) != len(FEATURE_ORDER):
+            raise ValueError("Legacy centroid vectors must contain five feature weights")
+        if not all(_is_finite_number(weight) for weight in vector):
+            raise ValueError("Legacy centroid weights must be finite numbers")
 
 
 def validate_dna(dna):
@@ -49,12 +68,20 @@ def validate_dna(dna):
     for strategy in dna["strategy_genes"]:
         if not isinstance(strategy, dict):
             return False
+        if not _is_non_empty_string(strategy.get("gene_id")):
+            return False
+        if not _is_positive_int(strategy.get("innovation_id")):
+            return False
         if strategy.get("state") not in AIDL_STATES:
             return False
-        if not isinstance(strategy.get("subgenes"), list):
+        if not isinstance(strategy.get("subgenes"), list) or not strategy["subgenes"]:
             return False
         for subgene in strategy["subgenes"]:
             if not isinstance(subgene, dict):
+                return False
+            if not _is_non_empty_string(subgene.get("gene_id")):
+                return False
+            if not _is_positive_int(subgene.get("innovation_id")):
                 return False
             if subgene.get("state") not in AIDL_STATES:
                 return False
@@ -68,6 +95,8 @@ def validate_dna(dna):
 
 
 def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
+    _validate_legacy_centroids(legacy_centroids)
+
     strategy_gene = {
         "gene_id": f"sg_{member_id}",
         "innovation_id": 1,
