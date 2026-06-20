@@ -336,7 +336,7 @@ If you wish to integrate the AI-S architecture into a commercial proprietary pro
 
 ## 📚 References
 
-The genomic architecture and safety gates of the AIDL DNA Evolution Engine were designed with reference to the following pioneering research and database standards in bioinformatics and genetics:
+The genomic architecture, safety gates, and cryptographic transmissions of the AIDL DNA Evolution Engine were designed with reference to the following pioneering research, database standards, and cryptographic specifications:
 
 1.  **Google DeepMind AlphaGenome (2026)**
     *   *Research / Resource:* "Predicting genomic variant effects on gene expression and regulatory mechanisms using deep neural networks."
@@ -347,4 +347,10 @@ The genomic architecture and safety gates of the AIDL DNA Evolution Engine were 
 3.  **NCBI Entrez system & Sequence Databases (2018)**
     *   *Reference:* "Database resources of the National Center for Biotechnology Information." *Nucleic Acids Research*, 46(D1), D8–D13.
     *   *Application:* Designed the `AISG` Accession ID specification for unified gene sequence indexing and generation lineage tracking.
+4.  **NIST SP 800-38D (Galois/Counter Mode - GCM) (2007)**
+    *   *Specification:* Dworkin, M. "Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC." *NIST Special Publication*, 800-38D.
+    *   *Application:* Implemented `AES-256-GCM` symmetric-key authenticated encryption/decryption for secure transmission of manager API credentials without data leakage.
+5.  **NIST FIPS 180-4 (Secure Hash Standard - SHA-256) (2015)**
+    *   *Standard:* "Secure Hash Standard (SHS)." *Federal Information Processing Standards Publication*, FIPS PUB 180-4.
+    *   *Application:* Integrated SHA-256 hashing for 32-byte key stretching and derivation from user secret phrases.
 
