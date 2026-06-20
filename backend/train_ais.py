@@ -13,6 +13,7 @@ from ais_features import (
     score_predictions,
     validate_centroids,
 )
+from ais_dna import bootstrap_dna_from_legacy, build_phenotype_from_dna
 
 DB_PATH = os.environ.get(
     "AIS_DB_PATH",
@@ -180,6 +181,29 @@ def determine_faction_from_weights(weights, name_or_id):
     # 기본값
     return random.choice(["MUTANT_ROOKIE", "TREND_FOLLOWER", "VALUE_SEEKER", "CONSERVATIVE_WATCHER"])
 
+def build_council_member_insert_payload(
+    member_id,
+    name,
+    weights,
+    voting_power,
+    status,
+    faction,
+    generation,
+):
+    dna = bootstrap_dna_from_legacy(weights, member_id, faction, generation)
+    phenotype = build_phenotype_from_dna(dna)
+    return (
+        member_id,
+        name,
+        json.dumps(weights),
+        json.dumps(dna),
+        json.dumps(phenotype),
+        voting_power,
+        status,
+        faction,
+        generation,
+    )
+
 def build_market_rows(prices, rsi, sma5, sma20):
     rows = []
     for i in range(20, len(prices) - 1):
@@ -302,11 +326,14 @@ def main():
                     
                 name = f"Mutant Challenger {total_in_db + k + 1} ({gen}세대)"
                 faction = determine_faction_from_weights(weights, name)
-                new_inserts.append((new_id, name, json.dumps(weights), 1.0, 'CANDIDATE', faction, gen))
+                new_inserts.append(build_council_member_insert_payload(
+                    new_id, name, weights, 1.0, 'CANDIDATE', faction, gen
+                ))
                 
             cursor.executemany("""
-                INSERT OR IGNORE INTO ais_council_members (member_id, name, weights_json, voting_power, status, faction, generation)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT OR IGNORE INTO ais_council_members
+                    (member_id, name, weights_json, dna_json, phenotype_json, voting_power, status, faction, generation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, new_inserts)
             # Refresh total count
             cursor.execute("SELECT COUNT(*) FROM ais_council_members")
@@ -398,34 +425,39 @@ def main():
             new_id = f"offspring_{uuid.uuid4().hex}"
             name = f"Offspring Gen-{idx+1} ({offspring_gen}세대)"
             faction = determine_faction_from_weights(offspring_weights, p1["name"])
-            new_offspring_inserts.append((new_id, name, json.dumps(offspring_weights), 1.0, 'CANDIDATE', faction, offspring_gen))
+            new_offspring_inserts.append(build_council_member_insert_payload(
+                new_id, name, offspring_weights, 1.0, 'CANDIDATE', faction, offspring_gen
+            ))
             
         for idx in range(mutant_count):
             new_id = f"mutant_{uuid.uuid4().hex}"
             name = f"Mutant Rookie Gen-{idx+1} (1세대)"
             weights = generate_random_weights()
             faction = determine_faction_from_weights(weights, name)
-            new_offspring_inserts.append((new_id, name, json.dumps(weights), 1.0, 'CANDIDATE', faction, 1))
+            new_offspring_inserts.append(build_council_member_insert_payload(
+                new_id, name, weights, 1.0, 'CANDIDATE', faction, 1
+            ))
             
         cursor.executemany("""
-            INSERT OR IGNORE INTO ais_council_members (member_id, name, weights_json, voting_power, status, faction, generation)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO ais_council_members
+                (member_id, name, weights_json, dna_json, phenotype_json, voting_power, status, faction, generation)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, new_offspring_inserts)
         cursor.execute("SELECT COUNT(*) FROM ais_council_members")
         pool_count = cursor.fetchone()[0]
         while pool_count < 500:
             weights = generate_random_weights()
             name = f"Mutant Pool Refill {pool_count + 1} (1세대)"
+            member_id = f"mutant_{uuid.uuid4().hex}"
+            faction = determine_faction_from_weights(weights, name)
+            payload = build_council_member_insert_payload(
+                member_id, name, weights, 1.0, 'CANDIDATE', faction, 1
+            )
             cursor.execute("""
                 INSERT INTO ais_council_members
-                (member_id, name, weights_json, voting_power, status, faction, generation)
-                VALUES (?, ?, ?, 1.0, 'CANDIDATE', ?, 1)
-            """, (
-                f"mutant_{uuid.uuid4().hex}",
-                name,
-                json.dumps(weights),
-                determine_faction_from_weights(weights, name)
-            ))
+                    (member_id, name, weights_json, dna_json, phenotype_json, voting_power, status, faction, generation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, payload)
             pool_count += 1
         print(f"[+] Spawned candidates and verified exact pool size: {pool_count}/500.")
         
@@ -445,6 +477,15 @@ def main():
             member_id = e["id"]
             name = e["name"]
             acc = e["validation_score"]
+            weights_json = json.dumps(e["weights"])
+            dna = bootstrap_dna_from_legacy(
+                e["weights"],
+                member_id,
+                determine_faction_from_weights(e["weights"], name),
+                e["generation"],
+            )
+            phenotype_json = json.dumps(build_phenotype_from_dna(dna))
+            dna_json = json.dumps(dna)
             
             # voting_power is centered around 1.0 based on relative performance
             v_power = round(acc / avg_elected_accuracy, 2) if avg_elected_accuracy > 0 else 1.0
@@ -453,9 +494,9 @@ def main():
             cursor.execute("""
                 UPDATE ais_council_members 
                 SET status = 'ACTIVE', voting_power = ?, correct_count = ?,
-                    total_count = ?, weights_json = ?
+                    total_count = ?, weights_json = ?, dna_json = ?, phenotype_json = ?
                 WHERE member_id = ?
-            """, (v_power, int(acc), 100, json.dumps(e["weights"]), member_id))
+            """, (v_power, int(acc), 100, weights_json, dna_json, phenotype_json, member_id))
             
             print(f"{idx+1}등. [{name}] - 정확도: {acc:.2f}%, 투표권 지분: {v_power:.2f}표")
             

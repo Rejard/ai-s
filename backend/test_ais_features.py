@@ -1,4 +1,5 @@
 import math
+import json
 import random
 import unittest
 
@@ -12,6 +13,7 @@ from ais_features import (
 )
 from ais_dna import bootstrap_dna_from_legacy, build_phenotype_from_dna
 from train_ais import (
+    build_council_member_insert_payload,
     crossover_weights,
     generate_random_weights,
     mutate_weights,
@@ -80,6 +82,30 @@ class AiSFeatureTests(unittest.TestCase):
         phenotype = build_phenotype_from_dna(dna)
 
         self.assertEqual(phenotype, legacy)
+        self.assertTrue(validate_centroids(phenotype))
+
+    def test_council_member_insert_payload_includes_dna_and_phenotype(self):
+        weights = {
+            "BUY": [-0.4, -0.3, 0.1, 0.0, 0.02],
+            "SELL": [0.3, 0.2, -0.1, -0.02, 0.01],
+            "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
+        }
+
+        payload = build_council_member_insert_payload(
+            member_id="candidate_1",
+            name="Candidate 1",
+            weights=weights,
+            voting_power=1.0,
+            status="CANDIDATE",
+            faction="VALUE_SEEKER",
+            generation=3,
+        )
+
+        dna = json.loads(payload[3])
+        phenotype = json.loads(payload[4])
+        self.assertEqual(json.loads(payload[2]), weights)
+        self.assertEqual(phenotype, weights)
+        self.assertEqual(dna["generation"], 3)
         self.assertTrue(validate_centroids(phenotype))
 
 
