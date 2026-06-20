@@ -17,6 +17,14 @@ class AiSDnaTests(unittest.TestCase):
             "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
         }
 
+    def _valid_dna(self):
+        return bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_03",
+            faction="VALUE_SEEKER",
+            generation=1,
+        )
+
     def test_bootstrap_from_legacy_centroids_builds_valid_dna(self):
         legacy = self._legacy_centroids()
 
@@ -68,35 +76,44 @@ class AiSDnaTests(unittest.TestCase):
                     bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
 
     def test_validate_dna_rejects_malformed_strategy_gene(self):
-        dna = bootstrap_dna_from_legacy(
-            self._legacy_centroids(),
-            member_id="legacy_member_03",
-            faction="VALUE_SEEKER",
-            generation=1,
-        )
+        dna = self._valid_dna()
         del dna["strategy_genes"][0]["innovation_id"]
 
         self.assertFalse(validate_dna(dna))
 
+    def test_validate_dna_rejects_empty_lineage(self):
+        dna = self._valid_dna()
+        dna["lineage"] = {}
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_empty_regulatory_profile(self):
+        dna = self._valid_dna()
+        dna["regulatory_profile"] = {}
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_strategy_missing_copy_number(self):
+        dna = self._valid_dna()
+        del dna["strategy_genes"][0]["copy_number"]
+
+        self.assertFalse(validate_dna(dna))
+
     def test_validate_dna_rejects_empty_strategy_subgenes(self):
-        dna = bootstrap_dna_from_legacy(
-            self._legacy_centroids(),
-            member_id="legacy_member_03",
-            faction="VALUE_SEEKER",
-            generation=1,
-        )
+        dna = self._valid_dna()
         dna["strategy_genes"][0]["subgenes"] = []
 
         self.assertFalse(validate_dna(dna))
 
     def test_validate_dna_rejects_malformed_subgene(self):
-        dna = bootstrap_dna_from_legacy(
-            self._legacy_centroids(),
-            member_id="legacy_member_03",
-            faction="VALUE_SEEKER",
-            generation=1,
-        )
+        dna = self._valid_dna()
         dna["strategy_genes"][0]["subgenes"][0]["weight"] = float("inf")
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_subgene_missing_threshold(self):
+        dna = self._valid_dna()
+        del dna["strategy_genes"][0]["subgenes"][0]["threshold"]
 
         self.assertFalse(validate_dna(dna))
 

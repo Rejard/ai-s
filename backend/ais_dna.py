@@ -36,8 +36,12 @@ def _is_non_empty_string(value):
     return isinstance(value, str) and bool(value)
 
 
-def _is_positive_int(value):
-    return type(value) is int and value > 0
+def _is_int(value):
+    return type(value) is int
+
+
+def _is_positive_finite_number(value):
+    return _is_finite_number(value) and float(value) > 0
 
 
 def _validate_legacy_centroids(legacy_centroids):
@@ -58,10 +62,36 @@ def validate_dna(dna):
         return False
     if not isinstance(dna.get("generation"), int):
         return False
-    if not isinstance(dna.get("lineage"), dict):
+    lineage = dna.get("lineage")
+    if not isinstance(lineage, dict):
         return False
-    if not isinstance(dna.get("regulatory_profile"), dict):
+    if not {"parent_ids", "ancestor_ids", "innovation_ids"}.issubset(lineage):
         return False
+    if not isinstance(lineage.get("parent_ids"), list):
+        return False
+    if not isinstance(lineage.get("ancestor_ids"), list):
+        return False
+    innovation_ids = lineage.get("innovation_ids")
+    if not isinstance(innovation_ids, list) or not all(_is_int(value) for value in innovation_ids):
+        return False
+
+    regulatory_profile = dna.get("regulatory_profile")
+    if not isinstance(regulatory_profile, dict):
+        return False
+    profile_keys = {
+        "expression_budget",
+        "dominance_bias",
+        "decay_resistance",
+        "reactivation_bias",
+    }
+    if not profile_keys.issubset(regulatory_profile):
+        return False
+    if not _is_positive_finite_number(regulatory_profile.get("expression_budget")):
+        return False
+    for key in ("dominance_bias", "decay_resistance", "reactivation_bias"):
+        if not _is_finite_number(regulatory_profile.get(key)):
+            return False
+
     if not isinstance(dna.get("strategy_genes"), list) or not dna["strategy_genes"]:
         return False
 
@@ -70,9 +100,15 @@ def validate_dna(dna):
             return False
         if not _is_non_empty_string(strategy.get("gene_id")):
             return False
-        if not _is_positive_int(strategy.get("innovation_id")):
+        if not _is_int(strategy.get("innovation_id")):
             return False
         if strategy.get("state") not in AIDL_STATES:
+            return False
+        if not _is_finite_number(strategy.get("dominance")):
+            return False
+        if not _is_positive_finite_number(strategy.get("copy_number")):
+            return False
+        if not _is_positive_finite_number(strategy.get("length")):
             return False
         if not isinstance(strategy.get("subgenes"), list) or not strategy["subgenes"]:
             return False
@@ -81,7 +117,7 @@ def validate_dna(dna):
                 return False
             if not _is_non_empty_string(subgene.get("gene_id")):
                 return False
-            if not _is_positive_int(subgene.get("innovation_id")):
+            if not _is_int(subgene.get("innovation_id")):
                 return False
             if subgene.get("state") not in AIDL_STATES:
                 return False
@@ -90,6 +126,10 @@ def validate_dna(dna):
             if subgene.get("action") not in ACTIONS:
                 return False
             if not _is_finite_number(subgene.get("weight")):
+                return False
+            if not _is_finite_number(subgene.get("threshold")):
+                return False
+            if not _is_finite_number(subgene.get("priority")):
                 return False
     return True
 
