@@ -82,9 +82,32 @@ class AiSDnaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
 
+    def test_bootstrap_rejects_invalid_generation_values(self):
+        for invalid_generation in (True, False, "2", -1, 0):
+            with self.subTest(invalid_generation=invalid_generation):
+                with self.assertRaises(ValueError):
+                    bootstrap_dna_from_legacy(
+                        self._legacy_centroids(),
+                        "legacy_member_01",
+                        "VALUE_SEEKER",
+                        invalid_generation,
+                    )
+
     def test_validate_dna_rejects_boolean_generation(self):
         dna = self._valid_dna()
         dna["generation"] = True
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_non_positive_generation(self):
+        dna = self._valid_dna()
+        dna["generation"] = 0
+
+        self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_rejects_non_string_lineage_ids(self):
+        dna = self._valid_dna()
+        dna["lineage"]["ancestor_ids"] = [123]
 
         self.assertFalse(validate_dna(dna))
 

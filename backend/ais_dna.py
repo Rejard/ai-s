@@ -42,6 +42,10 @@ def _is_int(value):
     return type(value) is int
 
 
+def _is_positive_int(value):
+    return _is_int(value) and value > 0
+
+
 def _is_positive_finite_number(value):
     return _is_finite_number(value) and float(value) > 0
 
@@ -56,7 +60,7 @@ def validate_dna(dna):
         return False
     if not isinstance(dna.get("genome_id"), str) or not dna["genome_id"]:
         return False
-    if not _is_int(dna.get("generation")):
+    if not _is_positive_int(dna.get("generation")):
         return False
     lineage = dna.get("lineage")
     if not isinstance(lineage, dict):
@@ -65,7 +69,11 @@ def validate_dna(dna):
         return False
     if not isinstance(lineage.get("parent_ids"), list):
         return False
+    if not all(isinstance(value, str) and value for value in lineage.get("parent_ids")):
+        return False
     if not isinstance(lineage.get("ancestor_ids"), list):
+        return False
+    if not all(isinstance(value, str) and value for value in lineage.get("ancestor_ids")):
         return False
     innovation_ids = lineage.get("innovation_ids")
     if not isinstance(innovation_ids, list) or not all(_is_int(value) for value in innovation_ids):
@@ -132,6 +140,8 @@ def validate_dna(dna):
 
 def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
     _validate_legacy_centroids(legacy_centroids)
+    if not _is_positive_int(generation):
+        raise ValueError("Generation must be a positive integer")
 
     strategy_gene = {
         "gene_id": f"sg_{member_id}",
@@ -163,7 +173,7 @@ def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
 
     return {
         "genome_id": _new_genome_id(),
-        "generation": int(generation or 1),
+        "generation": generation,
         "faction_hint": faction,
         "lineage": {
             "parent_ids": [],
