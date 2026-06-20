@@ -281,3 +281,22 @@ We do not claim that our framework is infallible, nor do we pretend to hold abso
 
 We invite like-minded developers who believe in **survival through wild diversity rather than sterile over-regulation** to join our movement.
 
+---
+
+## ⚖️ License and Commercial Use Inquiries
+
+**AI-S (Safe Gated RSI)** is provided as open-source to encourage technical contribution and educational use. However, to protect our intellectual property, this project is operated under a **Dual License Policy**.
+
+### 1. Non-Commercial & Open Source Use
+Open-source contributors and individual developers are free to view, modify, and use the source code for non-commercial purposes under the `AGPL-3.0 License`. However, any derivative works or services built on this code must also be distributed as open-source under the same license.
+
+### 2. Commercial Use and Integration
+If a corporation, startup, or individual wishes to use AI-S for **commercial or proprietary purposes (e.g., launching a commercial service, internal corporate integration, resale, etc.)**, it is strictly prohibited under the AGPL-3.0 License. **You must obtain prior consent and a separate 'Commercial License' from the original author (Rejard).**
+
+If you wish to integrate the AI-S architecture into a commercial product or require technical support, please contact us at the email below to discuss commercial licensing.
+
+*Acquiring a commercial license waives the obligation to disclose your source code and provides dedicated technical support.*
+
+- 📬 **Commercial & Technical Inquiries:** lemaiii@alonics.com
+- **Copyright:** © 2026 Alonics Inc. All Rights Reserved.
+
