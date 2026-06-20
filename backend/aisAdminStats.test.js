@@ -98,10 +98,20 @@ async function main() {
     INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
     VALUES (
       'm1',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[],"generation":1}',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
+    )
+  `);
+  await store.run(`
+    INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
+    VALUES (
+      'm2',
+      '{"genome_id":"g2","strategy_genes":[{"gene_id":"sg2","state":"A","subgenes":[{"state":"A"},{"state":"A"}]}],"generation":1}',
+      '{"BUY":[1,1,1,1,1],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
+      1,
+      'CANDIDATE'
     )
   `);
 
@@ -116,6 +126,13 @@ async function main() {
   assert.deepStrictEqual(result.latestRun.promotionReasons, ['MIN_LABELED_OBSERVATIONS']);
   assert.strictEqual(result.shadowOnly, true);
   assert.strictEqual(result.automaticPromotionEnabled, false);
+  assert.strictEqual(result.dnaStateTotalsAvailable, true);
+  assert.deepStrictEqual(result.dnaStateTotals, {
+    active: 2,
+    inactive: 1,
+    deprecated: 1,
+    lethal: 1,
+  });
   await verifyDatabaseDnaMigration();
 
   db.close();

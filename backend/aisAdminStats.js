@@ -1,4 +1,5 @@
 const { LABEL_VERSION } = require('./aisEvaluation');
+const { summarizeDnaStates } = require('./aisDnaSummary');
 
 async function getAisTrainingStats(store) {
   const totals = await store.get(`
@@ -73,6 +74,25 @@ async function getAisTrainingStats(store) {
 
   const promoEnabledRow = await store.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
   const automaticPromotionEnabled = promoEnabledRow ? (promoEnabledRow.value === 'ON') : false;
+  let dnaStateTotalsAvailable = true;
+  const activeCouncil = await store.all(`
+    SELECT dna_json
+    FROM ais_council_members
+    WHERE status = 'ACTIVE'
+      AND dna_json IS NOT NULL
+      AND dna_json != ''
+  `).catch(() => {
+    dnaStateTotalsAvailable = false;
+    return [];
+  });
+  const dnaStateTotals = activeCouncil.reduce((totals, row) => {
+    const summary = summarizeDnaStates(row.dna_json);
+    totals.active += summary.active;
+    totals.inactive += summary.inactive;
+    totals.deprecated += summary.deprecated;
+    totals.lethal += summary.lethal;
+    return totals;
+  }, { active: 0, inactive: 0, deprecated: 0, lethal: 0 });
 
   return {
     total: Number(totals?.total || 0),
@@ -84,6 +104,8 @@ async function getAisTrainingStats(store) {
     labelVersion: LABEL_VERSION,
     shadowOnly: true,
     automaticPromotionEnabled,
+    dnaStateTotals,
+    dnaStateTotalsAvailable,
   };
 }
 
