@@ -2,7 +2,7 @@ import copy
 import math
 import uuid
 
-from ais_features import validate_centroids
+from ais_features import FEATURE_ABS_LIMITS, validate_centroids
 
 
 FEATURE_ORDER = [
@@ -53,6 +53,11 @@ def _is_positive_finite_number(value):
 def _validate_legacy_centroids(legacy_centroids):
     if not validate_centroids(legacy_centroids):
         raise ValueError("Legacy centroids must match the canonical AiS centroid schema")
+
+
+def _clamp_feature_weight(feature, weight):
+    limit = FEATURE_ABS_LIMITS[FEATURE_ORDER.index(feature)]
+    return max(-limit, min(limit, float(weight)))
 
 
 def validate_dna(dna):
@@ -222,3 +227,83 @@ def build_phenotype_from_dna(dna):
                 phenotype[action][index] = phenotype[action][index] / counts[action][index]
 
     return phenotype
+
+
+def mutate_dna(dna, preserve_parent_ids=False):
+    parent_genome_id = dna.get("genome_id")
+    existing_lineage = dna.get("lineage", {})
+    existing_parents = list(existing_lineage.get("parent_ids", []))
+    mutated = copy.deepcopy(dna)
+    mutated["genome_id"] = _new_genome_id()
+    mutated["lineage"] = {
+        "parent_ids": (
+            existing_parents
+            if preserve_parent_ids and existing_parents
+            else ([parent_genome_id] if parent_genome_id else [])
+        ),
+        "ancestor_ids": list(existing_lineage.get("ancestor_ids", [])),
+        "innovation_ids": list(existing_lineage.get("innovation_ids", [])),
+    }
+    for strategy in mutated.get("strategy_genes", []):
+        for subgene in strategy.get("subgenes", []):
+            if subgene.get("state") == "A":
+                subgene["weight"] = round(
+                    _clamp_feature_weight(subgene["feature"], float(subgene["weight"]) + 0.02),
+                    4,
+                )
+                mutated.setdefault("mutation_log", []).append(
+                    {
+                        "generation": mutated.get("generation", 1),
+                        "event": "weight_nudge",
+                        "gene_id": subgene.get("gene_id"),
+                    }
+                )
+                return mutated
+    mutated.setdefault("mutation_log", []).append(
+        {"generation": mutated.get("generation", 1), "event": "no_active_gene"}
+    )
+    return mutated
+
+
+def crossover_dna(first, second):
+    parent_a = copy.deepcopy(first)
+    parent_b = copy.deepcopy(second)
+    child = copy.deepcopy(parent_a)
+    child["genome_id"] = _new_genome_id()
+    child["generation"] = max(
+        int(parent_a.get("generation", 1)),
+        int(parent_b.get("generation", 1)),
+    ) + 1
+    child["lineage"] = {
+        "parent_ids": [
+            parent_a.get("genome_id"),
+            parent_b.get("genome_id"),
+        ],
+        "ancestor_ids": list(
+            dict.fromkeys(
+                parent_a.get("lineage", {}).get("ancestor_ids", [])
+                + parent_b.get("lineage", {}).get("ancestor_ids", [])
+            )
+        ),
+        "innovation_ids": list(
+            dict.fromkeys(
+                parent_a.get("lineage", {}).get("innovation_ids", [])
+                + parent_b.get("lineage", {}).get("innovation_ids", [])
+            )
+        ),
+    }
+
+    sibling_strategies = parent_b.get("strategy_genes", [])
+    for strategy_index, strategy in enumerate(child.get("strategy_genes", [])):
+        if strategy_index >= len(sibling_strategies):
+            continue
+        sibling = sibling_strategies[strategy_index]
+        sibling_subgenes = sibling.get("subgenes", [])
+        for subgene_index, subgene in enumerate(strategy.get("subgenes", [])):
+            if subgene_index >= len(sibling_subgenes):
+                continue
+            sibling_subgene = sibling_subgenes[subgene_index]
+            blended = (float(subgene["weight"]) + float(sibling_subgene["weight"])) / 2
+            subgene["weight"] = round(_clamp_feature_weight(subgene["feature"], blended), 4)
+    child["mutation_log"] = []
+    return child

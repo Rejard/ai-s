@@ -59,7 +59,7 @@ function calculateRSI(prices, period = 14) {
 async function getAiSTradingDecision(currentPrice, rsi, sma5, sma20, priceChangeRatio = 0.0) {
   try {
     const members = await queries.all(`
-      SELECT member_id, name, weights_json, voting_power 
+      SELECT member_id, name, weights_json, phenotype_json, dna_json, voting_power
       FROM ais_council_members 
       WHERE status = 'ACTIVE'
     `);

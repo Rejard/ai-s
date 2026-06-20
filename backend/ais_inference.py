@@ -53,12 +53,18 @@ def main():
             for member in members_data:
                 member_id = member.get('member_id')
                 name = member.get('name')
+                phenotype_str = member.get('phenotype_json', '')
                 weights_str = member.get('weights_json', '{}')
                 
-                try:
-                    weights = json.loads(weights_str)
-                except Exception:
-                    weights = {}
+                weights = {}
+                for raw_weights in (phenotype_str, weights_str):
+                    try:
+                        parsed = json.loads(raw_weights or '{}')
+                        if validate_centroids(parsed):
+                            weights = parsed
+                            break
+                    except Exception:
+                        pass
                 
                 # Predict closest class (Centroid distance fallback heuristics)
                 decision = "HOLD"

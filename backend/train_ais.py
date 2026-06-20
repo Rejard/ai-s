@@ -13,7 +13,13 @@ from ais_features import (
     score_predictions,
     validate_centroids,
 )
-from ais_dna import bootstrap_dna_from_legacy, build_phenotype_from_dna
+from ais_dna import (
+    bootstrap_dna_from_legacy,
+    build_phenotype_from_dna,
+    crossover_dna,
+    mutate_dna,
+    validate_dna,
+)
 
 DB_PATH = os.environ.get(
     "AIS_DB_PATH",
@@ -191,17 +197,70 @@ def build_council_member_insert_payload(
     generation,
 ):
     dna = bootstrap_dna_from_legacy(weights, member_id, faction, generation)
+    return build_council_member_insert_payload_from_dna(
+        member_id, name, dna, voting_power, status, faction
+    )
+
+def build_council_member_insert_payload_from_dna(
+    member_id,
+    name,
+    dna,
+    voting_power,
+    status,
+    faction,
+):
     phenotype = build_phenotype_from_dna(dna)
     return (
         member_id,
         name,
-        json.dumps(weights),
+        json.dumps(phenotype),
         json.dumps(dna),
         json.dumps(phenotype),
         voting_power,
         status,
         faction,
-        generation,
+        dna.get("generation", 1),
+    )
+
+def _safe_generation(value):
+    try:
+        parsed = int(value)
+        return parsed if parsed > 0 else 1
+    except Exception:
+        return 1
+
+def _parse_centroids(value):
+    if not value:
+        return None
+    try:
+        parsed = json.loads(value)
+        return parsed if validate_centroids(parsed) else None
+    except Exception:
+        return None
+
+def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, faction, generation, fallback_weights):
+    try:
+        parsed = json.loads(dna_json) if dna_json else None
+        if validate_dna(parsed):
+            return parsed
+    except Exception:
+        pass
+
+    for centroid_json in (phenotype_json, weights_json):
+        centroids = _parse_centroids(centroid_json)
+        if centroids:
+            return bootstrap_dna_from_legacy(
+                centroids,
+                member_id,
+                faction or "MUTANT_ROOKIE",
+                _safe_generation(generation),
+            )
+
+    return bootstrap_dna_from_legacy(
+        fallback_weights,
+        member_id,
+        faction or "MUTANT_ROOKIE",
+        _safe_generation(generation),
     )
 
 def build_market_rows(prices, rsi, sma5, sma20):
@@ -299,15 +358,31 @@ def main():
             needed = 500 - total_in_db
             print(f"[*] Populaton size is low. Spawning {needed} new mutant candidates...")
             
-            # Fetch existing members to use as seed weights
-            cursor.execute("SELECT weights_json, generation FROM ais_council_members")
+            # Fetch existing members as DNA seeds. Legacy weights remain fallback only.
+            cursor.execute("""
+                SELECT member_id, dna_json, phenotype_json, weights_json, generation, faction
+                FROM ais_council_members
+            """)
             seed_rows = cursor.fetchall()
-            seed_weights = [(training_seed, 1)]
+            seed_dna = [
+                bootstrap_dna_from_legacy(
+                    training_seed,
+                    "training_seed",
+                    "MUTANT_ROOKIE",
+                    1,
+                )
+            ]
             for r in seed_rows:
                 try:
-                    parsed = json.loads(r[0])
-                    if validate_centroids(parsed):
-                        seed_weights.append((parsed, r[1] if r[1] else 1))
+                    seed_dna.append(load_candidate_dna(
+                        member_id=r[0],
+                        dna_json=r[1],
+                        phenotype_json=r[2],
+                        weights_json=r[3],
+                        generation=r[4],
+                        faction=r[5],
+                        fallback_weights=training_seed,
+                    ))
                 except Exception:
                     pass
             
@@ -315,19 +390,22 @@ def main():
             for k in range(needed):
                 new_id = f"ais_member_{uuid.uuid4().hex}"
                 
-                # Apply mutation to seeds if available, else generate fresh random
-                if seed_weights and random.random() > 0.3:
-                    parent, parent_gen = random.choice(seed_weights)
-                    weights = mutate_weights(parent)
-                    gen = parent_gen + 1
+                # Apply mutation to DNA seeds if available, else generate a fresh DNA genome.
+                if seed_dna and random.random() > 0.3:
+                    parent = random.choice(seed_dna)
+                    dna = mutate_dna(parent)
+                    dna["generation"] = _safe_generation(parent.get("generation")) + 1
                 else:
                     weights = generate_random_weights()
-                    gen = 1
+                    dna = bootstrap_dna_from_legacy(weights, new_id, "MUTANT_ROOKIE", 1)
                     
+                weights = build_phenotype_from_dna(dna)
+                gen = dna.get("generation", 1)
                 name = f"Mutant Challenger {total_in_db + k + 1} ({gen}세대)"
                 faction = determine_faction_from_weights(weights, name)
-                new_inserts.append(build_council_member_insert_payload(
-                    new_id, name, weights, 1.0, 'CANDIDATE', faction, gen
+                dna["faction_hint"] = faction
+                new_inserts.append(build_council_member_insert_payload_from_dna(
+                    new_id, name, dna, 1.0, 'CANDIDATE', faction
                 ))
                 
             cursor.executemany("""
@@ -341,28 +419,55 @@ def main():
             print(f"[+] Spawning finished. Pool size is now {total_in_db}.")
             
         # 4. Fetch all 500 candidates for exam
-        cursor.execute("SELECT member_id, name, weights_json, generation FROM ais_council_members")
+        cursor.execute("""
+            SELECT member_id, name, dna_json, phenotype_json, weights_json, generation, faction
+            FROM ais_council_members
+        """)
         candidates_rows = cursor.fetchall()
         
         candidates_results = []
         print("[*] Grading all 500 candidates on SUT historical mock exam...")
         for r in candidates_rows:
-            m_id, name, weights_str, gen = r
+            m_id, name, dna_str, phenotype_str, weights_str, gen, faction = r
             try:
-                weights = json.loads(weights_str)
+                dna = load_candidate_dna(
+                    member_id=m_id,
+                    dna_json=dna_str,
+                    phenotype_json=phenotype_str,
+                    weights_json=weights_str,
+                    generation=gen,
+                    faction=faction,
+                    fallback_weights=training_seed,
+                )
+                weights = build_phenotype_from_dna(dna)
                 if not validate_centroids(weights):
-                    weights = mutate_weights(training_seed)
+                    fallback_weights = mutate_weights(training_seed)
+                    dna = bootstrap_dna_from_legacy(
+                        fallback_weights,
+                        m_id,
+                        faction or "MUTANT_ROOKIE",
+                        _safe_generation(gen),
+                    )
+                    weights = fallback_weights
             except Exception:
                 weights = mutate_weights(training_seed)
+                dna = bootstrap_dna_from_legacy(
+                    weights,
+                    m_id,
+                    faction or "MUTANT_ROOKIE",
+                    _safe_generation(gen),
+                )
                 
             validation_metrics = evaluate_candidate(weights, validation_rows)
             candidates_results.append({
                 "id": m_id,
                 "name": name,
+                "dna": dna,
                 "weights": weights,
+                "faction": faction or determine_faction_from_weights(weights, name),
                 "validation_metrics": validation_metrics,
                 "validation_score": validation_metrics["utility_score"],
-                "generation": gen if gen else 1
+                "generation": dna.get("generation", gen if gen else 1)
             })
             
         # Sort by validation score. Holdout remains unseen until election is frozen.
@@ -415,18 +520,20 @@ def main():
         for idx in range(offspring_count):
             p1 = random.choice(parents)
             p2 = random.choice(parents)
-            offspring_weights = crossover_weights(p1["weights"], p2["weights"])
+            offspring_dna = crossover_dna(p1["dna"], p2["dna"])
             
-            # Apply slight mutation to offspring
+            # Apply slight mutation to offspring DNA.
             if random.random() > 0.5:
-                offspring_weights = mutate_weights(offspring_weights)
+                offspring_dna = mutate_dna(offspring_dna, preserve_parent_ids=True)
                 
-            offspring_gen = max(p1["generation"], p2["generation"]) + 1
+            offspring_weights = build_phenotype_from_dna(offspring_dna)
+            offspring_gen = offspring_dna["generation"]
             new_id = f"offspring_{uuid.uuid4().hex}"
             name = f"Offspring Gen-{idx+1} ({offspring_gen}세대)"
             faction = determine_faction_from_weights(offspring_weights, p1["name"])
-            new_offspring_inserts.append(build_council_member_insert_payload(
-                new_id, name, offspring_weights, 1.0, 'CANDIDATE', faction, offspring_gen
+            offspring_dna["faction_hint"] = faction
+            new_offspring_inserts.append(build_council_member_insert_payload_from_dna(
+                new_id, name, offspring_dna, 1.0, 'CANDIDATE', faction
             ))
             
         for idx in range(mutant_count):
@@ -434,8 +541,9 @@ def main():
             name = f"Mutant Rookie Gen-{idx+1} (1세대)"
             weights = generate_random_weights()
             faction = determine_faction_from_weights(weights, name)
-            new_offspring_inserts.append(build_council_member_insert_payload(
-                new_id, name, weights, 1.0, 'CANDIDATE', faction, 1
+            dna = bootstrap_dna_from_legacy(weights, new_id, faction, 1)
+            new_offspring_inserts.append(build_council_member_insert_payload_from_dna(
+                new_id, name, dna, 1.0, 'CANDIDATE', faction
             ))
             
         cursor.executemany("""
@@ -450,8 +558,9 @@ def main():
             name = f"Mutant Pool Refill {pool_count + 1} (1세대)"
             member_id = f"mutant_{uuid.uuid4().hex}"
             faction = determine_faction_from_weights(weights, name)
-            payload = build_council_member_insert_payload(
-                member_id, name, weights, 1.0, 'CANDIDATE', faction, 1
+            dna = bootstrap_dna_from_legacy(weights, member_id, faction, 1)
+            payload = build_council_member_insert_payload_from_dna(
+                member_id, name, dna, 1.0, 'CANDIDATE', faction
             )
             cursor.execute("""
                 INSERT INTO ais_council_members
@@ -477,14 +586,10 @@ def main():
             member_id = e["id"]
             name = e["name"]
             acc = e["validation_score"]
-            weights_json = json.dumps(e["weights"])
-            dna = bootstrap_dna_from_legacy(
-                e["weights"],
-                member_id,
-                determine_faction_from_weights(e["weights"], name),
-                e["generation"],
-            )
-            phenotype_json = json.dumps(build_phenotype_from_dna(dna))
+            dna = e["dna"]
+            phenotype = build_phenotype_from_dna(dna)
+            weights_json = json.dumps(phenotype)
+            phenotype_json = json.dumps(phenotype)
             dna_json = json.dumps(dna)
             
             # voting_power is centered around 1.0 based on relative performance

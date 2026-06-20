@@ -4,6 +4,8 @@ from ais_dna import (
     bootstrap_dna_from_legacy,
     build_expression_plan,
     build_phenotype_from_dna,
+    crossover_dna,
+    mutate_dna,
     validate_dna,
 )
 from ais_features import validate_centroids
@@ -276,6 +278,63 @@ class AiSDnaTests(unittest.TestCase):
         phenotype = build_phenotype_from_dna(dna)
 
         self.assertTrue(validate_centroids(phenotype))
+
+    def test_mutation_keeps_phenotype_centroid_compatible_at_feature_limit(self):
+        legacy = {
+            "BUY": [20.0, -0.4, 0.1, 0.0, 0.05],
+            "SELL": [0.4, 0.3, -0.1, -0.05, 0.02],
+            "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
+        }
+        dna = bootstrap_dna_from_legacy(
+            legacy,
+            member_id="limit_member",
+            faction="TREND_FOLLOWER",
+            generation=1,
+        )
+
+        mutated = mutate_dna(dna)
+        phenotype = build_phenotype_from_dna(mutated)
+
+        self.assertTrue(validate_centroids(phenotype))
+
+    def test_mutation_records_parent_lineage(self):
+        dna = self._valid_dna()
+
+        mutated = mutate_dna(dna)
+
+        self.assertEqual(mutated["lineage"]["parent_ids"], [dna["genome_id"]])
+        self.assertEqual(mutated["lineage"]["ancestor_ids"], dna["lineage"]["ancestor_ids"])
+
+    def test_mutation_after_crossover_preserves_real_parent_lineage(self):
+        first = self._valid_dna()
+        second = bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_04",
+            faction="TREND_FOLLOWER",
+            generation=2,
+        )
+        child = crossover_dna(first, second)
+
+        mutated = mutate_dna(child, preserve_parent_ids=True)
+
+        self.assertEqual(
+            mutated["lineage"]["parent_ids"],
+            [first["genome_id"], second["genome_id"]],
+        )
+
+    def test_mutation_of_stored_crossover_child_records_child_as_parent(self):
+        first = self._valid_dna()
+        second = bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_05",
+            faction="TREND_FOLLOWER",
+            generation=2,
+        )
+        stored_child = crossover_dna(first, second)
+
+        mutated = mutate_dna(stored_child)
+
+        self.assertEqual(mutated["lineage"]["parent_ids"], [stored_child["genome_id"]])
 
 
 if __name__ == "__main__":

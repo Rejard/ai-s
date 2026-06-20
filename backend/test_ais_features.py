@@ -12,6 +12,7 @@ from ais_features import (
     validate_centroids,
 )
 from ais_dna import bootstrap_dna_from_legacy, build_phenotype_from_dna
+from ais_dna import crossover_dna
 from train_ais import (
     build_council_member_insert_payload,
     crossover_weights,
@@ -106,6 +107,23 @@ class AiSFeatureTests(unittest.TestCase):
         self.assertEqual(json.loads(payload[2]), weights)
         self.assertEqual(phenotype, weights)
         self.assertEqual(dna["generation"], 3)
+        self.assertTrue(validate_centroids(phenotype))
+
+    def test_dna_offspring_expression_stays_schema_compatible(self):
+        first = bootstrap_dna_from_legacy({
+            "BUY": [-0.4, -0.2, 0.1, 0.0, 0.02],
+            "SELL": [0.4, 0.2, -0.1, 0.0, -0.02],
+            "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
+        }, "a", "VALUE_SEEKER", 1)
+        second = bootstrap_dna_from_legacy({
+            "BUY": [-0.5, -0.3, 0.2, 0.0, 0.03],
+            "SELL": [0.5, 0.3, -0.2, 0.0, -0.03],
+            "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
+        }, "b", "VALUE_SEEKER", 2)
+
+        child = crossover_dna(first, second)
+        phenotype = build_phenotype_from_dna(child)
+
         self.assertTrue(validate_centroids(phenotype))
 
 
