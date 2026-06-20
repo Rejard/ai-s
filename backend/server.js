@@ -28,6 +28,11 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/investment', require('./routes/investment'));
 
 
+// Serve aidl presentation directly
+app.get('/aidl_dna_presentation.html', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../aidl_dna_presentation.html'));
+});
+
 // All root requests except for API fallback serving to React SPA build index file
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
