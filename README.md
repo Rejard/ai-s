@@ -8,6 +8,34 @@ The production service is served from:
 https://edenai.alonics.com/
 ```
 
+## AIDL 공개 기록 및 권리 고지 / Public Disclosure and Rights Notice
+
+### 한국어 (Korean)
+
+AIDL DNA Evolution Engine은 이명학이 설계한 Active / Inactive / Deprecated / Lethal 상태 기반의 진화형 AI 유전자 제어 프레임워크입니다.
+
+본 저장소는 AIDL 개념, 구조, 명칭, 구현 방향에 대한 공개 기록을 남기기 위한 목적도 포함하고 있습니다.
+
+작성자가 확인한 공개 AI 연구 및 투자 시스템 사례 기준으로, A/I/D/L 네 가지 유전자 상태를 명시적으로 사용하여 전략의 활성, 비활성, 감퇴, 치명 상태를 관리하는 구조는 발견하지 못했으며, 본 프로젝트에서는 이를 독자적으로 설계한 AIDL 프레임워크로 정의합니다.
+
+단, 본 문구는 법적 의미의 특허 등록 또는 세계 최초 확정을 의미하지 않습니다. 관련 권리 보호가 필요한 경우 별도의 특허, 상표, 저작권 검토가 필요할 수 있습니다.
+
+본 저장소의 코드, 문서, 명칭, 구조 설명은 작성자의 저작물입니다. 무단 상업적 사용, 명칭 도용, 핵심 구조의 무단 복제는 허용하지 않습니다.
+
+### English
+
+AIDL DNA Evolution Engine is an evolutionary AI genome-control framework designed by Myunghak Lee, based on four genetic states: Active, Inactive, Deprecated, and Lethal.
+
+This repository also serves as a public disclosure record of the AIDL concept, structure, naming, and implementation direction.
+
+To the author’s knowledge, based on publicly known AI research and trading-system examples reviewed so far, no prior framework has been found that explicitly manages strategy genes through the four A/I/D/L states of activation, inactivity, degradation, and lethal suppression. In this project, this structure is defined as the independently designed AIDL framework.
+
+This statement does not constitute a legal confirmation of patent registration or worldwide priority. If formal protection is required, separate patent, trademark, and copyright review may be necessary.
+
+The code, documents, naming, and structural descriptions in this repository are the author’s original works. Unauthorized commercial use, misuse of the name, or unauthorized replication of the core structure is not permitted.
+
+---
+
 ## Stack
 
 - Frontend: React, Vite, ethers
