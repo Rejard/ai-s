@@ -1,4 +1,5 @@
 import unittest
+import copy
 
 from ais_dna import (
     bootstrap_dna_from_legacy,
@@ -335,6 +336,47 @@ class AiSDnaTests(unittest.TestCase):
         mutated = mutate_dna(stored_child)
 
         self.assertEqual(mutated["lineage"]["parent_ids"], [stored_child["genome_id"]])
+
+    def test_new_genome_id_format_matches_aisg_accession(self):
+        legacy = self._legacy_centroids()
+        dna = bootstrap_dna_from_legacy(
+            legacy,
+            member_id="legacy_member_01",
+            faction="VALUE_SEEKER",
+            generation=4,
+        )
+        self.assertTrue(dna["genome_id"].startswith("AISG-G4-"))
+        self.assertEqual(len(dna["genome_id"].split("-")), 3) # ['AISG', 'G4', 'suffix']
+
+    def test_predict_variant_effect_identifies_lethal_weights(self):
+        from ais_dna import predict_variant_effect
+        dna = self._valid_dna()
+        
+        # 1. 극단적 가중치 임계 한도 초과
+        bad_dna_1 = copy.deepcopy(dna)
+        # FEATURE_ABS_LIMITS[0] is price_change_pct, limit is 20.0
+        bad_dna_1["strategy_genes"][0]["subgenes"][0]["weight"] = 19.8
+        self.assertEqual(predict_variant_effect(bad_dna_1), "LETHAL")
+        
+        # 2. BEAR_EXPANSION 상황에서 RSI 과매도 기준 과도한 매수(BUY) 가중치
+        bad_dna_2 = copy.deepcopy(dna)
+        # rsi_scaled (limit 2.0) BUY weight
+        for sub in bad_dna_2["strategy_genes"][0]["subgenes"]:
+            if sub["feature"] == "rsi_scaled" and sub["action"] == "BUY":
+                sub["weight"] = 1.8
+        self.assertEqual(predict_variant_effect(bad_dna_2), "LETHAL")
+
+    def test_mutation_filters_out_deleterious_effects(self):
+        dna = self._valid_dna()
+        # 모든 돌연변이 시도가 LETHAL을 유도하도록 부모 가중치를 극단적인 경계값 근처로 세팅
+        for sub in dna["strategy_genes"][0]["subgenes"]:
+            sub["weight"] = 18.9 if sub["feature"] == "price_change_pct" else sub["weight"]
+            
+        mutated = mutate_dna(dna)
+        log_events = [log["event"] for log in mutated.get("mutation_log", [])]
+        
+        # 5회 시도 후 결국 위험 변이 필터링에 걸려 안전하게 롤백(vep_filtered_deleterious_mutation) 되었음을 확인
+        self.assertIn("vep_filtered_deleterious_mutation", log_events)
 
 
 if __name__ == "__main__":

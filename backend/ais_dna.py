@@ -18,8 +18,8 @@ AIDL_CONTEXTS = {"BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEE
 ACTIONS = ("BUY", "SELL", "HOLD")
 
 
-def _new_genome_id():
-    return f"gen_{uuid.uuid4().hex}"
+def _new_genome_id(generation=1):
+    return f"AISG-G{generation}-{uuid.uuid4().hex[:8]}"
 
 
 def _base_profile():
@@ -184,7 +184,7 @@ def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
             innovation_id += 1
 
     return {
-        "genome_id": _new_genome_id(),
+        "genome_id": _new_genome_id(generation),
         "generation": generation,
         "faction_hint": faction,
         "lineage": {
@@ -240,79 +240,131 @@ def build_phenotype_from_dna(dna, current_context=None):
     return phenotype
 
 
+def predict_variant_effect(dna):
+    """
+    AI-VEP (AI Variant Effect Predictor)
+    과학적 VEP의 개념을 차용하여, 변이가 적용된 DNA 개체가 4대 시장 맥락 하에서
+    치명적 리스크(Lethal Effect)를 유발할 가능성이 있는지 선제적으로 예측 및 스크리닝합니다.
+    """
+    for context in AIDL_CONTEXTS:
+        phenotype = build_phenotype_from_dna(dna, context)
+        for action in ACTIONS:
+            weights = phenotype[action]
+            for feature_index, w in enumerate(weights):
+                feature_name = FEATURE_ORDER[feature_index]
+                limit = FEATURE_ABS_LIMITS[feature_index]
+                
+                # 1. 극단적 과적합 판정 (절대 한도의 95% 초과)
+                if abs(w) >= limit * 0.95:
+                    return "LETHAL"
+                
+                # 2. 하락 확장기(BEAR_EXPANSION) 리스크 판정
+                # 하락 폭주 국면에서는 RSI 과매도나 가격 급등 폭을 보고 성급히 매수(BUY) 가중치를 과도하게 실으면 대량 청산 위험이 있음
+                if context == "BEAR_EXPANSION" and action == "BUY":
+                    if feature_name in ("rsi_scaled", "price_change_pct") and w > limit * 0.70:
+                        return "LETHAL"
+                        
+                # 3. 하락 수축기(BEAR_SQUEEZE) 리스크 판정
+                # 하락 횡보 국면에서 추세 돌파 매수 가중치가 지나치게 높으면 횡보 톱니에 찢길 수 있음
+                if context == "BEAR_SQUEEZE" and action == "BUY":
+                    if feature_name == "sma5_to_sma20_spread_pct" and w > limit * 0.80:
+                        return "LETHAL"
+    return "BENIGN"
+
+
 def mutate_dna(dna, preserve_parent_ids=False):
     import random
     parent_genome_id = dna.get("genome_id")
     existing_lineage = dna.get("lineage", {})
     existing_parents = list(existing_lineage.get("parent_ids", []))
-    mutated = copy.deepcopy(dna)
-    mutated["genome_id"] = _new_genome_id()
-    mutated["lineage"] = {
-        "parent_ids": (
-            existing_parents
-            if preserve_parent_ids and existing_parents
-            else ([parent_genome_id] if parent_genome_id else [])
-        ),
-        "ancestor_ids": list(existing_lineage.get("ancestor_ids", [])),
-        "innovation_ids": list(existing_lineage.get("innovation_ids", [])),
-    }
+    
+    # 최대 5회 돌연변이 시도하여 VEP 스크리닝을 안전하게 통과하는 유전자 선별
+    for attempt in range(5):
+        mutated = copy.deepcopy(dna)
+        mutated["genome_id"] = _new_genome_id(mutated.get("generation", 1))
+        mutated["lineage"] = {
+            "parent_ids": (
+                existing_parents
+                if preserve_parent_ids and existing_parents
+                else ([parent_genome_id] if parent_genome_id else [])
+            ),
+            "ancestor_ids": list(existing_lineage.get("ancestor_ids", [])),
+            "innovation_ids": list(existing_lineage.get("innovation_ids", [])),
+        }
 
-    # 10% chance of Context Mask Mutation
-    context_mutated = False
-    if random.random() < 0.10:
-        contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
-        for strategy in mutated.get("strategy_genes", []):
-            mask = list(strategy.get("context_mask", []))
-            target = random.choice(contexts)
-            if target in mask:
-                if len(mask) > 1:
-                    mask.remove(target)
+        # 10% chance of Context Mask Mutation
+        context_mutated = False
+        if random.random() < 0.10:
+            contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+            for strategy in mutated.get("strategy_genes", []):
+                mask = list(strategy.get("context_mask", []))
+                target = random.choice(contexts)
+                if target in mask:
+                    if len(mask) > 1:
+                        mask.remove(target)
+                        context_mutated = True
+                else:
+                    mask.append(target)
                     context_mutated = True
-            else:
-                mask.append(target)
-                context_mutated = True
-            strategy["context_mask"] = mask
-            if context_mutated:
-                mutated.setdefault("mutation_log", []).append(
-                    {
-                        "generation": mutated.get("generation", 1),
-                        "event": "context_mask_mutation",
-                        "gene_id": strategy.get("gene_id"),
-                    }
-                )
-                break
+                strategy["context_mask"] = mask
+                if context_mutated:
+                    mutated.setdefault("mutation_log", []).append(
+                        {
+                            "generation": mutated.get("generation", 1),
+                            "event": "context_mask_mutation",
+                            "gene_id": strategy.get("gene_id"),
+                        }
+                    )
+                    break
 
-    for strategy in mutated.get("strategy_genes", []):
-        for subgene in strategy.get("subgenes", []):
-            if subgene.get("state") == "A":
-                nudge = 0.02 if random.random() > 0.5 else -0.02
-                subgene["weight"] = round(
-                    _clamp_feature_weight(subgene["feature"], float(subgene["weight"]) + nudge),
-                    4,
-                )
-                mutated.setdefault("mutation_log", []).append(
-                    {
-                        "generation": mutated.get("generation", 1),
-                        "event": "weight_nudge",
-                        "gene_id": subgene.get("gene_id"),
-                    }
-                )
-                return mutated
-    mutated.setdefault("mutation_log", []).append(
-        {"generation": mutated.get("generation", 1), "event": "no_active_gene"}
+        applied_nudge = False
+        for strategy in mutated.get("strategy_genes", []):
+            for subgene in strategy.get("subgenes", []):
+                if subgene.get("state") == "A":
+                    nudge = 0.02 if random.random() > 0.5 else -0.02
+                    subgene["weight"] = round(
+                        _clamp_feature_weight(subgene["feature"], float(subgene["weight"]) + nudge),
+                        4,
+                    )
+                    mutated.setdefault("mutation_log", []).append(
+                        {
+                            "generation": mutated.get("generation", 1),
+                            "event": "weight_nudge",
+                            "gene_id": subgene.get("gene_id"),
+                        }
+                    )
+                    applied_nudge = True
+                    break
+            if applied_nudge:
+                break
+                
+        if not applied_nudge:
+            mutated.setdefault("mutation_log", []).append(
+                {"generation": mutated.get("generation", 1), "event": "no_active_gene"}
+            )
+            
+        # VEP 치명 위험성 체크 통과 시 즉시 반환
+        if predict_variant_effect(mutated) != "LETHAL":
+            return mutated
+            
+    # 5회 모두 치명 변이로 스크리닝된 경우 무변이 부모 세대 강제 회귀 (안전 롤백)
+    fallback = copy.deepcopy(dna)
+    fallback["genome_id"] = _new_genome_id(fallback.get("generation", 1))
+    fallback.setdefault("mutation_log", []).append(
+        {"generation": fallback.get("generation", 1), "event": "vep_filtered_deleterious_mutation"}
     )
-    return mutated
+    return fallback
 
 
 def crossover_dna(first, second):
     parent_a = copy.deepcopy(first)
     parent_b = copy.deepcopy(second)
     child = copy.deepcopy(parent_a)
-    child["genome_id"] = _new_genome_id()
     child["generation"] = max(
         int(parent_a.get("generation", 1)),
         int(parent_b.get("generation", 1)),
     ) + 1
+    child["genome_id"] = _new_genome_id(child["generation"])
     child["lineage"] = {
         "parent_ids": [
             parent_a.get("genome_id"),

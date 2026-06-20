@@ -274,6 +274,14 @@ def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, factio
             for strategy in parsed.get("strategy_genes", []):
                 if "context_mask" not in strategy or not isinstance(strategy["context_mask"], list):
                     strategy["context_mask"] = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+            
+            # AISG Accession ID Self-healing
+            gid = parsed.get("genome_id", "")
+            if not isinstance(gid, str) or not gid.startswith("AISG-"):
+                gen = parsed.get("generation", 1)
+                import uuid
+                parsed["genome_id"] = f"AISG-G{gen}-{uuid.uuid4().hex[:8]}"
+                
             if validate_dna(parsed):
                 return parsed
     except Exception:

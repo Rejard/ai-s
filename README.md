@@ -272,6 +272,15 @@ When an AI model operates with a single unified weight block, it is vulnerable t
 *   **Self-healing Migration**:
     *   When loading legacy DNA from the database that lacks the newly added `context_mask` (which would otherwise trigger errors), the system automatically detects the missing field and populates it with a full mask containing all 4 seasons, executing a runtime migration without downtime.
 
+#### 5. Bio-Science Inspired Logic: AI-VEP and AISG Accessioning
+The AIDL DNA Evolution Engine draws significant architectural inspiration from bioinformatics and genomic engineering algorithms, particularly Google DeepMind's AlphaGenome and EMBL-EBI's Ensembl VEP (Variant Effect Predictor), implementing them as real-time evolutionary safety guards:
+*   **AI-VEP (AI Variant Effect Predictor)**:
+    *   Mirroring how biological VEP predicts the molecular consequences and lethality of nucleotide mutations, this module screens newly mutated feature weights. It checks if a mutation will trigger catastrophic over-fitting or erratic trading behaviors (e.g., excessive chase-buying biases) under high-risk environments like "BEAR_EXPANSION".
+    *   Any mutation flagged as `LETHAL` by the predictor is immediately filtered out and discarded (deleterious mutation filtering) before sandbox evaluation, automatically reverting the weights back to the stable parent state.
+*   **AISG Accession ID (Gene Sequence Accessioning)**:
+    *   Analogous to how NCBI's Entrez and Ensembl assign stable accessioning IDs (e.g., ENSG, XP_) to manage genomic sequences globally, AiS assigns a standardized **`AISG-G{generation}-{unique_suffix}`** ID format to every model in the candidate pool.
+    *   This unified indexing enables comprehensive lineage tracking, allowing administrators to audit database registries and trace which specific ancestral lineages contributed most to market survival.
+
 ### 3. Architecture Sequence & Evolution Flow
 
 ```mermaid
@@ -322,4 +331,20 @@ If you wish to integrate the AI-S architecture into a commercial proprietary pro
 
 - 📬 **Commercial & Technical Inquiries:** lemaiii@alonics.com
 - **Copyright:** © 2026 Alonics Inc. All Rights Reserved.
+
+---
+
+## 📚 References
+
+The genomic architecture and safety gates of the AIDL DNA Evolution Engine were designed with reference to the following pioneering research and database standards in bioinformatics and genetics:
+
+1.  **Google DeepMind AlphaGenome (2026)**
+    *   *Research / Resource:* "Predicting genomic variant effects on gene expression and regulatory mechanisms using deep neural networks."
+    *   *Application:* Integrated the principles of Tissue-Specific Expression (tissue/biosample-dependent expression profiles) to map our 4 market climates (BULL/BEAR × EXPANSION/SQUEEZE) and govern conditional active/inactive gene expression.
+2.  **EMBL-EBI Ensembl Variant Effect Predictor (VEP) (2016)**
+    *   *Reference publication:* McLaren, W., et al. "The Ensembl Variant Effect Predictor." *Bioinformatics*, 32(10), 1570–1575.
+    *   *Application:* Adopted as the conceptual basis for our AI-VEP engine (Lethal/Deleterious variant filtering) to screen out volatile weights and overfitting anomalies prior to sandbox backtesting.
+3.  **NCBI Entrez system & Sequence Databases (2018)**
+    *   *Reference:* "Database resources of the National Center for Biotechnology Information." *Nucleic Acids Research*, 46(D1), D8–D13.
+    *   *Application:* Designed the `AISG` Accession ID specification for unified gene sequence indexing and generation lineage tracking.
 
