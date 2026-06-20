@@ -11,8 +11,8 @@ function makeWeights(value) {
 
 function buildMembers() {
   return [
-    { weights_json: makeWeights(0.1) },
-    { weights_json: makeWeights(0.8) },
+    { phenotype_json: makeWeights(0.1) },
+    { phenotype_json: makeWeights(0.8) },
   ];
 }
 
@@ -29,6 +29,7 @@ function run() {
 
   assert.equal(report.elapsedSeconds, 5);
   assert.equal(report.computationMargin, 98.3);
+  assert.equal(report.rawStdDev, 0.495);
   assert.equal(report.diagnosticClass, 'success');
 }
 

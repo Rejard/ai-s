@@ -554,7 +554,7 @@ router.get('/council-stats', async (req, res) => {
     }));
 
     const activeMembers = await queries.all(`
-      SELECT member_id, name, voting_power, correct_count, total_count, faction, generation 
+      SELECT member_id, name, voting_power, correct_count, total_count, faction, generation, dna_json, phenotype_json
       FROM ais_council_members 
       WHERE status = 'ACTIVE' 
       ORDER BY voting_power DESC, member_id ASC
@@ -581,7 +581,7 @@ router.get('/council-stats', async (req, res) => {
     }));
 
     // 1. 유전 다양성 계산 (Shannon/Euclidean Variance)
-    const allMembers = await queries.all("SELECT weights_json FROM ais_council_members");
+    const allMembers = await queries.all("SELECT weights_json, phenotype_json FROM ais_council_members");
     let diversityScore = 100;
     let rawStdDev = 0.15;
     
@@ -589,7 +589,7 @@ router.get('/council-stats', async (req, res) => {
       const vectors = [];
       allMembers.forEach(m => {
         try {
-          const w = JSON.parse(m.weights_json);
+          const w = JSON.parse(m.phenotype_json || m.weights_json);
           const buyVec = Array.isArray(w.BUY) ? w.BUY : [];
           const sellVec = Array.isArray(w.SELL) ? w.SELL : [];
           const holdVec = Array.isArray(w.HOLD) ? w.HOLD : [];

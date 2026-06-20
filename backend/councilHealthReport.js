@@ -30,7 +30,8 @@ function computeDiversity(allMembers) {
   const vectors = [];
   allMembers.forEach((member) => {
     try {
-      const weights = JSON.parse(member.weights_json);
+      const raw = member.phenotype_json || member.weights_json;
+      const weights = JSON.parse(raw);
       const buyVec = Array.isArray(weights.BUY) ? weights.BUY : [];
       const sellVec = Array.isArray(weights.SELL) ? weights.SELL : [];
       const holdVec = Array.isArray(weights.HOLD) ? weights.HOLD : [];

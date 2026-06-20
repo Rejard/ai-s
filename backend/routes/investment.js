@@ -480,7 +480,7 @@ router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAcc
     }));
 
     const activeMembers = await queries.all(`
-      SELECT member_id, name, voting_power, correct_count, total_count, faction, generation 
+      SELECT member_id, name, voting_power, correct_count, total_count, faction, generation, dna_json, phenotype_json
       FROM ais_council_members 
       WHERE status = 'ACTIVE' 
       ORDER BY voting_power DESC, member_id ASC
