@@ -10,6 +10,7 @@ from ais_features import (
     score_predictions,
     validate_centroids,
 )
+from ais_dna import bootstrap_dna_from_legacy, build_phenotype_from_dna
 from train_ais import (
     crossover_weights,
     generate_random_weights,
@@ -67,6 +68,18 @@ class AiSFeatureTests(unittest.TestCase):
         self.assertTrue(validate_centroids(first))
         self.assertTrue(validate_centroids(mutate_weights(first)))
         self.assertTrue(validate_centroids(crossover_weights(first, second)))
+
+    def test_dna_bootstrap_and_expression_produce_valid_centroids(self):
+        legacy = {
+            "BUY": [-0.4, -0.3, 0.1, 0.0, 0.02],
+            "SELL": [0.3, 0.2, -0.1, -0.02, 0.01],
+            "HOLD": [0.0, 0.0, 0.0, 0.0, 0.0],
+        }
+
+        dna = bootstrap_dna_from_legacy(legacy, "legacy_member_x", "VALUE_SEEKER", 1)
+        phenotype = build_phenotype_from_dna(dna)
+
+        self.assertTrue(validate_centroids(phenotype))
 
 
 if __name__ == "__main__":
