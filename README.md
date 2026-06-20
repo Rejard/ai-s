@@ -197,6 +197,28 @@ Rather than suppressing mutation to enforce safety, we decouple mutation from ex
 - **Air-Gapped Gating (Shadow-only Mode)**: Safety is enforced not by controlling the AI's mind, but by controlling its environment. Candidates evolve in a secure **Shadow Mode (Simulation)** without access to live capital. 
 - **Human-in-the-loop (Natural Selection)**: Only when a candidate satisfies rigid statistical criteria (300 labeled observations, 3%p margin over holdout benchmark, zero label contamination) does it present promotion eligibility evidence to the Administrator. The AI never promotes itself; the human remains the final arbiter of selection.
 
+### 2.5 AIDL DNA Genome Architecture & Operational Principles
+AIDL stands for **Adaptive Intelligence & DNA Logic** externally, while internally defining the core mechanism that controls the four ecological survival states of genes: **A**ctive, **I**nactive, **D**eprecated, and **L**ethal.
+
+#### 1. Genome & Strategy Schema
+Each AI candidate model (individual) possesses a unique Genome sequence defined as:
+*   **Core Metadata:** `genome_id`, `generation`, `ancestor_ids` (ancestry tracking), `expressed_strategy_ids` (currently active strategy genes), `latent_strategy_ids` (inactive/dormant strategy genes), `fitness_history` (historical fitness metrics).
+*   **Strategy Genes:** Defines the primary trading logic (e.g., `mean_reversion_core`, `trend_breakout_core`, `volatility_guard_core`).
+*   **Feature Subgenes:** Defines fine-grained indicators and thresholds (e.g., `rsi_oversold_trigger`, `sma5_distance_bias`, `sma20_spread_gate`, `price_change_sensitivity`). Each subgene carries its own weight and threshold.
+
+#### 2. AIDL Gene Expression States
+All strategy and feature subgenes exist in one of four states (A/I/D/L):
+*   **A (Active):** The gene is fully active, participating in real-time execution, fitness evaluation, and crossover breeding.
+*   **I (Inactive):** The gene is dormant and unexpressed in the current generation but can be passed down to offspring and resurrected back to A (Active) via mutation.
+*   **D (Deprecated):** A mitigated state where the gene's weight is scaled down and its thresholds are tightened instead of full deactivation, rendering a highly cautious operation under risk conditions.
+*   **L (Lethal):** A highly toxic gene identified with extreme drawdowns or errors. Expression is permanently forbidden; only a vestigial trace remains in the genome, and it can only be inherited as Inactive (I) by offspring (Preservation-based Lethal Gene Control).
+
+#### 3. Evolutionary Operators
+*   **Crossover:** When selecting the top 50 parents to breed, we align genes by `innovation_id` before mixing weights rather than performing a blind average.
+*   **Mutation:** In addition to numerical weight/threshold mutations, we introduce state mutations (e.g., I -> A, A -> D, D -> L) to govern gene reactivation and degradation.
+*   **Natural Selection:** Poorly performing candidate models are discarded, but their structural sequences are logged into the `DNA archive` to avoid repeating identical evolutionary failures.
+*   **Generation Progression:** Generation numbers are advanced in conjunction with logging which active genes survived and which latent genes reappeared.
+
 ### 3. Architecture Sequence & Evolution Flow
 
 ```mermaid

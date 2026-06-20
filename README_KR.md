@@ -66,6 +66,28 @@ AI 어시스턴트(AI Agent)가 여러 역할군과 플랫폼(기기)에 대한 
 - **안전 격벽 (Shadow-only Mode)**: 자유로운 진화 과정에서 생기는 시행착오가 실제 자본을 파괴하지 않도록, AI 의회는 실거래 자본에 접근할 수 없는 **Shadow 모드(가상 시뮬레이션)**라는 샌드박스 내부에서만 투쟁하고 적응합니다.
 - **인간 제어권의 완전한 보장 (Gated Gating)**: 3세대, 4세대로 스스로 진화한 AI 모델(Challenger)이 승급 기준(300건의 유효 피드백, 벤치마크 대비 3%p 이상의 성적 개선, 제로 라벨 오염 등)을 만족하더라도 스스로 라이브 엔진을 교체하지 못합니다.
 
+### 2.5 AIDL DNA 유전자 아키텍처 및 핵심 작동 원리
+AIDL은 대외적으로 **Adaptive Intelligence & DNA Logic**을 지칭하는 동시에, 내부 유전자의 4가지 활성/비활성 생태적 생존 상태를 제어하는 핵심 메커니즘을 정의합니다.
+
+#### 1. 유전자 구조 (Genome & Strategy Schema)
+각 AI 후보 모델(개체)은 아래의 정보로 코딩된 고유의 Genome 유전 정보를 가집니다.
+*   **Genome 기본 정보:** `genome_id`, `generation`, `ancestor_ids`(조상 계보), `expressed_strategy_ids`(현재 발현된 핵심 전략들), `latent_strategy_ids`(내재된 잠재 전략들), `fitness_history`(적합도 기록)
+*   **전략 유전자 (Strategy Gene):** 실질적인 매매 논리를 결정하는 핵심 코어 유전자입니다. (예: `mean_reversion_core`, `trend_breakout_core`, `volatility_guard_core` 등)
+*   **피처 서브유전자 (Feature Subgene):** 세부적인 매수/매도 임계값 및 지표 가중치를 정의합니다. (예: `rsi_oversold_trigger`, `sma5_distance_bias`, `sma20_spread_gate`, `price_change_sensitivity` 등) 각 서브유전자는 자체 가중치(Weight)와 임계값(Threshold)을 가집니다.
+
+#### 2. AIDL 유전자 발현 상태 정의
+모든 전략 및 피처 서브유전자는 아래의 4가지 생존 상태 상태값(A/I/D/L) 중 하나를 가집니다.
+*   **A (Active - 활성):** 유전자가 정상적으로 활성화되어 실제 투자 가중치 및 평가, 교배 연산에 완전히 반영되는 상태입니다.
+*   **I (Inactive - 비활성):** 현재는 발현되지 않아 가상 시장에서 잠재 상태에 머무르지만, 세대 교배 시 자손에게 유전될 수 있으며 돌연변이를 거쳐 다시 A(활성) 상태로 복귀할 수 있습니다.
+*   **D (Deprecated - 감퇴):** 리스크 상승 또는 유효성 감소 시, 유전자를 아예 비활성화하는 대신 가중치를 낮추고 임계값(Threshold)을 대폭 강화하여 기능을 약화/축소시킨 조심스러운 완화 상태입니다.
+*   **L (Lethal - 치명):** 큰 손실이나 오류를 야기하는 치명적인 유전자입니다. 발현이 영구 금지되며, 개체 내에 흔적만 남고 자식 세대에는 오직 I(비활성) 상태로만 전수 가능합니다. (보존형 치명 유전자 제어 원리)
+
+#### 3. 세대 진화 및 연산 작동 원리
+*   **교배 (Crossover):** 최상위 50개의 부모 모델을 선택해 교배할 때, 단순 가중치 평균을 내지 않고 `innovation_id`를 기반으로 한 유전자 정렬(Gene Alignment)을 수행한 뒤 유전자들을 교차 결합합니다.
+*   **돌연변이 (Mutation):** 가중치 수치 노이즈를 섞는 수치 돌연변이 외에도, 유전자 상태를 직접 변환시키는 상태 돌연변이(State Mutation; 예: I -> A, A -> D, D -> L 등)를 추가로 발생시켜 유전자의 재발현 및 감퇴를 조절합니다.
+*   **자연선택 (Natural Selection):** 낮은 적합도(Fitness)를 보이는 실패 개체는 도태시켜 지우되, 그들이 보유했던 유전자 계보는 `DNA archive`에 영구 기록하여 동일한 유전자 설계 오류를 예방(퇴화 차단)합니다.
+*   **세대상승 (Generation Promotion):** 단순히 세대 번호만 올리지 않고, 어떤 활성 유전자가 생존했는지(`which active genes survived`)와 어떤 잠재 유전자가 새로 재발현되었는지(`which latent genes reappeared`)를 계보에 동시 추적 기록합니다.
+
 ### 3. 아키텍처 시퀀스 및 진화 흐름
 
 ```mermaid

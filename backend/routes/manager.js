@@ -893,7 +893,9 @@ router.get('/gateio-performance', async (req, res) => {
       } else if (tr.currency === 'SUT') {
         val = amt * sutPrice; // SUT 입출금 가치는 실시간 시가 기준 반영
       } else {
-        val = amt;
+        // [FIX] 기타 코인(POL 등)은 강제로 1:1 가치로 계산하지 않고 0으로 처리. 
+        // 이후 트레이딩 내역 기반의 폴백 로직을 통해 실제 SUT 매수 비용으로 원금이 역산되도록 유도함.
+        val = 0;
       }
 
       if (tr.type === 'DEPOSIT') {
