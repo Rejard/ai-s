@@ -1,4 +1,7 @@
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const { getAisTrainingStats } = require('./aisAdminStats');
 
@@ -70,6 +73,15 @@ async function main() {
     )
   `);
   await store.run(`
+    CREATE TABLE ais_council_members (
+      member_id TEXT PRIMARY KEY,
+      dna_json TEXT,
+      phenotype_json TEXT,
+      generation INTEGER,
+      status TEXT
+    )
+  `);
+  await store.run(`
     INSERT INTO ais_training_data VALUES
       (1, 'BUY', 1, 'LABELED', 2),
       (2, 'BUY', 0, 'LABELED', 2),
@@ -81,6 +93,16 @@ async function main() {
       (1, 'run-1', 'SHADOW_CHALLENGER', 100, 60, 20, 20,
        55, 54, 50, 3, 0, '["MIN_LABELED_OBSERVATIONS"]',
        NULL, '2026-06-09 12:00:00', '2026-06-09 12:01:00')
+  `);
+  await store.run(`
+    INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
+    VALUES (
+      'm1',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[],"generation":1}',
+      '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
+      1,
+      'ACTIVE'
+    )
   `);
 
   const result = await getAisTrainingStats(store);
@@ -94,9 +116,35 @@ async function main() {
   assert.deepStrictEqual(result.latestRun.promotionReasons, ['MIN_LABELED_OBSERVATIONS']);
   assert.strictEqual(result.shadowOnly, true);
   assert.strictEqual(result.automaticPromotionEnabled, false);
+  await verifyDatabaseDnaMigration();
 
   db.close();
   console.log('aisAdminStats tests passed');
+}
+
+async function verifyDatabaseDnaMigration() {
+  const tempDbPath = path.join(os.tmpdir(), `ais-dna-migration-${process.pid}-${Date.now()}.db`);
+  process.env.AIS_DB_PATH = tempDbPath;
+  const database = require('./database');
+
+  try {
+    await database.initializeDatabase();
+    const columns = await database.queries.all("PRAGMA table_info(ais_council_members)");
+    const names = columns.map((column) => column.name);
+    assert.ok(names.includes('dna_json'));
+    assert.ok(names.includes('phenotype_json'));
+
+    const seeded = await database.queries.get(`
+      SELECT dna_json, phenotype_json
+      FROM ais_council_members
+      WHERE member_id = 'ais_member_01'
+    `);
+    assert.ok(seeded.dna_json);
+    assert.ok(seeded.phenotype_json);
+  } finally {
+    await new Promise((resolve) => database.db.close(resolve));
+    if (fs.existsSync(tempDbPath)) fs.unlinkSync(tempDbPath);
+  }
 }
 
 main().catch((error) => {

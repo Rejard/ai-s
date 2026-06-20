@@ -12,6 +12,136 @@ const dbPath = process.env.AIS_DB_PATH
   : path.resolve(__dirname, defaultDbName);
 const db = new sqlite3.Database(dbPath);
 
+const AIDL_FEATURE_ORDER = [
+  'price_change_pct',
+  'rsi_scaled',
+  'sma5_distance_pct',
+  'sma20_distance_pct',
+  'sma5_to_sma20_spread_pct',
+];
+const AIDL_ACTIONS = ['BUY', 'SELL', 'HOLD'];
+
+function normalizePositiveInteger(value, fallback = 1) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function isCanonicalCentroidShape(weights) {
+  // DB bootstrap preserves legacy seed values, so Task 2 checks schema shape only.
+  // Python DNA validation can enforce feature-range limits after the full cutover.
+  if (!weights || typeof weights !== 'object' || Array.isArray(weights)) return false;
+  if (!AIDL_ACTIONS.every((action) => Object.prototype.hasOwnProperty.call(weights, action))) return false;
+  if (Object.keys(weights).some((key) => !AIDL_ACTIONS.includes(key))) return false;
+  return AIDL_ACTIONS.every((action) => (
+    Array.isArray(weights[action])
+    && weights[action].length === AIDL_FEATURE_ORDER.length
+    && weights[action].every((value) => Number.isFinite(Number(value)))
+  ));
+}
+
+function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
+  const normalizedGeneration = normalizePositiveInteger(generation);
+  const baseKey = JSON.stringify({
+    memberId,
+    faction: faction || 'MUTANT_ROOKIE',
+    generation: normalizedGeneration,
+    weights,
+  });
+  const genomeHash = crypto.createHash('sha256').update(baseKey).digest('hex').slice(0, 24);
+  let innovationId = 2;
+  const subgenes = [];
+
+  for (const action of AIDL_ACTIONS) {
+    weights[action].forEach((weight, index) => {
+      subgenes.push({
+        gene_id: `${memberId}_${action}_${AIDL_FEATURE_ORDER[index]}`,
+        innovation_id: innovationId,
+        state: 'A',
+        feature: AIDL_FEATURE_ORDER[index],
+        action,
+        weight: Number(weight),
+        threshold: 0.0,
+        priority: 1.0,
+      });
+      innovationId += 1;
+    });
+  }
+
+  return {
+    genome_id: `gen_${genomeHash}`,
+    generation: normalizedGeneration,
+    faction_hint: faction || 'MUTANT_ROOKIE',
+    lineage: {
+      parent_ids: [],
+      ancestor_ids: [memberId],
+      innovation_ids: Array.from({ length: innovationId - 1 }, (_, index) => index + 1),
+    },
+    regulatory_profile: {
+      expression_budget: 12,
+      dominance_bias: 1.0,
+      decay_resistance: 0.3,
+      reactivation_bias: 0.1,
+    },
+    strategy_genes: [
+      {
+        gene_id: `sg_${memberId}`,
+        innovation_id: 1,
+        state: 'A',
+        dominance: 1.0,
+        copy_number: 1,
+        length: AIDL_FEATURE_ORDER.length,
+        subgenes,
+      },
+    ],
+    mutation_log: [],
+  };
+}
+
+function bootstrapCouncilDnaPayload(weights, memberId, faction, generation) {
+  if (!isCanonicalCentroidShape(weights)) {
+    throw new Error('weights_json is not canonical BUY/SELL/HOLD 5-vector centroid shape');
+  }
+  const dna = buildDeterministicCouncilDna(weights, memberId, faction, generation);
+  return {
+    dna_json: JSON.stringify(dna),
+    phenotype_json: JSON.stringify(weights),
+  };
+}
+
+function addAisCouncilDnaColumns(callback) {
+  db.run("ALTER TABLE ais_council_members ADD COLUMN dna_json TEXT", (dnaErr) => {
+    if (dnaErr && !dnaErr.message.includes("duplicate column name")) {
+      return callback(dnaErr);
+    }
+    db.run("ALTER TABLE ais_council_members ADD COLUMN phenotype_json TEXT", (phenotypeErr) => {
+      if (phenotypeErr && !phenotypeErr.message.includes("duplicate column name")) {
+        return callback(phenotypeErr);
+      }
+      callback();
+    });
+  });
+}
+
+function addAisCouncilCompatibilityColumns(callback) {
+  db.run("ALTER TABLE ais_council_members ADD COLUMN faction TEXT DEFAULT 'MUTANT_ROOKIE'", (factionErr) => {
+    if (factionErr && !factionErr.message.includes("duplicate column name")) {
+      return callback(factionErr);
+    }
+    if (!factionErr) {
+      db.run("UPDATE ais_council_members SET faction = 'TREND_FOLLOWER' WHERE member_id IN ('ais_member_01', 'ais_member_04', 'ais_member_08', 'ais_member_10')");
+      db.run("UPDATE ais_council_members SET faction = 'VALUE_SEEKER' WHERE member_id IN ('ais_member_02', 'ais_member_07')");
+      db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_03', 'ais_member_11')");
+      db.run("UPDATE ais_council_members SET faction = 'MUTANT_ROOKIE' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
+    }
+    db.run("ALTER TABLE ais_council_members ADD COLUMN generation INTEGER DEFAULT 1", (generationErr) => {
+      if (generationErr && !generationErr.message.includes("duplicate column name")) {
+        return callback(generationErr);
+      }
+      callback();
+    });
+  });
+}
+
 function initializeDatabase() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
@@ -256,25 +386,6 @@ function initializeDatabase() {
         }
       });
 
-      db.run("ALTER TABLE ais_council_members ADD COLUMN faction TEXT DEFAULT 'MUTANT_ROOKIE'", (err) => {
-        if (err) {
-          if (!err.message.includes("duplicate column name")) {
-            console.error("❌ ais_council_members 테이블 faction 컬럼 마이그레이션 실패:", err.message);
-          }
-        } else {
-          db.run("UPDATE ais_council_members SET faction = 'TREND_FOLLOWER' WHERE member_id IN ('ais_member_01', 'ais_member_04', 'ais_member_08', 'ais_member_10')");
-          db.run("UPDATE ais_council_members SET faction = 'VALUE_SEEKER' WHERE member_id IN ('ais_member_02', 'ais_member_07')");
-          db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_03', 'ais_member_11')");
-          db.run("UPDATE ais_council_members SET faction = 'MUTANT_ROOKIE' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
-        }
-      });
-
-      db.run("ALTER TABLE ais_council_members ADD COLUMN generation INTEGER DEFAULT 1", (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-          console.error("❌ ais_council_members 테이블 generation 컬럼 마이그레이션 실패:", err.message);
-        }
-      });
-
       // users table schema migration: remove tier, trial_ends_at columns if exists
       db.serialize(() => {
         db.all("PRAGMA table_info(users)", (pragmaErr, columns) => {
@@ -398,6 +509,8 @@ function initializeDatabase() {
           member_id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           weights_json TEXT NOT NULL,
+          dna_json TEXT,
+          phenotype_json TEXT,
           voting_power REAL DEFAULT 1.0,
           correct_count INTEGER DEFAULT 0,
           total_count INTEGER DEFAULT 0,
@@ -522,15 +635,23 @@ function initializeDatabase() {
           }
         ];
         
-        db.get("SELECT COUNT(*) AS count FROM ais_council_members", (countErr, row) => {
-          if (countErr) return reject(countErr);
-          if (row.count > 0) return;
+        addAisCouncilCompatibilityColumns((compatErr) => {
+          if (compatErr) return reject(compatErr);
+          addAisCouncilDnaColumns((columnErr) => {
+            if (columnErr) return reject(columnErr);
+            db.get("SELECT COUNT(*) AS count FROM ais_council_members", (countErr, row) => {
+              if (countErr) return reject(countErr);
+              if (row.count > 0) return;
 
-          initialMembers.forEach(m => {
-            db.run(`
-              INSERT INTO ais_council_members (member_id, name, weights_json, voting_power, status, faction, generation)
-              VALUES (?, ?, ?, 1.0, 'ACTIVE', ?, 1)
-            `, [m.id, m.name, JSON.stringify(m.weights), m.faction]);
+              initialMembers.forEach(m => {
+                const dnaPayload = bootstrapCouncilDnaPayload(m.weights, m.id, m.faction, 1);
+                db.run(`
+                  INSERT INTO ais_council_members
+                    (member_id, name, weights_json, dna_json, phenotype_json, voting_power, status, faction, generation)
+                  VALUES (?, ?, ?, ?, ?, 1.0, 'ACTIVE', ?, 1)
+                `, [m.id, m.name, JSON.stringify(m.weights), dnaPayload.dna_json, dnaPayload.phenotype_json, m.faction]);
+              });
+            });
           });
         });
       });
@@ -550,6 +671,7 @@ function initializeDatabase() {
         try {
           await ensureCouncilBriefingHistorySchema(queries);
           await migrateAisEvaluationSchema(db);
+          await bootstrapLegacyCouncilDna();
           console.log('✔ SQLite Database initialized successfully with Root Referrers.');
           resolve();
         } catch (migrationError) {
@@ -587,6 +709,35 @@ const queries = {
   }
 };
 
+async function bootstrapLegacyCouncilDna() {
+  const rows = await queries.all(`
+    SELECT member_id, weights_json, faction, generation
+    FROM ais_council_members
+    WHERE (dna_json IS NULL OR dna_json = '' OR phenotype_json IS NULL OR phenotype_json = '')
+      AND weights_json IS NOT NULL
+      AND weights_json != ''
+  `);
+
+  for (const row of rows) {
+    try {
+      const weights = JSON.parse(row.weights_json);
+      const payload = bootstrapCouncilDnaPayload(
+        weights,
+        row.member_id,
+        row.faction || 'MUTANT_ROOKIE',
+        row.generation || 1
+      );
+      await queries.run(`
+        UPDATE ais_council_members
+        SET dna_json = ?, phenotype_json = ?
+        WHERE member_id = ?
+      `, [payload.dna_json, payload.phenotype_json, row.member_id]);
+    } catch (error) {
+      console.warn(`[DNA BOOTSTRAP] ${row.member_id} skipped: ${error.message}`);
+    }
+  }
+}
+
 async function repairAiCouncilState() {
   const totalRow = await queries.get("SELECT COUNT(*) AS count FROM ais_council_members");
   let total = totalRow ? totalRow.count : 0;
@@ -613,14 +764,24 @@ async function repairAiCouncilState() {
       ORDER BY RANDOM()
       LIMIT 1
     `);
+    const memberId = `mutant_refill_${crypto.randomUUID().replace(/-/g, '')}`;
+    const weights = JSON.parse(seed.weights_json);
+    const dnaPayload = bootstrapCouncilDnaPayload(
+      weights,
+      memberId,
+      seed.faction || 'MUTANT_ROOKIE',
+      seed.generation || 1
+    );
     await queries.run(`
       INSERT INTO ais_council_members
-        (member_id, name, weights_json, voting_power, status, faction, generation)
-      VALUES (?, ?, ?, 1.0, 'CANDIDATE', ?, ?)
+        (member_id, name, weights_json, dna_json, phenotype_json, voting_power, status, faction, generation)
+      VALUES (?, ?, ?, ?, ?, 1.0, 'CANDIDATE', ?, ?)
     `, [
-      `mutant_refill_${crypto.randomUUID().replace(/-/g, '')}`,
+      memberId,
       `Mutant Pool Refill ${total + 1}`,
       seed.weights_json,
+      dnaPayload.dna_json,
+      dnaPayload.phenotype_json,
       seed.faction || 'MUTANT_ROOKIE',
       seed.generation || 1
     ]);
