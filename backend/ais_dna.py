@@ -2,6 +2,8 @@ import copy
 import math
 import uuid
 
+from ais_features import validate_centroids
+
 
 FEATURE_ORDER = [
     "price_change_pct",
@@ -45,14 +47,8 @@ def _is_positive_finite_number(value):
 
 
 def _validate_legacy_centroids(legacy_centroids):
-    if not isinstance(legacy_centroids, dict) or set(legacy_centroids.keys()) != set(ACTIONS):
-        raise ValueError("Legacy centroids must contain BUY, SELL, and HOLD vectors")
-    for action in ACTIONS:
-        vector = legacy_centroids.get(action)
-        if not isinstance(vector, list) or len(vector) != len(FEATURE_ORDER):
-            raise ValueError("Legacy centroid vectors must contain five feature weights")
-        if not all(_is_finite_number(weight) for weight in vector):
-            raise ValueError("Legacy centroid weights must be finite numbers")
+    if not validate_centroids(legacy_centroids):
+        raise ValueError("Legacy centroids must match the canonical AiS centroid schema")
 
 
 def validate_dna(dna):
@@ -60,7 +56,7 @@ def validate_dna(dna):
         return False
     if not isinstance(dna.get("genome_id"), str) or not dna["genome_id"]:
         return False
-    if not isinstance(dna.get("generation"), int):
+    if not _is_int(dna.get("generation")):
         return False
     lineage = dna.get("lineage")
     if not isinstance(lineage, dict):

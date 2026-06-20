@@ -75,6 +75,19 @@ class AiSDnaTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
 
+    def test_bootstrap_rejects_out_of_range_legacy_weight(self):
+        legacy = self._legacy_centroids()
+        legacy["BUY"][0] = 999.0
+
+        with self.assertRaises(ValueError):
+            bootstrap_dna_from_legacy(legacy, "legacy_member_01", "VALUE_SEEKER", 1)
+
+    def test_validate_dna_rejects_boolean_generation(self):
+        dna = self._valid_dna()
+        dna["generation"] = True
+
+        self.assertFalse(validate_dna(dna))
+
     def test_validate_dna_rejects_malformed_strategy_gene(self):
         dna = self._valid_dna()
         del dna["strategy_genes"][0]["innovation_id"]
