@@ -136,6 +136,61 @@
             margin: 0 auto;
             display: block;
         }
+
+        /* Neon Glow & Animations for Simulator */
+        .neon-glow-active {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            border-color: rgba(96, 165, 250, 0.8) !important;
+        }
+        .neon-glow-bull-exp {
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.6);
+            border-color: rgba(52, 211, 153, 0.8) !important;
+        }
+        .neon-glow-bull-sqz {
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.6);
+            border-color: rgba(96, 165, 250, 0.8) !important;
+        }
+        .neon-glow-bear-exp {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+            border-color: rgba(239, 68, 68, 0.8) !important;
+        }
+        .neon-glow-bear-sqz {
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.6);
+            border-color: rgba(167, 139, 250, 0.8) !important;
+        }
+
+        .gene-node {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .gene-active {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+
+        .gene-inactive {
+            opacity: 0.35;
+            filter: grayscale(80%);
+            transform: scale(0.98);
+        }
+
+        /* Rotate Animation for active gene icons */
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spin-active {
+            animation: spin-slow 8s linear infinite;
+        }
+
+        /* Pulse Glow for simulation target status */
+        .pulse-glow-status {
+            animation: pulse-glow-status-anim 2s infinite;
+        }
+        @keyframes pulse-glow-status-anim {
+            0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 2px currentColor); }
+            50% { opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
+        }
     </style>
 </head>
 
@@ -224,6 +279,196 @@
                     다양한 성향의 AI들이 가상 환경에서 경쟁하고 교배하여 오직 최강의 위기 대응 능력을 입증한 유전자만 실거래 엔진에 각인 배포시키는 나름 혁신적이라고 생각하고 있는 진화
                     알고리즘입니다.
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- New: Contextual Evolution Interactive Simulator Section -->
+    <div class="px-6 mb-8">
+        <div class="evolution-box pulse-border transition-all duration-500" id="sim-container">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-[10px] text-blue-400 font-bold mb-3">
+                <i class="fas fa-play-circle animate-pulse"></i> 실시간 시황-유전자 발현 시뮬레이터
+            </span>
+            <h3 class="text-base font-bold text-white mb-2">시장의 기후에 반응하는 DNA 발현</h3>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                아래 4가지 시장 기후 버튼을 클릭해 보세요. 기후 변화에 따라 AI 개체 내의 특정 유전자 노드들이 실시간으로 활성화(ON) 또는 비활성화(OFF)되는 동적 발현 메커니즘을 경험할 수 있습니다.
+            </p>
+
+            <!-- Weather Buttons Grid -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button onclick="setMarketContext('BULL_EXPANSION')" id="btn-bull-exp" class="py-2 px-3 rounded-lg text-xs font-bold transition-all border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 focus:outline-none">
+                    📈 상승 확장기<br><span class="text-[9px] font-normal opacity-70">(BULL EXP)</span>
+                </button>
+                <button onclick="setMarketContext('BULL_SQUEEZE')" id="btn-bull-sqz" class="py-2 px-3 rounded-lg text-xs font-bold transition-all border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 focus:outline-none">
+                    ↗️ 상승 수축기<br><span class="text-[9px] font-normal opacity-70">(BULL SQZ)</span>
+                </button>
+                <button onclick="setMarketContext('BEAR_EXPANSION')" id="btn-bear-exp" class="py-2 px-3 rounded-lg text-xs font-bold transition-all border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 focus:outline-none">
+                    📉 하락 확장기<br><span class="text-[9px] font-normal opacity-70">(BEAR EXP)</span>
+                </button>
+                <button onclick="setMarketContext('BEAR_SQUEEZE')" id="btn-bear-sqz" class="py-2 px-3 rounded-lg text-xs font-bold transition-all border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 focus:outline-none">
+                    ↘️ 하락 수축기<br><span class="text-[9px] font-normal opacity-70">(BEAR SQZ)</span>
+                </button>
+            </div>
+
+            <!-- Simulation Status Monitor -->
+            <div class="p-3 mb-5 rounded-lg bg-slate-950/80 border border-slate-900 flex justify-between items-center text-xs">
+                <div>
+                    <span class="text-slate-400">현재 시장 기후:</span>
+                    <span id="current-weather-name" class="font-bold text-emerald-400 ml-1">상승 확장기 (BULL_EXP)</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span id="current-weather-dot" class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="font-bold text-[10px] text-emerald-400 pulse-glow-status" id="current-weather-status">SAFE EXPANSION</span>
+                </div>
+            </div>
+
+            <!-- Interactive DNA Chain -->
+            <div class="relative space-y-3.5 pl-6 border-l-2 border-dashed border-slate-800 py-1">
+                <!-- Pulse Line Overlay -->
+                <div class="absolute -left-[3px] top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 opacity-20 rounded"></div>
+
+                <!-- Gene 1 -->
+                <div id="gene-oversold" class="gene-node p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <div class="gene-icon-wrap text-emerald-400 text-base mt-0.5">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">G-01. RSI 과매도 추종 코어</span>
+                            <span class="gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-normal">극단적 저점 이탈 시 반등 기류를 추종하여 매수 진입합니다.</p>
+                        <div class="flex gap-1 mt-1.5">
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BULL_EXP</span>
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BULL_SQZ</span>
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BEAR_SQZ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gene 2 -->
+                <div id="gene-volatility" class="gene-node p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <div class="gene-icon-wrap text-blue-400 text-base mt-0.5">
+                        <i class="fas fa-shield-halved"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">G-02. 변동성 제동 장치</span>
+                            <span class="gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-normal">거래량 폭발 및 밴드 이탈 시 슬리피지 방지 및 포지션을 동결합니다.</p>
+                        <div class="flex gap-1 mt-1.5">
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BULL_EXP</span>
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BEAR_EXP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gene 3 -->
+                <div id="gene-meanrev" class="gene-node p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <div class="gene-icon-wrap text-purple-400 text-base mt-0.5">
+                        <i class="fas fa-arrows-spin"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">G-03. 추세 역행 수렴 코어</span>
+                            <span class="gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-normal">변동성이 가라앉는 박스권 장세에서 고점 매도, 저점 매수로 횡보 이익을 취합니다.</p>
+                        <div class="flex gap-1 mt-1.5">
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BULL_SQZ</span>
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BEAR_SQZ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gene 4 -->
+                <div id="gene-knife" class="gene-node p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <div class="gene-icon-wrap text-red-400 text-base mt-0.5">
+                        <i class="fas fa-skull-crossbones"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">G-04. 급락 칼날 잡기 가드</span>
+                            <span class="gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-normal">투매 및 패닉셀 국면에서 섣부른 매수(칼날 잡기) 진입을 본능적으로 차단합니다.</p>
+                        <div class="flex gap-1 mt-1.5">
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BEAR_EXP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gene 5 -->
+                <div id="gene-breakout" class="gene-node p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <div class="gene-icon-wrap text-amber-400 text-base mt-0.5">
+                        <i class="fas fa-bolt-lightning"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">G-05. 모멘텀 돌파 추격기</span>
+                            <span class="gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 leading-normal">상승 강도가 전고점을 돌파하는 강한 추세 발생 시 모멘텀 매수 진입합니다.</p>
+                        <div class="flex gap-1 mt-1.5">
+                            <span class="text-[8px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 font-mono">BULL_EXP</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New: Crossover & Mutation Logic Visualization -->
+    <div class="px-6 mb-8">
+        <h3 class="text-base font-bold text-slate-400 mb-3 px-1 uppercase tracking-wider">유전자 전수 및 진화 연산</h3>
+        <div class="grid grid-cols-1 gap-4">
+            <!-- Crossover Card -->
+            <div class="evolution-box">
+                <h4 class="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                    <i class="fas fa-dna text-purple-400"></i> 교배 시 계절 합집합 상속 (Union Crossover)
+                </h4>
+                <p class="text-[10px] text-slate-400 mb-3 leading-relaxed">
+                    단순 수치 평균 상속이 아닌, 부모 세대가 적응했던 시장 맥락 정보(`context_mask`)를 <strong>합집합(Union)</strong>으로 결합하여 자손에게 전수합니다.
+                </p>
+                <div class="bg-slate-950/70 p-2.5 rounded border border-slate-800 text-[10px] space-y-1.5 font-mono">
+                    <div class="flex justify-between">
+                        <span class="text-blue-400">부모 A 유전자 기후 마스크:</span>
+                        <span class="text-slate-300">["BULL_EXPANSION"]</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-purple-400">부모 B 유전자 기후 마스크:</span>
+                        <span class="text-slate-300">["BULL_SQUEEZE", "BEAR_SQUEEZE"]</span>
+                    </div>
+                    <div class="border-t border-slate-850 my-1 pt-1 flex justify-between font-bold">
+                        <span class="text-emerald-400">★ 자손 유전자 기후 마스크:</span>
+                        <span class="text-emerald-400">["BULL_EXP", "BULL_SQZ", "BEAR_SQZ"]</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mutation Card -->
+            <div class="evolution-box">
+                <h4 class="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+                    <i class="fas fa-wand-magic-sparkles text-pink-400"></i> 10% 확률의 맥락 돌연변이 (Context Mutation)
+                </h4>
+                <p class="text-[10px] text-slate-400 mb-3 leading-relaxed">
+                    자손 유전 정보가 완성될 때, 10%의 확률로 새로운 시장 맥락을 임의로 획득하거나 기존 맥락을 잃어버리는 <strong>기후 적응 변이</strong>가 일어납니다.
+                </p>
+                <div class="bg-slate-950/70 p-2.5 rounded border border-slate-800 text-[10px] space-y-1.5 font-mono">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">변이 전:</span>
+                        <span class="text-slate-400">["BULL_EXP", "BULL_SQZ"]</span>
+                    </div>
+                    <div class="flex justify-between items-center text-pink-400">
+                        <span>→ 10% 확률 변이 작동:</span>
+                        <span>+ "BEAR_EXPANSION" 획득!</span>
+                    </div>
+                    <div class="border-t border-slate-850 my-1 pt-1 flex justify-between font-bold">
+                        <span class="text-pink-400">★ 최종 변이 유전자:</span>
+                        <span class="text-pink-400">["BULL_EXP", "BULL_SQZ", "BEAR_EXP"]</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -408,6 +653,130 @@
         <p>© 2026 AiS Platform. Powered by AIDL DNA Evolution Engine.</p>
     </footer>
 
+    <!-- Interactive Simulator JS Script -->
+    <script>
+        const genes = {
+            'gene-oversold': ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_SQUEEZE"],
+            'gene-volatility': ["BULL_EXPANSION", "BEAR_EXPANSION"],
+            'gene-meanrev': ["BULL_SQUEEZE", "BEAR_SQUEEZE"],
+            'gene-knife': ["BEAR_EXPANSION"],
+            'gene-breakout': ["BULL_EXPANSION"]
+        };
+
+        function setMarketContext(context) {
+            const weatherNames = {
+                'BULL_EXPANSION': '상승 확장기 (BULL_EXPANSION)',
+                'BULL_SQUEEZE': '상승 수축기 (BULL_SQUEEZE)',
+                'BEAR_EXPANSION': '하락 확장기 (BEAR_EXPANSION)',
+                'BEAR_SQUEEZE': '하락 수축기 (BEAR_SQUEEZE)'
+            };
+            
+            const container = document.getElementById('sim-container');
+            const weatherNameSpan = document.getElementById('current-weather-name');
+            const weatherDot = document.getElementById('current-weather-dot');
+            const weatherStatus = document.getElementById('current-weather-status');
+            
+            weatherNameSpan.innerText = weatherNames[context];
+            
+            const btns = {
+                'BULL_EXPANSION': document.getElementById('btn-bull-exp'),
+                'BULL_SQUEEZE': document.getElementById('btn-bull-sqz'),
+                'BEAR_EXPANSION': document.getElementById('btn-bear-exp'),
+                'BEAR_SQUEEZE': document.getElementById('btn-bear-sqz')
+            };
+            
+            Object.keys(btns).forEach(key => {
+                if (btns[key]) {
+                    btns[key].className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500 focus:outline-none";
+                }
+            });
+            
+            let accentClass = '';
+            if (context === 'BULL_EXPANSION') {
+                if (btns[context]) btns[context].className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border-emerald-500 bg-emerald-500/10 text-emerald-400 focus:outline-none";
+                weatherNameSpan.className = "font-bold text-emerald-400 ml-1";
+                weatherDot.className = "h-2 w-2 rounded-full bg-emerald-400 animate-ping";
+                weatherStatus.innerText = "SAFE EXPANSION";
+                weatherStatus.className = "font-bold text-[10px] text-emerald-400 pulse-glow-status";
+                accentClass = 'neon-glow-bull-exp';
+            } else if (context === 'BULL_SQUEEZE') {
+                if (btns[context]) btns[context].className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border-blue-500 bg-blue-500/10 text-blue-400 focus:outline-none";
+                weatherNameSpan.className = "font-bold text-blue-400 ml-1";
+                weatherDot.className = "h-2 w-2 rounded-full bg-blue-400 animate-ping";
+                weatherStatus.innerText = "STABLE EXPLOIT";
+                weatherStatus.className = "font-bold text-[10px] text-blue-400 pulse-glow-status";
+                accentClass = 'neon-glow-bull-sqz';
+            } else if (context === 'BEAR_EXPANSION') {
+                if (btns[context]) btns[context].className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border-red-500 bg-red-500/10 text-red-400 focus:outline-none";
+                weatherNameSpan.className = "font-bold text-red-400 ml-1";
+                weatherDot.className = "h-2 w-2 rounded-full bg-red-500 animate-ping";
+                weatherStatus.innerText = "RISK GUARD ON";
+                weatherStatus.className = "font-bold text-[10px] text-red-400 pulse-glow-status";
+                accentClass = 'neon-glow-bear-exp';
+            } else if (context === 'BEAR_SQUEEZE') {
+                if (btns[context]) btns[context].className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border-purple-500 bg-purple-500/10 text-purple-400 focus:outline-none";
+                weatherNameSpan.className = "font-bold text-purple-400 ml-1";
+                weatherDot.className = "h-2 w-2 rounded-full bg-purple-400 animate-ping";
+                weatherStatus.innerText = "ACCUMULATION";
+                weatherStatus.className = "font-bold text-[10px] text-purple-400 pulse-glow-status";
+                accentClass = 'neon-glow-bear-sqz';
+            }
+            
+            if (container) {
+                container.className = `evolution-box pulse-border transition-all duration-500 ${accentClass}`;
+            }
+
+            Object.keys(genes).forEach(geneId => {
+                const el = document.getElementById(geneId);
+                if (el) {
+                    const badge = el.querySelector('.gene-status-badge');
+                    const icon = el.querySelector('.gene-icon-wrap i');
+                    
+                    if (genes[geneId].includes(context)) {
+                        el.className = "gene-node p-3 rounded-lg bg-slate-900/90 border border-slate-700/80 flex items-start gap-3 gene-active";
+                        badge.innerText = "ACTIVE";
+                        
+                        if (geneId === 'gene-oversold') {
+                            badge.className = "gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400";
+                            icon.className = "fas fa-hand-holding-usd spin-active";
+                        } else if (geneId === 'gene-volatility') {
+                            badge.className = "gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400";
+                            icon.className = "fas fa-shield-halved spin-active";
+                        } else if (geneId === 'gene-meanrev') {
+                            badge.className = "gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold bg-purple-500/10 border border-purple-500/20 text-purple-400";
+                            icon.className = "fas fa-arrows-spin spin-active";
+                        } else if (geneId === 'gene-knife') {
+                            badge.className = "gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold bg-red-500/10 border border-red-500/20 text-red-400";
+                            icon.className = "fas fa-skull-crossbones spin-active";
+                        } else if (geneId === 'gene-breakout') {
+                            badge.className = "gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400";
+                            icon.className = "fas fa-bolt-lightning spin-active";
+                        }
+                    } else {
+                        el.className = "gene-node p-3 rounded-lg bg-slate-950/40 border border-slate-900/60 flex items-start gap-3 gene-inactive";
+                        badge.className = "gene-status-badge text-[8px] px-1.5 py-0.5 rounded font-bold bg-slate-800 border border-slate-700/50 text-slate-500";
+                        badge.innerText = "DORMANT";
+                        
+                        if (geneId === 'gene-oversold') {
+                            icon.className = "fas fa-hand-holding-usd";
+                        } else if (geneId === 'gene-volatility') {
+                            icon.className = "fas fa-shield-halved";
+                        } else if (geneId === 'gene-meanrev') {
+                            icon.className = "fas fa-arrows-spin";
+                        } else if (geneId === 'gene-knife') {
+                            icon.className = "fas fa-skull-crossbones";
+                        } else if (geneId === 'gene-breakout') {
+                            icon.className = "fas fa-bolt-lightning";
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            setMarketContext('BULL_EXPANSION');
+        };
+    </script>
 </body>
 
 </html>

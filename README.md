@@ -255,6 +255,23 @@ All strategy and feature subgenes exist in one of four states (A/I/D/L):
 *   **Natural Selection:** Poorly performing candidate models are discarded, but their structural sequences are logged into the `DNA archive` to avoid repeating identical evolutionary failures.
 *   **Generation Progression:** Generation numbers are advanced in conjunction with logging which active genes survived and which latent genes reappeared.
 
+#### 4. Contextual Evolution Based on 4 Market States
+When an AI model operates with a single unified weight block, it is vulnerable to sudden market crashes or highly volatile conditions, often leading to complete extinction. To overcome this, we implemented a **Contextual Evolution** system that dynamically expresses duplicated/derived genes matching the real-time **4 Market States (Seasons)**.
+*   **Market Season Classification Criteria**:
+    *   **Long-term Trend (240-day SMA)**: If the price is above the SMA240, it is classified as BULL; if below, it is BEAR.
+    *   **Short-term Volatility (14-day High-Low Average - ATR Alternative)**: The average high-low candle spread over the last 14 days is used to detect EXPANSION or SQUEEZE.
+    *   These are combined to detect one of 4 climates in real time: **BULL_EXPANSION, BULL_SQUEEZE, BEAR_EXPANSION, BEAR_SQUEEZE**.
+*   **Contextual Expression**:
+    *   Each strategy gene encodes a `context_mask`, which lists the specific market climates where the gene is allowed to operate.
+    *   Only genes matching the real-time detected market season are dynamically activated (Active) and used to assemble the decision weights (Centroids). Non-matching genes remain dormant (Inactive), completely cutting off exposure to market risks.
+*   **Context Mutation**:
+    *   In every evolutionary cycle, there is a 10% chance that a specific gene's `context_mask` will randomly gain or lose a market state tag.
+    *   This mutation process allows genes to naturally branch and specialize in specific market climates (e.g., highly specialized genes for bear squeeze or bull expansion).
+*   **Union Inheritance (Crossover)**:
+    *   During crossover breeding, the active climate settings (`context_mask`) of both parent genes are merged using a union operator. This ensures that offspring inherit all the diverse survival instincts accumulated by their ancestors.
+*   **Self-healing Migration**:
+    *   When loading legacy DNA from the database that lacks the newly added `context_mask` (which would otherwise trigger errors), the system automatically detects the missing field and populates it with a full mask containing all 4 seasons, executing a runtime migration without downtime.
+
 ### 3. Architecture Sequence & Evolution Flow
 
 ```mermaid
