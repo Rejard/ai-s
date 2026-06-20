@@ -19,7 +19,11 @@ AIDL DNA Evolution Engine은 이명학이 설계한 Active / Inactive / Deprecat
 
 단, 본 문구는 법적 의미의 특허 등록 또는 세계 최초 확정을 의미하지 않습니다. 관련 권리 보호가 필요한 경우 별도의 특허, 상표, 저작권 검토가 필요할 수 있습니다.
 
-본 저장소의 코드, 문서, 명칭, 구조 설명은 작성자의 저작물입니다. 무단 상업적 사용, 명칭 도용, 핵심 구조의 무단 복제는 허용하지 않습니다.
+본 저장소의 소스코드, 문서 및 설명 텍스트는 작성자의 저작물입니다.
+
+"AIDL" 및 "AIDL DNA Evolution Engine" 명칭은 본 저장소를 통해 공개 기록된 프로젝트 식별자이며, 별도의 상표 등록이 이루어지지 않은 상태에서는 상표권을 주장하지 않습니다.
+
+AIDL 개념 및 유전자 상태 모델은 공개 기록의 목적으로 게시되었으며, 별도의 특허 또는 상표 등록 없이 일반적인 진화형 알고리즘 개념에 대한 독점권을 주장하지 않습니다.
 
 ### English
 
@@ -31,7 +35,11 @@ To the author’s knowledge, based on publicly known AI research and trading-sys
 
 This statement does not constitute a legal confirmation of patent registration or worldwide priority. If formal protection is required, separate patent, trademark, and copyright review may be necessary.
 
-The code, documents, naming, and structural descriptions in this repository are the author’s original works. Unauthorized commercial use, misuse of the name, or unauthorized replication of the core structure is not permitted.
+The source code, documentation, and explanatory text in this repository are the author's original works.
+
+The names "AIDL" and "AIDL DNA Evolution Engine" are project identifiers publicly recorded through this repository, and no trademark rights are claimed unless separate trademark registration is established.
+
+The AIDL concept and genetic state model are published for public disclosure purposes, and no exclusive ownership is claimed over general evolutionary algorithm concepts without separate patent or trademark registration.
 
 ---
 
@@ -154,17 +162,15 @@ graph TD
 
 ## ⚖️ 라이선스 및 상업적 이용 문의
 
-**AI-S (Safe Gated RSI)**는 커뮤니티 내에서의 기술적 기여와 교육적 활용을 장려하기 위해 오픈소스로 제공됩니다. 다만 지적 재산권을 보호하기 위해 본 프로젝트는 **이중 라이선스 정책 (Dual License Policy)** 하에 운영됩니다.
+**AI-S (Safe Gated RSI)**는 오픈소스 라이선스 및 권리 보존을 준수하기 위해 **이중 라이선스 정책 (Dual License Policy)** 하에 제공됩니다.
 
-### 1. 비상업적 목적 및 오픈소스 이용
-오픈소스 기여자 및 개인 개발자는 `AGPL-3.0 License` 하에 비상업적인 목적으로 소스 코드를 자유롭게 열람, 수정 및 사용할 수 있습니다. 단, 이 코드를 기반으로 구축된 모든 파생 작업물이나 서비스 역시 동일한 라이선스 하에 공개 오픈소스로 배포되어야 합니다.
+### 1. AGPL-3.0 라이선스 기반의 오픈소스 이용
+AGPL-3.0 라이선스는 상업적 사용 자체를 제한하지 않습니다. AGPL-3.0 조건(소스코드 수정 시 기여본 전체 공개 의무 등)을 충족하는 경우 누구나 상업적 목적으로도 자유롭게 사용할 수 있습니다.
 
-### 2. 상업적 이용 및 통합 (Commercial Use)
-기업, 스타트업 또는 개인이 AI-S를 **상업적 또는 독점적 목적(예: 상용 서비스 출시, 기업 내부 솔루션 통합, 재판매 등)**으로 사용하고자 하는 경우, AGPL-3.0 라이선스로는 엄격히 불가합니다. **반드시 원작자(Rejard)로부터 사전 동의를 얻고 별도의 '상업용 라이선스 (Commercial License)'를 취득해야 합니다.**
+### 2. 상업용 라이선스 및 통합 (Commercial Use)
+AI-S 프로젝트는 저작권자가 별도의 상업용 라이선스를 제공하는 듀얼 라이선스 정책을 채택하고 있습니다. AGPL 의무를 이행하지 않고 폐쇄형 상용 서비스 또는 독점적 이용을 원하는 경우에는 반드시 원작자(Rejard)로부터 별도의 Commercial License를 취득해야 합니다.
 
-AI-S 아키텍처를 상업용 제품에 통합하거나 기술 지원이 필요하신 경우, 상업용 라이선스 논의를 위해 아래 이메일로 연락해 주시기 바랍니다.
-
-*상업용 라이선스를 취득하면 코드를 오픈소스로 공개해야 할 의무가 면제되며, 전담 기술 지원을 받을 수 있습니다.*
+AI-S 아키텍처를 상업용 독점 제품에 통합하거나 전담 기술 지원이 필요하신 경우, 아래 이메일로 연락해 주시기 바랍니다.
 
 - 📬 **상업용 및 기술 문의:** lemaiii@alonics.com
 - **저작권:** © 2026 Alonics Inc. All Rights Reserved.

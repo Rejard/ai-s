@@ -20,7 +20,11 @@ AIDL DNA Evolution Engine은 이명학이 설계한 Active / Inactive / Deprecat
 
 단, 본 문구는 법적 의미의 특허 등록 또는 세계 최초 확정을 의미하지 않습니다. 관련 권리 보호가 필요한 경우 별도의 특허, 상표, 저작권 검토가 필요할 수 있습니다.
 
-본 저장소의 코드, 문서, 명칭, 구조 설명은 작성자의 저작물입니다. 무단 상업적 사용, 명칭 도용, 핵심 구조의 무단 복제는 허용하지 않습니다.
+본 저장소의 소스코드, 문서 및 설명 텍스트는 작성자의 저작물입니다.
+
+"AIDL" 및 "AIDL DNA Evolution Engine" 명칭은 본 저장소를 통해 공개 기록된 프로젝트 식별자이며, 별도의 상표 등록이 이루어지지 않은 상태에서는 상표권을 주장하지 않습니다.
+
+AIDL 개념 및 유전자 상태 모델은 공개 기록의 목적으로 게시되었으며, 별도의 특허 또는 상표 등록 없이 일반적인 진화형 알고리즘 개념에 대한 독점권을 주장하지 않습니다.
 
 ### English
 
@@ -32,7 +36,11 @@ To the author’s knowledge, based on publicly known AI research and trading-sys
 
 This statement does not constitute a legal confirmation of patent registration or worldwide priority. If formal protection is required, separate patent, trademark, and copyright review may be necessary.
 
-The code, documents, naming, and structural descriptions in this repository are the author’s original works. Unauthorized commercial use, misuse of the name, or unauthorized replication of the core structure is not permitted.
+The source code, documentation, and explanatory text in this repository are the author's original works.
+
+The names "AIDL" and "AIDL DNA Evolution Engine" are project identifiers publicly recorded through this repository, and no trademark rights are claimed unless separate trademark registration is established.
+
+The AIDL concept and genetic state model are published for public disclosure purposes, and no exclusive ownership is claimed over general evolutionary algorithm concepts without separate patent or trademark registration.
 
 ---
 
@@ -285,17 +293,15 @@ We invite like-minded developers who believe in **survival through wild diversit
 
 ## ⚖️ License and Commercial Use Inquiries
 
-**AI-S (Safe Gated RSI)** is provided as open-source to encourage technical contribution and educational use. However, to protect our intellectual property, this project is operated under a **Dual License Policy**.
+**AI-S (Safe Gated RSI)** is provided under a **Dual License Policy** to ensure compliance with open-source licensing and rights preservation.
 
-### 1. Non-Commercial & Open Source Use
-Open-source contributors and individual developers are free to view, modify, and use the source code for non-commercial purposes under the `AGPL-3.0 License`. However, any derivative works or services built on this code must also be distributed as open-source under the same license.
+### 1. Open Source Use under AGPL-3.0 License
+The AGPL-3.0 License does not restrict commercial use itself. Anyone is free to use the software for commercial purposes as long as they comply with the terms of the AGPL-3.0 License (such as the obligation to disclose the full source code of any modified versions).
 
-### 2. Commercial Use and Integration
-If a corporation, startup, or individual wishes to use AI-S for **commercial or proprietary purposes (e.g., launching a commercial service, internal corporate integration, resale, etc.)**, it is strictly prohibited under the AGPL-3.0 License. **You must obtain prior consent and a separate 'Commercial License' from the original author (Rejard).**
+### 2. Commercial License and Integration (Commercial Use)
+The AI-S project adopts a dual licensing policy where the copyright holder provides a separate commercial license. If you wish to use the software for proprietary commercial services or exclusive use without complying with the AGPL obligations, you must obtain a separate Commercial License from the original author (Rejard).
 
-If you wish to integrate the AI-S architecture into a commercial product or require technical support, please contact us at the email below to discuss commercial licensing.
-
-*Acquiring a commercial license waives the obligation to disclose your source code and provides dedicated technical support.*
+If you wish to integrate the AI-S architecture into a commercial proprietary product or require dedicated technical support, please contact us at the email below.
 
 - 📬 **Commercial & Technical Inquiries:** lemaiii@alonics.com
 - **Copyright:** © 2026 Alonics Inc. All Rights Reserved.
