@@ -1,5 +1,6 @@
 import unittest
 import copy
+from unittest.mock import patch
 
 from ais_dna import (
     bootstrap_dna_from_legacy,
@@ -377,6 +378,41 @@ class AiSDnaTests(unittest.TestCase):
         
         # 5회 시도 후 결국 위험 변이 필터링에 걸려 안전하게 롤백(vep_filtered_deleterious_mutation) 되었음을 확인
         self.assertIn("vep_filtered_deleterious_mutation", log_events)
+
+
+    def test_mutation_can_reactivate_inactive_subgene(self):
+        dna = self._valid_dna()
+        target_gene_id = dna["strategy_genes"][0]["subgenes"][0]["gene_id"]
+        dna["strategy_genes"][0]["subgenes"][0]["state"] = "I"
+
+        with patch("random.random", side_effect=[0.99, 0.05, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: next(
+                item for item in seq if item.get("gene_id") == target_gene_id
+            ),
+        ):
+            mutated = mutate_dna(dna)
+
+        mutated_gene = mutated["strategy_genes"][0]["subgenes"][0]
+        log_events = [log["event"] for log in mutated.get("mutation_log", [])]
+
+        self.assertEqual(mutated_gene["state"], "A")
+        self.assertIn("state_mutation", log_events)
+
+    def test_crossover_inherits_lethal_subgene_as_inactive(self):
+        first = self._valid_dna()
+        second = bootstrap_dna_from_legacy(
+            self._legacy_centroids(),
+            member_id="legacy_member_06",
+            faction="TREND_FOLLOWER",
+            generation=2,
+        )
+        first["strategy_genes"][0]["subgenes"][0]["state"] = "L"
+        second["strategy_genes"][0]["subgenes"][0]["state"] = "A"
+
+        child = crossover_dna(first, second)
+
+        self.assertEqual(child["strategy_genes"][0]["subgenes"][0]["state"], "I")
 
 
 if __name__ == "__main__":

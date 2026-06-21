@@ -29,6 +29,27 @@ function summarizeDnaStates(dnaInput) {
   return summary;
 }
 
+function summarizeMutationLog(dnaInput) {
+  const dna = safeParseJson(dnaInput, {});
+  const summary = {
+    stateMutation: 0,
+    contextMaskMutation: 0,
+    weightNudge: 0,
+    vepFiltered: 0,
+  };
+  const mutationLog = dna && Array.isArray(dna.mutation_log) ? dna.mutation_log : [];
+
+  for (const entry of mutationLog) {
+    const event = entry && typeof entry === 'object' ? entry.event : null;
+    if (event === 'state_mutation') summary.stateMutation += 1;
+    else if (event === 'context_mask_mutation') summary.contextMaskMutation += 1;
+    else if (event === 'weight_nudge') summary.weightNudge += 1;
+    else if (event === 'vep_filtered_deleterious_mutation') summary.vepFiltered += 1;
+  }
+
+  return summary;
+}
+
 function extractPhenotype(phenotypeInput) {
   const fallback = {
     BUY: [0, 0, 0, 0, 0],
@@ -49,5 +70,6 @@ function extractPhenotype(phenotypeInput) {
 
 module.exports = {
   summarizeDnaStates,
+  summarizeMutationLog,
   extractPhenotype,
 };

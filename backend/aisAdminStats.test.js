@@ -98,7 +98,7 @@ async function main() {
     INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
     VALUES (
       'm1',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[],"generation":1}',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"}],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
@@ -132,6 +132,12 @@ async function main() {
     inactive: 1,
     deprecated: 1,
     lethal: 1,
+  });
+  assert.deepStrictEqual(result.dnaMutationTotals, {
+    stateMutation: 1,
+    contextMaskMutation: 1,
+    weightNudge: 0,
+    vepFiltered: 0,
   });
   await verifyDatabaseDnaMigration();
 

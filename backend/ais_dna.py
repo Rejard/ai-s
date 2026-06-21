@@ -16,6 +16,12 @@ FEATURE_ORDER = [
 AIDL_STATES = {"A", "I", "D", "L"}
 AIDL_CONTEXTS = {"BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"}
 ACTIONS = ("BUY", "SELL", "HOLD")
+STATE_MUTATION_TRANSITIONS = {
+    "I": "A",
+    "A": "D",
+    "D": "L",
+    "L": "I",
+}
 
 
 def _new_genome_id(generation=1):
@@ -59,6 +65,17 @@ def _validate_legacy_centroids(legacy_centroids):
 def _clamp_feature_weight(feature, weight):
     limit = FEATURE_ABS_LIMITS[FEATURE_ORDER.index(feature)]
     return max(-limit, min(limit, float(weight)))
+
+
+def _collect_state_mutation_targets(dna):
+    targets = []
+    for strategy in dna.get("strategy_genes", []):
+        if strategy.get("state") in STATE_MUTATION_TRANSITIONS:
+            targets.append(strategy)
+        for subgene in strategy.get("subgenes", []):
+            if subgene.get("state") in STATE_MUTATION_TRANSITIONS:
+                targets.append(subgene)
+    return targets
 
 
 def validate_dna(dna):
@@ -317,6 +334,23 @@ def mutate_dna(dna, preserve_parent_ids=False):
                     )
                     break
 
+        if random.random() < 0.10:
+            state_targets = _collect_state_mutation_targets(mutated)
+            if state_targets:
+                target_gene = random.choice(state_targets)
+                from_state = target_gene["state"]
+                to_state = STATE_MUTATION_TRANSITIONS[from_state]
+                target_gene["state"] = to_state
+                mutated.setdefault("mutation_log", []).append(
+                    {
+                        "generation": mutated.get("generation", 1),
+                        "event": "state_mutation",
+                        "gene_id": target_gene.get("gene_id"),
+                        "from_state": from_state,
+                        "to_state": to_state,
+                    }
+                )
+
         applied_nudge = False
         for strategy in mutated.get("strategy_genes", []):
             for subgene in strategy.get("subgenes", []):
@@ -390,6 +424,9 @@ def crossover_dna(first, second):
             continue
         sibling = sibling_strategies[strategy_index]
 
+        if "L" in (strategy.get("state"), sibling.get("state")):
+            strategy["state"] = "I"
+
         # Combine context masks (union)
         parent_a_mask = strategy.get("context_mask", [])
         parent_b_mask = sibling.get("context_mask", [])
@@ -401,6 +438,8 @@ def crossover_dna(first, second):
             if subgene_index >= len(sibling_subgenes):
                 continue
             sibling_subgene = sibling_subgenes[subgene_index]
+            if "L" in (subgene.get("state"), sibling_subgene.get("state")):
+                subgene["state"] = "I"
             blended = (float(subgene["weight"]) + float(sibling_subgene["weight"])) / 2
             subgene["weight"] = round(_clamp_feature_weight(subgene["feature"], blended), 4)
     child["mutation_log"] = []

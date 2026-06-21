@@ -1,5 +1,5 @@
 const { LABEL_VERSION } = require('./aisEvaluation');
-const { summarizeDnaStates } = require('./aisDnaSummary');
+const { summarizeDnaStates, summarizeMutationLog } = require('./aisDnaSummary');
 
 async function getAisTrainingStats(store) {
   const totals = await store.get(`
@@ -93,6 +93,14 @@ async function getAisTrainingStats(store) {
     totals.lethal += summary.lethal;
     return totals;
   }, { active: 0, inactive: 0, deprecated: 0, lethal: 0 });
+  const dnaMutationTotals = activeCouncil.reduce((totals, row) => {
+    const summary = summarizeMutationLog(row.dna_json);
+    totals.stateMutation += summary.stateMutation;
+    totals.contextMaskMutation += summary.contextMaskMutation;
+    totals.weightNudge += summary.weightNudge;
+    totals.vepFiltered += summary.vepFiltered;
+    return totals;
+  }, { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 });
 
   return {
     total: Number(totals?.total || 0),
@@ -105,6 +113,7 @@ async function getAisTrainingStats(store) {
     shadowOnly: true,
     automaticPromotionEnabled,
     dnaStateTotals,
+    dnaMutationTotals,
     dnaStateTotalsAvailable,
   };
 }

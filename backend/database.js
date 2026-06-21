@@ -68,7 +68,7 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
   }
 
   return {
-    genome_id: `gen_${genomeHash}`,
+    genome_id: `AISG-G${normalizedGeneration}-${genomeHash.slice(0, 8)}`,
     generation: normalizedGeneration,
     faction_hint: faction || 'MUTANT_ROOKIE',
     lineage: {
@@ -89,6 +89,7 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
         state: 'A',
         dominance: 1.0,
         copy_number: 1,
+        context_mask: ['BULL_EXPANSION', 'BULL_SQUEEZE', 'BEAR_EXPANSION', 'BEAR_SQUEEZE'],
         length: AIDL_FEATURE_ORDER.length,
         subgenes,
       },
@@ -796,6 +797,8 @@ async function repairAiCouncilState() {
 
 module.exports = {
   db,
+  bootstrapCouncilDnaPayload,
+  buildDeterministicCouncilDna,
   initializeDatabase,
   queries,
   repairAiCouncilState

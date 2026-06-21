@@ -8,6 +8,7 @@ assert.equal(empty.automaticPromotionEnabled, false);
 assert.equal(empty.latestRun, null);
 assert.deepEqual(empty.byDecision.BUY, { count: 0, correct: 0, accuracy: 0 });
 assert.deepEqual(empty.dnaStateTotals, { active: 0, inactive: 0, deprecated: 0, lethal: 0 });
+assert.deepEqual(empty.dnaMutationTotals, { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
 const populated = normalizeAisTrainingStats({
@@ -22,11 +23,13 @@ const populated = normalizeAisTrainingStats({
     promotionReasons: ['MIN_LABELED_OBSERVATIONS'],
   },
   dnaStateTotals: { active: 1, inactive: 2, deprecated: 3, lethal: 4 },
+  dnaMutationTotals: { stateMutation: 5, contextMaskMutation: 6, weightNudge: 7, vepFiltered: 8 },
   dnaStateTotalsAvailable: false,
 });
 assert.equal(populated.latestRun.holdoutScore, 54);
 assert.deepEqual(populated.latestRun.promotionReasons, ['MIN_LABELED_OBSERVATIONS']);
 assert.deepEqual(populated.dnaStateTotals, { active: 1, inactive: 2, deprecated: 3, lethal: 4 });
+assert.deepEqual(populated.dnaMutationTotals, { stateMutation: 5, contextMaskMutation: 6, weightNudge: 7, vepFiltered: 8 });
 assert.equal(populated.dnaStateTotalsAvailable, false);
 
 console.log('aisTrainingView tests passed');

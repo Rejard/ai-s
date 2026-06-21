@@ -229,31 +229,31 @@ We strongly disagree. **Over-regulation in evolution is an evolutionary dead end
 ### 2. Our Architecture: Safe Gated RSI (Air-Gapped Mutation)
 Rather than suppressing mutation to enforce safety, we decouple mutation from exploitation. 
 
-- **Wild Mutation in the Sandbox**: We force 75 raw, randomized 1st-generation mutant rookies into the 500-candidate pool during every evolutionary cycle. Crossover offspring have a 50% chance of mutation with random feature noise. AI candidates are allowed to mutate wildly and test radical strategies.
+- **Wild Mutation in the Sandbox**: The 500-candidate pool is replenished through a mix of crossover offspring and fresh mutant rookies during each evolutionary cycle. Offspring still receive probabilistic mutation, and additional rookies are injected when the pool needs refill, allowing the sandbox population to keep testing diverse strategies.
 - **Air-Gapped Gating (Shadow-only Mode)**: Safety is enforced not by controlling the AI's mind, but by controlling its environment. Candidates evolve in a secure **Shadow Mode (Simulation)** without access to live capital. 
-- **Human-in-the-loop (Natural Selection)**: Only when a candidate satisfies rigid statistical criteria (300 labeled observations, 3%p margin over holdout benchmark, zero label contamination) does it present promotion eligibility evidence to the Administrator. The AI never promotes itself; the human remains the final arbiter of selection.
+- **Human-in-the-loop (Natural Selection)**: A candidate must satisfy rigid statistical criteria (300 labeled observations, 3%p margin over holdout benchmark, zero label contamination, and minimum class coverage) before it becomes promotion-eligible evidence for the Administrator. In the current implementation, promotion remains policy-gated: administrators can keep manual review, or enable automatic engine switching only after the eligibility checks pass.
 
 ### 2.5 AIDL DNA Genome Architecture & Operational Principles
 AIDL stands for **Adaptive Intelligence & DNA Logic** externally, while internally defining the core mechanism that controls the four ecological survival states of genes: **A**ctive, **I**nactive, **D**eprecated, and **L**ethal.
 
 #### 1. Genome & Strategy Schema
 Each AI candidate model (individual) possesses a unique Genome sequence defined as:
-*   **Core Metadata:** `genome_id`, `generation`, `ancestor_ids` (ancestry tracking), `expressed_strategy_ids` (currently active strategy genes), `latent_strategy_ids` (inactive/dormant strategy genes), `fitness_history` (historical fitness metrics).
-*   **Strategy Genes:** Defines the primary trading logic (e.g., `mean_reversion_core`, `trend_breakout_core`, `volatility_guard_core`).
-*   **Feature Subgenes:** Defines fine-grained indicators and thresholds (e.g., `rsi_oversold_trigger`, `sma5_distance_bias`, `sma20_spread_gate`, `price_change_sensitivity`). Each subgene carries its own weight and threshold.
+*   **Current Core Metadata:** `genome_id`, `generation`, `lineage` (`parent_ids`, `ancestor_ids`, `innovation_ids`), `regulatory_profile`, and `mutation_log`.
+*   **Strategy Genes:** Each genome currently carries strategy-gene objects with `gene_id`, `innovation_id`, `state`, `dominance`, `copy_number`, `context_mask`, `length`, and `subgenes`.
+*   **Feature Subgenes:** Each subgene tracks `gene_id`, `innovation_id`, `state`, `feature`, `action`, `weight`, `threshold`, and `priority`, which are used to assemble centroid-like phenotypes at runtime.
 
 #### 2. AIDL Gene Expression States
 All strategy and feature subgenes exist in one of four states (A/I/D/L):
 *   **A (Active):** The gene is fully active, participating in real-time execution, fitness evaluation, and crossover breeding.
 *   **I (Inactive):** The gene is dormant and unexpressed in the current generation but can be passed down to offspring and resurrected back to A (Active) via mutation.
-*   **D (Deprecated):** A mitigated state where the gene's weight is scaled down and its thresholds are tightened instead of full deactivation, rendering a highly cautious operation under risk conditions.
-*   **L (Lethal):** A highly toxic gene identified with extreme drawdowns or errors. Expression is permanently forbidden; only a vestigial trace remains in the genome, and it can only be inherited as Inactive (I) by offspring (Preservation-based Lethal Gene Control).
+*   **D (Deprecated):** A mitigated state where the gene remains expressible but is down-weighted during phenotype construction instead of being treated as fully active.
+*   **L (Lethal):** A highly toxic gene identified with extreme drawdowns or safety failures. It is excluded from expression, and the current crossover rule demotes lethal inheritance to Inactive (I) in offspring.
 
 #### 3. Evolutionary Operators
 *   **Crossover:** When selecting the top 50 parents to breed, we align genes by `innovation_id` before mixing weights rather than performing a blind average.
-*   **Mutation:** In addition to numerical weight/threshold mutations, we introduce state mutations (e.g., I -> A, A -> D, D -> L) to govern gene reactivation and degradation.
-*   **Natural Selection:** Poorly performing candidate models are discarded, but their structural sequences are logged into the `DNA archive` to avoid repeating identical evolutionary failures.
-*   **Generation Progression:** Generation numbers are advanced in conjunction with logging which active genes survived and which latent genes reappeared.
+*   **Mutation:** The current runtime applies three concrete mutation layers: `context_mask` mutation, `state_mutation` across the A/I/D/L cycle, and small active-gene `weight_nudge` adjustments.
+*   **Natural Selection:** Poorly performing candidate models are discarded at the pool level, while surviving lineages retain ancestry and mutation metadata inside the genome payload.
+*   **Generation Progression:** Generation numbers advance through mutation and crossover, and mutation events are appended into `mutation_log` for later audit.
 
 #### 4. Contextual Evolution Based on 4 Market States
 When an AI model operates with a single unified weight block, it is vulnerable to sudden market crashes or highly volatile conditions, often leading to complete extinction. To overcome this, we implemented a **Contextual Evolution** system that dynamically expresses duplicated/derived genes matching the real-time **4 Market States (Seasons)**.
@@ -278,7 +278,7 @@ The AIDL DNA Evolution Engine draws significant architectural inspiration from b
     *   Mirroring how biological VEP predicts the molecular consequences and lethality of nucleotide mutations, this module screens newly mutated feature weights. It checks if a mutation will trigger catastrophic over-fitting or erratic trading behaviors (e.g., excessive chase-buying biases) under high-risk environments like "BEAR_EXPANSION".
     *   Any mutation flagged as `LETHAL` by the predictor is immediately filtered out and discarded (deleterious mutation filtering) before sandbox evaluation, automatically reverting the weights back to the stable parent state.
 *   **AISG Accession ID (Gene Sequence Accessioning)**:
-    *   Analogous to how NCBI's Entrez and Ensembl assign stable accessioning IDs (e.g., ENSG, XP_) to manage genomic sequences globally, AiS assigns a standardized **`AISG-G{generation}-{unique_suffix}`** ID format to every model in the candidate pool.
+    *   Analogous to how NCBI's Entrez and Ensembl assign stable accessioning IDs (e.g., ENSG, XP_) to manage genomic sequences globally, AiS now standardizes genome bootstrap and runtime issuance around the **`AISG-G{generation}-{unique_suffix}`** format.
     *   This unified indexing enables comprehensive lineage tracking, allowing administrators to audit database registries and trace which specific ancestral lineages contributed most to market survival.
 
 ### 3. Architecture Sequence & Evolution Flow

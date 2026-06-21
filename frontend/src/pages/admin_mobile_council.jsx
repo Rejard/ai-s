@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { API_BASE } from '../App';
+import { buildAuthHeaders } from '../lib/authSession';
+
+const ADMIN_EMAIL = 'lemaiiisk@gmail.com';
 
 function AdminMobileCouncil() {
   const navigate = useNavigate();
@@ -10,10 +13,17 @@ function AdminMobileCouncil() {
   const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const getAdminHeaders = () => ({
+    headers: {
+      ...buildAuthHeaders(),
+      'x-admin-email': ADMIN_EMAIL
+    }
+  });
+
   const fetchCouncilStats = async () => {
     try {
       setRefreshing(true);
-      const res = await axios.get(`${API_BASE}/investment/council-stats`);
+      const res = await axios.get(`${API_BASE}/admin/council-stats`, getAdminHeaders());
       if (res.data.success) {
         setCouncilStats({
           factionStats: res.data.factionStats,

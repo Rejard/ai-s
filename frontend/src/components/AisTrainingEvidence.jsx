@@ -21,6 +21,7 @@ export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggl
   const latest = stats?.latestRun;
   const decisions = stats?.byDecision || {};
   const dnaStateTotals = stats?.dnaStateTotals || { active: 0, inactive: 0, deprecated: 0, lethal: 0 };
+  const dnaMutationTotals = stats?.dnaMutationTotals || { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 };
   const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
   const isPromoEnabled = stats?.automaticPromotionEnabled;
 
@@ -98,6 +99,11 @@ export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggl
         label="DNA 상태"
         value={`A ${dnaStateTotals.active || 0} / I ${dnaStateTotals.inactive || 0} / D ${dnaStateTotals.deprecated || 0} / L ${dnaStateTotals.lethal || 0}`}
         color={stats?.dnaStateTotalsAvailable === false ? '#FBBF24' : '#C4B5FD'}
+      />
+      <Metric
+        label="DNA Mutation"
+        value={`State ${dnaMutationTotals.stateMutation || 0} / Context ${dnaMutationTotals.contextMaskMutation || 0} / Nudge ${dnaMutationTotals.weightNudge || 0} / VEP ${dnaMutationTotals.vepFiltered || 0}`}
+        color="#93C5FD"
       />
       {['BUY', 'SELL', 'HOLD'].map((decision) => {
         const item = decisions[decision] || { count: 0, accuracy: 0 };
