@@ -1,4 +1,5 @@
 import sqlite3
+import copy
 import os
 import json
 import random

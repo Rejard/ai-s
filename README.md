@@ -272,6 +272,9 @@ When an AI model operates with a single unified weight block, it is vulnerable t
 *   **Self-healing Migration**:
     *   When loading legacy DNA from the database that lacks the newly added `context_mask` (which would otherwise trigger errors), the system automatically detects the missing field and populates it with a full mask containing all 4 seasons, executing a runtime migration without downtime.
 
+*   **Fitness History Persistence Guard**:
+    *   The election runtime now explicitly deep-copies DNA packages before appending `fitness_history`, preventing lineage-history writes from crashing the live council election loop and keeping regression coverage on that persistence path.
+
 #### 5. Bio-Science Inspired Logic: AI-VEP and AISG Accessioning
 The AIDL DNA Evolution Engine draws significant architectural inspiration from bioinformatics and genomic engineering algorithms, particularly Google DeepMind's AlphaGenome and EMBL-EBI's Ensembl VEP (Variant Effect Predictor), implementing them as real-time evolutionary safety guards:
 *   **AI-VEP (AI Variant Effect Predictor)**:

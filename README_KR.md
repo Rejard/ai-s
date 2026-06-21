@@ -141,6 +141,9 @@ AI 모델이 단일한 가중치 뭉치로만 작동할 경우, 폭락장이나 
 *   **자가 치유 마이그레이션 (Self-healing)**:
     *   기존 데이터베이스에 저장되어 있던 구세대 DNA(즉, `context_mask` 정보가 유실되어 에러를 유발할 수 있는 개체들)를 로딩할 때, 시스템이 자동으로 이를 감지하여 4대 계절 전체 태그를 기본 주입하는 자가 복구 마이그레이션을 런타임에 실행합니다.
 
+*   **적합도 이력 영속성 가드 (Fitness History Persistence Guard)**:
+    *   현재 선거 런타임은 `fitness_history`를 추가하기 전에 DNA 패키지를 명시적으로 깊은 복사하여, 계보 이력 기록 과정이 실운영 의회 선거 루프를 중단시키지 않도록 보호하며 이 경로에 대한 회귀 테스트도 함께 유지합니다.
+
 #### 5. 과학 분야 생명공학 연구의 접목 및 영감 (AI-VEP & AISG)
 본 AIDL DNA Evolution Engine은 설계 과정에서 구글 DeepMind의 AlphaGenome 연구, EMBL-EBI의 Ensembl VEP(Variant Effect Predictor) 등의 실제 생명과학/유전공학 알고리즘에서 다음과 같은 큰 설계적 영감을 받아 실질적인 진화 안전 로직으로 이식되었습니다.
 *   **AI-VEP (AI Variant Effect Predictor: AI 변이 효과 예측기)**:

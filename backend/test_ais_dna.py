@@ -12,7 +12,7 @@ from ais_dna import (
     validate_dna,
 )
 from ais_features import validate_centroids
-from train_ais import load_candidate_dna
+from train_ais import append_fitness_history, load_candidate_dna
 
 
 class AiSDnaTests(unittest.TestCase):
@@ -518,6 +518,18 @@ class AiSDnaTests(unittest.TestCase):
         self.assertEqual(healed["regulatory_profile"]["dominance_bias"], 1.0)
         self.assertEqual(healed["regulatory_profile"]["decay_resistance"], 0.3)
         self.assertEqual(healed["regulatory_profile"]["reactivation_bias"], 0.1)
+
+    def test_append_fitness_history_returns_updated_copy(self):
+        dna = self._valid_dna()
+
+        updated = append_fitness_history(dna, 51.25, 48.75, "run-123")
+
+        self.assertIsNot(updated, dna)
+        self.assertEqual(dna.get("fitness_history"), None)
+        self.assertEqual(len(updated["fitness_history"]), 1)
+        self.assertEqual(updated["fitness_history"][0]["validationScore"], 51.25)
+        self.assertEqual(updated["fitness_history"][0]["holdoutScore"], 48.75)
+        self.assertEqual(updated["fitness_history"][0]["runKey"], "run-123")
 
 
 if __name__ == "__main__":
