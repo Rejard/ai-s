@@ -232,6 +232,9 @@ def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
 
 def build_expression_plan(dna, current_context=None):
     expressed = []
+    profile = dna.get("regulatory_profile", {}) if isinstance(dna.get("regulatory_profile"), dict) else {}
+    budget_remaining = float(profile.get("expression_budget", 12))
+    dominance_bias = float(profile.get("dominance_bias", 1.0))
     for strategy in dna.get("strategy_genes", []):
         if strategy.get("state") in ("I", "L"):
             continue
@@ -239,13 +242,26 @@ def build_expression_plan(dna, current_context=None):
             mask = strategy.get("context_mask", [])
             if current_context not in mask:
                 continue
+        strategy_length = max(1.0, float(strategy.get("length", 1)))
+        copy_number = max(1.0, float(strategy.get("copy_number", 1)))
+        strategy_cost = max(1, int(math.ceil(strategy_length / copy_number)))
+        if budget_remaining < strategy_cost:
+            continue
+        budget_remaining -= strategy_cost
+        strategy_factor = float(strategy.get("dominance", 1.0)) * dominance_bias
         for subgene in strategy.get("subgenes", []):
             state = subgene.get("state")
             if state not in ("A", "D"):
                 continue
             expressed_subgene = copy.deepcopy(subgene)
             expression_factor = 0.5 if "D" in (strategy.get("state"), state) else 1.0
-            expressed_subgene["weight"] = float(expressed_subgene["weight"]) * expression_factor
+            expressed_subgene["weight"] = round(
+                _clamp_feature_weight(
+                    expressed_subgene["feature"],
+                    float(expressed_subgene["weight"]) * expression_factor * strategy_factor,
+                ),
+                4,
+            )
             expressed.append(expressed_subgene)
     return {
         "genome_id": dna.get("genome_id"),
@@ -308,11 +324,17 @@ def predict_variant_effect(dna):
                         return "LETHAL"
                     if has_recent_fitness_collapse and feature_name in ("rsi_scaled", "price_change_pct") and w > limit * 0.65:
                         return "LETHAL"
+                if context == "BULL_EXPANSION" and action == "BUY":
+                    if feature_name in ("price_change_pct", "sma5_to_sma20_spread_pct") and w > limit * 0.75:
+                        return "LETHAL"
                         
                 # 3. 하락 수축기(BEAR_SQUEEZE) 리스크 판정
                 # 하락 횡보 국면에서 추세 돌파 매수 가중치가 지나치게 높으면 횡보 톱니에 찢길 수 있음
                 if context == "BEAR_SQUEEZE" and action == "BUY":
                     if feature_name == "sma5_to_sma20_spread_pct" and w > limit * 0.80:
+                        return "LETHAL"
+                if context == "BULL_SQUEEZE" and action == "SELL":
+                    if feature_name in ("price_change_pct", "rsi_scaled") and w > limit * 0.75:
                         return "LETHAL"
     return "BENIGN"
 

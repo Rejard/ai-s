@@ -9,6 +9,61 @@ function emptyDnaOperations() {
   return { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
 }
 
+function emptyDnaRepairTelemetry() {
+  return {
+    accessionRepairCount: 0,
+    contextMaskRepairCount: 0,
+    profileRepairCount: 0,
+    lastRepairedAt: '',
+  };
+}
+
+function emptyDnaLineage() {
+  return {
+    activeGenomes: [],
+    recentArchives: [],
+  };
+}
+
+function safeParseDna(value) {
+  try {
+    return JSON.parse(value || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function buildGenomeLineageEntry(row, dna) {
+  const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
+  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  return {
+    memberId: row.member_id,
+    name: row.name || '',
+    genomeId: dna?.genome_id || row.genome_id || '',
+    generation: Number(row.generation || dna?.generation || 1),
+    parentIds: Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [],
+    ancestorCount: Array.isArray(lineage.ancestor_ids) ? lineage.ancestor_ids.length : 0,
+    mutationEvents: mutationLog.length,
+    lastMutationEvent: mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '',
+    stateSummary: summarizeDnaStates(dna),
+  };
+}
+
+function buildArchivedGenomeEntry(row, dna) {
+  const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
+  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  return {
+    memberId: row.member_id,
+    genomeId: row.genome_id || dna?.genome_id || '',
+    generation: Number(row.generation || dna?.generation || 1),
+    archiveReason: row.archive_reason || '',
+    archivedAt: row.archived_at || '',
+    parentIds: Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [],
+    mutationEvents: mutationLog.length,
+    lastMutationEvent: mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '',
+  };
+}
+
 async function getAisTrainingStats(store) {
   const totals = await store.get(`
     SELECT
@@ -82,6 +137,7 @@ async function getAisTrainingStats(store) {
 
   const promoEnabledRow = await store.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
   const selectionTelemetryRow = await store.get("SELECT value FROM platform_settings WHERE key = 'ais_selection_telemetry'");
+  const repairTelemetryRow = await store.get("SELECT value FROM platform_settings WHERE key = 'ais_runtime_repair_telemetry'");
   const automaticPromotionEnabled = promoEnabledRow ? (promoEnabledRow.value === 'ON') : false;
   let selectionTelemetry = emptySelectionTelemetry();
   if (selectionTelemetryRow?.value) {
@@ -91,9 +147,17 @@ async function getAisTrainingStats(store) {
       selectionTelemetry = emptySelectionTelemetry();
     }
   }
+  let dnaRepairTelemetry = emptyDnaRepairTelemetry();
+  if (repairTelemetryRow?.value) {
+    try {
+      dnaRepairTelemetry = { ...dnaRepairTelemetry, ...JSON.parse(repairTelemetryRow.value) };
+    } catch {
+      dnaRepairTelemetry = emptyDnaRepairTelemetry();
+    }
+  }
   let dnaStateTotalsAvailable = true;
   const activeCouncil = await store.all(`
-    SELECT dna_json
+    SELECT member_id, name, generation, dna_json
     FROM ais_council_members
     WHERE status = 'ACTIVE'
       AND dna_json IS NOT NULL
@@ -127,7 +191,7 @@ async function getAisTrainingStats(store) {
     ? Number((
         activeCouncil.reduce((sum, row) => {
           try {
-            const dna = JSON.parse(row.dna_json || '{}');
+            const dna = safeParseDna(row.dna_json);
             return sum + (Array.isArray(dna.fitness_history) ? dna.fitness_history.length : 0);
           } catch {
             return sum;
@@ -139,6 +203,22 @@ async function getAisTrainingStats(store) {
     archiveCount: Number(archiveSummary?.archive_count || 0),
     averageFitnessHistoryDepth,
     latestArchivedAt: archiveSummary?.latest_archived_at || '',
+  };
+  const recentArchives = await store.all(`
+    SELECT member_id, genome_id, generation, archive_reason, dna_json, archived_at
+    FROM ais_genome_archive
+    ORDER BY archived_at DESC, id DESC
+    LIMIT 5
+  `).catch(() => []);
+  const dnaLineage = {
+    activeGenomes: activeCouncil.slice(0, 5).map((row) => {
+      const dna = safeParseDna(row.dna_json);
+      return buildGenomeLineageEntry(row, dna);
+    }),
+    recentArchives: recentArchives.map((row) => {
+      const dna = safeParseDna(row.dna_json);
+      return buildArchivedGenomeEntry(row, dna);
+    }),
   };
 
   return {
@@ -153,6 +233,8 @@ async function getAisTrainingStats(store) {
     automaticPromotionEnabled,
     selectionTelemetry,
     dnaOperations,
+    dnaRepairTelemetry,
+    dnaLineage: { ...emptyDnaLineage(), ...dnaLineage },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

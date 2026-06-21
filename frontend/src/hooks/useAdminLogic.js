@@ -17,6 +17,7 @@ export function useAdminLogic(managerEmail) {
   const [globalGeminiApiKey, setGlobalGeminiApiKey] = useState('');
   const [globalAiInterval, setGlobalAiInterval] = useState('5');
   const [globalAiIntervalAuto, setGlobalAiIntervalAuto] = useState('OFF');
+  const [globalGeminiTimeoutMs, setGlobalGeminiTimeoutMs] = useState('30000');
   const [savingAiConfig, setSavingAiConfig] = useState(false);
   const [automaticPromotionEnabled, setAutomaticPromotionEnabled] = useState(false);
   const [aidlContextMutationRate, setAidlContextMutationRate] = useState('0.10');
@@ -37,6 +38,7 @@ export function useAdminLogic(managerEmail) {
     normalizeAisTrainingStats()
   );
   const [savingAiEngine, setSavingAiEngine] = useState(false);
+  const [submittingAidlGeneState, setSubmittingAidlGeneState] = useState('');
 
   // AI 의회 관련 추가 상태
   const [councilStats, setCouncilStats] = useState(null);
@@ -78,6 +80,7 @@ export function useAdminLogic(managerEmail) {
         setGlobalGeminiApiKey(res.data.config.apiKey || '');
         setGlobalAiInterval(res.data.config.interval || '5');
         setGlobalAiIntervalAuto(res.data.config.intervalAuto || 'OFF');
+        setGlobalGeminiTimeoutMs(res.data.config.geminiTimeoutMs || '30000');
         setAutomaticPromotionEnabled(res.data.config.automaticPromotionEnabled === 'ON');
         setAidlContextMutationRate(res.data.config.aidlPolicy?.contextMutationRate || '0.10');
         setAidlStateMutationRate(res.data.config.aidlPolicy?.stateMutationRate || '0.10');
@@ -229,6 +232,27 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const handleAidlGeneStateUpdate = async (memberId, geneId, nextState) => {
+    if (!isAdmin) return;
+    const actionKey = `${memberId}:${geneId}:${nextState}`;
+    setSubmittingAidlGeneState(actionKey);
+    try {
+      const res = await axios.post(`${API_BASE}/admin/aidl-gene-state`, {
+        memberId,
+        geneId,
+        nextState,
+      }, getAdminHeaders());
+      if (res.data.success) {
+        await Promise.all([fetchTrainingStats(), fetchCouncilStats()]);
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.message || err.message;
+      alert(`AIDL gene state 변경 실패: ${errMsg}`);
+    } finally {
+      setSubmittingAidlGeneState('');
+    }
+  };
+
 
   const handleSaveAiConfig = async (e) => {
     if (e) e.preventDefault();
@@ -244,6 +268,7 @@ export function useAdminLogic(managerEmail) {
         apiKey: globalGeminiApiKey.trim(),
         interval: globalAiInterval,
         intervalAuto: globalAiIntervalAuto,
+        geminiTimeoutMs: globalGeminiTimeoutMs,
         automaticPromotionEnabled: automaticPromotionEnabled ? 'ON' : 'OFF',
         aidlPolicy: {
           contextMutationRate: aidlContextMutationRate,
@@ -360,6 +385,8 @@ export function useAdminLogic(managerEmail) {
     setGlobalAiInterval,
     globalAiIntervalAuto,
     setGlobalAiIntervalAuto,
+    globalGeminiTimeoutMs,
+    setGlobalGeminiTimeoutMs,
     aidlContextMutationRate,
     setAidlContextMutationRate,
     aidlStateMutationRate,
@@ -387,7 +414,9 @@ export function useAdminLogic(managerEmail) {
     fetchCouncilStats,
     automaticPromotionEnabled,
     setAutomaticPromotionEnabled,
-    handleToggleAutomaticPromotion
+    handleToggleAutomaticPromotion,
+    submittingAidlGeneState,
+    handleAidlGeneStateUpdate
   };
 
 }

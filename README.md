@@ -254,6 +254,7 @@ All strategy and feature subgenes exist in one of four states (A/I/D/L):
 *   **Mutation:** The current runtime applies three concrete mutation layers: `context_mask` mutation, `state_mutation` across the A/I/D/L cycle, and small active-gene `weight_nudge` adjustments.
 *   **Natural Selection:** Poorly performing candidate models are discarded at the pool level, while surviving lineages retain ancestry and mutation metadata inside the genome payload.
 *   **Generation Progression:** Generation numbers advance through mutation and crossover, and mutation events are appended into `mutation_log` for later audit.
+*   **Runtime Expression Control:** `expression_budget`, `dominance_bias`, and `copy_number` are no longer schema-only metadata. They now affect live expression by limiting which strategy genes can express, scaling expression strength, and lowering the effective cost of higher-copy genes.
 
 #### 4. Contextual Evolution Based on 4 Market States
 When an AI model operates with a single unified weight block, it is vulnerable to sudden market crashes or highly volatile conditions, often leading to complete extinction. To overcome this, we implemented a **Contextual Evolution** system that dynamically expresses duplicated/derived genes matching the real-time **4 Market States (Seasons)**.
@@ -278,11 +279,18 @@ When an AI model operates with a single unified weight block, it is vulnerable t
 #### 5. Bio-Science Inspired Logic: AI-VEP and AISG Accessioning
 The AIDL DNA Evolution Engine draws significant architectural inspiration from bioinformatics and genomic engineering algorithms, particularly Google DeepMind's AlphaGenome and EMBL-EBI's Ensembl VEP (Variant Effect Predictor), implementing them as real-time evolutionary safety guards:
 *   **AI-VEP (AI Variant Effect Predictor)**:
-    *   Mirroring how biological VEP predicts the molecular consequences and lethality of nucleotide mutations, this module screens newly mutated feature weights. It checks if a mutation will trigger catastrophic over-fitting or erratic trading behaviors (e.g., excessive chase-buying biases) under high-risk environments like "BEAR_EXPANSION".
+    *   Mirroring how biological VEP predicts the molecular consequences and lethality of nucleotide mutations, this module screens newly mutated feature weights. It checks if a mutation will trigger catastrophic over-fitting or erratic trading behaviors under high-risk environments like `BEAR_EXPANSION`, `BEAR_SQUEEZE`, `BULL_EXPANSION`, and `BULL_SQUEEZE`.
+    *   The current runtime explicitly blocks knife-catching BUY bias in bear expansion, breakout overcommit in bear squeeze, late-trend chase bias in bull expansion, and premature SELL bias in bull squeeze. It also tightens lethal screening further when the recent `fitness_history` shows three-generation holdout collapse.
     *   Any mutation flagged as `LETHAL` by the predictor is immediately filtered out and discarded (deleterious mutation filtering) before sandbox evaluation, automatically reverting the weights back to the stable parent state.
 *   **AISG Accession ID (Gene Sequence Accessioning)**:
     *   Analogous to how NCBI's Entrez and Ensembl assign stable accessioning IDs (e.g., ENSG, XP_) to manage genomic sequences globally, AiS now standardizes genome bootstrap and runtime issuance around the **`AISG-G{generation}-{unique_suffix}`** format.
     *   This unified indexing enables comprehensive lineage tracking, allowing administrators to audit database registries and trace which specific ancestral lineages contributed most to market survival.
+
+#### 6. Admin-Only DNA Operations
+The AIDL operational surfaces exposed in this repository are intentionally administrator-only rather than member-facing:
+*   **Lineage Visibility:** Admin readers can inspect active genome summaries and recent archive lineage summaries, including accession IDs, parent lineage counts, mutation-event depth, and archive reasons.
+*   **Repair Visibility:** Runtime self-healing for missing accession IDs, `context_mask`, and incomplete `regulatory_profile` fields is tracked and exposed as repair telemetry for audit.
+*   **Manual State Override:** Administrators can now force a strategy gene into `A`, `I`, `D`, or `L`, after which the server recomputes the stored phenotype and records an `admin_state_override` mutation-log event.
 
 ### 3. Architecture Sequence & Evolution Flow
 

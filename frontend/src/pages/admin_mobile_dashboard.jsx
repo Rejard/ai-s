@@ -30,6 +30,8 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
     setGlobalAiInterval,
     globalAiIntervalAuto,
     setGlobalAiIntervalAuto,
+    globalGeminiTimeoutMs,
+    setGlobalGeminiTimeoutMs,
     aidlContextMutationRate,
     setAidlContextMutationRate,
     aidlStateMutationRate,
@@ -53,7 +55,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
     handleSaveAiEngine,
     councilStats,
     loadingCouncilStats,
-    handleToggleAutomaticPromotion
+    handleToggleAutomaticPromotion,
+    submittingAidlGeneState,
+    handleAidlGeneStateUpdate
   } = useAdminLogic(managerEmail);
 
 
@@ -303,6 +307,23 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div>
+                    <label className="form-label" style={{ fontSize: '12px' }}>Gemini Timeout (ms)</label>
+                    <input
+                      type="number"
+                      min="5000"
+                      max="120000"
+                      step="1000"
+                      value={globalGeminiTimeoutMs}
+                      onChange={(e) => setGlobalGeminiTimeoutMs(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '14px', fontSize: '13px' }}
+                    />
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                      5000~120000ms ???? ??? Gemini ?? ?? ??? ?????.
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="form-label" style={{ fontSize: '12px' }}>AIDL Context Rate</label>
                     <input
                       type="number"
@@ -405,6 +426,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     stateMutationRate: aidlStateMutationRate,
                     weightNudgeSize: aidlWeightNudgeSize,
                   }}
+                  councilStats={councilStats}
+                  submittingAidlGeneState={submittingAidlGeneState}
+                  handleAidlGeneStateUpdate={handleAidlGeneStateUpdate}
                 />
 
                 <button

@@ -309,35 +309,75 @@ def _parse_centroids(value):
         return None
 
 def _heal_runtime_dna(parsed):
+    repairs = {
+        "contextMaskRepaired": False,
+        "profileRepaired": False,
+    }
     default_contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
     for strategy in parsed.get("strategy_genes", []):
         if "context_mask" not in strategy or not isinstance(strategy["context_mask"], list):
             strategy["context_mask"] = list(default_contexts)
+            repairs["contextMaskRepaired"] = True
 
     profile = parsed.get("regulatory_profile")
     if not isinstance(profile, dict):
         profile = {}
         parsed["regulatory_profile"] = profile
-    profile.setdefault("expression_budget", 12)
-    profile.setdefault("dominance_bias", 1.0)
-    profile.setdefault("decay_resistance", 0.3)
-    profile.setdefault("reactivation_bias", 0.1)
-    return parsed
+        repairs["profileRepaired"] = True
+    for key, default_value in (
+        ("expression_budget", 12),
+        ("dominance_bias", 1.0),
+        ("decay_resistance", 0.3),
+        ("reactivation_bias", 0.1),
+    ):
+        if key not in profile:
+            profile[key] = default_value
+            repairs["profileRepaired"] = True
+    return parsed, repairs
 
-def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, faction, generation, fallback_weights):
+
+def _append_runtime_repair_event(dna, event):
+    dna.setdefault("mutation_log", []).append({
+        "generation": dna.get("generation", 1),
+        "event": event,
+    })
+
+
+def _record_runtime_repair(repair_stats, member_id, counter_key):
+    if not isinstance(repair_stats, dict) or not member_id:
+        return
+    seen = repair_stats.setdefault("_seen", {})
+    members = seen.setdefault(counter_key, set())
+    if member_id in members:
+        return
+    members.add(member_id)
+    repair_stats[counter_key] = int(repair_stats.get(counter_key, 0)) + 1
+
+def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, faction, generation, fallback_weights, repair_stats=None):
     try:
         parsed = json.loads(dna_json) if dna_json else None
         if parsed and isinstance(parsed, dict) and "strategy_genes" in parsed:
-            parsed = _heal_runtime_dna(parsed)
+            parsed, repairs = _heal_runtime_dna(parsed)
 
             # AISG Accession ID Self-healing
             gid = parsed.get("genome_id", "")
+            accession_repaired = False
             if not isinstance(gid, str) or not gid.startswith("AISG-"):
                 gen = parsed.get("generation", 1)
                 import uuid
                 parsed["genome_id"] = f"AISG-G{gen}-{uuid.uuid4().hex[:8]}"
+                accession_repaired = True
                 
             if validate_dna(parsed):
+                if accession_repaired:
+                    _append_runtime_repair_event(parsed, "runtime_accession_repair")
+                    _record_runtime_repair(repair_stats, member_id, "accessionRepairCount")
+                if repairs["contextMaskRepaired"]:
+                    _append_runtime_repair_event(parsed, "runtime_context_mask_repair")
+                    _record_runtime_repair(repair_stats, member_id, "contextMaskRepairCount")
+                if repairs["profileRepaired"]:
+                    _append_runtime_repair_event(parsed, "runtime_profile_repair")
+                    _record_runtime_repair(repair_stats, member_id, "profileRepairCount")
                 return parsed
     except Exception:
         pass
@@ -466,6 +506,7 @@ def main():
             raise RuntimeError("Chronological AiS partitions are empty")
         training_seed = fit_centroids(training_rows)
         runtime_policy = load_runtime_policy(cursor)
+        runtime_repair_stats = {}
         conn.execute("BEGIN IMMEDIATE")
         
         # 2. Check current total candidate count in DB
@@ -502,6 +543,7 @@ def main():
                         generation=r[4],
                         faction=r[5],
                         fallback_weights=training_seed,
+                        repair_stats=runtime_repair_stats,
                     ))
                 except Exception:
                     pass
@@ -558,6 +600,7 @@ def main():
                     generation=gen,
                     faction=faction,
                     fallback_weights=training_seed,
+                    repair_stats=runtime_repair_stats,
                 )
                 weights = build_phenotype_from_dna(dna)
                 if not validate_centroids(weights):
@@ -812,6 +855,19 @@ def main():
                 "mutantCount": mutant_count,
                 "archiveCount": len(culled_targets),
             }),),
+        )
+        runtime_repair_telemetry = {
+            "accessionRepairCount": int(runtime_repair_stats.get("accessionRepairCount", 0)),
+            "contextMaskRepairCount": int(runtime_repair_stats.get("contextMaskRepairCount", 0)),
+            "profileRepairCount": int(runtime_repair_stats.get("profileRepairCount", 0)),
+            "lastRepairedAt": now_str if any(
+                int(runtime_repair_stats.get(key, 0)) > 0
+                for key in ("accessionRepairCount", "contextMaskRepairCount", "profileRepairCount")
+            ) else "",
+        }
+        cursor.execute(
+            "INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_runtime_repair_telemetry', ?)",
+            (json.dumps(runtime_repair_telemetry),),
         )
 
         # Check for automatic promotion settings and target active engine constraint

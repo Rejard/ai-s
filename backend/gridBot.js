@@ -20,6 +20,17 @@ if (!global.priceHistory) {
   global.priceHistory = [];
 }
 
+const DEFAULT_GEMINI_TIMEOUT_MS = 30000;
+const MIN_GEMINI_TIMEOUT_MS = 5000;
+const MAX_GEMINI_TIMEOUT_MS = 120000;
+
+function resolveGeminiTimeoutMs(settings = []) {
+  const match = settings.find((setting) => setting.key === 'global_gemini_timeout_ms');
+  const parsed = parseInt(match ? match.value : DEFAULT_GEMINI_TIMEOUT_MS, 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_GEMINI_TIMEOUT_MS;
+  return Math.max(MIN_GEMINI_TIMEOUT_MS, Math.min(MAX_GEMINI_TIMEOUT_MS, parsed));
+}
+
 function calculateSMA(prices, period) {
   if (!prices || prices.length === 0) return 0;
   const targetPrices = prices.slice(-period);
@@ -175,7 +186,7 @@ async function getSutCurrentPrice() {
   return 0.158; // Default fallback price on lookup failure
 }
 
-async function getAiTradingDecision(apiKey, modelName, marketData) {
+async function getAiTradingDecision(apiKey, modelName, marketData, timeoutMs = DEFAULT_GEMINI_TIMEOUT_MS) {
   let modelId = 'gemini-2.5-flash';
   const lowerName = modelName.toLowerCase();
   if (lowerName.includes('3.5')) {
@@ -240,7 +251,7 @@ Response JSON schema:
       generationConfig: {
         responseMimeType: "application/json"
       }
-    }, { timeout: 15000 });
+    }, { timeout: timeoutMs });
 
     if (response.data && response.data.candidates && response.data.candidates[0].content) {
       const jsonText = response.data.candidates[0].content.parts[0].text;
@@ -431,13 +442,14 @@ async function runAiGridBot() {
   console.log(`[🤖 AI GRID BOT] 글로벌 시황 분석 스케줄러 실행 중... (시간: ${new Date().toLocaleString()})`);
 
   try {
-    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'ai_grid_status', 'global_ai_engine', 'global_ai_interval_auto')");
+    const dbSettings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'ai_grid_status', 'global_ai_engine', 'global_ai_interval_auto', 'global_gemini_timeout_ms')");
     let globalModel = 'Gemini 1.5 Pro';
     let globalApiKey = '';
     let globalAiInterval = 5;
     let aiStatus = 'OFF';
     let aiEngineMode = 'GEMINI_ONLY';
     let intervalAuto = 'OFF';
+    let geminiTimeoutMs = DEFAULT_GEMINI_TIMEOUT_MS;
 
     dbSettings.forEach(s => {
       if (s.key === 'global_ai_model') globalModel = s.value;
@@ -448,6 +460,7 @@ async function runAiGridBot() {
       if (s.key === 'ai_grid_status') aiStatus = s.value;
       if (s.key === 'global_ai_engine') aiEngineMode = s.value;
       if (s.key === 'global_ai_interval_auto') intervalAuto = s.value;
+      if (s.key === 'global_gemini_timeout_ms') geminiTimeoutMs = resolveGeminiTimeoutMs([s]);
     });
 
     const activeManagerRow = await queries.get("SELECT COUNT(*) AS total FROM manager_ai_settings WHERE ai_grid_status = 'ON'");
@@ -580,13 +593,13 @@ async function runAiGridBot() {
       aiResult = await getAiSTradingDecision(currentSutPrice, rsi14, sma5, sma20, priceChangeRatio);
       if (!aiResult.success) {
         console.warn(`[🤖 AI GRID BOT] AiS 추론 실패로 Gemini 모델로 임시 우회합니다. Error: ${aiResult.error}`);
-        aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData);
+        aiResult = await getAiTradingDecision(globalApiKey, globalModel, marketData, geminiTimeoutMs);
       }
     } else if (aiEngineMode === 'HYBRID_COOP') {
       console.log(`[🤖 AI GRID BOT] Gemini + AiS 공동 합의 매매 분석 진행 중...`);
       try {
         const [geminiRes, aisRes] = await Promise.all([
-          getAiTradingDecision(globalApiKey, globalModel, marketData),
+          getAiTradingDecision(globalApiKey, globalModel, marketData, geminiTimeoutMs),
           getAiSTradingDecision(currentSutPrice, rsi14, sma5, sma20, priceChangeRatio)
         ]);
 
@@ -845,4 +858,8 @@ module.exports = {
   runAiGridBot,
   initGridBotScheduler,
   executeServerAutoTrades
+};
+module.exports.__private__ = {
+  DEFAULT_GEMINI_TIMEOUT_MS,
+  resolveGeminiTimeoutMs,
 };

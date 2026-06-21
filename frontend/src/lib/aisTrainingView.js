@@ -3,6 +3,8 @@ const emptyDnaStateTotals = () => ({ active: 0, inactive: 0, deprecated: 0, leth
 const emptyDnaMutationTotals = () => ({ stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 });
 const emptySelectionTelemetry = () => ({ culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 });
 const emptyDnaOperations = () => ({ archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' });
+const emptyDnaRepairTelemetry = () => ({ accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' });
+const emptyDnaLineage = () => ({ activeGenomes: [], recentArchives: [] });
 
 export function normalizeAisTrainingStats(data = {}) {
   const byDecision = data.byDecision || {};
@@ -10,6 +12,8 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaMutationTotals = data.dnaMutationTotals || {};
   const selectionTelemetry = data.selectionTelemetry || {};
   const dnaOperations = data.dnaOperations || {};
+  const dnaRepairTelemetry = data.dnaRepairTelemetry || {};
+  const dnaLineage = data.dnaLineage || {};
   return {
     total: Number(data.total || data.count || 0),
     labeled: Number(data.labeled || 0),
@@ -28,6 +32,13 @@ export function normalizeAisTrainingStats(data = {}) {
     dnaMutationTotals: { ...emptyDnaMutationTotals(), ...dnaMutationTotals },
     selectionTelemetry: { ...emptySelectionTelemetry(), ...selectionTelemetry },
     dnaOperations: { ...emptyDnaOperations(), ...dnaOperations },
+    dnaRepairTelemetry: { ...emptyDnaRepairTelemetry(), ...dnaRepairTelemetry },
+    dnaLineage: {
+      ...emptyDnaLineage(),
+      ...dnaLineage,
+      activeGenomes: Array.isArray(dnaLineage.activeGenomes) ? dnaLineage.activeGenomes : [],
+      recentArchives: Array.isArray(dnaLineage.recentArchives) ? dnaLineage.recentArchives : [],
+    },
     dnaStateTotalsAvailable: data.dnaStateTotalsAvailable !== false,
   };
 }

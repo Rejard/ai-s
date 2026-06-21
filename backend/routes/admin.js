@@ -20,11 +20,24 @@ const { requireAuthenticatedSession } = require('../authSession');
 const { getAisTrainingStats } = require('../aisAdminStats');
 const { zeroTrustMiddleware } = require('../zeroTrustFilter');
 
+const DEFAULT_GEMINI_TIMEOUT_MS = '30000';
+const MIN_GEMINI_TIMEOUT_MS = 5000;
+const MAX_GEMINI_TIMEOUT_MS = 120000;
+
 const DEFAULT_AIDL_POLICY_CONFIG = {
   contextMutationRate: '0.10',
   stateMutationRate: '0.10',
   weightNudgeSize: '0.02',
 };
+const AIDL_FEATURE_ORDER = [
+  'price_change_pct',
+  'rsi_scaled',
+  'sma5_distance_pct',
+  'sma20_distance_pct',
+  'sma5_to_sma20_spread_pct',
+];
+const AIDL_ACTIONS = ['BUY', 'SELL', 'HOLD'];
+const AIDL_STATES = new Set(['A', 'I', 'D', 'L']);
 
 function buildAidlPolicyConfig(settings = []) {
   const policy = { ...DEFAULT_AIDL_POLICY_CONFIG };
@@ -35,6 +48,119 @@ function buildAidlPolicyConfig(settings = []) {
   });
   return policy;
 }
+function normalizeGeminiTimeoutMs(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return parseInt(DEFAULT_GEMINI_TIMEOUT_MS, 10);
+  return Math.max(MIN_GEMINI_TIMEOUT_MS, Math.min(MAX_GEMINI_TIMEOUT_MS, parsed));
+}
+
+function buildGeminiTimeoutConfig(settings = []) {
+  const match = settings.find((setting) => setting.key === 'global_gemini_timeout_ms');
+  return String(normalizeGeminiTimeoutMs(match ? match.value : DEFAULT_GEMINI_TIMEOUT_MS));
+}
+
+function buildAidlExpressionPlan(dna, currentContext = null) {
+  const expressed = [];
+  const profile = dna && typeof dna.regulatory_profile === 'object' ? dna.regulatory_profile : {};
+  let budgetRemaining = Number(profile.expression_budget || 12);
+  const dominanceBias = Number(profile.dominance_bias || 1);
+  const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
+
+  for (const strategy of strategyGenes) {
+    if (!strategy || strategy.state === 'I' || strategy.state === 'L') continue;
+    const mask = Array.isArray(strategy.context_mask) ? strategy.context_mask : [];
+    if (currentContext && !mask.includes(currentContext)) continue;
+    const strategyLength = Math.max(1, Number(strategy.length || 1));
+    const copyNumber = Math.max(1, Number(strategy.copy_number || 1));
+    const strategyCost = Math.max(1, Math.ceil(strategyLength / copyNumber));
+    if (budgetRemaining < strategyCost) continue;
+    budgetRemaining -= strategyCost;
+    const strategyFactor = Number(strategy.dominance || 1) * dominanceBias;
+
+    for (const subgene of Array.isArray(strategy.subgenes) ? strategy.subgenes : []) {
+      if (!subgene || (subgene.state !== 'A' && subgene.state !== 'D')) continue;
+      const expressionFactor = strategy.state === 'D' || subgene.state === 'D' ? 0.5 : 1;
+      expressed.push({
+        ...subgene,
+        weight: Number((Number(subgene.weight || 0) * expressionFactor * strategyFactor).toFixed(4)),
+      });
+    }
+  }
+
+  return expressed;
+}
+
+function buildPhenotypeFromDnaForAdmin(dna, currentContext = null) {
+  const phenotype = Object.fromEntries(
+    AIDL_ACTIONS.map((action) => [action, AIDL_FEATURE_ORDER.map(() => 0)])
+  );
+  const counts = Object.fromEntries(
+    AIDL_ACTIONS.map((action) => [action, AIDL_FEATURE_ORDER.map(() => 0)])
+  );
+  for (const subgene of buildAidlExpressionPlan(dna, currentContext)) {
+    const action = subgene.action;
+    const featureIndex = AIDL_FEATURE_ORDER.indexOf(subgene.feature);
+    if (!AIDL_ACTIONS.includes(action) || featureIndex < 0) continue;
+    phenotype[action][featureIndex] += Number(subgene.weight || 0);
+    counts[action][featureIndex] += 1;
+  }
+  for (const action of AIDL_ACTIONS) {
+    for (let index = 0; index < AIDL_FEATURE_ORDER.length; index += 1) {
+      if (counts[action][index]) {
+        phenotype[action][index] = Number((phenotype[action][index] / counts[action][index]).toFixed(4));
+      }
+    }
+  }
+  return phenotype;
+}
+
+function applyAidlGeneStateOverride({ dna, geneId, nextState }) {
+  if (!dna || typeof dna !== 'object') {
+    throw new Error('DNA payload is required');
+  }
+  if (!geneId || typeof geneId !== 'string') {
+    throw new Error('geneId is required');
+  }
+  if (!AIDL_STATES.has(nextState)) {
+    throw new Error('nextState must be one of A, I, D, L');
+  }
+
+  const nextDna = JSON.parse(JSON.stringify(dna));
+  let targetGene = null;
+  for (const strategy of Array.isArray(nextDna.strategy_genes) ? nextDna.strategy_genes : []) {
+    if (strategy?.gene_id === geneId) {
+      targetGene = strategy;
+      break;
+    }
+    for (const subgene of Array.isArray(strategy?.subgenes) ? strategy.subgenes : []) {
+      if (subgene?.gene_id === geneId) {
+        targetGene = subgene;
+        break;
+      }
+    }
+    if (targetGene) break;
+  }
+  if (!targetGene) {
+    throw new Error('gene not found');
+  }
+
+  const fromState = targetGene.state;
+  targetGene.state = nextState;
+  nextDna.mutation_log = Array.isArray(nextDna.mutation_log) ? nextDna.mutation_log : [];
+  nextDna.mutation_log.push({
+    generation: Number(nextDna.generation || 1),
+    event: 'admin_state_override',
+    gene_id: geneId,
+    from_state: fromState,
+    to_state: nextState,
+  });
+
+  return {
+    dna: nextDna,
+    phenotype: buildPhenotypeFromDnaForAdmin(nextDna),
+  };
+}
+
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
@@ -230,12 +356,13 @@ router.post('/delete-manager', async (req, res) => {
 });
 
 router.post('/save-ai-config', async (req, res) => {
-  const { model, apiKey, interval, intervalAuto, automaticPromotionEnabled, aidlPolicy } = req.body;
+  const { model, apiKey, interval, intervalAuto, automaticPromotionEnabled, aidlPolicy, geminiTimeoutMs } = req.body;
   try {
     if (model) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_model', ?)`, [model.trim()]);
     if (apiKey) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_gemini_api_key', ?)`, [apiKey.trim()]);
     if (interval) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval', ?)`, [interval.toString()]);
     if (intervalAuto) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval_auto', ?)`, [intervalAuto.toString()]);
+    if (geminiTimeoutMs !== undefined) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_gemini_timeout_ms', ?)`, [String(normalizeGeminiTimeoutMs(geminiTimeoutMs))]);
     if (automaticPromotionEnabled !== undefined) {
       await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', ?)`, [automaticPromotionEnabled.toString()]);
     }
@@ -259,13 +386,14 @@ router.post('/save-ai-config', async (req, res) => {
 
 router.get('/ai-config', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'automatic_promotion_enabled', 'aidl_context_mutation_rate', 'aidl_state_mutation_rate', 'aidl_weight_nudge_size')");
+    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'global_gemini_timeout_ms', 'automatic_promotion_enabled', 'aidl_context_mutation_rate', 'aidl_state_mutation_rate', 'aidl_weight_nudge_size')");
     const config = {
       model: 'Gemini 3.5 Flash',
       hasApiKey: false,
       apiKey: '',
       interval: '5',
       intervalAuto: 'OFF',
+      geminiTimeoutMs: DEFAULT_GEMINI_TIMEOUT_MS,
       automaticPromotionEnabled: 'OFF',
       aidlPolicy: { ...DEFAULT_AIDL_POLICY_CONFIG }
     };
@@ -278,6 +406,7 @@ router.get('/ai-config', async (req, res) => {
       }
       if (s.key === 'global_ai_interval') config.interval = s.value;
       if (s.key === 'global_ai_interval_auto') config.intervalAuto = s.value;
+      if (s.key === 'global_gemini_timeout_ms') config.geminiTimeoutMs = buildGeminiTimeoutConfig([s]);
       if (s.key === 'automatic_promotion_enabled') config.automaticPromotionEnabled = s.value;
     });
     config.aidlPolicy = buildAidlPolicyConfig(settings);
@@ -401,6 +530,53 @@ router.get('/training-stats', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/aidl-gene-state', async (req, res) => {
+  const { memberId, geneId, nextState } = req.body || {};
+  if (!memberId || !geneId || !nextState) {
+    return res.status(400).json({ success: false, message: 'memberId, geneId, nextState are required.' });
+  }
+
+  try {
+    const row = await queries.get(`
+      SELECT member_id, dna_json
+      FROM ais_council_members
+      WHERE member_id = ?
+    `, [memberId]);
+    if (!row || !row.dna_json) {
+      return res.status(404).json({ success: false, message: 'Target DNA member not found.' });
+    }
+
+    const parsed = JSON.parse(row.dna_json);
+    const { dna, phenotype } = applyAidlGeneStateOverride({
+      dna: parsed,
+      geneId,
+      nextState,
+    });
+
+    await queries.run(`
+      UPDATE ais_council_members
+      SET dna_json = ?, phenotype_json = ?, weights_json = ?
+      WHERE member_id = ?
+    `, [
+      JSON.stringify(dna),
+      JSON.stringify(phenotype),
+      JSON.stringify(phenotype),
+      memberId,
+    ]);
+
+    res.json({
+      success: true,
+      memberId,
+      geneId,
+      nextState,
+      phenotype,
+    });
+  } catch (error) {
+    const status = /gene not found|nextState|DNA payload|geneId/i.test(error.message) ? 400 : 500;
+    res.status(status).json({ success: false, message: error.message });
   }
 });
 
@@ -784,5 +960,10 @@ router.post('/force-evolution', async (req, res) => {
 module.exports = router;
 module.exports.__private__ = {
   DEFAULT_AIDL_POLICY_CONFIG,
+  DEFAULT_GEMINI_TIMEOUT_MS,
+  normalizeGeminiTimeoutMs,
   buildAidlPolicyConfig,
+  buildGeminiTimeoutConfig,
+  buildPhenotypeFromDnaForAdmin,
+  applyAidlGeneStateOverride,
 };

@@ -29,6 +29,8 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
     setGlobalAiInterval,
     globalAiIntervalAuto,
     setGlobalAiIntervalAuto,
+    globalGeminiTimeoutMs,
+    setGlobalGeminiTimeoutMs,
     aidlContextMutationRate,
     setAidlContextMutationRate,
     aidlStateMutationRate,
@@ -52,7 +54,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
     handleSaveAiEngine,
     councilStats,
     loadingCouncilStats,
-    handleToggleAutomaticPromotion
+    handleToggleAutomaticPromotion,
+    submittingAidlGeneState,
+    handleAidlGeneStateUpdate
   } = useAdminLogic(managerEmail);
 
 
@@ -217,7 +221,24 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>Gemini Timeout (ms)</label>
+                <input
+                  type="number"
+                  min="5000"
+                  max="120000"
+                  step="1000"
+                  value={globalGeminiTimeoutMs}
+                  onChange={(e) => setGlobalGeminiTimeoutMs(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none', marginTop: '12px' }}
+                />
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'left' }}>
+                  5000~120000ms ???? ??? Gemini ?? ?? ??? ?????.
+                </div>
+              </div>
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Context Rate</label>
                   <input
@@ -318,6 +339,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   stateMutationRate: aidlStateMutationRate,
                   weightNudgeSize: aidlWeightNudgeSize,
                 }}
+                councilStats={councilStats}
+                submittingAidlGeneState={submittingAidlGeneState}
+                handleAidlGeneStateUpdate={handleAidlGeneStateUpdate}
               />
 
               <button

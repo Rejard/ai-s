@@ -17,13 +17,42 @@ function Metric({ label, value, color = '#F3F4F6' }) {
   );
 }
 
-export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggleAutomaticPromotion, aidlPolicy }) {
+function parseActiveStrategyGenes(activeMembers = []) {
+  return activeMembers.flatMap((member) => {
+    try {
+      const dna = JSON.parse(member.dna_json || '{}');
+      const strategyGenes = Array.isArray(dna.strategy_genes) ? dna.strategy_genes : [];
+      return strategyGenes.map((gene) => ({
+        memberId: member.member_id,
+        memberName: member.name,
+        geneId: gene.gene_id,
+        state: gene.state,
+        subgeneCount: Array.isArray(gene.subgenes) ? gene.subgenes.length : 0,
+      }));
+    } catch {
+      return [];
+    }
+  });
+}
+
+export default function AisTrainingEvidence({
+  stats,
+  globalAiEngine,
+  handleToggleAutomaticPromotion,
+  aidlPolicy,
+  councilStats,
+  submittingAidlGeneState,
+  handleAidlGeneStateUpdate,
+}) {
   const latest = stats?.latestRun;
   const decisions = stats?.byDecision || {};
   const dnaStateTotals = stats?.dnaStateTotals || { active: 0, inactive: 0, deprecated: 0, lethal: 0 };
   const dnaMutationTotals = stats?.dnaMutationTotals || { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 };
   const selectionTelemetry = stats?.selectionTelemetry || { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
   const dnaOperations = stats?.dnaOperations || { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
+  const dnaRepairTelemetry = stats?.dnaRepairTelemetry || { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' };
+  const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
+  const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', weightNudgeSize: '0.02' };
   const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
   const isPromoEnabled = stats?.automaticPromotionEnabled;
@@ -123,6 +152,81 @@ export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggl
         value={`Archive ${dnaOperations.archiveCount || 0} / History ${dnaOperations.averageFitnessHistoryDepth || 0} / Latest ${dnaOperations.latestArchivedAt || '-'}`}
         color="#FDE68A"
       />
+      <Metric
+        label="DNA Repair"
+        value={`Accession ${dnaRepairTelemetry.accessionRepairCount || 0} / Context ${dnaRepairTelemetry.contextMaskRepairCount || 0} / Profile ${dnaRepairTelemetry.profileRepairCount || 0} / Latest ${dnaRepairTelemetry.lastRepairedAt || '-'}`}
+        color="#FDBA74"
+      />
+      {dnaLineage.activeGenomes.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
+          <strong style={{ color: '#93C5FD', fontSize: '10px' }}>Active DNA Lineage</strong>
+          {dnaLineage.activeGenomes.map((genome) => (
+            <div key={`${genome.memberId}-${genome.genomeId}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '10px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                {genome.name || genome.memberId} / {genome.genomeId} / G{genome.generation}
+              </span>
+              <strong style={{ color: '#E5E7EB' }}>
+                P{(genome.parentIds || []).length} M{genome.mutationEvents || 0}
+              </strong>
+            </div>
+          ))}
+        </div>
+      )}
+      {dnaLineage.recentArchives.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
+          <strong style={{ color: '#FCA5A5', fontSize: '10px' }}>Recent DNA Archives</strong>
+          {dnaLineage.recentArchives.map((archive) => (
+            <div key={`${archive.memberId}-${archive.genomeId}-${archive.archivedAt}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '10px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                {archive.memberId} / {archive.genomeId} / {archive.archiveReason}
+              </span>
+              <strong style={{ color: '#E5E7EB' }}>
+                G{archive.generation} M{archive.mutationEvents || 0}
+              </strong>
+            </div>
+          ))}
+        </div>
+      )}
+      {activeStrategyGenes.length > 0 && typeof handleAidlGeneStateUpdate === 'function' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '6px' }}>
+          <strong style={{ color: '#FBBF24', fontSize: '10px' }}>Admin Gene Override</strong>
+          {activeStrategyGenes.map((gene) => (
+            <div key={`${gene.memberId}:${gene.geneId}`} style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>{gene.memberName} / {gene.geneId}</span>
+                <strong style={{ color: '#E5E7EB' }}>{gene.state} / subgenes {gene.subgeneCount}</strong>
+              </div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {['A', 'I', 'D', 'L'].map((state) => {
+                  const actionKey = `${gene.memberId}:${gene.geneId}:${state}`;
+                  const disabled = state === gene.state || submittingAidlGeneState === actionKey;
+                  return (
+                    <button
+                      key={state}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => handleAidlGeneStateUpdate(gene.memberId, gene.geneId, state)}
+                      style={{
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
+                        fontSize: '9px',
+                        fontWeight: '800',
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                        opacity: disabled ? 0.5 : 1,
+                        color: state === 'A' ? '#34D399' : state === 'I' ? '#CBD5E1' : state === 'D' ? '#FBBF24' : '#F87171',
+                        background: 'rgba(0,0,0,0.18)',
+                      }}
+                    >
+                      {submittingAidlGeneState === actionKey ? '...' : state}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {['BUY', 'SELL', 'HOLD'].map((decision) => {
         const item = decisions[decision] || { count: 0, accuracy: 0 };
         return (

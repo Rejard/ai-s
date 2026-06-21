@@ -266,6 +266,154 @@ class AiSDnaTests(unittest.TestCase):
 
         self.assertEqual(plan["expressed_subgenes"][0]["weight"], 0.4)
 
+    def test_expression_plan_applies_dominance_bias_to_weight(self):
+        dna = {
+            "genome_id": "g2b",
+            "generation": 1,
+            "lineage": {"parent_ids": [], "ancestor_ids": ["seed"], "innovation_ids": [1, 2]},
+            "regulatory_profile": {
+                "expression_budget": 12,
+                "dominance_bias": 1.5,
+                "decay_resistance": 0.3,
+                "reactivation_bias": 0.1,
+            },
+            "strategy_genes": [
+                {
+                    "gene_id": "sg1",
+                    "innovation_id": 1,
+                    "state": "A",
+                    "dominance": 2.0,
+                    "copy_number": 1,
+                    "context_mask": ["BULL_EXPANSION"],
+                    "length": 1,
+                    "subgenes": [
+                        {
+                            "gene_id": "buy_weighted",
+                            "innovation_id": 2,
+                            "state": "A",
+                            "feature": "rsi_scaled",
+                            "action": "BUY",
+                            "weight": -0.4,
+                            "threshold": 0.0,
+                            "priority": 1.0,
+                        }
+                    ],
+                }
+            ],
+            "mutation_log": [],
+        }
+
+        plan = build_expression_plan(dna, "BULL_EXPANSION")
+
+        self.assertEqual(len(plan["expressed_subgenes"]), 1)
+        self.assertEqual(plan["expressed_subgenes"][0]["weight"], -1.2)
+
+    def test_expression_plan_respects_expression_budget(self):
+        dna = {
+            "genome_id": "g2c",
+            "generation": 1,
+            "lineage": {"parent_ids": [], "ancestor_ids": ["seed"], "innovation_ids": [1, 2, 3]},
+            "regulatory_profile": {
+                "expression_budget": 1,
+                "dominance_bias": 1.0,
+                "decay_resistance": 0.3,
+                "reactivation_bias": 0.1,
+            },
+            "strategy_genes": [
+                {
+                    "gene_id": "sg_high_cost",
+                    "innovation_id": 1,
+                    "state": "A",
+                    "dominance": 1.0,
+                    "copy_number": 1,
+                    "context_mask": ["BULL_EXPANSION"],
+                    "length": 3,
+                    "subgenes": [
+                        {
+                            "gene_id": "skipped_gene",
+                            "innovation_id": 2,
+                            "state": "A",
+                            "feature": "price_change_pct",
+                            "action": "BUY",
+                            "weight": 0.5,
+                            "threshold": 0.0,
+                            "priority": 1.0,
+                        }
+                    ],
+                },
+                {
+                    "gene_id": "sg_low_cost",
+                    "innovation_id": 3,
+                    "state": "A",
+                    "dominance": 1.0,
+                    "copy_number": 1,
+                    "context_mask": ["BULL_EXPANSION"],
+                    "length": 1,
+                    "subgenes": [
+                        {
+                            "gene_id": "expressed_gene",
+                            "innovation_id": 4,
+                            "state": "A",
+                            "feature": "rsi_scaled",
+                            "action": "SELL",
+                            "weight": 0.6,
+                            "threshold": 0.0,
+                            "priority": 1.0,
+                        }
+                    ],
+                },
+            ],
+            "mutation_log": [],
+        }
+
+        plan = build_expression_plan(dna, "BULL_EXPANSION")
+        gene_ids = [gene["gene_id"] for gene in plan["expressed_subgenes"]]
+
+        self.assertIn("expressed_gene", gene_ids)
+        self.assertNotIn("skipped_gene", gene_ids)
+
+    def test_expression_plan_uses_copy_number_to_reduce_budget_cost(self):
+        dna = {
+            "genome_id": "g2d",
+            "generation": 1,
+            "lineage": {"parent_ids": [], "ancestor_ids": ["seed"], "innovation_ids": [1, 2]},
+            "regulatory_profile": {
+                "expression_budget": 1,
+                "dominance_bias": 1.0,
+                "decay_resistance": 0.3,
+                "reactivation_bias": 0.1,
+            },
+            "strategy_genes": [
+                {
+                    "gene_id": "sg_copy_gain",
+                    "innovation_id": 1,
+                    "state": "A",
+                    "dominance": 1.0,
+                    "copy_number": 3,
+                    "context_mask": ["BULL_EXPANSION"],
+                    "length": 3,
+                    "subgenes": [
+                        {
+                            "gene_id": "copy_supported_gene",
+                            "innovation_id": 2,
+                            "state": "A",
+                            "feature": "sma5_distance_pct",
+                            "action": "HOLD",
+                            "weight": 0.3,
+                            "threshold": 0.0,
+                            "priority": 1.0,
+                        }
+                    ],
+                }
+            ],
+            "mutation_log": [],
+        }
+
+        plan = build_expression_plan(dna, "BULL_EXPANSION")
+        gene_ids = [gene["gene_id"] for gene in plan["expressed_subgenes"]]
+
+        self.assertIn("copy_supported_gene", gene_ids)
+
     def test_ribosome_output_stays_centroid_compatible(self):
         legacy = {
             "BUY": [-0.5, -0.4, 0.1, 0.0, 0.05],
@@ -404,6 +552,30 @@ class AiSDnaTests(unittest.TestCase):
 
         self.assertEqual(predict_variant_effect(dna), "BENIGN")
 
+    def test_predict_variant_effect_flags_bull_expansion_chase_bias(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        for sub in dna["strategy_genes"][0]["subgenes"]:
+            if sub["action"] == "BUY" and sub["feature"] == "price_change_pct":
+                sub["weight"] = 15.5
+            if sub["action"] == "BUY" and sub["feature"] == "sma5_to_sma20_spread_pct":
+                sub["weight"] = 16.4
+
+        self.assertEqual(predict_variant_effect(dna), "LETHAL")
+
+    def test_predict_variant_effect_flags_bull_squeeze_premature_sell_bias(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        for sub in dna["strategy_genes"][0]["subgenes"]:
+            if sub["action"] == "SELL" and sub["feature"] == "price_change_pct":
+                sub["weight"] = 15.2
+            if sub["action"] == "SELL" and sub["feature"] == "rsi_scaled":
+                sub["weight"] = 1.6
+
+        self.assertEqual(predict_variant_effect(dna), "LETHAL")
+
     def test_mutation_filters_out_deleterious_effects(self):
         dna = self._valid_dna()
         # 모든 돌연변이 시도가 LETHAL을 유도하도록 부모 가중치를 극단적인 경계값 근처로 세팅
@@ -518,6 +690,33 @@ class AiSDnaTests(unittest.TestCase):
         self.assertEqual(healed["regulatory_profile"]["dominance_bias"], 1.0)
         self.assertEqual(healed["regulatory_profile"]["decay_resistance"], 0.3)
         self.assertEqual(healed["regulatory_profile"]["reactivation_bias"], 0.1)
+
+    def test_load_candidate_dna_records_runtime_repair_events(self):
+        broken = self._valid_dna()
+        broken["genome_id"] = "legacy-member-without-accession"
+        del broken["strategy_genes"][0]["context_mask"]
+        broken["regulatory_profile"] = {"expression_budget": 12}
+
+        repair_stats = {}
+        healed = load_candidate_dna(
+            member_id="member-2",
+            dna_json=json.dumps(broken),
+            phenotype_json=None,
+            weights_json=None,
+            faction="MUTANT_ROOKIE",
+            generation=3,
+            fallback_weights=self._legacy_centroids(),
+            repair_stats=repair_stats,
+        )
+
+        events = [entry["event"] for entry in healed.get("mutation_log", [])]
+        self.assertIn("runtime_accession_repair", events)
+        self.assertIn("runtime_context_mask_repair", events)
+        self.assertIn("runtime_profile_repair", events)
+        self.assertTrue(healed["genome_id"].startswith("AISG-G"))
+        self.assertEqual(repair_stats["accessionRepairCount"], 1)
+        self.assertEqual(repair_stats["contextMaskRepairCount"], 1)
+        self.assertEqual(repair_stats["profileRepairCount"], 1)
 
     def test_append_fitness_history_returns_updated_copy(self):
         dna = self._valid_dna()

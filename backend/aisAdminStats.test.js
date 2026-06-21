@@ -57,6 +57,10 @@ async function main() {
     VALUES ('ais_selection_telemetry', '{"culledCount":12,"offspringCount":6,"mutantCount":6,"archiveCount":12}')
   `);
   await store.run(`
+    INSERT INTO platform_settings (key, value)
+    VALUES ('ais_runtime_repair_telemetry', '{"accessionRepairCount":4,"contextMaskRepairCount":3,"profileRepairCount":2,"lastRepairedAt":"2026-06-22 11:00:00"}')
+  `);
+  await store.run(`
     CREATE TABLE ais_model_runs (
       id INTEGER PRIMARY KEY,
       run_key TEXT,
@@ -79,6 +83,7 @@ async function main() {
   await store.run(`
     CREATE TABLE ais_council_members (
       member_id TEXT PRIMARY KEY,
+      name TEXT,
       dna_json TEXT,
       phenotype_json TEXT,
       generation INTEGER,
@@ -110,10 +115,11 @@ async function main() {
        NULL, '2026-06-09 12:00:00', '2026-06-09 12:01:00')
   `);
   await store.run(`
-    INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
+    INSERT INTO ais_council_members (member_id, name, dna_json, phenotype_json, generation, status)
     VALUES (
       'm1',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
+      'Active Alpha',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
@@ -121,13 +127,14 @@ async function main() {
   `);
   await store.run(`
     INSERT INTO ais_genome_archive VALUES
-      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{}', '2026-06-22 09:00:00'),
-      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{}', '2026-06-22 10:00:00')
+      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{"lineage":{"parent_ids":["g7","g8"],"ancestor_ids":["seed"],"innovation_ids":[1]},"mutation_log":[{"event":"vep_filtered_deleterious_mutation"}]}', '2026-06-22 09:00:00'),
+      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{"lineage":{"parent_ids":["g6"],"ancestor_ids":["seed"],"innovation_ids":[1]},"mutation_log":[{"event":"state_mutation"},{"event":"weight_nudge"}]}', '2026-06-22 10:00:00')
   `);
   await store.run(`
-    INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
+    INSERT INTO ais_council_members (member_id, name, dna_json, phenotype_json, generation, status)
     VALUES (
       'm2',
+      'Candidate Beta',
       '{"genome_id":"g2","strategy_genes":[{"gene_id":"sg2","state":"A","subgenes":[{"state":"A"},{"state":"A"}]}],"generation":1}',
       '{"BUY":[1,1,1,1,1],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
@@ -170,6 +177,47 @@ async function main() {
     averageFitnessHistoryDepth: 2,
     latestArchivedAt: '2026-06-22 10:00:00',
   });
+  assert.deepStrictEqual(result.dnaRepairTelemetry, {
+    accessionRepairCount: 4,
+    contextMaskRepairCount: 3,
+    profileRepairCount: 2,
+    lastRepairedAt: '2026-06-22 11:00:00',
+  });
+  assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
+    {
+      memberId: 'm1',
+      name: 'Active Alpha',
+      genomeId: 'g1',
+      generation: 1,
+      parentIds: ['g0'],
+      ancestorCount: 1,
+      mutationEvents: 2,
+      lastMutationEvent: 'context_mask_mutation',
+      stateSummary: { active: 2, inactive: 1, deprecated: 1, lethal: 1 },
+    },
+  ]);
+  assert.deepStrictEqual(result.dnaLineage.recentArchives, [
+    {
+      memberId: 'm10',
+      genomeId: 'g10',
+      generation: 3,
+      archiveReason: 'CULLED_LOW_PERFORMANCE',
+      archivedAt: '2026-06-22 10:00:00',
+      parentIds: ['g6'],
+      mutationEvents: 2,
+      lastMutationEvent: 'weight_nudge',
+    },
+    {
+      memberId: 'm9',
+      genomeId: 'g9',
+      generation: 2,
+      archiveReason: 'CULLED_LOW_PERFORMANCE',
+      archivedAt: '2026-06-22 09:00:00',
+      parentIds: ['g7', 'g8'],
+      mutationEvents: 1,
+      lastMutationEvent: 'vep_filtered_deleterious_mutation',
+    },
+  ]);
   await verifyDatabaseDnaMigration();
 
   db.close();
