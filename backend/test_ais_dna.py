@@ -408,9 +408,16 @@ class AiSDnaTests(unittest.TestCase):
         dna = self._valid_dna()
         # 모든 돌연변이 시도가 LETHAL을 유도하도록 부모 가중치를 극단적인 경계값 근처로 세팅
         for sub in dna["strategy_genes"][0]["subgenes"]:
-            sub["weight"] = 18.9 if sub["feature"] == "price_change_pct" else sub["weight"]
+            sub["weight"] = 19.2 if sub["feature"] == "price_change_pct" else sub["weight"]
             
-        mutated = mutate_dna(dna)
+        mutated = mutate_dna(
+            dna,
+            runtime_policy={
+                "context_mutation_rate": 0.0,
+                "state_mutation_rate": 0.0,
+                "weight_nudge_size": 0.02,
+            },
+        )
         log_events = [log["event"] for log in mutated.get("mutation_log", [])]
         
         # 5회 시도 후 결국 위험 변이 필터링에 걸려 안전하게 롤백(vep_filtered_deleterious_mutation) 되었음을 확인
