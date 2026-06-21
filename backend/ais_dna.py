@@ -78,6 +78,21 @@ def _collect_state_mutation_targets(dna):
     return targets
 
 
+def _choose_state_transition(current_state, profile, random_value):
+    reactivation_bias = float(profile.get("reactivation_bias", 0.1))
+    decay_resistance = float(profile.get("decay_resistance", 0.3))
+
+    if current_state == "I":
+        return "A" if random_value <= reactivation_bias else "D"
+    if current_state == "A":
+        return "D"
+    if current_state == "D":
+        return "I" if random_value <= decay_resistance else "L"
+    if current_state == "L":
+        return "I"
+    return current_state
+
+
 def validate_dna(dna):
     if not isinstance(dna, dict):
         return False
@@ -288,12 +303,26 @@ def predict_variant_effect(dna):
                         return "LETHAL"
     return "BENIGN"
 
+def _resolve_runtime_policy(runtime_policy=None):
+    policy = {
+        "context_mutation_rate": 0.10,
+        "state_mutation_rate": 0.10,
+        "weight_nudge_size": 0.02,
+    }
+    if isinstance(runtime_policy, dict):
+        for key in policy:
+            value = runtime_policy.get(key)
+            if _is_finite_number(value):
+                policy[key] = float(value)
+    return policy
 
-def mutate_dna(dna, preserve_parent_ids=False):
+
+def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
     import random
     parent_genome_id = dna.get("genome_id")
     existing_lineage = dna.get("lineage", {})
     existing_parents = list(existing_lineage.get("parent_ids", []))
+    policy = _resolve_runtime_policy(runtime_policy)
     
     # 최대 5회 돌연변이 시도하여 VEP 스크리닝을 안전하게 통과하는 유전자 선별
     for attempt in range(5):
@@ -311,7 +340,7 @@ def mutate_dna(dna, preserve_parent_ids=False):
 
         # 10% chance of Context Mask Mutation
         context_mutated = False
-        if random.random() < 0.10:
+        if random.random() < policy["context_mutation_rate"]:
             contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
             for strategy in mutated.get("strategy_genes", []):
                 mask = list(strategy.get("context_mask", []))
@@ -334,12 +363,16 @@ def mutate_dna(dna, preserve_parent_ids=False):
                     )
                     break
 
-        if random.random() < 0.10:
+        if random.random() < policy["state_mutation_rate"]:
             state_targets = _collect_state_mutation_targets(mutated)
             if state_targets:
                 target_gene = random.choice(state_targets)
                 from_state = target_gene["state"]
-                to_state = STATE_MUTATION_TRANSITIONS[from_state]
+                to_state = _choose_state_transition(
+                    from_state,
+                    mutated.get("regulatory_profile", {}),
+                    random.random(),
+                )
                 target_gene["state"] = to_state
                 mutated.setdefault("mutation_log", []).append(
                     {
@@ -355,7 +388,8 @@ def mutate_dna(dna, preserve_parent_ids=False):
         for strategy in mutated.get("strategy_genes", []):
             for subgene in strategy.get("subgenes", []):
                 if subgene.get("state") == "A":
-                    nudge = 0.02 if random.random() > 0.5 else -0.02
+                    nudge_size = abs(policy["weight_nudge_size"])
+                    nudge = nudge_size if random.random() > 0.5 else -nudge_size
                     subgene["weight"] = round(
                         _clamp_feature_weight(subgene["feature"], float(subgene["weight"]) + nudge),
                         4,

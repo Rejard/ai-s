@@ -30,6 +30,12 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
     setGlobalAiInterval,
     globalAiIntervalAuto,
     setGlobalAiIntervalAuto,
+    aidlContextMutationRate,
+    setAidlContextMutationRate,
+    aidlStateMutationRate,
+    setAidlStateMutationRate,
+    aidlWeightNudgeSize,
+    setAidlWeightNudgeSize,
     savingAiConfig,
     isAdmin,
     handlePromoteManager,
@@ -295,6 +301,48 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Context Rate</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={aidlContextMutationRate}
+                      onChange={(e) => setAidlContextMutationRate(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '14px', fontSize: '13px' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL State Rate</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={aidlStateMutationRate}
+                      onChange={(e) => setAidlStateMutationRate(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '14px', fontSize: '13px' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Nudge Size</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={aidlWeightNudgeSize}
+                      onChange={(e) => setAidlWeightNudgeSize(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '14px', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   className="btn-primary"
@@ -352,6 +400,11 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   stats={aisTrainingStats} 
                   globalAiEngine={globalAiEngine}
                   handleToggleAutomaticPromotion={handleToggleAutomaticPromotion}
+                  aidlPolicy={{
+                    contextMutationRate: aidlContextMutationRate,
+                    stateMutationRate: aidlStateMutationRate,
+                    weightNudgeSize: aidlWeightNudgeSize,
+                  }}
                 />
 
                 <button

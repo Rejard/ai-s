@@ -1,6 +1,10 @@
 const { LABEL_VERSION } = require('./aisEvaluation');
 const { summarizeDnaStates, summarizeMutationLog } = require('./aisDnaSummary');
 
+function emptySelectionTelemetry() {
+  return { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
+}
+
 async function getAisTrainingStats(store) {
   const totals = await store.get(`
     SELECT
@@ -73,7 +77,16 @@ async function getAisTrainingStats(store) {
   }
 
   const promoEnabledRow = await store.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
+  const selectionTelemetryRow = await store.get("SELECT value FROM platform_settings WHERE key = 'ais_selection_telemetry'");
   const automaticPromotionEnabled = promoEnabledRow ? (promoEnabledRow.value === 'ON') : false;
+  let selectionTelemetry = emptySelectionTelemetry();
+  if (selectionTelemetryRow?.value) {
+    try {
+      selectionTelemetry = { ...selectionTelemetry, ...JSON.parse(selectionTelemetryRow.value) };
+    } catch {
+      selectionTelemetry = emptySelectionTelemetry();
+    }
+  }
   let dnaStateTotalsAvailable = true;
   const activeCouncil = await store.all(`
     SELECT dna_json
@@ -112,6 +125,7 @@ async function getAisTrainingStats(store) {
     labelVersion: LABEL_VERSION,
     shadowOnly: true,
     automaticPromotionEnabled,
+    selectionTelemetry,
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

@@ -294,7 +294,8 @@ class AiSDnaTests(unittest.TestCase):
             generation=1,
         )
 
-        mutated = mutate_dna(dna)
+        with patch("random.random", side_effect=[0.99, 0.99, 0.99] * 5):
+            mutated = mutate_dna(dna)
         phenotype = build_phenotype_from_dna(mutated)
 
         self.assertTrue(validate_centroids(phenotype))
@@ -302,7 +303,14 @@ class AiSDnaTests(unittest.TestCase):
     def test_mutation_records_parent_lineage(self):
         dna = self._valid_dna()
 
-        mutated = mutate_dna(dna)
+        mutated = mutate_dna(
+            dna,
+            runtime_policy={
+                "context_mutation_rate": 0.0,
+                "state_mutation_rate": 0.0,
+                "weight_nudge_size": 0.02,
+            },
+        )
 
         self.assertEqual(mutated["lineage"]["parent_ids"], [dna["genome_id"]])
         self.assertEqual(mutated["lineage"]["ancestor_ids"], dna["lineage"]["ancestor_ids"])
@@ -385,7 +393,7 @@ class AiSDnaTests(unittest.TestCase):
         target_gene_id = dna["strategy_genes"][0]["subgenes"][0]["gene_id"]
         dna["strategy_genes"][0]["subgenes"][0]["state"] = "I"
 
-        with patch("random.random", side_effect=[0.99, 0.05, 0.99]), patch(
+        with patch("random.random", side_effect=[0.99, 0.05, 0.01, 0.99]), patch(
             "random.choice",
             side_effect=lambda seq: next(
                 item for item in seq if item.get("gene_id") == target_gene_id
@@ -413,6 +421,39 @@ class AiSDnaTests(unittest.TestCase):
         child = crossover_dna(first, second)
 
         self.assertEqual(child["strategy_genes"][0]["subgenes"][0]["state"], "I")
+
+    def test_state_mutation_prefers_reactivation_when_reactivation_bias_is_high(self):
+        dna = self._valid_dna()
+        dna["regulatory_profile"]["reactivation_bias"] = 1.0
+        dna["strategy_genes"][0]["subgenes"][0]["state"] = "I"
+
+        with patch("random.random", side_effect=[0.99, 0.05, 0.01, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: next(item for item in seq if item.get("state") == "I"),
+        ):
+            mutated = mutate_dna(dna)
+
+        self.assertEqual(mutated["strategy_genes"][0]["subgenes"][0]["state"], "A")
+
+    def test_state_mutation_can_skip_lethal_promotion_when_decay_resistance_is_high(self):
+        dna = self._valid_dna()
+        dna["regulatory_profile"]["decay_resistance"] = 1.0
+        dna["strategy_genes"][0]["subgenes"][0]["state"] = "D"
+
+        with patch("random.random", side_effect=[0.99, 0.05, 0.99, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: next(item for item in seq if item.get("state") == "D"),
+        ):
+            mutated = mutate_dna(dna)
+
+        self.assertNotEqual(mutated["strategy_genes"][0]["subgenes"][0]["state"], "L")
+
+    def test_mutate_dna_uses_runtime_configured_state_mutation_rate(self):
+        dna = self._valid_dna()
+
+        mutated = mutate_dna(dna, runtime_policy={"state_mutation_rate": 0.0})
+
+        self.assertNotIn("state_mutation", [entry["event"] for entry in mutated["mutation_log"]])
 
 
 if __name__ == "__main__":

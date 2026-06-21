@@ -191,6 +191,9 @@ function initializeDatabase() {
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_engine', 'GEMINI_ONLY')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_interval_auto', 'OFF')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', 'OFF')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_context_mutation_rate', '0.10')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_state_mutation_rate', '0.10')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_weight_nudge_size', '0.02')`);
       });
 
       db.run(`
@@ -669,15 +672,28 @@ function initializeDatabase() {
         )
       `, async (err) => {
         if (err) return reject(err);
-        try {
-          await ensureCouncilBriefingHistorySchema(queries);
-          await migrateAisEvaluationSchema(db);
-          await bootstrapLegacyCouncilDna();
-          console.log('✔ SQLite Database initialized successfully with Root Referrers.');
-          resolve();
-        } catch (migrationError) {
-          reject(migrationError);
-        }
+        db.run(`
+          CREATE TABLE IF NOT EXISTS ais_genome_archive (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_id TEXT NOT NULL,
+            genome_id TEXT NOT NULL,
+            generation INTEGER NOT NULL,
+            archive_reason TEXT NOT NULL,
+            dna_json TEXT NOT NULL,
+            archived_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `, async (archiveErr) => {
+          if (archiveErr) return reject(archiveErr);
+          try {
+            await ensureCouncilBriefingHistorySchema(queries);
+            await migrateAisEvaluationSchema(db);
+            await bootstrapLegacyCouncilDna();
+            console.log('✔ SQLite Database initialized successfully with Root Referrers.');
+            resolve();
+          } catch (migrationError) {
+            reject(migrationError);
+          }
+        });
       });
     });
   });

@@ -19,6 +19,9 @@ export function useAdminLogic(managerEmail) {
   const [globalAiIntervalAuto, setGlobalAiIntervalAuto] = useState('OFF');
   const [savingAiConfig, setSavingAiConfig] = useState(false);
   const [automaticPromotionEnabled, setAutomaticPromotionEnabled] = useState(false);
+  const [aidlContextMutationRate, setAidlContextMutationRate] = useState('0.10');
+  const [aidlStateMutationRate, setAidlStateMutationRate] = useState('0.10');
+  const [aidlWeightNudgeSize, setAidlWeightNudgeSize] = useState('0.02');
 
   // 새로 추가된 상태
   const [vaultSutBalance, setVaultSutBalance] = useState(0);
@@ -76,6 +79,9 @@ export function useAdminLogic(managerEmail) {
         setGlobalAiInterval(res.data.config.interval || '5');
         setGlobalAiIntervalAuto(res.data.config.intervalAuto || 'OFF');
         setAutomaticPromotionEnabled(res.data.config.automaticPromotionEnabled === 'ON');
+        setAidlContextMutationRate(res.data.config.aidlPolicy?.contextMutationRate || '0.10');
+        setAidlStateMutationRate(res.data.config.aidlPolicy?.stateMutationRate || '0.10');
+        setAidlWeightNudgeSize(res.data.config.aidlPolicy?.weightNudgeSize || '0.02');
       }
     } catch (err) {
       console.error('글로벌 AI 설정 로드 실패:', err);
@@ -238,7 +244,12 @@ export function useAdminLogic(managerEmail) {
         apiKey: globalGeminiApiKey.trim(),
         interval: globalAiInterval,
         intervalAuto: globalAiIntervalAuto,
-        automaticPromotionEnabled: automaticPromotionEnabled ? 'ON' : 'OFF'
+        automaticPromotionEnabled: automaticPromotionEnabled ? 'ON' : 'OFF',
+        aidlPolicy: {
+          contextMutationRate: aidlContextMutationRate,
+          stateMutationRate: aidlStateMutationRate,
+          weightNudgeSize: aidlWeightNudgeSize,
+        }
       }, getAdminHeaders());
 
       if (res.data.success) {
@@ -349,6 +360,12 @@ export function useAdminLogic(managerEmail) {
     setGlobalAiInterval,
     globalAiIntervalAuto,
     setGlobalAiIntervalAuto,
+    aidlContextMutationRate,
+    setAidlContextMutationRate,
+    aidlStateMutationRate,
+    setAidlStateMutationRate,
+    aidlWeightNudgeSize,
+    setAidlWeightNudgeSize,
     savingAiConfig,
     isAdmin,
     handlePromoteManager,

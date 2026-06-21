@@ -20,6 +20,22 @@ const { requireAuthenticatedSession } = require('../authSession');
 const { getAisTrainingStats } = require('../aisAdminStats');
 const { zeroTrustMiddleware } = require('../zeroTrustFilter');
 
+const DEFAULT_AIDL_POLICY_CONFIG = {
+  contextMutationRate: '0.10',
+  stateMutationRate: '0.10',
+  weightNudgeSize: '0.02',
+};
+
+function buildAidlPolicyConfig(settings = []) {
+  const policy = { ...DEFAULT_AIDL_POLICY_CONFIG };
+  settings.forEach((setting) => {
+    if (setting.key === 'aidl_context_mutation_rate') policy.contextMutationRate = setting.value;
+    if (setting.key === 'aidl_state_mutation_rate') policy.stateMutationRate = setting.value;
+    if (setting.key === 'aidl_weight_nudge_size') policy.weightNudgeSize = setting.value;
+  });
+  return policy;
+}
+
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
 const provider = new ethers.JsonRpcProvider('https://polygon-bor-rpc.publicnode.com');
@@ -214,7 +230,7 @@ router.post('/delete-manager', async (req, res) => {
 });
 
 router.post('/save-ai-config', async (req, res) => {
-  const { model, apiKey, interval, intervalAuto, automaticPromotionEnabled } = req.body;
+  const { model, apiKey, interval, intervalAuto, automaticPromotionEnabled, aidlPolicy } = req.body;
   try {
     if (model) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_model', ?)`, [model.trim()]);
     if (apiKey) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_gemini_api_key', ?)`, [apiKey.trim()]);
@@ -222,6 +238,17 @@ router.post('/save-ai-config', async (req, res) => {
     if (intervalAuto) await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('global_ai_interval_auto', ?)`, [intervalAuto.toString()]);
     if (automaticPromotionEnabled !== undefined) {
       await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', ?)`, [automaticPromotionEnabled.toString()]);
+    }
+    if (aidlPolicy) {
+      if (aidlPolicy.contextMutationRate !== undefined) {
+        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_context_mutation_rate', ?)`, [aidlPolicy.contextMutationRate.toString()]);
+      }
+      if (aidlPolicy.stateMutationRate !== undefined) {
+        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_state_mutation_rate', ?)`, [aidlPolicy.stateMutationRate.toString()]);
+      }
+      if (aidlPolicy.weightNudgeSize !== undefined) {
+        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_weight_nudge_size', ?)`, [aidlPolicy.weightNudgeSize.toString()]);
+      }
     }
 
     res.json({ success: true, message: '글로벌 AI 두뇌 및 API Key 설정이 서버 DB에 안전하게 저장되었습니다.' });
@@ -232,14 +259,15 @@ router.post('/save-ai-config', async (req, res) => {
 
 router.get('/ai-config', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'automatic_promotion_enabled')");
+    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'automatic_promotion_enabled', 'aidl_context_mutation_rate', 'aidl_state_mutation_rate', 'aidl_weight_nudge_size')");
     const config = {
       model: 'Gemini 3.5 Flash',
       hasApiKey: false,
       apiKey: '',
       interval: '5',
       intervalAuto: 'OFF',
-      automaticPromotionEnabled: 'OFF'
+      automaticPromotionEnabled: 'OFF',
+      aidlPolicy: { ...DEFAULT_AIDL_POLICY_CONFIG }
     };
 
     settings.forEach(s => {
@@ -252,6 +280,7 @@ router.get('/ai-config', async (req, res) => {
       if (s.key === 'global_ai_interval_auto') config.intervalAuto = s.value;
       if (s.key === 'automatic_promotion_enabled') config.automaticPromotionEnabled = s.value;
     });
+    config.aidlPolicy = buildAidlPolicyConfig(settings);
 
     res.json({ success: true, config });
   } catch (err) {
@@ -753,3 +782,7 @@ router.post('/force-evolution', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.__private__ = {
+  DEFAULT_AIDL_POLICY_CONFIG,
+  buildAidlPolicyConfig,
+};

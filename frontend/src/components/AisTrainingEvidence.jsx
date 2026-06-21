@@ -17,11 +17,13 @@ function Metric({ label, value, color = '#F3F4F6' }) {
   );
 }
 
-export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggleAutomaticPromotion }) {
+export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggleAutomaticPromotion, aidlPolicy }) {
   const latest = stats?.latestRun;
   const decisions = stats?.byDecision || {};
   const dnaStateTotals = stats?.dnaStateTotals || { active: 0, inactive: 0, deprecated: 0, lethal: 0 };
   const dnaMutationTotals = stats?.dnaMutationTotals || { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 };
+  const selectionTelemetry = stats?.selectionTelemetry || { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
+  const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', weightNudgeSize: '0.02' };
   const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
   const isPromoEnabled = stats?.automaticPromotionEnabled;
 
@@ -104,6 +106,16 @@ export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggl
         label="DNA Mutation"
         value={`State ${dnaMutationTotals.stateMutation || 0} / Context ${dnaMutationTotals.contextMaskMutation || 0} / Nudge ${dnaMutationTotals.weightNudge || 0} / VEP ${dnaMutationTotals.vepFiltered || 0}`}
         color="#93C5FD"
+      />
+      <Metric
+        label="Selection"
+        value={`Cull ${selectionTelemetry.culledCount || 0} / Offspring ${selectionTelemetry.offspringCount || 0} / Mutant ${selectionTelemetry.mutantCount || 0} / Archive ${selectionTelemetry.archiveCount || 0}`}
+        color="#FCA5A5"
+      />
+      <Metric
+        label="Runtime Policy"
+        value={`Context ${runtimePolicy.contextMutationRate} / State ${runtimePolicy.stateMutationRate} / Nudge ${runtimePolicy.weightNudgeSize}`}
+        color="#86EFAC"
       />
       {['BUY', 'SELL', 'HOLD'].map((decision) => {
         const item = decisions[decision] || { count: 0, accuracy: 0 };

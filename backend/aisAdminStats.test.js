@@ -53,6 +53,10 @@ async function main() {
     INSERT INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', 'OFF')
   `);
   await store.run(`
+    INSERT INTO platform_settings (key, value)
+    VALUES ('ais_selection_telemetry', '{"culledCount":12,"offspringCount":6,"mutantCount":6,"archiveCount":12}')
+  `);
+  await store.run(`
     CREATE TABLE ais_model_runs (
       id INTEGER PRIMARY KEY,
       run_key TEXT,
@@ -138,6 +142,12 @@ async function main() {
     contextMaskMutation: 1,
     weightNudge: 0,
     vepFiltered: 0,
+  });
+  assert.deepStrictEqual(result.selectionTelemetry, {
+    culledCount: 12,
+    offspringCount: 6,
+    mutantCount: 6,
+    archiveCount: 12,
   });
   await verifyDatabaseDnaMigration();
 

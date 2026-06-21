@@ -250,6 +250,47 @@ def build_council_member_insert_payload_from_dna(
         dna.get("generation", 1),
     )
 
+def append_fitness_history(dna, validation_score, holdout_score, run_key):
+    next_dna = copy.deepcopy(dna)
+    history = next_dna.setdefault("fitness_history", [])
+    history.append({
+        "validationScore": round(float(validation_score), 4),
+        "holdoutScore": None if holdout_score is None else round(float(holdout_score), 4),
+        "runKey": str(run_key),
+    })
+    return next_dna
+
+def load_runtime_policy(cursor):
+    cursor.execute("""
+        SELECT key, value
+        FROM platform_settings
+        WHERE key IN (
+            'aidl_context_mutation_rate',
+            'aidl_state_mutation_rate',
+            'aidl_weight_nudge_size'
+        )
+    """)
+    rows = cursor.fetchall()
+    defaults = {
+        "context_mutation_rate": 0.10,
+        "state_mutation_rate": 0.10,
+        "weight_nudge_size": 0.02,
+    }
+    key_map = {
+        "aidl_context_mutation_rate": "context_mutation_rate",
+        "aidl_state_mutation_rate": "state_mutation_rate",
+        "aidl_weight_nudge_size": "weight_nudge_size",
+    }
+    for key, value in rows:
+        mapped = key_map.get(key)
+        if not mapped:
+            continue
+        try:
+            defaults[mapped] = float(value)
+        except Exception:
+            pass
+    return defaults
+
 def _safe_generation(value):
     try:
         parsed = int(value)
@@ -410,6 +451,7 @@ def main():
         if min(len(training_rows), len(validation_rows), len(holdout_rows)) == 0:
             raise RuntimeError("Chronological AiS partitions are empty")
         training_seed = fit_centroids(training_rows)
+        runtime_policy = load_runtime_policy(cursor)
         conn.execute("BEGIN IMMEDIATE")
         
         # 2. Check current total candidate count in DB
@@ -457,7 +499,7 @@ def main():
                 # Apply mutation to DNA seeds if available, else generate a fresh DNA genome.
                 if seed_dna and random.random() > 0.3:
                     parent = random.choice(seed_dna)
-                    dna = mutate_dna(parent)
+                    dna = mutate_dna(parent, runtime_policy=runtime_policy)
                     dna["generation"] = _safe_generation(parent.get("generation")) + 1
                 else:
                     weights = generate_random_weights()
@@ -523,6 +565,12 @@ def main():
                 )
                 
             validation_metrics = evaluate_candidate(dna, validation_rows)
+            dna = append_fitness_history(
+                dna,
+                validation_metrics["utility_score"],
+                None,
+                run_key,
+            )
             candidates_results.append({
                 "id": m_id,
                 "name": name,
@@ -567,6 +615,18 @@ def main():
         # 5. Culling: Delete worst candidates dynamically
         culled_targets = candidates_results[-cull_count:]
         culled_ids = [c["id"] for c in culled_targets]
+
+        for candidate in culled_targets:
+            cursor.execute("""
+                INSERT INTO ais_genome_archive
+                    (member_id, genome_id, generation, archive_reason, dna_json)
+                VALUES (?, ?, ?, 'CULLED_LOW_PERFORMANCE', ?)
+            """, (
+                candidate["id"],
+                candidate["dna"].get("genome_id", candidate["id"]),
+                candidate["dna"].get("generation", 1),
+                json.dumps(candidate["dna"]),
+            ))
         
         cursor.executemany("DELETE FROM ais_council_members WHERE member_id = ?", [(cid,) for cid in culled_ids])
         print(f"[x] Culled & Retired {cull_count} low-performing candidates from DB.")
@@ -588,7 +648,11 @@ def main():
             
             # Apply slight mutation to offspring DNA.
             if random.random() > 0.5:
-                offspring_dna = mutate_dna(offspring_dna, preserve_parent_ids=True)
+                offspring_dna = mutate_dna(
+                    offspring_dna,
+                    preserve_parent_ids=True,
+                    runtime_policy=runtime_policy,
+                )
                 
             offspring_weights = build_phenotype_from_dna(offspring_dna)
             offspring_gen = offspring_dna["generation"]
@@ -641,6 +705,10 @@ def main():
         # Select best 11 from current survivors (excluding the newly spawned who haven't been backtested yet)
         elected = survivors[:11]
         elected_ids = [e["id"] for e in elected]
+        holdout_metrics = [
+            evaluate_candidate(e["dna"], holdout_rows)
+            for e in elected
+        ]
         
         print("\n=== NEWLY ELECTED AI COUNCIL MEMBERS ===")
         # Validation selects the council. Holdout remains report-only.
@@ -650,7 +718,13 @@ def main():
             member_id = e["id"]
             name = e["name"]
             acc = e["validation_score"]
-            dna = e["dna"]
+            dna = append_fitness_history(
+                e["dna"],
+                acc,
+                holdout_metrics[idx]["utility_score"],
+                run_key,
+            )
+            e["dna"] = dna
             phenotype = build_phenotype_from_dna(dna)
             weights_json = json.dumps(phenotype)
             phenotype_json = json.dumps(phenotype)
@@ -669,10 +743,6 @@ def main():
             
             print(f"{idx+1}등. [{name}] - 정확도: {acc:.2f}%, 투표권 지분: {v_power:.2f}표")
             
-        holdout_metrics = [
-            evaluate_candidate(e["dna"], holdout_rows)
-            for e in elected
-        ]
         challenger_holdout_score = (
             sum(metric["utility_score"] for metric in holdout_metrics)
             / len(holdout_metrics)
@@ -720,6 +790,15 @@ def main():
         cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_last_trained_at', ?)", (now_str,))
         cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_model_accuracy', ?)", (f"{challenger_holdout_score:.2f}",))
         cursor.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_training_data_count', ?)", (str(labeled_count),))
+        cursor.execute(
+            "INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('ais_selection_telemetry', ?)",
+            (json.dumps({
+                "culledCount": cull_count,
+                "offspringCount": offspring_count,
+                "mutantCount": mutant_count,
+                "archiveCount": len(culled_targets),
+            }),),
+        )
 
         # Check for automatic promotion settings and target active engine constraint
         cursor.execute("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'")
