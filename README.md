@@ -234,7 +234,7 @@ Rather than suppressing mutation to enforce safety, we decouple mutation from ex
 - **Human-in-the-loop (Natural Selection)**: A candidate must satisfy rigid statistical criteria (300 labeled observations, 3%p margin over holdout benchmark, zero label contamination, and minimum class coverage) before it becomes promotion-eligible evidence for the Administrator. In the current implementation, promotion remains policy-gated: administrators can keep manual review, or enable automatic engine switching only after the eligibility checks pass.
 
 ### 2.5 AIDL DNA Genome Architecture & Operational Principles
-AIDL stands for **Adaptive Intelligence & DNA Logic** externally, while internally defining the core mechanism that controls the four ecological survival states of genes: **A**ctive, **I**nactive, **D**eprecated, and **L**ethal.
+AIDL stands for **Adaptive Intelligence & DNA Logic** externally, while internally also functioning as a structural acronym for the four ecological survival states that govern strategy genes: **A**ctive, **I**nactive, **D**eprecated, and **L**ethal. In other words, AIDL is both the name of the framework and a direct explanation of its control model, which this project defines as an independently designed gene-control framework.
 
 #### 1. Genome & Strategy Schema
 Each AI candidate model (individual) possesses a unique Genome sequence defined as:
