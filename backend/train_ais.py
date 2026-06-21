@@ -307,15 +307,28 @@ def _parse_centroids(value):
     except Exception:
         return None
 
+def _heal_runtime_dna(parsed):
+    default_contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+    for strategy in parsed.get("strategy_genes", []):
+        if "context_mask" not in strategy or not isinstance(strategy["context_mask"], list):
+            strategy["context_mask"] = list(default_contexts)
+
+    profile = parsed.get("regulatory_profile")
+    if not isinstance(profile, dict):
+        profile = {}
+        parsed["regulatory_profile"] = profile
+    profile.setdefault("expression_budget", 12)
+    profile.setdefault("dominance_bias", 1.0)
+    profile.setdefault("decay_resistance", 0.3)
+    profile.setdefault("reactivation_bias", 0.1)
+    return parsed
+
 def load_candidate_dna(member_id, dna_json, phenotype_json, weights_json, faction, generation, fallback_weights):
     try:
         parsed = json.loads(dna_json) if dna_json else None
         if parsed and isinstance(parsed, dict) and "strategy_genes" in parsed:
-            # Self-healing migration for legacy DNA
-            for strategy in parsed.get("strategy_genes", []):
-                if "context_mask" not in strategy or not isinstance(strategy["context_mask"], list):
-                    strategy["context_mask"] = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
-            
+            parsed = _heal_runtime_dna(parsed)
+
             # AISG Accession ID Self-healing
             gid = parsed.get("genome_id", "")
             if not isinstance(gid, str) or not gid.startswith("AISG-"):

@@ -1,5 +1,6 @@
 import unittest
 import copy
+import json
 from unittest.mock import patch
 
 from ais_dna import (
@@ -11,6 +12,7 @@ from ais_dna import (
     validate_dna,
 )
 from ais_features import validate_centroids
+from train_ais import load_candidate_dna
 
 
 class AiSDnaTests(unittest.TestCase):
@@ -375,6 +377,33 @@ class AiSDnaTests(unittest.TestCase):
                 sub["weight"] = 1.8
         self.assertEqual(predict_variant_effect(bad_dna_2), "LETHAL")
 
+    def test_predict_variant_effect_flags_bear_buy_bias_after_three_generation_collapse(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        dna["fitness_history"] = [
+            {"validationScore": 54.0, "holdoutScore": 51.0, "runKey": "run-1"},
+            {"validationScore": 49.0, "holdoutScore": 45.0, "runKey": "run-2"},
+            {"validationScore": 43.0, "holdoutScore": 39.0, "runKey": "run-3"},
+        ]
+        for sub in dna["strategy_genes"][0]["subgenes"]:
+            if sub["action"] == "BUY" and sub["feature"] in ("price_change_pct", "rsi_scaled"):
+                sub["weight"] = 1.38 if sub["feature"] == "rsi_scaled" else 13.5
+
+        self.assertEqual(predict_variant_effect(dna), "LETHAL")
+
+    def test_predict_variant_effect_keeps_without_collapse_history(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        dna["fitness_history"] = [
+            {"validationScore": 54.0, "holdoutScore": 53.0, "runKey": "run-1"},
+            {"validationScore": 55.0, "holdoutScore": 54.0, "runKey": "run-2"},
+            {"validationScore": 56.0, "holdoutScore": 55.0, "runKey": "run-3"},
+        ]
+
+        self.assertEqual(predict_variant_effect(dna), "BENIGN")
+
     def test_mutation_filters_out_deleterious_effects(self):
         dna = self._valid_dna()
         # 모든 돌연변이 시도가 LETHAL을 유도하도록 부모 가중치를 극단적인 경계값 근처로 세팅
@@ -454,6 +483,34 @@ class AiSDnaTests(unittest.TestCase):
         mutated = mutate_dna(dna, runtime_policy={"state_mutation_rate": 0.0})
 
         self.assertNotIn("state_mutation", [entry["event"] for entry in mutated["mutation_log"]])
+
+    def test_load_candidate_dna_self_heals_missing_context_mask_and_profile_fields(self):
+        broken = self._valid_dna()
+        del broken["strategy_genes"][0]["context_mask"]
+        broken["regulatory_profile"] = {"expression_budget": 12}
+
+        healed = load_candidate_dna(
+            member_id="member-1",
+            dna_json=json.dumps(broken),
+            phenotype_json=None,
+            weights_json=None,
+            faction="MUTANT_ROOKIE",
+            generation=1,
+            fallback_weights=self._legacy_centroids(),
+        )
+
+        self.assertEqual(
+            healed["strategy_genes"][0]["context_mask"],
+            ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"],
+        )
+        self.assertEqual(healed["genome_id"], broken["genome_id"])
+        self.assertEqual(
+            healed["lineage"]["ancestor_ids"],
+            broken["lineage"]["ancestor_ids"],
+        )
+        self.assertEqual(healed["regulatory_profile"]["dominance_bias"], 1.0)
+        self.assertEqual(healed["regulatory_profile"]["decay_resistance"], 0.3)
+        self.assertEqual(healed["regulatory_profile"]["reactivation_bias"], 0.1)
 
 
 if __name__ == "__main__":

@@ -278,6 +278,17 @@ def predict_variant_effect(dna):
     과학적 VEP의 개념을 차용하여, 변이가 적용된 DNA 개체가 4대 시장 맥락 하에서
     치명적 리스크(Lethal Effect)를 유발할 가능성이 있는지 선제적으로 예측 및 스크리닝합니다.
     """
+    history = dna.get("fitness_history", [])
+    has_recent_fitness_collapse = False
+    if len(history) >= 3:
+        recent = history[-3:]
+        holdouts = [entry.get("holdoutScore") for entry in recent]
+        if not any(score is None for score in holdouts):
+            has_recent_fitness_collapse = (
+                holdouts[0] > holdouts[1] > holdouts[2]
+                and float(holdouts[2]) <= 40.0
+            )
+
     for context in AIDL_CONTEXTS:
         phenotype = build_phenotype_from_dna(dna, context)
         for action in ACTIONS:
@@ -294,6 +305,8 @@ def predict_variant_effect(dna):
                 # 하락 폭주 국면에서는 RSI 과매도나 가격 급등 폭을 보고 성급히 매수(BUY) 가중치를 과도하게 실으면 대량 청산 위험이 있음
                 if context == "BEAR_EXPANSION" and action == "BUY":
                     if feature_name in ("rsi_scaled", "price_change_pct") and w > limit * 0.70:
+                        return "LETHAL"
+                    if has_recent_fitness_collapse and feature_name in ("rsi_scaled", "price_change_pct") and w > limit * 0.65:
                         return "LETHAL"
                         
                 # 3. 하락 수축기(BEAR_SQUEEZE) 리스크 판정

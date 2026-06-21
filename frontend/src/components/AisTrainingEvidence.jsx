@@ -23,6 +23,7 @@ export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggl
   const dnaStateTotals = stats?.dnaStateTotals || { active: 0, inactive: 0, deprecated: 0, lethal: 0 };
   const dnaMutationTotals = stats?.dnaMutationTotals || { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 };
   const selectionTelemetry = stats?.selectionTelemetry || { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
+  const dnaOperations = stats?.dnaOperations || { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', weightNudgeSize: '0.02' };
   const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
   const isPromoEnabled = stats?.automaticPromotionEnabled;
@@ -116,6 +117,11 @@ export default function AisTrainingEvidence({ stats, globalAiEngine, handleToggl
         label="Runtime Policy"
         value={`Context ${runtimePolicy.contextMutationRate} / State ${runtimePolicy.stateMutationRate} / Nudge ${runtimePolicy.weightNudgeSize}`}
         color="#86EFAC"
+      />
+      <Metric
+        label="DNA Ops"
+        value={`Archive ${dnaOperations.archiveCount || 0} / History ${dnaOperations.averageFitnessHistoryDepth || 0} / Latest ${dnaOperations.latestArchivedAt || '-'}`}
+        color="#FDE68A"
       />
       {['BUY', 'SELL', 'HOLD'].map((decision) => {
         const item = decisions[decision] || { count: 0, accuracy: 0 };

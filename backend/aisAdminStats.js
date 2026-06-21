@@ -5,6 +5,10 @@ function emptySelectionTelemetry() {
   return { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
 }
 
+function emptyDnaOperations() {
+  return { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
+}
+
 async function getAisTrainingStats(store) {
   const totals = await store.get(`
     SELECT
@@ -114,6 +118,28 @@ async function getAisTrainingStats(store) {
     totals.vepFiltered += summary.vepFiltered;
     return totals;
   }, { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 });
+  let dnaOperations = emptyDnaOperations();
+  const archiveSummary = await store.get(`
+    SELECT COUNT(*) AS archive_count, MAX(archived_at) AS latest_archived_at
+    FROM ais_genome_archive
+  `).catch(() => null);
+  const averageFitnessHistoryDepth = activeCouncil.length
+    ? Number((
+        activeCouncil.reduce((sum, row) => {
+          try {
+            const dna = JSON.parse(row.dna_json || '{}');
+            return sum + (Array.isArray(dna.fitness_history) ? dna.fitness_history.length : 0);
+          } catch {
+            return sum;
+          }
+        }, 0) / activeCouncil.length
+      ).toFixed(2))
+    : 0;
+  dnaOperations = {
+    archiveCount: Number(archiveSummary?.archive_count || 0),
+    averageFitnessHistoryDepth,
+    latestArchivedAt: archiveSummary?.latest_archived_at || '',
+  };
 
   return {
     total: Number(totals?.total || 0),
@@ -126,6 +152,7 @@ async function getAisTrainingStats(store) {
     shadowOnly: true,
     automaticPromotionEnabled,
     selectionTelemetry,
+    dnaOperations,
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

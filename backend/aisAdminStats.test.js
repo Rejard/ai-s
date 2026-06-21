@@ -86,6 +86,17 @@ async function main() {
     )
   `);
   await store.run(`
+    CREATE TABLE ais_genome_archive (
+      id INTEGER PRIMARY KEY,
+      member_id TEXT,
+      genome_id TEXT,
+      generation INTEGER,
+      archive_reason TEXT,
+      dna_json TEXT,
+      archived_at TEXT
+    )
+  `);
+  await store.run(`
     INSERT INTO ais_training_data VALUES
       (1, 'BUY', 1, 'LABELED', 2),
       (2, 'BUY', 0, 'LABELED', 2),
@@ -102,11 +113,16 @@ async function main() {
     INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
     VALUES (
       'm1',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"}],"generation":1}',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":[],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
     )
+  `);
+  await store.run(`
+    INSERT INTO ais_genome_archive VALUES
+      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{}', '2026-06-22 09:00:00'),
+      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{}', '2026-06-22 10:00:00')
   `);
   await store.run(`
     INSERT INTO ais_council_members (member_id, dna_json, phenotype_json, generation, status)
@@ -148,6 +164,11 @@ async function main() {
     offspringCount: 6,
     mutantCount: 6,
     archiveCount: 12,
+  });
+  assert.deepStrictEqual(result.dnaOperations, {
+    archiveCount: 2,
+    averageFitnessHistoryDepth: 2,
+    latestArchivedAt: '2026-06-22 10:00:00',
   });
   await verifyDatabaseDnaMigration();
 
