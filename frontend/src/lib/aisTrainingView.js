@@ -43,6 +43,12 @@ const emptyDnaAdminOverrideDelta = () => ({
   stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
   contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
 });
+const emptyDnaOverrideLineageAttribution = () => ({
+  activeInheritedStateCount: 0,
+  activeInheritedContextCount: 0,
+  archivedInheritedStateCount: 0,
+  archivedInheritedContextCount: 0,
+});
 const emptyDnaLineage = () => ({ activeGenomes: [], recentArchives: [] });
 
 export function normalizeAisTrainingStats(data = {}) {
@@ -58,6 +64,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaAdminOverrideTelemetry = data.dnaAdminOverrideTelemetry || {};
   const dnaAdminOverrideOutcome = data.dnaAdminOverrideOutcome || {};
   const dnaAdminOverrideDelta = data.dnaAdminOverrideDelta || {};
+  const dnaOverrideLineageAttribution = data.dnaOverrideLineageAttribution || {};
   const dnaLineage = data.dnaLineage || {};
   return {
     total: Number(data.total || data.count || 0),
@@ -128,6 +135,10 @@ export function normalizeAisTrainingStats(data = {}) {
       ...dnaAdminOverrideDelta,
       stateOverrideDelta: { ...emptyDnaAdminOverrideDelta().stateOverrideDelta, ...(dnaAdminOverrideDelta.stateOverrideDelta || {}) },
       contextOverrideDelta: { ...emptyDnaAdminOverrideDelta().contextOverrideDelta, ...(dnaAdminOverrideDelta.contextOverrideDelta || {}) },
+    },
+    dnaOverrideLineageAttribution: {
+      ...emptyDnaOverrideLineageAttribution(),
+      ...dnaOverrideLineageAttribution,
     },
     dnaLineage: {
       ...emptyDnaLineage(),

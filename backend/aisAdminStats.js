@@ -83,6 +83,15 @@ function emptyDnaAdminOverrideDelta() {
   };
 }
 
+function emptyDnaOverrideLineageAttribution() {
+  return {
+    activeInheritedStateCount: 0,
+    activeInheritedContextCount: 0,
+    archivedInheritedStateCount: 0,
+    archivedInheritedContextCount: 0,
+  };
+}
+
 function emptyCohortActivePerformance() {
   return {
     genomeCount: 0,
@@ -398,12 +407,44 @@ function buildOverrideDelta(rows, eventName) {
   };
 }
 
-function buildGenomeLineageEntry(row, dna) {
+function buildOverrideSourceMap(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const dna = safeParseDna(row.dna_json);
+    const genomeId = typeof (dna?.genome_id || row.genome_id) === 'string' ? (dna?.genome_id || row.genome_id) : '';
+    if (!genomeId) continue;
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    map.set(genomeId, {
+      state: mutationLog.some((entry) => entry?.event === 'admin_state_override'),
+      context: mutationLog.some((entry) => entry?.event === 'admin_context_override'),
+    });
+  }
+  return map;
+}
+
+function resolveInheritedOverrideFlags(lineage, overrideSourceMap) {
+  const relatedIds = Array.from(new Set([
+    ...(Array.isArray(lineage?.parent_ids) ? lineage.parent_ids : []),
+    ...(Array.isArray(lineage?.ancestor_ids) ? lineage.ancestor_ids : []),
+  ]));
+  let inheritedStateOverride = false;
+  let inheritedContextOverride = false;
+  for (const genomeId of relatedIds) {
+    const source = overrideSourceMap.get(genomeId);
+    if (!source) continue;
+    if (source.state) inheritedStateOverride = true;
+    if (source.context) inheritedContextOverride = true;
+  }
+  return { inheritedStateOverride, inheritedContextOverride };
+}
+
+function buildGenomeLineageEntry(row, dna, overrideSourceMap) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
   const contextMaskSummary = summarizeContextMasks(dna);
   const copyNumberSummary = summarizeCopyNumbers(dna);
   const regulatoryProfile = summarizeRegulatoryProfile(dna);
+  const inherited = resolveInheritedOverrideFlags(lineage, overrideSourceMap);
   return {
     memberId: row.member_id,
     name: row.name || '',
@@ -422,15 +463,18 @@ function buildGenomeLineageEntry(row, dna) {
     averageCopyNumber: copyNumberSummary.average,
     maxCopyNumber: copyNumberSummary.max,
     blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
+    inheritedStateOverride: inherited.inheritedStateOverride,
+    inheritedContextOverride: inherited.inheritedContextOverride,
   };
 }
 
-function buildArchivedGenomeEntry(row, dna) {
+function buildArchivedGenomeEntry(row, dna, overrideSourceMap) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
   const contextMaskSummary = summarizeContextMasks(dna);
   const copyNumberSummary = summarizeCopyNumbers(dna);
   const regulatoryProfile = summarizeRegulatoryProfile(dna);
+  const inherited = resolveInheritedOverrideFlags(lineage, overrideSourceMap);
   return {
     memberId: row.member_id,
     genomeId: row.genome_id || dna?.genome_id || '',
@@ -448,6 +492,8 @@ function buildArchivedGenomeEntry(row, dna) {
     averageCopyNumber: copyNumberSummary.average,
     maxCopyNumber: copyNumberSummary.max,
     blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
+    inheritedStateOverride: inherited.inheritedStateOverride,
+    inheritedContextOverride: inherited.inheritedContextOverride,
   };
 }
 
@@ -674,15 +720,24 @@ async function getAisTrainingStats(store) {
     stateOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
     contextOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
   };
+  const overrideSourceMap = buildOverrideSourceMap(activeCouncil.concat(allArchiveRows));
+  const activeLineageRows = activeCouncil.map((row) => {
+    const dna = safeParseDna(row.dna_json);
+    return buildGenomeLineageEntry(row, dna, overrideSourceMap);
+  });
+  const archiveLineageRows = recentArchives.map((row) => {
+    const dna = safeParseDna(row.dna_json);
+    return buildArchivedGenomeEntry(row, dna, overrideSourceMap);
+  });
+  const dnaOverrideLineageAttribution = {
+    activeInheritedStateCount: activeLineageRows.filter((row) => row.inheritedStateOverride).length,
+    activeInheritedContextCount: activeLineageRows.filter((row) => row.inheritedContextOverride).length,
+    archivedInheritedStateCount: archiveLineageRows.filter((row) => row.inheritedStateOverride).length,
+    archivedInheritedContextCount: archiveLineageRows.filter((row) => row.inheritedContextOverride).length,
+  };
   const dnaLineage = {
-    activeGenomes: activeCouncil.slice(0, 5).map((row) => {
-      const dna = safeParseDna(row.dna_json);
-      return buildGenomeLineageEntry(row, dna);
-    }),
-    recentArchives: recentArchives.map((row) => {
-      const dna = safeParseDna(row.dna_json);
-      return buildArchivedGenomeEntry(row, dna);
-    }),
+    activeGenomes: activeLineageRows.slice(0, 5),
+    recentArchives: archiveLineageRows,
   };
 
   return {
@@ -705,6 +760,7 @@ async function getAisTrainingStats(store) {
     dnaAdminOverrideTelemetry: { ...emptyDnaAdminOverrideTelemetry(), ...dnaAdminOverrideTelemetry },
     dnaAdminOverrideOutcome: { ...emptyDnaAdminOverrideOutcome(), ...dnaAdminOverrideOutcome },
     dnaAdminOverrideDelta: { ...emptyDnaAdminOverrideDelta(), ...dnaAdminOverrideDelta },
+    dnaOverrideLineageAttribution: { ...emptyDnaOverrideLineageAttribution(), ...dnaOverrideLineageAttribution },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

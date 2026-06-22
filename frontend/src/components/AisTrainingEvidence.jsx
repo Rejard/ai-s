@@ -107,6 +107,12 @@ export default function AisTrainingEvidence({
     stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
     contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
   };
+  const dnaOverrideLineageAttribution = stats?.dnaOverrideLineageAttribution || {
+    activeInheritedStateCount: 0,
+    activeInheritedContextCount: 0,
+    archivedInheritedStateCount: 0,
+    archivedInheritedContextCount: 0,
+  };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', profileMutationRate: '0.08', copyNumberMutationRate: '0.06', weightNudgeSize: '0.02' };
@@ -259,6 +265,11 @@ export default function AisTrainingEvidence({
         color="#FBBF24"
       />
       <Metric
+        label="Override Lineage"
+        value={`Active S ${dnaOverrideLineageAttribution.activeInheritedStateCount || 0} / C ${dnaOverrideLineageAttribution.activeInheritedContextCount || 0} | Archive S ${dnaOverrideLineageAttribution.archivedInheritedStateCount || 0} / C ${dnaOverrideLineageAttribution.archivedInheritedContextCount || 0}`}
+        color="#FBBF24"
+      />
+      <Metric
         label="Selection"
         value={`Cull ${selectionTelemetry.culledCount || 0} / Offspring ${selectionTelemetry.offspringCount || 0} / Mutant ${selectionTelemetry.mutantCount || 0} / Archive ${selectionTelemetry.archiveCount || 0}`}
         color="#FCA5A5"
@@ -289,7 +300,7 @@ export default function AisTrainingEvidence({
                   {genome.name || genome.memberId} / {genome.genomeId} / G{genome.generation}
                 </span>
                 <strong style={{ color: genome.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>
-                  P{(genome.parentIds || []).length} M{genome.mutationEvents || 0} {genome.blackSwanEnabled ? '/ BLACK_SWAN' : ''}
+                  P{(genome.parentIds || []).length} M{genome.mutationEvents || 0} {genome.blackSwanEnabled ? '/ BLACK_SWAN' : ''}{genome.inheritedStateOverride ? ' / INH_STATE' : ''}{genome.inheritedContextOverride ? ' / INH_CTX' : ''}
                 </strong>
               </div>
               <span style={{ color: '#9CA3AF' }}>
@@ -313,7 +324,7 @@ export default function AisTrainingEvidence({
                   {archive.memberId} / {archive.genomeId} / {archive.archiveReason}
                 </span>
                 <strong style={{ color: archive.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>
-                  G{archive.generation} M{archive.mutationEvents || 0} {archive.blackSwanEnabled ? '/ BLACK_SWAN' : ''}
+                  G{archive.generation} M{archive.mutationEvents || 0} {archive.blackSwanEnabled ? '/ BLACK_SWAN' : ''}{archive.inheritedStateOverride ? ' / INH_STATE' : ''}{archive.inheritedContextOverride ? ' / INH_CTX' : ''}
                 </strong>
               </div>
               <span style={{ color: '#9CA3AF' }}>

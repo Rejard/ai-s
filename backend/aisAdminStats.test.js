@@ -141,6 +141,17 @@ async function main() {
       'CANDIDATE'
     )
   `);
+  await store.run(`
+    INSERT INTO ais_council_members (member_id, name, dna_json, phenotype_json, generation, status)
+    VALUES (
+      'm3',
+      'Inherited Gamma',
+      '{"genome_id":"g3","strategy_genes":[{"gene_id":"sg3","state":"A","copy_number":1,"dominance":1.0,"context_mask":["BULL_EXPANSION"],"subgenes":[{"state":"A"}]}],"lineage":{"parent_ids":["g1"],"ancestor_ids":["seed","g1"],"innovation_ids":[1,2]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"}],"fitness_history":[{"validationScore":52.4,"holdoutScore":49.6,"runKey":"run-5"}],"generation":2}',
+      '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
+      2,
+      'ACTIVE'
+    )
+  `);
 
   const result = await getAisTrainingStats(store);
   assert.strictEqual(result.total, 4);
@@ -155,13 +166,13 @@ async function main() {
   assert.strictEqual(result.automaticPromotionEnabled, false);
   assert.strictEqual(result.dnaStateTotalsAvailable, true);
   assert.deepStrictEqual(result.dnaStateTotals, {
-    active: 2,
+    active: 4,
     inactive: 1,
     deprecated: 1,
     lethal: 1,
   });
   assert.deepStrictEqual(result.dnaMutationTotals, {
-    stateMutation: 1,
+    stateMutation: 2,
     contextMaskMutation: 2,
     contextMutationDetail: {
       blackSwanAdded: 1,
@@ -193,7 +204,7 @@ async function main() {
   });
   assert.deepStrictEqual(result.dnaOperations, {
     archiveCount: 2,
-    averageFitnessHistoryDepth: 2,
+    averageFitnessHistoryDepth: 1.5,
     latestArchivedAt: '2026-06-22 10:00:00',
   });
   assert.deepStrictEqual(result.dnaRepairTelemetry, {
@@ -215,10 +226,10 @@ async function main() {
       averageMutationEvents: 7,
     },
     coreActive: {
-      genomeCount: 0,
-      averageLatestValidationScore: 0,
-      averageLatestHoldoutScore: 0,
-      averageMutationEvents: 0,
+      genomeCount: 1,
+      averageLatestValidationScore: 52.4,
+      averageLatestHoldoutScore: 49.6,
+      averageMutationEvents: 1,
     },
     blackSwanArchive: {
       archiveCount: 1,
@@ -242,9 +253,11 @@ async function main() {
       },
     },
     coreActive: {
-      genomeCount: 0,
+      genomeCount: 1,
       vepFilteredGenomes: 0,
-      lastMutationEventCounts: {},
+      lastMutationEventCounts: {
+        state_mutation: 1,
+      },
     },
     blackSwanArchive: {
       archiveCount: 1,
@@ -312,6 +325,12 @@ async function main() {
       averageHoldoutDelta: 2.1,
     },
   });
+  assert.deepStrictEqual(result.dnaOverrideLineageAttribution, {
+    activeInheritedStateCount: 1,
+    activeInheritedContextCount: 1,
+    archivedInheritedStateCount: 0,
+    archivedInheritedContextCount: 0,
+  });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
     {
       memberId: 'm1',
@@ -331,6 +350,29 @@ async function main() {
       averageCopyNumber: 3,
       maxCopyNumber: 3,
       blackSwanEnabled: true,
+      inheritedStateOverride: false,
+      inheritedContextOverride: false,
+    },
+    {
+      memberId: 'm3',
+      name: 'Inherited Gamma',
+      genomeId: 'g3',
+      generation: 2,
+      parentIds: ['g1'],
+      ancestorCount: 2,
+      mutationEvents: 1,
+      lastMutationEvent: 'state_mutation',
+      stateSummary: { active: 2, inactive: 0, deprecated: 0, lethal: 0 },
+      contextMaskSummary: ['BULL_EXPANSION'],
+      expressionBudget: 12,
+      dominanceBias: 1,
+      decayResistance: 0.3,
+      reactivationBias: 0.1,
+      averageCopyNumber: 1,
+      maxCopyNumber: 1,
+      blackSwanEnabled: false,
+      inheritedStateOverride: true,
+      inheritedContextOverride: true,
     },
   ]);
   assert.deepStrictEqual(result.dnaLineage.recentArchives, [
@@ -351,6 +393,8 @@ async function main() {
       averageCopyNumber: 1,
       maxCopyNumber: 1,
       blackSwanEnabled: false,
+      inheritedStateOverride: false,
+      inheritedContextOverride: false,
     },
     {
       memberId: 'm9',
@@ -369,6 +413,8 @@ async function main() {
       averageCopyNumber: 2,
       maxCopyNumber: 2,
       blackSwanEnabled: true,
+      inheritedStateOverride: false,
+      inheritedContextOverride: false,
     },
   ]);
   await verifyDatabaseDnaMigration();
