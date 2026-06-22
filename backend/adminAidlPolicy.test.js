@@ -107,6 +107,9 @@ async function main() {
         },
       ],
       mutation_log: [],
+      fitness_history: [
+        { validationScore: 49.5, holdoutScore: 47.2, runKey: 'seed-run' },
+      ],
     };
 
     const overrideResult = adminRouter.__private__.applyAidlGeneStateOverride({
@@ -119,6 +122,14 @@ async function main() {
     assert.equal(
       overrideResult.dna.mutation_log.at(-1).event,
       'admin_state_override'
+    );
+    assert.equal(
+      overrideResult.dna.mutation_log.at(-1).pre_validation_score,
+      49.5
+    );
+    assert.equal(
+      overrideResult.dna.mutation_log.at(-1).pre_holdout_score,
+      47.2
     );
 
     assert.throws(
@@ -150,6 +161,14 @@ async function main() {
     assert.equal(
       contextEnabled.dna.mutation_log.at(-1).action,
       'added'
+    );
+    assert.equal(
+      contextEnabled.dna.mutation_log.at(-1).pre_validation_score,
+      49.5
+    );
+    assert.equal(
+      contextEnabled.dna.mutation_log.at(-1).pre_holdout_score,
+      47.2
     );
 
     const contextDisabled = adminRouter.__private__.applyAidlGeneContextOverride({

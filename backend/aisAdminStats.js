@@ -68,6 +68,21 @@ function emptyDnaAdminOverrideOutcome() {
   };
 }
 
+function emptyOverrideDelta() {
+  return {
+    overrideCount: 0,
+    averageValidationDelta: 0,
+    averageHoldoutDelta: 0,
+  };
+}
+
+function emptyDnaAdminOverrideDelta() {
+  return {
+    stateOverrideDelta: emptyOverrideDelta(),
+    contextOverrideDelta: emptyOverrideDelta(),
+  };
+}
+
 function emptyCohortActivePerformance() {
   return {
     genomeCount: 0,
@@ -351,6 +366,38 @@ function buildOverrideArchiveOutcome(rows, eventName) {
   };
 }
 
+function buildOverrideDelta(rows, eventName) {
+  const matched = [];
+  for (const row of rows) {
+    const dna = safeParseDna(row.dna_json);
+    const latestFitness = summarizeLatestFitness(dna);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    for (const entry of mutationLog) {
+      if (entry?.event !== eventName) continue;
+      const preValidationScore = Number(entry.pre_validation_score);
+      const preHoldoutScore = Number(entry.pre_holdout_score);
+      if (!Number.isFinite(preValidationScore) || !Number.isFinite(preHoldoutScore)) continue;
+      matched.push({
+        validationDelta: latestFitness.validationScore - preValidationScore,
+        holdoutDelta: latestFitness.holdoutScore - preHoldoutScore,
+      });
+    }
+  }
+  if (!matched.length) {
+    return emptyOverrideDelta();
+  }
+  const totals = matched.reduce((sum, item) => {
+    sum.validationDelta += item.validationDelta;
+    sum.holdoutDelta += item.holdoutDelta;
+    return sum;
+  }, { validationDelta: 0, holdoutDelta: 0 });
+  return {
+    overrideCount: matched.length,
+    averageValidationDelta: roundMetric(totals.validationDelta / matched.length),
+    averageHoldoutDelta: roundMetric(totals.holdoutDelta / matched.length),
+  };
+}
+
 function buildGenomeLineageEntry(row, dna) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
@@ -623,6 +670,10 @@ async function getAisTrainingStats(store) {
     stateOverrideArchive: buildOverrideArchiveOutcome(allArchiveRows, 'admin_state_override'),
     contextOverrideArchive: buildOverrideArchiveOutcome(allArchiveRows, 'admin_context_override'),
   };
+  const dnaAdminOverrideDelta = {
+    stateOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
+    contextOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
+  };
   const dnaLineage = {
     activeGenomes: activeCouncil.slice(0, 5).map((row) => {
       const dna = safeParseDna(row.dna_json);
@@ -653,6 +704,7 @@ async function getAisTrainingStats(store) {
     dnaContextPathway: { ...emptyDnaContextPathway(), ...dnaContextPathway },
     dnaAdminOverrideTelemetry: { ...emptyDnaAdminOverrideTelemetry(), ...dnaAdminOverrideTelemetry },
     dnaAdminOverrideOutcome: { ...emptyDnaAdminOverrideOutcome(), ...dnaAdminOverrideOutcome },
+    dnaAdminOverrideDelta: { ...emptyDnaAdminOverrideDelta(), ...dnaAdminOverrideDelta },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

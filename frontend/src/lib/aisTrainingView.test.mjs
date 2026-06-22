@@ -47,6 +47,10 @@ assert.deepEqual(empty.dnaAdminOverrideOutcome, {
   stateOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
   contextOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
 });
+assert.deepEqual(empty.dnaAdminOverrideDelta, {
+  stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
+  contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
+});
 assert.deepEqual(empty.dnaLineage, { activeGenomes: [], recentArchives: [] });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
@@ -101,6 +105,10 @@ const populated = normalizeAisTrainingStats({
     stateOverrideArchive: { archiveCount: 3, lowPerformanceCount: 2, averageLatestValidationScore: 45.6, averageLatestHoldoutScore: 42.9 },
     contextOverrideArchive: { archiveCount: 2, lowPerformanceCount: 1, averageLatestValidationScore: 41.3, averageLatestHoldoutScore: 39.7 },
   },
+  dnaAdminOverrideDelta: {
+    stateOverrideDelta: { overrideCount: 5, averageValidationDelta: 2.4, averageHoldoutDelta: 1.8 },
+    contextOverrideDelta: { overrideCount: 3, averageValidationDelta: -0.7, averageHoldoutDelta: -0.3 },
+  },
   dnaLineage: {
     activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
     recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -148,6 +156,10 @@ assert.deepEqual(populated.dnaAdminOverrideOutcome, {
   contextOverrideActive: { genomeCount: 1, averageLatestValidationScore: 50.1, averageLatestHoldoutScore: 48.4 },
   stateOverrideArchive: { archiveCount: 3, lowPerformanceCount: 2, averageLatestValidationScore: 45.6, averageLatestHoldoutScore: 42.9 },
   contextOverrideArchive: { archiveCount: 2, lowPerformanceCount: 1, averageLatestValidationScore: 41.3, averageLatestHoldoutScore: 39.7 },
+});
+assert.deepEqual(populated.dnaAdminOverrideDelta, {
+  stateOverrideDelta: { overrideCount: 5, averageValidationDelta: 2.4, averageHoldoutDelta: 1.8 },
+  contextOverrideDelta: { overrideCount: 3, averageValidationDelta: -0.7, averageHoldoutDelta: -0.3 },
 });
 assert.deepEqual(populated.dnaLineage, {
   activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],

@@ -103,6 +103,10 @@ export default function AisTrainingEvidence({
     stateOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
     contextOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
   };
+  const dnaAdminOverrideDelta = stats?.dnaAdminOverrideDelta || {
+    stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
+    contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
+  };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', profileMutationRate: '0.08', copyNumberMutationRate: '0.06', weightNudgeSize: '0.02' };
@@ -247,6 +251,11 @@ export default function AisTrainingEvidence({
       <Metric
         label="Override Archive"
         value={`State ${dnaAdminOverrideOutcome.stateOverrideArchive?.archiveCount || 0} / Low ${dnaAdminOverrideOutcome.stateOverrideArchive?.lowPerformanceCount || 0} / V ${dnaAdminOverrideOutcome.stateOverrideArchive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.stateOverrideArchive?.averageLatestHoldoutScore || 0} | Context ${dnaAdminOverrideOutcome.contextOverrideArchive?.archiveCount || 0} / Low ${dnaAdminOverrideOutcome.contextOverrideArchive?.lowPerformanceCount || 0} / V ${dnaAdminOverrideOutcome.contextOverrideArchive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.contextOverrideArchive?.averageLatestHoldoutScore || 0}`}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Delta"
+        value={`State ${dnaAdminOverrideDelta.stateOverrideDelta?.overrideCount || 0} / dV ${dnaAdminOverrideDelta.stateOverrideDelta?.averageValidationDelta || 0} / dH ${dnaAdminOverrideDelta.stateOverrideDelta?.averageHoldoutDelta || 0} | Context ${dnaAdminOverrideDelta.contextOverrideDelta?.overrideCount || 0} / dV ${dnaAdminOverrideDelta.contextOverrideDelta?.averageValidationDelta || 0} / dH ${dnaAdminOverrideDelta.contextOverrideDelta?.averageHoldoutDelta || 0}`}
         color="#FBBF24"
       />
       <Metric

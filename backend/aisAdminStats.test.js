@@ -119,7 +119,7 @@ async function main() {
     VALUES (
       'm1',
       'Active Alpha',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation","context_key":"BLACK_SWAN","action":"added"},{"event":"context_mask_mutation","context_key":"BULL_EXPANSION","action":"removed"},{"event":"profile_mutation","profile_key":"decay_resistance","from_value":0.2,"to_value":0.3},{"event":"admin_state_override","gene_id":"sg1","from_state":"I","to_state":"A"},{"event":"admin_context_override","gene_id":"sg1","context_key":"BLACK_SWAN","action":"added","from_mask":["BULL_EXPANSION"],"to_mask":["BULL_EXPANSION","BLACK_SWAN"]},{"event":"copy_number_mutation","from_value":2,"to_value":3}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation","context_key":"BLACK_SWAN","action":"added"},{"event":"context_mask_mutation","context_key":"BULL_EXPANSION","action":"removed"},{"event":"profile_mutation","profile_key":"decay_resistance","from_value":0.2,"to_value":0.3},{"event":"admin_state_override","gene_id":"sg1","from_state":"I","to_state":"A","pre_validation_score":46,"pre_holdout_score":44},{"event":"admin_context_override","gene_id":"sg1","context_key":"BLACK_SWAN","action":"added","from_mask":["BULL_EXPANSION"],"to_mask":["BULL_EXPANSION","BLACK_SWAN"],"pre_validation_score":47,"pre_holdout_score":45},{"event":"copy_number_mutation","from_value":2,"to_value":3}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
@@ -127,8 +127,8 @@ async function main() {
   `);
   await store.run(`
     INSERT INTO ais_genome_archive VALUES
-      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"context_mask":["BLACK_SWAN"],"copy_number":2,"dominance":1.1}],"lineage":{"parent_ids":["g7","g8"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":10,"dominance_bias":0.9},"mutation_log":[{"event":"admin_context_override","gene_id":"sg9","context_key":"BLACK_SWAN","action":"added"},{"event":"vep_filtered_deleterious_mutation"}],"fitness_history":[{"validationScore":41.5,"holdoutScore":39.2,"runKey":"run-3"}]}', '2026-06-22 09:00:00'),
-      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"copy_number":1,"dominance":1.0}],"lineage":{"parent_ids":["g6"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":11,"dominance_bias":1.05},"mutation_log":[{"event":"admin_state_override","gene_id":"sg10","from_state":"I","to_state":"A"},{"event":"state_mutation"},{"event":"weight_nudge"}],"fitness_history":[{"validationScore":47.8,"holdoutScore":45.1,"runKey":"run-4"}]}', '2026-06-22 10:00:00')
+      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"context_mask":["BLACK_SWAN"],"copy_number":2,"dominance":1.1}],"lineage":{"parent_ids":["g7","g8"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":10,"dominance_bias":0.9},"mutation_log":[{"event":"admin_context_override","gene_id":"sg9","context_key":"BLACK_SWAN","action":"added","pre_validation_score":43,"pre_holdout_score":40},{"event":"vep_filtered_deleterious_mutation"}],"fitness_history":[{"validationScore":41.5,"holdoutScore":39.2,"runKey":"run-3"}]}', '2026-06-22 09:00:00'),
+      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"copy_number":1,"dominance":1.0}],"lineage":{"parent_ids":["g6"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":11,"dominance_bias":1.05},"mutation_log":[{"event":"admin_state_override","gene_id":"sg10","from_state":"I","to_state":"A","pre_validation_score":46,"pre_holdout_score":44},{"event":"state_mutation"},{"event":"weight_nudge"}],"fitness_history":[{"validationScore":47.8,"holdoutScore":45.1,"runKey":"run-4"}]}', '2026-06-22 10:00:00')
   `);
   await store.run(`
     INSERT INTO ais_council_members (member_id, name, dna_json, phenotype_json, generation, status)
@@ -298,6 +298,18 @@ async function main() {
       lowPerformanceCount: 1,
       averageLatestValidationScore: 41.5,
       averageLatestHoldoutScore: 39.2,
+    },
+  });
+  assert.deepStrictEqual(result.dnaAdminOverrideDelta, {
+    stateOverrideDelta: {
+      overrideCount: 2,
+      averageValidationDelta: 4.4,
+      averageHoldoutDelta: 3.55,
+    },
+    contextOverrideDelta: {
+      overrideCount: 2,
+      averageValidationDelta: 2.25,
+      averageHoldoutDelta: 2.1,
     },
   });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [

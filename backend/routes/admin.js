@@ -151,6 +151,18 @@ function buildPhenotypeFromDnaForAdmin(dna, currentContext = null) {
   return phenotype;
 }
 
+function summarizeLatestFitnessSnapshot(dna) {
+  const fitnessHistory = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
+  if (!fitnessHistory.length) {
+    return { validationScore: 0, holdoutScore: 0 };
+  }
+  const latest = fitnessHistory[fitnessHistory.length - 1] || {};
+  return {
+    validationScore: Number(latest.validationScore || 0),
+    holdoutScore: Number(latest.holdoutScore || 0),
+  };
+}
+
 function applyAidlGeneStateOverride({ dna, geneId, nextState }) {
   if (!dna || typeof dna !== 'object') {
     throw new Error('DNA payload is required');
@@ -182,6 +194,7 @@ function applyAidlGeneStateOverride({ dna, geneId, nextState }) {
   }
 
   const fromState = targetGene.state;
+  const latestFitness = summarizeLatestFitnessSnapshot(nextDna);
   targetGene.state = nextState;
   nextDna.mutation_log = Array.isArray(nextDna.mutation_log) ? nextDna.mutation_log : [];
   nextDna.mutation_log.push({
@@ -190,6 +203,8 @@ function applyAidlGeneStateOverride({ dna, geneId, nextState }) {
     gene_id: geneId,
     from_state: fromState,
     to_state: nextState,
+    pre_validation_score: latestFitness.validationScore,
+    pre_holdout_score: latestFitness.holdoutScore,
   });
 
   return {
@@ -221,6 +236,7 @@ function applyAidlGeneContextOverride({ dna, geneId, contextKey, enabled }) {
   }
 
   const fromMask = Array.isArray(targetGene.context_mask) ? [...targetGene.context_mask] : [];
+  const latestFitness = summarizeLatestFitnessSnapshot(nextDna);
   const hasContext = fromMask.includes(contextKey);
   let toMask = [...fromMask];
   let action = 'noop';
@@ -241,6 +257,8 @@ function applyAidlGeneContextOverride({ dna, geneId, contextKey, enabled }) {
     action,
     from_mask: fromMask,
     to_mask: [...toMask],
+    pre_validation_score: latestFitness.validationScore,
+    pre_holdout_score: latestFitness.holdoutScore,
   });
 
   return {
