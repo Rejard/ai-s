@@ -1039,15 +1039,15 @@
 
         <section class="section-card" id="black-swan-panel">
             <span class="section-kicker"><i class="fas fa-burst"></i> BLACK_SWAN Shock Gate</span>
-            <h2 class="mt-3 text-lg font-extrabold">The fifth context opens only through a rare shock gate</h2>
+            <h2 class="mt-3 text-lg font-extrabold">5번째 컨텍스트는 희귀 충격 게이트로만 열립니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                `BLACK_SWAN` does not replace the original four climates.
-                Normal runtime keeps the four-climate regime, and the extra shock context opens only when an extreme bar profile is detected.
+                `BLACK_SWAN`은 기존 4기후를 대체하지 않습니다.
+                평상시 runtime은 4기후 체계를 유지하고, 극단적인 bar profile이 감지될 때만 추가 shock context가 열립니다.
             </p>
 
             <div class="mt-4 grid grid-cols-2 gap-2">
-                <button class="context-btn active" data-swan="calm">Normal Regime<br><span class="text-[10px] opacity-70">4-climate only</span></button>
-                <button class="context-btn" data-swan="shock">Shock Regime<br><span class="text-[10px] opacity-70">BLACK_SWAN open</span></button>
+                <button class="context-btn active" data-swan="calm">평시 Regime<br><span class="text-[10px] opacity-70">4-climate only</span></button>
+                <button class="context-btn" data-swan="shock">충격 Regime<br><span class="text-[10px] opacity-70">BLACK_SWAN open</span></button>
             </div>
 
             <div class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/75 p-4">
@@ -1060,7 +1060,7 @@
 
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                        <div class="tiny-label">Close Move Gate</div>
+                        <div class="tiny-label">종가 변동 Gate</div>
                         <div id="swan-close-text" class="mt-1 font-bold text-slate-200">3.2% / need 6.0%</div>
                         <div class="queue-bar mt-2"><span id="swan-close-bar" style="width:53%;background:linear-gradient(90deg,#475569,#94a3b8);"></span></div>
                     </div>
@@ -1074,29 +1074,29 @@
                 <div class="signal-grid mt-4 text-xs">
                     <div id="swan-chip-close" class="signal-chip">
                         <div class="tiny-label">Gate A</div>
-                        <div class="mt-1 text-sm font-bold text-slate-200">Close move below threshold</div>
-                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">The move is large enough to watch, but not large enough to unlock the fifth context alone.</p>
+                        <div class="mt-1 text-sm font-bold text-slate-200">종가 변동이 아직 기준 미만입니다</div>
+                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">움직임은 감시할 수준이지만, 이것만으로 5번째 컨텍스트를 열 만큼 크지는 않습니다.</p>
                     </div>
                     <div id="swan-chip-range" class="signal-chip">
                         <div class="tiny-label">Gate B</div>
-                        <div class="mt-1 text-sm font-bold text-slate-200">Range shock still muted</div>
-                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">Range expansion stays inside ordinary volatility, so seasonal routing remains dominant.</p>
+                        <div class="mt-1 text-sm font-bold text-slate-200">Range shock이 아직 약합니다</div>
+                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">Range 확장이 일반 변동성 범위 안에 있어서 기존 계절 라우팅이 계속 우선합니다.</p>
                     </div>
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 gap-3 text-xs">
                     <div class="runtime-card">
-                        <div class="tiny-label">Detected Runtime</div>
-                        <div id="swan-context-text" class="mt-1 text-sm font-bold text-sky-300">Regular climate stays active</div>
+                        <div class="tiny-label">감지된 Runtime</div>
+                        <div id="swan-context-text" class="mt-1 text-sm font-bold text-sky-300">기존 climate가 계속 활성 상태입니다</div>
                         <p id="swan-context-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                            Shock gate is closed, so ordinary context matching continues inside the original four climates.
+                            Shock gate가 닫혀 있으므로 기존 4기후 안에서 일반 context matching이 계속 진행됩니다.
                         </p>
                     </div>
                     <div class="runtime-card">
                         <div class="tiny-label">AIDL Intent</div>
-                        <div id="swan-intent-text" class="mt-1 text-sm font-bold text-rose-300">Rare override only</div>
+                        <div id="swan-intent-text" class="mt-1 text-sm font-bold text-rose-300">희귀 override 전용 분기</div>
                         <p id="swan-intent-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                            Legacy bootstrap and runtime self-healing still restore only the original four climates by default.
+                            기본 bootstrap과 runtime self-healing은 여전히 기존 4기후만 기본 복원 대상으로 유지합니다.
                         </p>
                     </div>
                 </div>
@@ -1105,15 +1105,15 @@
 
         <section class="section-card" id="override-panel">
             <span class="section-kicker"><i class="fas fa-chart-line"></i> Override Evidence</span>
-            <h2 class="mt-3 text-lg font-extrabold">Manual control is an evidence chain, not a blind write</h2>
+            <h2 class="mt-3 text-lg font-extrabold">수동 제어는 blind write가 아니라 evidence chain입니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                Admin override now persists `pre_validation_score`, `pre_holdout_score`, and `pre_run_key`
-                so snapshot, coverage, and post-only timeline metrics can audit the outcome after the intervention.
+                Admin override는 이제 `pre_validation_score`, `pre_holdout_score`, `pre_run_key`를 함께 남기고,
+                snapshot, coverage, post-only timeline metric으로 개입 이후 결과를 추적합니다.
             </p>
 
             <div class="mt-4 grid grid-cols-2 gap-2">
-                <button class="context-btn active" data-override-mode="state">State Override<br><span class="text-[10px] opacity-70">A / I / D / L</span></button>
-                <button class="context-btn" data-override-mode="context">Context Override<br><span class="text-[10px] opacity-70">BLACK_SWAN on/off</span></button>
+                <button class="context-btn active" data-override-mode="state">상태 Override<br><span class="text-[10px] opacity-70">A / I / D / L</span></button>
+                <button class="context-btn" data-override-mode="context">컨텍스트 Override<br><span class="text-[10px] opacity-70">BLACK_SWAN on/off</span></button>
             </div>
 
             <div class="mt-4 space-y-3">
@@ -1124,17 +1124,17 @@
                             <div id="override-snapshot-text" class="mt-1 text-sm font-bold text-amber-300">Pre V 46 / H 44 -> Post V 50.4 / H 47.55</div>
                         </div>
                         <div class="text-right">
-                            <div class="tiny-label">Comparable Events</div>
+                            <div class="tiny-label">비교 가능 이벤트</div>
                             <div id="override-coverage-text" class="mt-1 text-sm font-bold text-sky-300">snapshot 2 / timeline 2 / total 2</div>
                         </div>
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-3">
                         <div>
-                            <div class="tiny-label">Validation Lift</div>
+                            <div class="tiny-label">Validation 상승폭</div>
                             <div class="queue-bar mt-2"><span id="override-validation-bar" style="width:78%;background:linear-gradient(90deg,#f59e0b,#fde68a);"></span></div>
                         </div>
                         <div>
-                            <div class="tiny-label">Holdout Lift</div>
+                            <div class="tiny-label">Holdout 상승폭</div>
                             <div class="queue-bar mt-2"><span id="override-holdout-bar" style="width:70%;background:linear-gradient(90deg,#38bdf8,#a78bfa);"></span></div>
                         </div>
                     </div>
@@ -1144,16 +1144,16 @@
                     <div class="tiny-label">Evidence Rail</div>
                     <div class="audit-rail mt-3 text-[11px]">
                         <div id="override-node-pre" class="audit-node active">
-                            <div class="font-bold text-slate-200">Pre-check</div>
-                            <div id="override-node-pre-text" class="mt-1 text-slate-400">validation and holdout snapshot stored</div>
+                            <div class="font-bold text-slate-200">사전 점검</div>
+                            <div id="override-node-pre-text" class="mt-1 text-slate-400">validation과 holdout snapshot이 저장됩니다</div>
                         </div>
                         <div id="override-node-mid" class="audit-node warn active">
                             <div class="font-bold text-slate-200">Override</div>
-                            <div id="override-node-mid-text" class="mt-1 text-slate-400">manual intervention tagged with run key</div>
+                            <div id="override-node-mid-text" class="mt-1 text-slate-400">수동 개입이 run key와 함께 기록됩니다</div>
                         </div>
                         <div id="override-node-post" class="audit-node active">
-                            <div class="font-bold text-slate-200">Post-read</div>
-                            <div id="override-node-post-text" class="mt-1 text-slate-400">post-only outcome stays isolated</div>
+                            <div class="font-bold text-slate-200">사후 판독</div>
+                            <div id="override-node-post-text" class="mt-1 text-slate-400">override 이후 결과만 분리해서 추적합니다</div>
                         </div>
                     </div>
                 </article>
@@ -1162,15 +1162,15 @@
                     <div class="tiny-label">Post-Override Timeline</div>
                     <div id="override-timeline-text" class="mt-2 text-sm font-bold text-slate-200">run-2 V53 H50, run-4 V47.8 H45.1</div>
                     <p id="override-timeline-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        Timeline is now sliced from `pre_run_key` forward, so pre-override runs are no longer mixed into the evidence.
+                        Timeline은 이제 `pre_run_key` 이후 구간만 잘라서 사용하므로, override 이전 run이 evidence에 섞이지 않습니다.
                     </p>
                 </article>
 
                 <article class="runtime-card">
-                    <div class="tiny-label">Admin Control Surface</div>
-                    <div id="override-surface-text" class="mt-2 text-sm font-bold text-emerald-300">strategy gene + subgene state override</div>
+                    <div class="tiny-label">Admin 제어 Surface</div>
+                    <div id="override-surface-text" class="mt-2 text-sm font-bold text-emerald-300">strategy gene + subgene 상태 override</div>
                     <p id="override-surface-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        Backend supported subgene state override already. The admin UI now opens that same control surface instead of exposing only top-level genes.
+                        backend는 이미 subgene 상태 override를 지원하고 있었고, 이제 admin UI도 top-level gene만이 아니라 같은 제어 surface를 그대로 엽니다.
                     </p>
                 </article>
             </div>
@@ -1259,14 +1259,14 @@
                 shellShock: false,
                 closeGateActive: false,
                 rangeGateActive: false,
-                closeChipTitle: "Close move below threshold",
-                closeChipDesc: "The move is large enough to watch, but not large enough to unlock the fifth context alone.",
-                rangeChipTitle: "Range shock still muted",
-                rangeChipDesc: "Range expansion stays inside ordinary volatility, so seasonal routing remains dominant.",
-                contextText: "Regular climate stays active",
-                contextDesc: "Shock gate is closed, so ordinary context matching continues inside the original four climates.",
-                intentText: "Rare override only",
-                intentDesc: "Legacy bootstrap and runtime self-healing still restore only the original four climates by default."
+                closeChipTitle: "종가 변동이 아직 기준 미만입니다",
+                closeChipDesc: "움직임은 감시할 수준이지만, 이것만으로 5번째 컨텍스트를 열 만큼 크지는 않습니다.",
+                rangeChipTitle: "Range shock이 아직 약합니다",
+                rangeChipDesc: "Range 확장이 일반 변동성 범위 안에 있어서 기존 계절 라우팅이 계속 우선합니다.",
+                contextText: "기존 climate가 계속 활성 상태입니다",
+                contextDesc: "Shock gate가 닫혀 있으므로 기존 4기후 안에서 일반 context matching이 계속 진행됩니다.",
+                intentText: "희귀 override 전용 분기",
+                intentDesc: "기본 bootstrap과 runtime self-healing은 여전히 기존 4기후만 기본 복원 대상으로 유지합니다."
             },
             shock: {
                 closeText: "8.4% / need 6.0%",
@@ -1277,14 +1277,14 @@
                 shellShock: true,
                 closeGateActive: true,
                 rangeGateActive: true,
-                closeChipTitle: "Close move gate unlocked",
-                closeChipDesc: "The close-to-close displacement is now severe enough to qualify as a rare directional shock.",
-                rangeChipTitle: "Range shock gate unlocked",
-                rangeChipDesc: "The bar range now exceeds the rolling volatility envelope, so the fifth context can open without rewriting the four climates.",
-                contextText: "BLACK_SWAN context opened",
-                contextDesc: "The bar is now classified as a rare shock profile, so BLACK_SWAN-specialized genes can participate if they opted in through context_mask.",
-                intentText: "4 climates preserved, 5th gate opened",
-                intentDesc: "The four-climate architecture is not replaced. BLACK_SWAN is layered on top as a shock-only branch."
+                closeChipTitle: "종가 변동 Gate가 열렸습니다",
+                closeChipDesc: "종가 기준 변위가 충분히 커져서 희귀 방향성 shock 조건에 들어왔습니다.",
+                rangeChipTitle: "Range Shock Gate가 열렸습니다",
+                rangeChipDesc: "bar range가 rolling volatility 범위를 넘어서면서 4기후를 깨지 않고도 5번째 컨텍스트를 열 수 있습니다.",
+                contextText: "BLACK_SWAN context가 열렸습니다",
+                contextDesc: "이 bar는 이제 희귀 shock profile로 분류되므로, context_mask에 opt-in한 BLACK_SWAN 전용 gene이 발현에 참여할 수 있습니다.",
+                intentText: "4기후는 유지, 5번째 게이트만 개방",
+                intentDesc: "4기후 아키텍처를 대체하는 것이 아니라, BLACK_SWAN을 shock 전용 분기로 위에 추가한 구조입니다."
             }
         };
 
@@ -1294,26 +1294,26 @@
                 coverageText: "snapshot 2 / timeline 2 / total 2",
                 validationWidth: 78,
                 holdoutWidth: 70,
-                preNodeText: "validation and holdout snapshot stored",
-                midNodeText: "A / I / D / L override tagged with pre_run_key",
-                postNodeText: "post-only read stays separate from pre-override history",
+                preNodeText: "validation과 holdout snapshot이 저장됩니다",
+                midNodeText: "A / I / D / L override가 pre_run_key와 함께 기록됩니다",
+                postNodeText: "override 이전 이력과 분리된 post-only 결과만 읽습니다",
                 timelineText: "run-2 V53 H50, run-4 V47.8 H45.1",
-                timelineDesc: "State override evidence now excludes pre-override runs by slicing from pre_run_key forward.",
-                surfaceText: "strategy gene + subgene state override",
-                surfaceDesc: "The admin surface now matches backend capability by exposing both strategy genes and subgenes for A / I / D / L override."
+                timelineDesc: "State override evidence는 이제 pre_run_key 이후 구간만 사용하므로 override 이전 run이 섞이지 않습니다.",
+                surfaceText: "strategy gene + subgene 상태 override",
+                surfaceDesc: "이제 admin surface가 backend capability와 맞춰져서 A / I / D / L override를 strategy gene과 subgene 모두에 열어 줍니다."
             },
             context: {
                 snapshotText: "Pre V 45 / H 42.5 -> Post V 47.25 / H 44.6",
                 coverageText: "snapshot 2 / timeline 2 / total 2",
                 validationWidth: 64,
                 holdoutWidth: 63,
-                preNodeText: "context decision captures the pre-shock baseline",
-                midNodeText: "BLACK_SWAN on or off is stamped as an admin context override",
-                postNodeText: "shock-context outcome is reviewed without mixing state override events",
+                preNodeText: "context 결정 직전의 pre-shock baseline을 저장합니다",
+                midNodeText: "BLACK_SWAN on/off 결정이 admin context override로 기록됩니다",
+                postNodeText: "state override 이벤트와 섞지 않고 shock-context 결과만 따로 봅니다",
                 timelineText: "run-2 V53 H50, run-3 V41.5 H39.2",
-                timelineDesc: "Context override evidence is tracked separately, so BLACK_SWAN on/off decisions can be read without mixing them into state override outcomes.",
-                surfaceText: "strategy gene context override only",
-                surfaceDesc: "BLACK_SWAN on/off remains a strategy-gene level control. Subgenes inherit the strategy context rather than receiving independent context toggles."
+                timelineDesc: "Context override evidence는 별도로 추적되므로 BLACK_SWAN on/off 판단을 state override 결과와 섞지 않고 읽을 수 있습니다.",
+                surfaceText: "strategy gene context override 전용",
+                surfaceDesc: "BLACK_SWAN on/off는 strategy gene 레벨 제어로 유지되고, subgene은 독립 토글 대신 상위 strategy context를 상속합니다."
             }
         };
 
