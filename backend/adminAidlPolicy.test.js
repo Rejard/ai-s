@@ -20,6 +20,8 @@ async function main() {
       WHERE key IN (
         'aidl_context_mutation_rate',
         'aidl_state_mutation_rate',
+        'aidl_profile_mutation_rate',
+        'aidl_copy_number_mutation_rate',
         'aidl_weight_nudge_size'
       )
       ORDER BY key
@@ -30,6 +32,8 @@ async function main() {
     assert.deepEqual(policy, {
       contextMutationRate: '0.10',
       stateMutationRate: '0.10',
+      profileMutationRate: '0.08',
+      copyNumberMutationRate: '0.06',
       weightNudgeSize: '0.02',
     });
 

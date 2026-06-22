@@ -56,14 +56,14 @@ export default function AisTrainingEvidence({
   const latest = stats?.latestRun;
   const decisions = stats?.byDecision || {};
   const dnaStateTotals = stats?.dnaStateTotals || { active: 0, inactive: 0, deprecated: 0, lethal: 0 };
-  const dnaMutationTotals = stats?.dnaMutationTotals || { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 };
+  const dnaMutationTotals = stats?.dnaMutationTotals || { stateMutation: 0, contextMaskMutation: 0, profileMutation: 0, copyNumberMutation: 0, weightNudge: 0, vepFiltered: 0 };
   const selectionTelemetry = stats?.selectionTelemetry || { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
   const dnaOperations = stats?.dnaOperations || { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
   const dnaRepairTelemetry = stats?.dnaRepairTelemetry || { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' };
   const dnaContextSummary = stats?.dnaContextSummary || { blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
-  const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', weightNudgeSize: '0.02' };
+  const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', profileMutationRate: '0.08', copyNumberMutationRate: '0.06', weightNudgeSize: '0.02' };
   const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
   const isPromoEnabled = stats?.automaticPromotionEnabled;
 
@@ -144,7 +144,7 @@ export default function AisTrainingEvidence({
       />
       <Metric
         label="DNA Mutation"
-        value={`State ${dnaMutationTotals.stateMutation || 0} / Context ${dnaMutationTotals.contextMaskMutation || 0} / Nudge ${dnaMutationTotals.weightNudge || 0} / VEP ${dnaMutationTotals.vepFiltered || 0}`}
+        value={`State ${dnaMutationTotals.stateMutation || 0} / Context ${dnaMutationTotals.contextMaskMutation || 0} / Profile ${dnaMutationTotals.profileMutation || 0} / Copy ${dnaMutationTotals.copyNumberMutation || 0} / Nudge ${dnaMutationTotals.weightNudge || 0} / VEP ${dnaMutationTotals.vepFiltered || 0}`}
         color="#93C5FD"
       />
       <Metric
@@ -159,7 +159,7 @@ export default function AisTrainingEvidence({
       />
       <Metric
         label="Runtime Policy"
-        value={`Context ${runtimePolicy.contextMutationRate} / State ${runtimePolicy.stateMutationRate} / Nudge ${runtimePolicy.weightNudgeSize}`}
+        value={`Context ${runtimePolicy.contextMutationRate} / State ${runtimePolicy.stateMutationRate} / Profile ${runtimePolicy.profileMutationRate} / Copy ${runtimePolicy.copyNumberMutationRate} / Nudge ${runtimePolicy.weightNudgeSize}`}
         color="#86EFAC"
       />
       <Metric
@@ -189,6 +189,9 @@ export default function AisTrainingEvidence({
               <span style={{ color: '#9CA3AF' }}>
                 Contexts: {formatContextMaskSummary(genome.contextMaskSummary)}
               </span>
+              <span style={{ color: '#9CA3AF' }}>
+                Budget {genome.expressionBudget || 0} / Dominance {genome.dominanceBias || 0} / Copy avg {genome.averageCopyNumber || 0} / max {genome.maxCopyNumber || 0}
+              </span>
             </div>
           ))}
         </div>
@@ -209,6 +212,9 @@ export default function AisTrainingEvidence({
               </div>
               <span style={{ color: '#9CA3AF' }}>
                 Contexts: {formatContextMaskSummary(archive.contextMaskSummary)}
+              </span>
+              <span style={{ color: '#9CA3AF' }}>
+                Budget {archive.expressionBudget || 0} / Dominance {archive.dominanceBias || 0} / Copy avg {archive.averageCopyNumber || 0} / max {archive.maxCopyNumber || 0}
               </span>
             </div>
           ))}

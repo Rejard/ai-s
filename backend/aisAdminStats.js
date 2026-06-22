@@ -33,6 +33,29 @@ function emptyDnaContextSummary() {
   };
 }
 
+function summarizeCopyNumbers(dna) {
+  const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
+  const copyNumbers = strategyGenes
+    .map((gene) => Number(gene?.copy_number || 0))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (!copyNumbers.length) {
+    return { average: 0, max: 0 };
+  }
+  const total = copyNumbers.reduce((sum, value) => sum + value, 0);
+  return {
+    average: Number((total / copyNumbers.length).toFixed(2)),
+    max: Math.max(...copyNumbers),
+  };
+}
+
+function summarizeRegulatoryProfile(dna) {
+  const profile = dna?.regulatory_profile && typeof dna.regulatory_profile === 'object' ? dna.regulatory_profile : {};
+  return {
+    expressionBudget: Number(profile.expression_budget || 0),
+    dominanceBias: Number(profile.dominance_bias || 0),
+  };
+}
+
 function summarizeContextMasks(dna) {
   const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
   return Array.from(new Set(strategyGenes.flatMap((gene) => (
@@ -61,6 +84,8 @@ function buildGenomeLineageEntry(row, dna) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
   const contextMaskSummary = summarizeContextMasks(dna);
+  const copyNumberSummary = summarizeCopyNumbers(dna);
+  const regulatoryProfile = summarizeRegulatoryProfile(dna);
   return {
     memberId: row.member_id,
     name: row.name || '',
@@ -72,6 +97,10 @@ function buildGenomeLineageEntry(row, dna) {
     lastMutationEvent: mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '',
     stateSummary: summarizeDnaStates(dna),
     contextMaskSummary,
+    expressionBudget: regulatoryProfile.expressionBudget,
+    dominanceBias: regulatoryProfile.dominanceBias,
+    averageCopyNumber: copyNumberSummary.average,
+    maxCopyNumber: copyNumberSummary.max,
     blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
   };
 }
@@ -80,6 +109,8 @@ function buildArchivedGenomeEntry(row, dna) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
   const contextMaskSummary = summarizeContextMasks(dna);
+  const copyNumberSummary = summarizeCopyNumbers(dna);
+  const regulatoryProfile = summarizeRegulatoryProfile(dna);
   return {
     memberId: row.member_id,
     genomeId: row.genome_id || dna?.genome_id || '',
@@ -90,6 +121,10 @@ function buildArchivedGenomeEntry(row, dna) {
     mutationEvents: mutationLog.length,
     lastMutationEvent: mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '',
     contextMaskSummary,
+    expressionBudget: regulatoryProfile.expressionBudget,
+    dominanceBias: regulatoryProfile.dominanceBias,
+    averageCopyNumber: copyNumberSummary.average,
+    maxCopyNumber: copyNumberSummary.max,
     blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
   };
 }
@@ -208,10 +243,19 @@ async function getAisTrainingStats(store) {
     const summary = summarizeMutationLog(row.dna_json);
     totals.stateMutation += summary.stateMutation;
     totals.contextMaskMutation += summary.contextMaskMutation;
+    totals.profileMutation += summary.profileMutation;
+    totals.copyNumberMutation += summary.copyNumberMutation;
     totals.weightNudge += summary.weightNudge;
     totals.vepFiltered += summary.vepFiltered;
     return totals;
-  }, { stateMutation: 0, contextMaskMutation: 0, weightNudge: 0, vepFiltered: 0 });
+  }, {
+    stateMutation: 0,
+    contextMaskMutation: 0,
+    profileMutation: 0,
+    copyNumberMutation: 0,
+    weightNudge: 0,
+    vepFiltered: 0,
+  });
   let dnaOperations = emptyDnaOperations();
   const archiveSummary = await store.get(`
     SELECT COUNT(*) AS archive_count, MAX(archived_at) AS latest_archived_at

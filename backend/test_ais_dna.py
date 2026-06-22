@@ -465,7 +465,7 @@ class AiSDnaTests(unittest.TestCase):
         )
 
         with patch("random.random", side_effect=[0.99, 0.99, 0.99] * 5):
-            mutated = mutate_dna(dna)
+            mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
         phenotype = build_phenotype_from_dna(mutated)
 
         self.assertTrue(validate_centroids(phenotype))
@@ -620,6 +620,38 @@ class AiSDnaTests(unittest.TestCase):
 
         self.assertEqual(predict_variant_effect(dna), "BENIGN")
 
+    def test_predict_variant_effect_flags_profile_overexpression_runaway(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        dna["regulatory_profile"]["expression_budget"] = 19
+        dna["regulatory_profile"]["dominance_bias"] = 1.7
+
+        self.assertEqual(predict_variant_effect(dna), "LETHAL")
+
+    def test_predict_variant_effect_flags_copy_number_duplication_runaway(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        strategy = dna["strategy_genes"][0]
+        strategy["copy_number"] = 4
+        strategy["dominance"] = 1.5
+        strategy["subgenes"].append(
+            {
+                "gene_id": "duplication_probe",
+                "innovation_id": 999,
+                "state": "A",
+                "feature": "sma20_distance_pct",
+                "action": "BUY",
+                "weight": 0.6,
+                "threshold": 0.0,
+                "priority": 1.0,
+            }
+        )
+        strategy["length"] = len(strategy["subgenes"])
+
+        self.assertEqual(predict_variant_effect(dna), "LETHAL")
+
     def test_mutation_filters_out_deleterious_effects(self):
         dna = self._valid_dna()
         # Force every mutation attempt to stay lethal so the VEP fallback path is exercised.
@@ -636,7 +668,7 @@ class AiSDnaTests(unittest.TestCase):
         )
         log_events = [log["event"] for log in mutated.get("mutation_log", [])]
         
-        # 5????筌먲퐣?????濡ろ뜏?????ш낄援???怨뚮뼚?????ш낄援?轅곗땡??녠텥??癲꾧퀗?э㎖?????源놁벁????곕쿊 ?棺堉??먯쾸?vep_filtered_deleterious_mutation) ??筌????獄??嶺뚮Ĳ?됮?        self.assertIn("vep_filtered_deleterious_mutation", log_events)
+        # 5????嶺뚮㉡??????嚥▲굧????????꾣뤃????⑤슢堉???????꾣뤃?饔낃퀣????좏뀯???꿸쑨?????????繹먮냱踰????怨뺤퓡 ?汝뷴젆??癒?씀?vep_filtered_deleterious_mutation) ??嶺???????癲ル슢캉????        self.assertIn("vep_filtered_deleterious_mutation", log_events)
 
 
     def test_mutation_can_reactivate_inactive_subgene(self):
@@ -650,7 +682,7 @@ class AiSDnaTests(unittest.TestCase):
                 item for item in seq if item.get("gene_id") == target_gene_id
             ),
         ):
-            mutated = mutate_dna(dna)
+            mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
 
         mutated_gene = mutated["strategy_genes"][0]["subgenes"][0]
         log_events = [log["event"] for log in mutated.get("mutation_log", [])]
@@ -682,7 +714,7 @@ class AiSDnaTests(unittest.TestCase):
             "random.choice",
             side_effect=lambda seq: next(item for item in seq if item.get("state") == "I"),
         ):
-            mutated = mutate_dna(dna)
+            mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
 
         self.assertEqual(mutated["strategy_genes"][0]["subgenes"][0]["state"], "A")
 
@@ -695,7 +727,7 @@ class AiSDnaTests(unittest.TestCase):
             "random.choice",
             side_effect=lambda seq: next(item for item in seq if item.get("state") == "D"),
         ):
-            mutated = mutate_dna(dna)
+            mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
 
         self.assertNotEqual(mutated["strategy_genes"][0]["subgenes"][0]["state"], "L")
 
@@ -706,6 +738,52 @@ class AiSDnaTests(unittest.TestCase):
 
         self.assertNotIn("state_mutation", [entry["event"] for entry in mutated["mutation_log"]])
 
+    def test_mutation_can_adjust_expression_budget_profile(self):
+        dna = self._valid_dna()
+        original_budget = dna["regulatory_profile"]["expression_budget"]
+
+        with patch("random.random", side_effect=[0.99, 0.99, 0.01, 0.99, 0.99, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: "expression_budget" if "expression_budget" in seq else seq[0],
+        ):
+            mutated = mutate_dna(
+                dna,
+                runtime_policy={
+                    "context_mutation_rate": 0.0,
+                    "state_mutation_rate": 0.0,
+                    "profile_mutation_rate": 1.0,
+                    "copy_number_mutation_rate": 0.0,
+                },
+            )
+
+        self.assertGreater(mutated["regulatory_profile"]["expression_budget"], original_budget)
+        self.assertIn("profile_mutation", [entry["event"] for entry in mutated["mutation_log"]])
+
+    def test_mutation_can_adjust_strategy_copy_number(self):
+        dna = self._valid_dna()
+        original_copy_number = dna["strategy_genes"][0]["copy_number"]
+
+        with patch("random.random", side_effect=[0.99, 0.99, 0.99, 0.01, 0.99, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: (
+                next(item for item in seq if isinstance(item, dict) and item.get("gene_id") == dna["strategy_genes"][0]["gene_id"])
+                if seq and isinstance(seq[0], dict)
+                else seq[0]
+            ),
+        ):
+            mutated = mutate_dna(
+                dna,
+                runtime_policy={
+                    "context_mutation_rate": 0.0,
+                    "state_mutation_rate": 0.0,
+                    "profile_mutation_rate": 0.0,
+                    "copy_number_mutation_rate": 1.0,
+                },
+            )
+
+        self.assertGreater(mutated["strategy_genes"][0]["copy_number"], original_copy_number)
+        self.assertIn("copy_number_mutation", [entry["event"] for entry in mutated["mutation_log"]])
+
     def test_mutation_can_add_black_swan_context(self):
         dna = self._valid_dna()
 
@@ -713,7 +791,7 @@ class AiSDnaTests(unittest.TestCase):
             "random.choice",
             side_effect=lambda seq: "BLACK_SWAN" if "BLACK_SWAN" in seq else seq[0],
         ):
-            mutated = mutate_dna(dna)
+            mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
 
         self.assertIn("BLACK_SWAN", mutated["strategy_genes"][0]["context_mask"])
 

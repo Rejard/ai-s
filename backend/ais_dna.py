@@ -29,6 +29,19 @@ STATE_MUTATION_TRANSITIONS = {
     "D": "L",
     "L": "I",
 }
+PROFILE_MUTATION_KEYS = (
+    "expression_budget",
+    "dominance_bias",
+    "decay_resistance",
+    "reactivation_bias",
+)
+PROFILE_LIMITS = {
+    "expression_budget": (4.0, 20.0),
+    "dominance_bias": (0.5, 1.8),
+    "decay_resistance": (0.0, 1.0),
+    "reactivation_bias": (0.0, 1.0),
+}
+COPY_NUMBER_LIMITS = (1.0, 4.0)
 
 
 def _new_genome_id(generation=1):
@@ -98,6 +111,38 @@ def _choose_state_transition(current_state, profile, random_value):
     if current_state == "L":
         return "I"
     return current_state
+
+
+def _clamp_profile_value(key, value):
+    low, high = PROFILE_LIMITS[key]
+    clamped = max(low, min(high, float(value)))
+    if key == "expression_budget":
+        return int(round(clamped))
+    return round(clamped, 4)
+
+
+def _collect_copy_number_targets(dna):
+    return [
+        strategy
+        for strategy in dna.get("strategy_genes", [])
+        if isinstance(strategy, dict) and _is_positive_finite_number(strategy.get("copy_number"))
+    ]
+
+
+def _apply_profile_mutation(profile, key, increase):
+    step = 1.0 if key == "expression_budget" else 0.1
+    delta = step if increase else -step
+    base_value = _base_profile()[key]
+    profile[key] = _clamp_profile_value(key, float(profile.get(key, base_value)) + delta)
+    return profile[key]
+
+
+def _apply_copy_number_mutation(strategy, increase):
+    step = 1.0 if increase else -1.0
+    current = float(strategy.get("copy_number", 1.0))
+    next_value = max(COPY_NUMBER_LIMITS[0], min(COPY_NUMBER_LIMITS[1], current + step))
+    strategy["copy_number"] = int(round(next_value))
+    return strategy["copy_number"]
 
 
 def validate_dna(dna):
@@ -300,6 +345,21 @@ def predict_variant_effect(dna):
     AI-VEP (AI Variant Effect Predictor)
     Screen mutated DNA against context-specific lethal risk before it reaches the sandbox.
     """
+    profile = dna.get("regulatory_profile", {}) if isinstance(dna.get("regulatory_profile"), dict) else {}
+    expression_budget = float(profile.get("expression_budget", 12))
+    dominance_bias = float(profile.get("dominance_bias", 1.0))
+    if expression_budget >= 18.0 and dominance_bias >= 1.6:
+        return "LETHAL"
+
+    for strategy in dna.get("strategy_genes", []):
+        copy_number = float(strategy.get("copy_number", 1.0))
+        active_subgenes = [
+            subgene for subgene in strategy.get("subgenes", [])
+            if subgene.get("state") == "A"
+        ]
+        if copy_number >= 4.0 and len(active_subgenes) >= 3 and float(strategy.get("dominance", 1.0)) >= 1.4:
+            return "LETHAL"
+
     history = dna.get("fitness_history", [])
     has_recent_fitness_collapse = False
     if len(history) >= 3:
@@ -353,6 +413,8 @@ def _resolve_runtime_policy(runtime_policy=None):
     policy = {
         "context_mutation_rate": 0.10,
         "state_mutation_rate": 0.10,
+        "profile_mutation_rate": 0.08,
+        "copy_number_mutation_rate": 0.06,
         "weight_nudge_size": 0.02,
     }
     if isinstance(runtime_policy, dict):
@@ -365,11 +427,12 @@ def _resolve_runtime_policy(runtime_policy=None):
 
 def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
     import random
+
     parent_genome_id = dna.get("genome_id")
     existing_lineage = dna.get("lineage", {})
     existing_parents = list(existing_lineage.get("parent_ids", []))
     policy = _resolve_runtime_policy(runtime_policy)
-    
+
     # Try up to five mutation attempts and keep only variants that pass AI-VEP.
     for attempt in range(5):
         mutated = copy.deepcopy(dna)
@@ -384,9 +447,8 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
             "innovation_ids": list(existing_lineage.get("innovation_ids", [])),
         }
 
-        # 10% chance of Context Mask Mutation
         context_mutated = False
-        if random.random() < policy["context_mutation_rate"]:
+        if policy["context_mutation_rate"] > 0 and random.random() < policy["context_mutation_rate"]:
             contexts = list(AIDL_CONTEXTS)
             for strategy in mutated.get("strategy_genes", []):
                 mask = list(strategy.get("context_mask", []))
@@ -409,7 +471,7 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
                     )
                     break
 
-        if random.random() < policy["state_mutation_rate"]:
+        if policy["state_mutation_rate"] > 0 and random.random() < policy["state_mutation_rate"]:
             state_targets = _collect_state_mutation_targets(mutated)
             if state_targets:
                 target_gene = random.choice(state_targets)
@@ -427,6 +489,37 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
                         "gene_id": target_gene.get("gene_id"),
                         "from_state": from_state,
                         "to_state": to_state,
+                    }
+                )
+
+        if policy["profile_mutation_rate"] > 0 and random.random() < policy["profile_mutation_rate"]:
+            profile = mutated.setdefault("regulatory_profile", _base_profile())
+            profile_key = random.choice(PROFILE_MUTATION_KEYS)
+            from_value = profile.get(profile_key, _base_profile()[profile_key])
+            to_value = _apply_profile_mutation(profile, profile_key, random.random() > 0.5)
+            mutated.setdefault("mutation_log", []).append(
+                {
+                    "generation": mutated.get("generation", 1),
+                    "event": "profile_mutation",
+                    "profile_key": profile_key,
+                    "from_value": from_value,
+                    "to_value": to_value,
+                }
+            )
+
+        if policy["copy_number_mutation_rate"] > 0 and random.random() < policy["copy_number_mutation_rate"]:
+            copy_targets = _collect_copy_number_targets(mutated)
+            if copy_targets:
+                strategy = random.choice(copy_targets)
+                from_value = strategy.get("copy_number", 1)
+                to_value = _apply_copy_number_mutation(strategy, random.random() > 0.5)
+                mutated.setdefault("mutation_log", []).append(
+                    {
+                        "generation": mutated.get("generation", 1),
+                        "event": "copy_number_mutation",
+                        "gene_id": strategy.get("gene_id"),
+                        "from_value": from_value,
+                        "to_value": to_value,
                     }
                 )
 
@@ -451,16 +544,15 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
                     break
             if applied_nudge:
                 break
-                
+
         if not applied_nudge:
             mutated.setdefault("mutation_log", []).append(
                 {"generation": mutated.get("generation", 1), "event": "no_active_gene"}
             )
-            
-        # Return immediately when the mutation survives AI-VEP screening.
+
         if predict_variant_effect(mutated) != "LETHAL":
             return mutated
-    # After five lethal attempts, keep a safe fallback copy and log the VEP rejection.
+
     fallback = copy.deepcopy(dna)
     fallback["genome_id"] = _new_genome_id(fallback.get("generation", 1))
     fallback.setdefault("mutation_log", []).append(

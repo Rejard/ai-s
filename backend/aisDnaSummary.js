@@ -34,6 +34,8 @@ function summarizeMutationLog(dnaInput) {
   const summary = {
     stateMutation: 0,
     contextMaskMutation: 0,
+    profileMutation: 0,
+    copyNumberMutation: 0,
     weightNudge: 0,
     vepFiltered: 0,
   };
@@ -43,6 +45,8 @@ function summarizeMutationLog(dnaInput) {
     const event = entry && typeof entry === 'object' ? entry.event : null;
     if (event === 'state_mutation') summary.stateMutation += 1;
     else if (event === 'context_mask_mutation') summary.contextMaskMutation += 1;
+    else if (event === 'profile_mutation') summary.profileMutation += 1;
+    else if (event === 'copy_number_mutation') summary.copyNumberMutation += 1;
     else if (event === 'weight_nudge') summary.weightNudge += 1;
     else if (event === 'vep_filtered_deleterious_mutation') summary.vepFiltered += 1;
   }

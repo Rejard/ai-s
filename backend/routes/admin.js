@@ -27,6 +27,8 @@ const MAX_GEMINI_TIMEOUT_MS = 120000;
 const DEFAULT_AIDL_POLICY_CONFIG = {
   contextMutationRate: '0.10',
   stateMutationRate: '0.10',
+  profileMutationRate: '0.08',
+  copyNumberMutationRate: '0.06',
   weightNudgeSize: '0.02',
 };
 const AIDL_FEATURE_ORDER = [
@@ -44,6 +46,8 @@ function buildAidlPolicyConfig(settings = []) {
   settings.forEach((setting) => {
     if (setting.key === 'aidl_context_mutation_rate') policy.contextMutationRate = setting.value;
     if (setting.key === 'aidl_state_mutation_rate') policy.stateMutationRate = setting.value;
+    if (setting.key === 'aidl_profile_mutation_rate') policy.profileMutationRate = setting.value;
+    if (setting.key === 'aidl_copy_number_mutation_rate') policy.copyNumberMutationRate = setting.value;
     if (setting.key === 'aidl_weight_nudge_size') policy.weightNudgeSize = setting.value;
   });
   return policy;
@@ -373,6 +377,12 @@ router.post('/save-ai-config', async (req, res) => {
       if (aidlPolicy.stateMutationRate !== undefined) {
         await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_state_mutation_rate', ?)`, [aidlPolicy.stateMutationRate.toString()]);
       }
+      if (aidlPolicy.profileMutationRate !== undefined) {
+        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_profile_mutation_rate', ?)`, [aidlPolicy.profileMutationRate.toString()]);
+      }
+      if (aidlPolicy.copyNumberMutationRate !== undefined) {
+        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_copy_number_mutation_rate', ?)`, [aidlPolicy.copyNumberMutationRate.toString()]);
+      }
       if (aidlPolicy.weightNudgeSize !== undefined) {
         await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_weight_nudge_size', ?)`, [aidlPolicy.weightNudgeSize.toString()]);
       }
@@ -386,7 +396,7 @@ router.post('/save-ai-config', async (req, res) => {
 
 router.get('/ai-config', async (req, res) => {
   try {
-    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'global_gemini_timeout_ms', 'automatic_promotion_enabled', 'aidl_context_mutation_rate', 'aidl_state_mutation_rate', 'aidl_weight_nudge_size')");
+    const settings = await queries.all("SELECT key, value FROM platform_settings WHERE key IN ('global_ai_model', 'global_gemini_api_key', 'global_ai_interval', 'global_ai_interval_auto', 'global_gemini_timeout_ms', 'automatic_promotion_enabled', 'aidl_context_mutation_rate', 'aidl_state_mutation_rate', 'aidl_profile_mutation_rate', 'aidl_copy_number_mutation_rate', 'aidl_weight_nudge_size')");
     const config = {
       model: 'Gemini 3.5 Flash',
       hasApiKey: false,

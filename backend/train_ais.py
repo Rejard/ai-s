@@ -281,6 +281,8 @@ def load_runtime_policy(cursor):
         WHERE key IN (
             'aidl_context_mutation_rate',
             'aidl_state_mutation_rate',
+            'aidl_profile_mutation_rate',
+            'aidl_copy_number_mutation_rate',
             'aidl_weight_nudge_size'
         )
     """)
@@ -288,11 +290,15 @@ def load_runtime_policy(cursor):
     defaults = {
         "context_mutation_rate": 0.10,
         "state_mutation_rate": 0.10,
+        "profile_mutation_rate": 0.08,
+        "copy_number_mutation_rate": 0.06,
         "weight_nudge_size": 0.02,
     }
     key_map = {
         "aidl_context_mutation_rate": "context_mutation_rate",
         "aidl_state_mutation_rate": "state_mutation_rate",
+        "aidl_profile_mutation_rate": "profile_mutation_rate",
+        "aidl_copy_number_mutation_rate": "copy_number_mutation_rate",
         "aidl_weight_nudge_size": "weight_nudge_size",
     }
     for key, value in rows:

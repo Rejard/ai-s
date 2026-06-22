@@ -193,6 +193,8 @@ function initializeDatabase() {
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', 'OFF')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_context_mutation_rate', '0.10')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_state_mutation_rate', '0.10')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_profile_mutation_rate', '0.08')`);
+        db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_copy_number_mutation_rate', '0.06')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('aidl_weight_nudge_size', '0.02')`);
       });
 
