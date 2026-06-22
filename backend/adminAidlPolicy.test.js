@@ -131,6 +131,10 @@ async function main() {
       overrideResult.dna.mutation_log.at(-1).pre_holdout_score,
       47.2
     );
+    assert.equal(
+      overrideResult.dna.mutation_log.at(-1).pre_run_key,
+      'seed-run'
+    );
 
     assert.throws(
       () => adminRouter.__private__.applyAidlGeneStateOverride({
@@ -169,6 +173,10 @@ async function main() {
     assert.equal(
       contextEnabled.dna.mutation_log.at(-1).pre_holdout_score,
       47.2
+    );
+    assert.equal(
+      contextEnabled.dna.mutation_log.at(-1).pre_run_key,
+      'seed-run'
     );
 
     const contextDisabled = adminRouter.__private__.applyAidlGeneContextOverride({

@@ -414,12 +414,43 @@ function buildOverrideDelta(rows, eventName) {
   };
 }
 
+function collectPostOverrideHistory(dna, eventName) {
+  const history = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
+  if (!history.length) {
+    return [];
+  }
+  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  const overrideEntries = mutationLog.filter((entry) => entry?.event === eventName);
+  if (!overrideEntries.length) {
+    return [];
+  }
+
+  const includedIndices = new Set();
+  for (const overrideEntry of overrideEntries) {
+    const preRunKey = typeof overrideEntry?.pre_run_key === 'string' ? overrideEntry.pre_run_key : '';
+    let startIndex = 0;
+    if (preRunKey) {
+      const matchedIndex = history.findIndex((entry) => entry?.runKey === preRunKey);
+      if (matchedIndex >= 0) {
+        startIndex = matchedIndex + 1;
+      }
+    }
+    for (let index = startIndex; index < history.length; index += 1) {
+      includedIndices.add(index);
+    }
+  }
+
+  return Array.from(includedIndices)
+    .sort((a, b) => a - b)
+    .map((index) => history[index])
+    .filter(Boolean);
+}
+
 function buildOverrideTimeline(rows, eventName) {
   const runMap = new Map();
   for (const row of rows) {
     const dna = safeParseDna(row.dna_json);
-    if (!hasOverrideEvent(dna, eventName)) continue;
-    const history = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
+    const history = collectPostOverrideHistory(dna, eventName);
     for (const entry of history) {
       const runKey = typeof entry?.runKey === 'string' ? entry.runKey : '';
       if (!runKey) continue;

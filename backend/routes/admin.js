@@ -154,12 +154,13 @@ function buildPhenotypeFromDnaForAdmin(dna, currentContext = null) {
 function summarizeLatestFitnessSnapshot(dna) {
   const fitnessHistory = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
   if (!fitnessHistory.length) {
-    return { validationScore: 0, holdoutScore: 0 };
+    return { validationScore: 0, holdoutScore: 0, runKey: '' };
   }
   const latest = fitnessHistory[fitnessHistory.length - 1] || {};
   return {
     validationScore: Number(latest.validationScore || 0),
     holdoutScore: Number(latest.holdoutScore || 0),
+    runKey: typeof latest.runKey === 'string' ? latest.runKey : '',
   };
 }
 
@@ -205,6 +206,7 @@ function applyAidlGeneStateOverride({ dna, geneId, nextState }) {
     to_state: nextState,
     pre_validation_score: latestFitness.validationScore,
     pre_holdout_score: latestFitness.holdoutScore,
+    pre_run_key: latestFitness.runKey,
   });
 
   return {
@@ -259,6 +261,7 @@ function applyAidlGeneContextOverride({ dna, geneId, contextKey, enabled }) {
     to_mask: [...toMask],
     pre_validation_score: latestFitness.validationScore,
     pre_holdout_score: latestFitness.holdoutScore,
+    pre_run_key: latestFitness.runKey,
   });
 
   return {
