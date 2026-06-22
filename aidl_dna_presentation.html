@@ -327,6 +327,195 @@
             transition: width 0.45s ease;
         }
 
+        .shock-shell {
+            position: relative;
+            min-height: 138px;
+            border-radius: 22px;
+            border: 1px solid rgba(71, 85, 105, 0.36);
+            background:
+                radial-gradient(circle at center, rgba(15, 23, 42, 0.72), rgba(2, 6, 23, 0.92)),
+                linear-gradient(180deg, rgba(8, 15, 28, 0.82), rgba(15, 23, 42, 0.94));
+            overflow: hidden;
+        }
+
+        .shock-shell::before {
+            content: "";
+            position: absolute;
+            inset: 14px;
+            border-radius: 999px;
+            border: 1px dashed rgba(148, 163, 184, 0.16);
+            opacity: 0.55;
+        }
+
+        .shock-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 22px;
+            height: 22px;
+            margin-left: -11px;
+            margin-top: -11px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #38bdf8, #a78bfa);
+            box-shadow: 0 0 22px rgba(56, 189, 248, 0.45);
+            z-index: 2;
+        }
+
+        .shock-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 211, 252, 0.3);
+            transform: translate(-50%, -50%) scale(0.82);
+            opacity: 0.55;
+            animation: shock-pulse 2.2s ease-out infinite;
+        }
+
+        .shock-ring.ring-a {
+            width: 54px;
+            height: 54px;
+        }
+
+        .shock-ring.ring-b {
+            width: 92px;
+            height: 92px;
+            animation-delay: 0.4s;
+        }
+
+        .shock-ring.ring-c {
+            width: 128px;
+            height: 128px;
+            animation-delay: 0.8s;
+        }
+
+        .shock-shell.is-shock .shock-core {
+            background: linear-gradient(135deg, #ef4444, #f59e0b);
+            box-shadow: 0 0 28px rgba(239, 68, 68, 0.48);
+        }
+
+        .shock-shell.is-shock .shock-ring {
+            border-color: rgba(248, 113, 113, 0.4);
+            animation-duration: 1.25s;
+        }
+
+        @keyframes shock-pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.82);
+                opacity: 0.55;
+            }
+
+            70% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.12;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.16);
+                opacity: 0;
+            }
+        }
+
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .signal-chip {
+            position: relative;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(71, 85, 105, 0.34);
+            background: rgba(8, 15, 28, 0.84);
+            overflow: hidden;
+            transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .signal-chip::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transform: translateX(-100%);
+        }
+
+        .signal-chip.active::after {
+            animation: chip-scan 1.2s ease;
+        }
+
+        .signal-chip.active {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.1);
+        }
+
+        .signal-chip.warn.active {
+            border-color: rgba(239, 68, 68, 0.34);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.14);
+        }
+
+        @keyframes chip-scan {
+            from {
+                transform: translateX(-100%);
+            }
+
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        .audit-rail {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .audit-rail::before {
+            content: "";
+            position: absolute;
+            top: 18px;
+            left: 14%;
+            right: 14%;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(56, 189, 248, 0.28), rgba(245, 158, 11, 0.32), rgba(52, 211, 153, 0.26));
+            opacity: 0.7;
+        }
+
+        .audit-node {
+            position: relative;
+            padding-top: 34px;
+            text-align: center;
+        }
+
+        .audit-node::before {
+            content: "";
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin-left: -8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(30, 41, 59, 0.95);
+            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+            transition: all 0.25s ease;
+            z-index: 1;
+        }
+
+        .audit-node.active::before {
+            border-color: rgba(56, 189, 248, 0.56);
+            background: linear-gradient(135deg, #38bdf8, #a78bfa);
+            box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.08);
+        }
+
+        .audit-node.warn.active::before {
+            border-color: rgba(245, 158, 11, 0.58);
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.08);
+        }
+
         .queue-row {
             padding: 10px 12px;
             border-radius: 14px;
@@ -862,6 +1051,13 @@
             </div>
 
             <div class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/75 p-4">
+                <div id="swan-visual-shell" class="shock-shell mb-4">
+                    <div class="shock-ring ring-a"></div>
+                    <div class="shock-ring ring-b"></div>
+                    <div class="shock-ring ring-c"></div>
+                    <div class="shock-core"></div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div>
                         <div class="tiny-label">Close Move Gate</div>
@@ -872,6 +1068,19 @@
                         <div class="tiny-label">Range Shock Gate</div>
                         <div id="swan-range-text" class="mt-1 font-bold text-slate-200">1.4x / need 2.5x</div>
                         <div class="queue-bar mt-2"><span id="swan-range-bar" style="width:56%;background:linear-gradient(90deg,#475569,#94a3b8);"></span></div>
+                    </div>
+                </div>
+
+                <div class="signal-grid mt-4 text-xs">
+                    <div id="swan-chip-close" class="signal-chip">
+                        <div class="tiny-label">Gate A</div>
+                        <div class="mt-1 text-sm font-bold text-slate-200">Close move below threshold</div>
+                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">The move is large enough to watch, but not large enough to unlock the fifth context alone.</p>
+                    </div>
+                    <div id="swan-chip-range" class="signal-chip">
+                        <div class="tiny-label">Gate B</div>
+                        <div class="mt-1 text-sm font-bold text-slate-200">Range shock still muted</div>
+                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">Range expansion stays inside ordinary volatility, so seasonal routing remains dominant.</p>
                     </div>
                 </div>
 
@@ -927,6 +1136,24 @@
                         <div>
                             <div class="tiny-label">Holdout Lift</div>
                             <div class="queue-bar mt-2"><span id="override-holdout-bar" style="width:70%;background:linear-gradient(90deg,#38bdf8,#a78bfa);"></span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="runtime-card">
+                    <div class="tiny-label">Evidence Rail</div>
+                    <div class="audit-rail mt-3 text-[11px]">
+                        <div id="override-node-pre" class="audit-node active">
+                            <div class="font-bold text-slate-200">Pre-check</div>
+                            <div id="override-node-pre-text" class="mt-1 text-slate-400">validation and holdout snapshot stored</div>
+                        </div>
+                        <div id="override-node-mid" class="audit-node warn active">
+                            <div class="font-bold text-slate-200">Override</div>
+                            <div id="override-node-mid-text" class="mt-1 text-slate-400">manual intervention tagged with run key</div>
+                        </div>
+                        <div id="override-node-post" class="audit-node active">
+                            <div class="font-bold text-slate-200">Post-read</div>
+                            <div id="override-node-post-text" class="mt-1 text-slate-400">post-only outcome stays isolated</div>
                         </div>
                     </div>
                 </article>
@@ -1029,6 +1256,13 @@
                 rangeText: "1.4x / need 2.5x",
                 rangeWidth: 56,
                 bar: "linear-gradient(90deg,#475569,#94a3b8)",
+                shellShock: false,
+                closeGateActive: false,
+                rangeGateActive: false,
+                closeChipTitle: "Close move below threshold",
+                closeChipDesc: "The move is large enough to watch, but not large enough to unlock the fifth context alone.",
+                rangeChipTitle: "Range shock still muted",
+                rangeChipDesc: "Range expansion stays inside ordinary volatility, so seasonal routing remains dominant.",
                 contextText: "Regular climate stays active",
                 contextDesc: "Shock gate is closed, so ordinary context matching continues inside the original four climates.",
                 intentText: "Rare override only",
@@ -1040,6 +1274,13 @@
                 rangeText: "3.1x / need 2.5x",
                 rangeWidth: 100,
                 bar: "linear-gradient(90deg,#ef4444,#f59e0b)",
+                shellShock: true,
+                closeGateActive: true,
+                rangeGateActive: true,
+                closeChipTitle: "Close move gate unlocked",
+                closeChipDesc: "The close-to-close displacement is now severe enough to qualify as a rare directional shock.",
+                rangeChipTitle: "Range shock gate unlocked",
+                rangeChipDesc: "The bar range now exceeds the rolling volatility envelope, so the fifth context can open without rewriting the four climates.",
                 contextText: "BLACK_SWAN context opened",
                 contextDesc: "The bar is now classified as a rare shock profile, so BLACK_SWAN-specialized genes can participate if they opted in through context_mask.",
                 intentText: "4 climates preserved, 5th gate opened",
@@ -1053,6 +1294,9 @@
                 coverageText: "snapshot 2 / timeline 2 / total 2",
                 validationWidth: 78,
                 holdoutWidth: 70,
+                preNodeText: "validation and holdout snapshot stored",
+                midNodeText: "A / I / D / L override tagged with pre_run_key",
+                postNodeText: "post-only read stays separate from pre-override history",
                 timelineText: "run-2 V53 H50, run-4 V47.8 H45.1",
                 timelineDesc: "State override evidence now excludes pre-override runs by slicing from pre_run_key forward.",
                 surfaceText: "strategy gene + subgene state override",
@@ -1063,6 +1307,9 @@
                 coverageText: "snapshot 2 / timeline 2 / total 2",
                 validationWidth: 64,
                 holdoutWidth: 63,
+                preNodeText: "context decision captures the pre-shock baseline",
+                midNodeText: "BLACK_SWAN on or off is stamped as an admin context override",
+                postNodeText: "shock-context outcome is reviewed without mixing state override events",
                 timelineText: "run-2 V53 H50, run-3 V41.5 H39.2",
                 timelineDesc: "Context override evidence is tracked separately, so BLACK_SWAN on/off decisions can be read without mixing them into state override outcomes.",
                 surfaceText: "strategy gene context override only",
@@ -1156,6 +1403,19 @@
             document.getElementById("swan-context-desc").textContent = config.contextDesc;
             document.getElementById("swan-intent-text").textContent = config.intentText;
             document.getElementById("swan-intent-desc").textContent = config.intentDesc;
+
+            const swanShell = document.getElementById("swan-visual-shell");
+            const closeChip = document.getElementById("swan-chip-close");
+            const rangeChip = document.getElementById("swan-chip-range");
+            swanShell.classList.toggle("is-shock", config.shellShock);
+            closeChip.classList.toggle("active", config.closeGateActive);
+            closeChip.classList.toggle("warn", config.closeGateActive);
+            rangeChip.classList.toggle("active", config.rangeGateActive);
+            rangeChip.classList.toggle("warn", config.rangeGateActive);
+            closeChip.children[1].textContent = config.closeChipTitle;
+            closeChip.children[2].textContent = config.closeChipDesc;
+            rangeChip.children[1].textContent = config.rangeChipTitle;
+            rangeChip.children[2].textContent = config.rangeChipDesc;
         }
 
         function setOverrideMode(modeKey) {
@@ -1178,6 +1438,12 @@
             document.getElementById("override-timeline-desc").textContent = config.timelineDesc;
             document.getElementById("override-surface-text").textContent = config.surfaceText;
             document.getElementById("override-surface-desc").textContent = config.surfaceDesc;
+            document.getElementById("override-node-pre-text").textContent = config.preNodeText;
+            document.getElementById("override-node-mid-text").textContent = config.midNodeText;
+            document.getElementById("override-node-post-text").textContent = config.postNodeText;
+
+            const midNode = document.getElementById("override-node-mid");
+            midNode.classList.toggle("warn", modeKey === "context");
         }
 
         function resetVepVisuals() {
