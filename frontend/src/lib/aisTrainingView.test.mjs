@@ -35,6 +35,12 @@ assert.deepEqual(empty.dnaContextPathway, {
   blackSwanArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
   coreArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
 });
+assert.deepEqual(empty.dnaAdminOverrideTelemetry, {
+  stateOverrideCount: 0,
+  contextOverrideCount: 0,
+  recentEvent: null,
+  targetGeneCounts: {},
+});
 assert.deepEqual(empty.dnaLineage, { activeGenomes: [], recentArchives: [] });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
@@ -77,6 +83,12 @@ const populated = normalizeAisTrainingStats({
     blackSwanArchive: { archiveCount: 5, lowPerformanceCount: 3, vepFilteredCount: 2, lastMutationEventCounts: { vep_filtered_deleterious_mutation: 2 } },
     coreArchive: { archiveCount: 6, lowPerformanceCount: 4, vepFilteredCount: 1, lastMutationEventCounts: { weight_nudge: 3 } },
   },
+  dnaAdminOverrideTelemetry: {
+    stateOverrideCount: 4,
+    contextOverrideCount: 3,
+    recentEvent: { event: 'admin_context_override', geneId: 'sg1', contextKey: 'BLACK_SWAN', action: 'added' },
+    targetGeneCounts: { sg1: 4, sg2: 3 },
+  },
   dnaLineage: {
     activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
     recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -112,6 +124,12 @@ assert.deepEqual(populated.dnaContextPathway, {
   coreActive: { genomeCount: 3, vepFilteredGenomes: 0, lastMutationEventCounts: { state_mutation: 2 } },
   blackSwanArchive: { archiveCount: 5, lowPerformanceCount: 3, vepFilteredCount: 2, lastMutationEventCounts: { vep_filtered_deleterious_mutation: 2 } },
   coreArchive: { archiveCount: 6, lowPerformanceCount: 4, vepFilteredCount: 1, lastMutationEventCounts: { weight_nudge: 3 } },
+});
+assert.deepEqual(populated.dnaAdminOverrideTelemetry, {
+  stateOverrideCount: 4,
+  contextOverrideCount: 3,
+  recentEvent: { event: 'admin_context_override', geneId: 'sg1', contextKey: 'BLACK_SWAN', action: 'added' },
+  targetGeneCounts: { sg1: 4, sg2: 3 },
 });
 assert.deepEqual(populated.dnaLineage, {
   activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],

@@ -33,6 +33,15 @@ function emptyDnaContextSummary() {
   };
 }
 
+function emptyDnaAdminOverrideTelemetry() {
+  return {
+    stateOverrideCount: 0,
+    contextOverrideCount: 0,
+    recentEvent: null,
+    targetGeneCounts: {},
+  };
+}
+
 function emptyCohortActivePerformance() {
   return {
     genomeCount: 0,
@@ -229,6 +238,44 @@ function buildArchivePathway(rows) {
     incrementEventCount(summary.lastMutationEventCounts, lastEvent);
     return summary;
   }, emptyArchivePathway());
+}
+
+function buildAdminOverrideTelemetry(rows) {
+  const summary = emptyDnaAdminOverrideTelemetry();
+  let latestGeneration = -1;
+
+  for (const row of rows) {
+    const dna = safeParseDna(row.dna_json);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    for (const entry of mutationLog) {
+      if (!entry || typeof entry !== 'object') continue;
+      if (entry.event === 'admin_state_override') {
+        summary.stateOverrideCount += 1;
+      } else if (entry.event === 'admin_context_override') {
+        summary.contextOverrideCount += 1;
+      } else {
+        continue;
+      }
+
+      const geneId = typeof entry.gene_id === 'string' ? entry.gene_id : '';
+      if (geneId) {
+        summary.targetGeneCounts[geneId] = (summary.targetGeneCounts[geneId] || 0) + 1;
+      }
+
+      const generation = Number(entry.generation || 0);
+      if (generation >= latestGeneration) {
+        latestGeneration = generation;
+        summary.recentEvent = {
+          event: entry.event,
+          geneId: geneId || '',
+          contextKey: typeof entry.context_key === 'string' ? entry.context_key : '',
+          action: typeof entry.action === 'string' ? entry.action : '',
+        };
+      }
+    }
+  }
+
+  return summary;
 }
 
 function buildGenomeLineageEntry(row, dna) {
@@ -496,6 +543,7 @@ async function getAisTrainingStats(store) {
     blackSwanArchive: buildArchivePathway(blackSwanArchiveCohort),
     coreArchive: buildArchivePathway(coreArchiveCohort),
   };
+  const dnaAdminOverrideTelemetry = buildAdminOverrideTelemetry(activeCouncil);
   const dnaLineage = {
     activeGenomes: activeCouncil.slice(0, 5).map((row) => {
       const dna = safeParseDna(row.dna_json);
@@ -524,6 +572,7 @@ async function getAisTrainingStats(store) {
     dnaContextSummary: { ...emptyDnaContextSummary(), ...dnaContextSummary },
     dnaContextPerformance: { ...emptyDnaContextPerformance(), ...dnaContextPerformance },
     dnaContextPathway: { ...emptyDnaContextPathway(), ...dnaContextPathway },
+    dnaAdminOverrideTelemetry: { ...emptyDnaAdminOverrideTelemetry(), ...dnaAdminOverrideTelemetry },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

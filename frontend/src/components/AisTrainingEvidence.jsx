@@ -32,6 +32,14 @@ function formatEventCounts(eventCounts = {}) {
   return entries.map(([event, count]) => `${event} ${count}`).join(', ');
 }
 
+function formatGeneCounts(geneCounts = {}) {
+  const entries = Object.entries(geneCounts).filter(([, count]) => Number(count) > 0);
+  if (!entries.length) {
+    return 'none';
+  }
+  return entries.map(([geneId, count]) => `${geneId} ${count}`).join(', ');
+}
+
 function parseActiveStrategyGenes(activeMembers = []) {
   return activeMembers.flatMap((member) => {
     try {
@@ -82,6 +90,12 @@ export default function AisTrainingEvidence({
     coreActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
     blackSwanArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
     coreArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
+  };
+  const dnaAdminOverrideTelemetry = stats?.dnaAdminOverrideTelemetry || {
+    stateOverrideCount: 0,
+    contextOverrideCount: 0,
+    recentEvent: null,
+    targetGeneCounts: {},
   };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
@@ -208,6 +222,16 @@ export default function AisTrainingEvidence({
         label="BS Path Archive"
         value={`BS Low ${dnaContextPathway.blackSwanArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPathway.blackSwanArchive?.vepFilteredCount || 0} / Last ${formatEventCounts(dnaContextPathway.blackSwanArchive?.lastMutationEventCounts)} | Core Low ${dnaContextPathway.coreArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPathway.coreArchive?.vepFilteredCount || 0} / Last ${formatEventCounts(dnaContextPathway.coreArchive?.lastMutationEventCounts)}`}
         color="#F472B6"
+      />
+      <Metric
+        label="Admin Override"
+        value={`State ${dnaAdminOverrideTelemetry.stateOverrideCount || 0} / Context ${dnaAdminOverrideTelemetry.contextOverrideCount || 0} / Recent ${dnaAdminOverrideTelemetry.recentEvent?.event || 'none'} ${dnaAdminOverrideTelemetry.recentEvent?.geneId || ''} ${dnaAdminOverrideTelemetry.recentEvent?.action || ''}`.trim()}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Genes"
+        value={formatGeneCounts(dnaAdminOverrideTelemetry.targetGeneCounts)}
+        color="#FBBF24"
       />
       <Metric
         label="Selection"

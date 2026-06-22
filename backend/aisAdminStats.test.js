@@ -119,7 +119,7 @@ async function main() {
     VALUES (
       'm1',
       'Active Alpha',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation","context_key":"BLACK_SWAN","action":"added"},{"event":"context_mask_mutation","context_key":"BULL_EXPANSION","action":"removed"},{"event":"profile_mutation","profile_key":"decay_resistance","from_value":0.2,"to_value":0.3},{"event":"copy_number_mutation","from_value":2,"to_value":3}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation","context_key":"BLACK_SWAN","action":"added"},{"event":"context_mask_mutation","context_key":"BULL_EXPANSION","action":"removed"},{"event":"profile_mutation","profile_key":"decay_resistance","from_value":0.2,"to_value":0.3},{"event":"admin_state_override","gene_id":"sg1","from_state":"I","to_state":"A"},{"event":"admin_context_override","gene_id":"sg1","context_key":"BLACK_SWAN","action":"added","from_mask":["BULL_EXPANSION"],"to_mask":["BULL_EXPANSION","BLACK_SWAN"]},{"event":"copy_number_mutation","from_value":2,"to_value":3}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
@@ -212,7 +212,7 @@ async function main() {
       genomeCount: 1,
       averageLatestValidationScore: 53,
       averageLatestHoldoutScore: 50,
-      averageMutationEvents: 5,
+      averageMutationEvents: 7,
     },
     coreActive: {
       genomeCount: 0,
@@ -263,6 +263,19 @@ async function main() {
       },
     },
   });
+  assert.deepStrictEqual(result.dnaAdminOverrideTelemetry, {
+    stateOverrideCount: 1,
+    contextOverrideCount: 1,
+    recentEvent: {
+      event: 'admin_context_override',
+      geneId: 'sg1',
+      contextKey: 'BLACK_SWAN',
+      action: 'added',
+    },
+    targetGeneCounts: {
+      sg1: 2,
+    },
+  });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
     {
       memberId: 'm1',
@@ -271,7 +284,7 @@ async function main() {
       generation: 1,
       parentIds: ['g0'],
       ancestorCount: 1,
-      mutationEvents: 5,
+      mutationEvents: 7,
       lastMutationEvent: 'copy_number_mutation',
       stateSummary: { active: 2, inactive: 1, deprecated: 1, lethal: 1 },
       contextMaskSummary: ['BLACK_SWAN', 'BULL_EXPANSION'],

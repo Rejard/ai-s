@@ -27,6 +27,12 @@ const emptyDnaContextPathway = () => ({
   blackSwanArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
   coreArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
 });
+const emptyDnaAdminOverrideTelemetry = () => ({
+  stateOverrideCount: 0,
+  contextOverrideCount: 0,
+  recentEvent: null,
+  targetGeneCounts: {},
+});
 const emptyDnaLineage = () => ({ activeGenomes: [], recentArchives: [] });
 
 export function normalizeAisTrainingStats(data = {}) {
@@ -39,6 +45,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaContextSummary = data.dnaContextSummary || {};
   const dnaContextPerformance = data.dnaContextPerformance || {};
   const dnaContextPathway = data.dnaContextPathway || {};
+  const dnaAdminOverrideTelemetry = data.dnaAdminOverrideTelemetry || {};
   const dnaLineage = data.dnaLineage || {};
   return {
     total: Number(data.total || data.count || 0),
@@ -90,6 +97,11 @@ export function normalizeAisTrainingStats(data = {}) {
       coreActive: { ...emptyDnaContextPathway().coreActive, ...(dnaContextPathway.coreActive || {}) },
       blackSwanArchive: { ...emptyDnaContextPathway().blackSwanArchive, ...(dnaContextPathway.blackSwanArchive || {}) },
       coreArchive: { ...emptyDnaContextPathway().coreArchive, ...(dnaContextPathway.coreArchive || {}) },
+    },
+    dnaAdminOverrideTelemetry: {
+      ...emptyDnaAdminOverrideTelemetry(),
+      ...dnaAdminOverrideTelemetry,
+      targetGeneCounts: { ...emptyDnaAdminOverrideTelemetry().targetGeneCounts, ...(dnaAdminOverrideTelemetry.targetGeneCounts || {}) },
     },
     dnaLineage: {
       ...emptyDnaLineage(),
