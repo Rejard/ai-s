@@ -100,6 +100,21 @@ function emptyDnaAdminOverrideSnapshot() {
   };
 }
 
+function emptyOverrideCoverage() {
+  return {
+    totalOverrideCount: 0,
+    snapshotComparableCount: 0,
+    timelineComparableCount: 0,
+  };
+}
+
+function emptyDnaAdminOverrideCoverage() {
+  return {
+    stateOverride: emptyOverrideCoverage(),
+    contextOverride: emptyOverrideCoverage(),
+  };
+}
+
 function emptyDnaOverrideLineageAttribution() {
   return {
     activeInheritedStateCount: 0,
@@ -472,6 +487,29 @@ function buildOverrideSnapshot(rows, eventName) {
     postAverageValidationScore: roundMetric(totals.postValidationScore / matched.length),
     postAverageHoldoutScore: roundMetric(totals.postHoldoutScore / matched.length),
   };
+}
+
+function buildOverrideCoverage(rows, eventName) {
+  const summary = emptyOverrideCoverage();
+  for (const row of rows) {
+    const dna = safeParseDna(row.dna_json);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    const history = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
+    for (const entry of mutationLog) {
+      if (entry?.event !== eventName) continue;
+      summary.totalOverrideCount += 1;
+      const preValidationScore = Number(entry.pre_validation_score);
+      const preHoldoutScore = Number(entry.pre_holdout_score);
+      if (Number.isFinite(preValidationScore) && Number.isFinite(preHoldoutScore)) {
+        summary.snapshotComparableCount += 1;
+      }
+      const preRunKey = typeof entry?.pre_run_key === 'string' ? entry.pre_run_key : '';
+      if (preRunKey && history.some((historyEntry) => historyEntry?.runKey === preRunKey)) {
+        summary.timelineComparableCount += 1;
+      }
+    }
+  }
+  return summary;
 }
 
 function collectPostOverrideHistory(dna, eventName) {
@@ -850,6 +888,10 @@ async function getAisTrainingStats(store) {
     stateOverride: buildOverrideSnapshot(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
     contextOverride: buildOverrideSnapshot(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
   };
+  const dnaAdminOverrideCoverage = {
+    stateOverride: buildOverrideCoverage(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
+    contextOverride: buildOverrideCoverage(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
+  };
   const dnaAdminOverrideTimeline = {
     stateOverrideRuns: buildOverrideTimeline(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
     contextOverrideRuns: buildOverrideTimeline(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
@@ -895,6 +937,7 @@ async function getAisTrainingStats(store) {
     dnaAdminOverrideOutcome: { ...emptyDnaAdminOverrideOutcome(), ...dnaAdminOverrideOutcome },
     dnaAdminOverrideDelta: { ...emptyDnaAdminOverrideDelta(), ...dnaAdminOverrideDelta },
     dnaAdminOverrideSnapshot: { ...emptyDnaAdminOverrideSnapshot(), ...dnaAdminOverrideSnapshot },
+    dnaAdminOverrideCoverage: { ...emptyDnaAdminOverrideCoverage(), ...dnaAdminOverrideCoverage },
     dnaAdminOverrideTimeline: { ...emptyDnaAdminOverrideTimeline(), ...dnaAdminOverrideTimeline },
     dnaOverrideLineageAttribution: { ...emptyDnaOverrideLineageAttribution(), ...dnaOverrideLineageAttribution },
     dnaStateTotals,

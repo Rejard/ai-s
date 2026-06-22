@@ -59,6 +59,18 @@ const emptyDnaAdminOverrideSnapshot = () => ({
     postAverageHoldoutScore: 0,
   },
 });
+const emptyDnaAdminOverrideCoverage = () => ({
+  stateOverride: {
+    totalOverrideCount: 0,
+    snapshotComparableCount: 0,
+    timelineComparableCount: 0,
+  },
+  contextOverride: {
+    totalOverrideCount: 0,
+    snapshotComparableCount: 0,
+    timelineComparableCount: 0,
+  },
+});
 const emptyDnaOverrideLineageAttribution = () => ({
   activeInheritedStateCount: 0,
   activeInheritedContextCount: 0,
@@ -85,6 +97,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaAdminOverrideOutcome = data.dnaAdminOverrideOutcome || {};
   const dnaAdminOverrideDelta = data.dnaAdminOverrideDelta || {};
   const dnaAdminOverrideSnapshot = data.dnaAdminOverrideSnapshot || {};
+  const dnaAdminOverrideCoverage = data.dnaAdminOverrideCoverage || {};
   const dnaOverrideLineageAttribution = data.dnaOverrideLineageAttribution || {};
   const dnaAdminOverrideTimeline = data.dnaAdminOverrideTimeline || {};
   const dnaLineage = data.dnaLineage || {};
@@ -163,6 +176,12 @@ export function normalizeAisTrainingStats(data = {}) {
       ...dnaAdminOverrideSnapshot,
       stateOverride: { ...emptyDnaAdminOverrideSnapshot().stateOverride, ...(dnaAdminOverrideSnapshot.stateOverride || {}) },
       contextOverride: { ...emptyDnaAdminOverrideSnapshot().contextOverride, ...(dnaAdminOverrideSnapshot.contextOverride || {}) },
+    },
+    dnaAdminOverrideCoverage: {
+      ...emptyDnaAdminOverrideCoverage(),
+      ...dnaAdminOverrideCoverage,
+      stateOverride: { ...emptyDnaAdminOverrideCoverage().stateOverride, ...(dnaAdminOverrideCoverage.stateOverride || {}) },
+      contextOverride: { ...emptyDnaAdminOverrideCoverage().contextOverride, ...(dnaAdminOverrideCoverage.contextOverride || {}) },
     },
     dnaOverrideLineageAttribution: {
       ...emptyDnaOverrideLineageAttribution(),

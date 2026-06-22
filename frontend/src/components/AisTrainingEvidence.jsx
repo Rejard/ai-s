@@ -51,6 +51,10 @@ function formatOverrideSnapshot(snapshot = {}) {
   return `N ${snapshot.overrideCount || 0} / Pre V ${snapshot.preAverageValidationScore || 0} H ${snapshot.preAverageHoldoutScore || 0} / Post V ${snapshot.postAverageValidationScore || 0} H ${snapshot.postAverageHoldoutScore || 0}`;
 }
 
+function formatOverrideCoverage(coverage = {}) {
+  return `Total ${coverage.totalOverrideCount || 0} / Snapshot ${coverage.snapshotComparableCount || 0} / Timeline ${coverage.timelineComparableCount || 0}`;
+}
+
 function parseActiveStrategyGenes(activeMembers = []) {
   return activeMembers.flatMap((member) => {
     try {
@@ -132,6 +136,18 @@ export default function AisTrainingEvidence({
       preAverageHoldoutScore: 0,
       postAverageValidationScore: 0,
       postAverageHoldoutScore: 0,
+    },
+  };
+  const dnaAdminOverrideCoverage = stats?.dnaAdminOverrideCoverage || {
+    stateOverride: {
+      totalOverrideCount: 0,
+      snapshotComparableCount: 0,
+      timelineComparableCount: 0,
+    },
+    contextOverride: {
+      totalOverrideCount: 0,
+      snapshotComparableCount: 0,
+      timelineComparableCount: 0,
     },
   };
   const dnaOverrideLineageAttribution = stats?.dnaOverrideLineageAttribution || {
@@ -293,6 +309,11 @@ export default function AisTrainingEvidence({
       <Metric
         label="Override Snapshot"
         value={`State ${formatOverrideSnapshot(dnaAdminOverrideSnapshot.stateOverride)} | Context ${formatOverrideSnapshot(dnaAdminOverrideSnapshot.contextOverride)}`}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Coverage"
+        value={`State ${formatOverrideCoverage(dnaAdminOverrideCoverage.stateOverride)} | Context ${formatOverrideCoverage(dnaAdminOverrideCoverage.contextOverride)}`}
         color="#FBBF24"
       />
       <Metric

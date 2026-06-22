@@ -341,6 +341,18 @@ async function main() {
       postAverageHoldoutScore: 44.6,
     },
   });
+  assert.deepStrictEqual(result.dnaAdminOverrideCoverage, {
+    stateOverride: {
+      totalOverrideCount: 2,
+      snapshotComparableCount: 2,
+      timelineComparableCount: 2,
+    },
+    contextOverride: {
+      totalOverrideCount: 2,
+      snapshotComparableCount: 2,
+      timelineComparableCount: 2,
+    },
+  });
   assert.deepStrictEqual(result.dnaOverrideLineageAttribution, {
     activeInheritedStateCount: 1,
     activeInheritedContextCount: 1,

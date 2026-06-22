@@ -67,6 +67,18 @@ assert.deepEqual(empty.dnaAdminOverrideSnapshot, {
     postAverageHoldoutScore: 0,
   },
 });
+assert.deepEqual(empty.dnaAdminOverrideCoverage, {
+  stateOverride: {
+    totalOverrideCount: 0,
+    snapshotComparableCount: 0,
+    timelineComparableCount: 0,
+  },
+  contextOverride: {
+    totalOverrideCount: 0,
+    snapshotComparableCount: 0,
+    timelineComparableCount: 0,
+  },
+});
 assert.deepEqual(empty.dnaOverrideLineageAttribution, {
   activeInheritedStateCount: 0,
   activeInheritedContextCount: 0,
@@ -151,6 +163,18 @@ const populated = normalizeAisTrainingStats({
       postAverageHoldoutScore: 45.9,
     },
   },
+  dnaAdminOverrideCoverage: {
+    stateOverride: {
+      totalOverrideCount: 5,
+      snapshotComparableCount: 4,
+      timelineComparableCount: 3,
+    },
+    contextOverride: {
+      totalOverrideCount: 3,
+      snapshotComparableCount: 2,
+      timelineComparableCount: 1,
+    },
+  },
   dnaOverrideLineageAttribution: {
     activeInheritedStateCount: 4,
     activeInheritedContextCount: 3,
@@ -231,6 +255,18 @@ assert.deepEqual(populated.dnaAdminOverrideSnapshot, {
     preAverageHoldoutScore: 46.2,
     postAverageValidationScore: 47.8,
     postAverageHoldoutScore: 45.9,
+  },
+});
+assert.deepEqual(populated.dnaAdminOverrideCoverage, {
+  stateOverride: {
+    totalOverrideCount: 5,
+    snapshotComparableCount: 4,
+    timelineComparableCount: 3,
+  },
+  contextOverride: {
+    totalOverrideCount: 3,
+    snapshotComparableCount: 2,
+    timelineComparableCount: 1,
   },
 });
 assert.deepEqual(populated.dnaOverrideLineageAttribution, {
