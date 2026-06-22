@@ -794,6 +794,30 @@ class AiSDnaTests(unittest.TestCase):
             mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
 
         self.assertIn("BLACK_SWAN", mutated["strategy_genes"][0]["context_mask"])
+        mutation = next(
+            entry for entry in mutated["mutation_log"]
+            if entry.get("event") == "context_mask_mutation"
+        )
+        self.assertEqual(mutation["context_key"], "BLACK_SWAN")
+        self.assertEqual(mutation["action"], "added")
+
+    def test_mutation_can_remove_black_swan_context(self):
+        dna = self._valid_dna()
+        dna["strategy_genes"][0]["context_mask"] = ["BLACK_SWAN", "BULL_EXPANSION"]
+
+        with patch("random.random", side_effect=[0.01, 0.99, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: "BLACK_SWAN" if "BLACK_SWAN" in seq else seq[0],
+        ):
+            mutated = mutate_dna(dna, runtime_policy={"profile_mutation_rate": 0.0, "copy_number_mutation_rate": 0.0})
+
+        self.assertNotIn("BLACK_SWAN", mutated["strategy_genes"][0]["context_mask"])
+        mutation = next(
+            entry for entry in mutated["mutation_log"]
+            if entry.get("event") == "context_mask_mutation"
+        )
+        self.assertEqual(mutation["context_key"], "BLACK_SWAN")
+        self.assertEqual(mutation["action"], "removed")
 
     def test_load_candidate_dna_self_heals_missing_context_mask_and_profile_fields(self):
         broken = self._valid_dna()

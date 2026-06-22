@@ -3,6 +3,7 @@ const emptyDnaStateTotals = () => ({ active: 0, inactive: 0, deprecated: 0, leth
 const emptyDnaMutationTotals = () => ({
   stateMutation: 0,
   contextMaskMutation: 0,
+  contextMutationDetail: { blackSwanAdded: 0, blackSwanRemoved: 0, coreAdded: 0, coreRemoved: 0 },
   profileMutation: 0,
   profileMutationByKey: { expressionBudget: 0, dominanceBias: 0, decayResistance: 0, reactivationBias: 0 },
   copyNumberMutation: 0,
@@ -43,6 +44,10 @@ export function normalizeAisTrainingStats(data = {}) {
     dnaMutationTotals: {
       ...emptyDnaMutationTotals(),
       ...dnaMutationTotals,
+      contextMutationDetail: {
+        ...emptyDnaMutationTotals().contextMutationDetail,
+        ...(dnaMutationTotals.contextMutationDetail || {}),
+      },
       profileMutationByKey: {
         ...emptyDnaMutationTotals().profileMutationByKey,
         ...(dnaMutationTotals.profileMutationByKey || {}),

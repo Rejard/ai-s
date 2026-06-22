@@ -11,6 +11,7 @@ assert.deepEqual(empty.dnaStateTotals, { active: 0, inactive: 0, deprecated: 0, 
 assert.deepEqual(empty.dnaMutationTotals, {
   stateMutation: 0,
   contextMaskMutation: 0,
+  contextMutationDetail: { blackSwanAdded: 0, blackSwanRemoved: 0, coreAdded: 0, coreRemoved: 0 },
   profileMutation: 0,
   profileMutationByKey: { expressionBudget: 0, dominanceBias: 0, decayResistance: 0, reactivationBias: 0 },
   copyNumberMutation: 0,
@@ -40,6 +41,7 @@ const populated = normalizeAisTrainingStats({
   dnaMutationTotals: {
     stateMutation: 5,
     contextMaskMutation: 6,
+    contextMutationDetail: { blackSwanAdded: 2, blackSwanRemoved: 1, coreAdded: 4, coreRemoved: 3 },
     profileMutation: 7,
     profileMutationByKey: { expressionBudget: 1, dominanceBias: 2, decayResistance: 3, reactivationBias: 1 },
     copyNumberMutation: 8,
@@ -63,6 +65,7 @@ assert.deepEqual(populated.dnaStateTotals, { active: 1, inactive: 2, deprecated:
 assert.deepEqual(populated.dnaMutationTotals, {
   stateMutation: 5,
   contextMaskMutation: 6,
+  contextMutationDetail: { blackSwanAdded: 2, blackSwanRemoved: 1, coreAdded: 4, coreRemoved: 3 },
   profileMutation: 7,
   profileMutationByKey: { expressionBudget: 1, dominanceBias: 2, decayResistance: 3, reactivationBias: 1 },
   copyNumberMutation: 8,

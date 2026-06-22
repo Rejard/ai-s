@@ -452,13 +452,17 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
             contexts = list(AIDL_CONTEXTS)
             for strategy in mutated.get("strategy_genes", []):
                 mask = list(strategy.get("context_mask", []))
+                original_mask = list(mask)
                 target = random.choice(contexts)
+                action = None
                 if target in mask:
                     if len(mask) > 1:
                         mask.remove(target)
+                        action = "removed"
                         context_mutated = True
                 else:
                     mask.append(target)
+                    action = "added"
                     context_mutated = True
                 strategy["context_mask"] = mask
                 if context_mutated:
@@ -467,6 +471,10 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
                             "generation": mutated.get("generation", 1),
                             "event": "context_mask_mutation",
                             "gene_id": strategy.get("gene_id"),
+                            "context_key": target,
+                            "action": action,
+                            "from_mask": original_mask,
+                            "to_mask": list(mask),
                         }
                     )
                     break

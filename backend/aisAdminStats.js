@@ -249,6 +249,10 @@ async function getAisTrainingStats(store) {
     const summary = summarizeMutationLog(row.dna_json);
     totals.stateMutation += summary.stateMutation;
     totals.contextMaskMutation += summary.contextMaskMutation;
+    totals.contextMutationDetail.blackSwanAdded += summary.contextMutationDetail.blackSwanAdded;
+    totals.contextMutationDetail.blackSwanRemoved += summary.contextMutationDetail.blackSwanRemoved;
+    totals.contextMutationDetail.coreAdded += summary.contextMutationDetail.coreAdded;
+    totals.contextMutationDetail.coreRemoved += summary.contextMutationDetail.coreRemoved;
     totals.profileMutation += summary.profileMutation;
     totals.profileMutationByKey.expressionBudget += summary.profileMutationByKey.expressionBudget;
     totals.profileMutationByKey.dominanceBias += summary.profileMutationByKey.dominanceBias;
@@ -264,6 +268,12 @@ async function getAisTrainingStats(store) {
   }, {
     stateMutation: 0,
     contextMaskMutation: 0,
+    contextMutationDetail: {
+      blackSwanAdded: 0,
+      blackSwanRemoved: 0,
+      coreAdded: 0,
+      coreRemoved: 0,
+    },
     profileMutation: 0,
     profileMutationByKey: {
       expressionBudget: 0,

@@ -34,6 +34,12 @@ function summarizeMutationLog(dnaInput) {
   const summary = {
     stateMutation: 0,
     contextMaskMutation: 0,
+    contextMutationDetail: {
+      blackSwanAdded: 0,
+      blackSwanRemoved: 0,
+      coreAdded: 0,
+      coreRemoved: 0,
+    },
     profileMutation: 0,
     profileMutationByKey: {
       expressionBudget: 0,
@@ -55,7 +61,18 @@ function summarizeMutationLog(dnaInput) {
   for (const entry of mutationLog) {
     const event = entry && typeof entry === 'object' ? entry.event : null;
     if (event === 'state_mutation') summary.stateMutation += 1;
-    else if (event === 'context_mask_mutation') summary.contextMaskMutation += 1;
+    else if (event === 'context_mask_mutation') {
+      summary.contextMaskMutation += 1;
+      const contextKey = entry.context_key;
+      const action = entry.action;
+      if (contextKey === 'BLACK_SWAN') {
+        if (action === 'added') summary.contextMutationDetail.blackSwanAdded += 1;
+        else if (action === 'removed') summary.contextMutationDetail.blackSwanRemoved += 1;
+      } else if (typeof contextKey === 'string' && contextKey) {
+        if (action === 'added') summary.contextMutationDetail.coreAdded += 1;
+        else if (action === 'removed') summary.contextMutationDetail.coreRemoved += 1;
+      }
+    }
     else if (event === 'profile_mutation') {
       summary.profileMutation += 1;
       const key = entry.profile_key;
