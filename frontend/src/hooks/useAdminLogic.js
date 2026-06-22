@@ -22,6 +22,8 @@ export function useAdminLogic(managerEmail) {
   const [automaticPromotionEnabled, setAutomaticPromotionEnabled] = useState(false);
   const [aidlContextMutationRate, setAidlContextMutationRate] = useState('0.10');
   const [aidlStateMutationRate, setAidlStateMutationRate] = useState('0.10');
+  const [aidlProfileMutationRate, setAidlProfileMutationRate] = useState('0.08');
+  const [aidlCopyNumberMutationRate, setAidlCopyNumberMutationRate] = useState('0.06');
   const [aidlWeightNudgeSize, setAidlWeightNudgeSize] = useState('0.02');
 
   // 새로 추가된 상태
@@ -84,6 +86,8 @@ export function useAdminLogic(managerEmail) {
         setAutomaticPromotionEnabled(res.data.config.automaticPromotionEnabled === 'ON');
         setAidlContextMutationRate(res.data.config.aidlPolicy?.contextMutationRate || '0.10');
         setAidlStateMutationRate(res.data.config.aidlPolicy?.stateMutationRate || '0.10');
+        setAidlProfileMutationRate(res.data.config.aidlPolicy?.profileMutationRate || '0.08');
+        setAidlCopyNumberMutationRate(res.data.config.aidlPolicy?.copyNumberMutationRate || '0.06');
         setAidlWeightNudgeSize(res.data.config.aidlPolicy?.weightNudgeSize || '0.02');
       }
     } catch (err) {
@@ -273,6 +277,8 @@ export function useAdminLogic(managerEmail) {
         aidlPolicy: {
           contextMutationRate: aidlContextMutationRate,
           stateMutationRate: aidlStateMutationRate,
+          profileMutationRate: aidlProfileMutationRate,
+          copyNumberMutationRate: aidlCopyNumberMutationRate,
           weightNudgeSize: aidlWeightNudgeSize,
         }
       }, getAdminHeaders());
@@ -391,6 +397,10 @@ export function useAdminLogic(managerEmail) {
     setAidlContextMutationRate,
     aidlStateMutationRate,
     setAidlStateMutationRate,
+    aidlProfileMutationRate,
+    setAidlProfileMutationRate,
+    aidlCopyNumberMutationRate,
+    setAidlCopyNumberMutationRate,
     aidlWeightNudgeSize,
     setAidlWeightNudgeSize,
     savingAiConfig,

@@ -35,6 +35,10 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
     setAidlContextMutationRate,
     aidlStateMutationRate,
     setAidlStateMutationRate,
+    aidlProfileMutationRate,
+    setAidlProfileMutationRate,
+    aidlCopyNumberMutationRate,
+    setAidlCopyNumberMutationRate,
     aidlWeightNudgeSize,
     setAidlWeightNudgeSize,
     savingAiConfig,
@@ -238,9 +242,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 컨텍스트 변이율</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Context Mutation</label>
                   <input
                     type="number"
                     min="0"
@@ -252,7 +256,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 상태 변이율</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL State Mutation</label>
                   <input
                     type="number"
                     min="0"
@@ -264,7 +268,31 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 가중치 조정폭</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Profile Mutation</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={aidlProfileMutationRate}
+                    onChange={(e) => setAidlProfileMutationRate(e.target.value)}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Copy Number</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={aidlCopyNumberMutationRate}
+                    onChange={(e) => setAidlCopyNumberMutationRate(e.target.value)}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Weight Nudge</label>
                   <input
                     type="number"
                     min="0"
@@ -337,6 +365,8 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 aidlPolicy={{
                   contextMutationRate: aidlContextMutationRate,
                   stateMutationRate: aidlStateMutationRate,
+                  profileMutationRate: aidlProfileMutationRate,
+                  copyNumberMutationRate: aidlCopyNumberMutationRate,
                   weightNudgeSize: aidlWeightNudgeSize,
                 }}
                 councilStats={councilStats}

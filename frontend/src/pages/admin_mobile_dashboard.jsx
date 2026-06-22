@@ -36,6 +36,10 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
     setAidlContextMutationRate,
     aidlStateMutationRate,
     setAidlStateMutationRate,
+    aidlProfileMutationRate,
+    setAidlProfileMutationRate,
+    aidlCopyNumberMutationRate,
+    setAidlCopyNumberMutationRate,
     aidlWeightNudgeSize,
     setAidlWeightNudgeSize,
     savingAiConfig,
@@ -324,7 +328,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 컨텍스트 변이율</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Context Mutation</label>
                     <input
                       type="number"
                       min="0"
@@ -337,7 +341,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 상태 변이율</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL State Mutation</label>
                     <input
                       type="number"
                       min="0"
@@ -350,7 +354,33 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 가중치 조정폭</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Profile Mutation</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={aidlProfileMutationRate}
+                      onChange={(e) => setAidlProfileMutationRate(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '14px', fontSize: '13px' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Copy Number</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={aidlCopyNumberMutationRate}
+                      onChange={(e) => setAidlCopyNumberMutationRate(e.target.value)}
+                      className="form-input"
+                      style={{ padding: '14px', fontSize: '13px' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Weight Nudge</label>
                     <input
                       type="number"
                       min="0"
@@ -424,6 +454,8 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   aidlPolicy={{
                     contextMutationRate: aidlContextMutationRate,
                     stateMutationRate: aidlStateMutationRate,
+                    profileMutationRate: aidlProfileMutationRate,
+                    copyNumberMutationRate: aidlCopyNumberMutationRate,
                     weightNudgeSize: aidlWeightNudgeSize,
                   }}
                   councilStats={councilStats}
