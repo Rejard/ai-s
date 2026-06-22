@@ -42,6 +42,32 @@ function emptyDnaAdminOverrideTelemetry() {
   };
 }
 
+function emptyOverrideActiveOutcome() {
+  return {
+    genomeCount: 0,
+    averageLatestValidationScore: 0,
+    averageLatestHoldoutScore: 0,
+  };
+}
+
+function emptyOverrideArchiveOutcome() {
+  return {
+    archiveCount: 0,
+    lowPerformanceCount: 0,
+    averageLatestValidationScore: 0,
+    averageLatestHoldoutScore: 0,
+  };
+}
+
+function emptyDnaAdminOverrideOutcome() {
+  return {
+    stateOverrideActive: emptyOverrideActiveOutcome(),
+    contextOverrideActive: emptyOverrideActiveOutcome(),
+    stateOverrideArchive: emptyOverrideArchiveOutcome(),
+    contextOverrideArchive: emptyOverrideArchiveOutcome(),
+  };
+}
+
 function emptyCohortActivePerformance() {
   return {
     genomeCount: 0,
@@ -276,6 +302,53 @@ function buildAdminOverrideTelemetry(rows) {
   }
 
   return summary;
+}
+
+function hasOverrideEvent(dna, eventName) {
+  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  return mutationLog.some((entry) => entry?.event === eventName);
+}
+
+function buildOverrideActiveOutcome(rows, eventName) {
+  const matched = rows
+    .map((row) => ({ row, dna: safeParseDna(row.dna_json) }))
+    .filter(({ dna }) => hasOverrideEvent(dna, eventName));
+  if (!matched.length) {
+    return emptyOverrideActiveOutcome();
+  }
+  const totals = matched.reduce((sum, item) => {
+    const latestFitness = summarizeLatestFitness(item.dna);
+    sum.validationScore += latestFitness.validationScore;
+    sum.holdoutScore += latestFitness.holdoutScore;
+    return sum;
+  }, { validationScore: 0, holdoutScore: 0 });
+  return {
+    genomeCount: matched.length,
+    averageLatestValidationScore: roundMetric(totals.validationScore / matched.length),
+    averageLatestHoldoutScore: roundMetric(totals.holdoutScore / matched.length),
+  };
+}
+
+function buildOverrideArchiveOutcome(rows, eventName) {
+  const matched = rows
+    .map((row) => ({ row, dna: safeParseDna(row.dna_json) }))
+    .filter(({ dna }) => hasOverrideEvent(dna, eventName));
+  if (!matched.length) {
+    return emptyOverrideArchiveOutcome();
+  }
+  const totals = matched.reduce((sum, item) => {
+    const latestFitness = summarizeLatestFitness(item.dna);
+    sum.validationScore += latestFitness.validationScore;
+    sum.holdoutScore += latestFitness.holdoutScore;
+    if (item.row.archive_reason === 'CULLED_LOW_PERFORMANCE') sum.lowPerformanceCount += 1;
+    return sum;
+  }, { validationScore: 0, holdoutScore: 0, lowPerformanceCount: 0 });
+  return {
+    archiveCount: matched.length,
+    lowPerformanceCount: totals.lowPerformanceCount,
+    averageLatestValidationScore: roundMetric(totals.validationScore / matched.length),
+    averageLatestHoldoutScore: roundMetric(totals.holdoutScore / matched.length),
+  };
 }
 
 function buildGenomeLineageEntry(row, dna) {
@@ -544,6 +617,12 @@ async function getAisTrainingStats(store) {
     coreArchive: buildArchivePathway(coreArchiveCohort),
   };
   const dnaAdminOverrideTelemetry = buildAdminOverrideTelemetry(activeCouncil);
+  const dnaAdminOverrideOutcome = {
+    stateOverrideActive: buildOverrideActiveOutcome(activeCouncil, 'admin_state_override'),
+    contextOverrideActive: buildOverrideActiveOutcome(activeCouncil, 'admin_context_override'),
+    stateOverrideArchive: buildOverrideArchiveOutcome(allArchiveRows, 'admin_state_override'),
+    contextOverrideArchive: buildOverrideArchiveOutcome(allArchiveRows, 'admin_context_override'),
+  };
   const dnaLineage = {
     activeGenomes: activeCouncil.slice(0, 5).map((row) => {
       const dna = safeParseDna(row.dna_json);
@@ -573,6 +652,7 @@ async function getAisTrainingStats(store) {
     dnaContextPerformance: { ...emptyDnaContextPerformance(), ...dnaContextPerformance },
     dnaContextPathway: { ...emptyDnaContextPathway(), ...dnaContextPathway },
     dnaAdminOverrideTelemetry: { ...emptyDnaAdminOverrideTelemetry(), ...dnaAdminOverrideTelemetry },
+    dnaAdminOverrideOutcome: { ...emptyDnaAdminOverrideOutcome(), ...dnaAdminOverrideOutcome },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

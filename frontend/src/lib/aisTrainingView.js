@@ -33,6 +33,12 @@ const emptyDnaAdminOverrideTelemetry = () => ({
   recentEvent: null,
   targetGeneCounts: {},
 });
+const emptyDnaAdminOverrideOutcome = () => ({
+  stateOverrideActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  contextOverrideActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  stateOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  contextOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+});
 const emptyDnaLineage = () => ({ activeGenomes: [], recentArchives: [] });
 
 export function normalizeAisTrainingStats(data = {}) {
@@ -46,6 +52,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaContextPerformance = data.dnaContextPerformance || {};
   const dnaContextPathway = data.dnaContextPathway || {};
   const dnaAdminOverrideTelemetry = data.dnaAdminOverrideTelemetry || {};
+  const dnaAdminOverrideOutcome = data.dnaAdminOverrideOutcome || {};
   const dnaLineage = data.dnaLineage || {};
   return {
     total: Number(data.total || data.count || 0),
@@ -102,6 +109,14 @@ export function normalizeAisTrainingStats(data = {}) {
       ...emptyDnaAdminOverrideTelemetry(),
       ...dnaAdminOverrideTelemetry,
       targetGeneCounts: { ...emptyDnaAdminOverrideTelemetry().targetGeneCounts, ...(dnaAdminOverrideTelemetry.targetGeneCounts || {}) },
+    },
+    dnaAdminOverrideOutcome: {
+      ...emptyDnaAdminOverrideOutcome(),
+      ...dnaAdminOverrideOutcome,
+      stateOverrideActive: { ...emptyDnaAdminOverrideOutcome().stateOverrideActive, ...(dnaAdminOverrideOutcome.stateOverrideActive || {}) },
+      contextOverrideActive: { ...emptyDnaAdminOverrideOutcome().contextOverrideActive, ...(dnaAdminOverrideOutcome.contextOverrideActive || {}) },
+      stateOverrideArchive: { ...emptyDnaAdminOverrideOutcome().stateOverrideArchive, ...(dnaAdminOverrideOutcome.stateOverrideArchive || {}) },
+      contextOverrideArchive: { ...emptyDnaAdminOverrideOutcome().contextOverrideArchive, ...(dnaAdminOverrideOutcome.contextOverrideArchive || {}) },
     },
     dnaLineage: {
       ...emptyDnaLineage(),

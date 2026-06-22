@@ -97,6 +97,12 @@ export default function AisTrainingEvidence({
     recentEvent: null,
     targetGeneCounts: {},
   };
+  const dnaAdminOverrideOutcome = stats?.dnaAdminOverrideOutcome || {
+    stateOverrideActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+    contextOverrideActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+    stateOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+    contextOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', profileMutationRate: '0.08', copyNumberMutationRate: '0.06', weightNudgeSize: '0.02' };
@@ -231,6 +237,16 @@ export default function AisTrainingEvidence({
       <Metric
         label="Override Genes"
         value={formatGeneCounts(dnaAdminOverrideTelemetry.targetGeneCounts)}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Active"
+        value={`State ${dnaAdminOverrideOutcome.stateOverrideActive?.genomeCount || 0} / V ${dnaAdminOverrideOutcome.stateOverrideActive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.stateOverrideActive?.averageLatestHoldoutScore || 0} | Context ${dnaAdminOverrideOutcome.contextOverrideActive?.genomeCount || 0} / V ${dnaAdminOverrideOutcome.contextOverrideActive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.contextOverrideActive?.averageLatestHoldoutScore || 0}`}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Archive"
+        value={`State ${dnaAdminOverrideOutcome.stateOverrideArchive?.archiveCount || 0} / Low ${dnaAdminOverrideOutcome.stateOverrideArchive?.lowPerformanceCount || 0} / V ${dnaAdminOverrideOutcome.stateOverrideArchive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.stateOverrideArchive?.averageLatestHoldoutScore || 0} | Context ${dnaAdminOverrideOutcome.contextOverrideArchive?.archiveCount || 0} / Low ${dnaAdminOverrideOutcome.contextOverrideArchive?.lowPerformanceCount || 0} / V ${dnaAdminOverrideOutcome.contextOverrideArchive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.contextOverrideArchive?.averageLatestHoldoutScore || 0}`}
         color="#FBBF24"
       />
       <Metric

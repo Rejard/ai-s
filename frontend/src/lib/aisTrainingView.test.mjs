@@ -41,6 +41,12 @@ assert.deepEqual(empty.dnaAdminOverrideTelemetry, {
   recentEvent: null,
   targetGeneCounts: {},
 });
+assert.deepEqual(empty.dnaAdminOverrideOutcome, {
+  stateOverrideActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  contextOverrideActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  stateOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+  contextOverrideArchive: { archiveCount: 0, lowPerformanceCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0 },
+});
 assert.deepEqual(empty.dnaLineage, { activeGenomes: [], recentArchives: [] });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
@@ -89,6 +95,12 @@ const populated = normalizeAisTrainingStats({
     recentEvent: { event: 'admin_context_override', geneId: 'sg1', contextKey: 'BLACK_SWAN', action: 'added' },
     targetGeneCounts: { sg1: 4, sg2: 3 },
   },
+  dnaAdminOverrideOutcome: {
+    stateOverrideActive: { genomeCount: 2, averageLatestValidationScore: 52.2, averageLatestHoldoutScore: 49.8 },
+    contextOverrideActive: { genomeCount: 1, averageLatestValidationScore: 50.1, averageLatestHoldoutScore: 48.4 },
+    stateOverrideArchive: { archiveCount: 3, lowPerformanceCount: 2, averageLatestValidationScore: 45.6, averageLatestHoldoutScore: 42.9 },
+    contextOverrideArchive: { archiveCount: 2, lowPerformanceCount: 1, averageLatestValidationScore: 41.3, averageLatestHoldoutScore: 39.7 },
+  },
   dnaLineage: {
     activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
     recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -130,6 +142,12 @@ assert.deepEqual(populated.dnaAdminOverrideTelemetry, {
   contextOverrideCount: 3,
   recentEvent: { event: 'admin_context_override', geneId: 'sg1', contextKey: 'BLACK_SWAN', action: 'added' },
   targetGeneCounts: { sg1: 4, sg2: 3 },
+});
+assert.deepEqual(populated.dnaAdminOverrideOutcome, {
+  stateOverrideActive: { genomeCount: 2, averageLatestValidationScore: 52.2, averageLatestHoldoutScore: 49.8 },
+  contextOverrideActive: { genomeCount: 1, averageLatestValidationScore: 50.1, averageLatestHoldoutScore: 48.4 },
+  stateOverrideArchive: { archiveCount: 3, lowPerformanceCount: 2, averageLatestValidationScore: 45.6, averageLatestHoldoutScore: 42.9 },
+  contextOverrideArchive: { archiveCount: 2, lowPerformanceCount: 1, averageLatestValidationScore: 41.3, averageLatestHoldoutScore: 39.7 },
 });
 assert.deepEqual(populated.dnaLineage, {
   activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],

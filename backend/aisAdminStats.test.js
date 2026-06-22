@@ -127,8 +127,8 @@ async function main() {
   `);
   await store.run(`
     INSERT INTO ais_genome_archive VALUES
-      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"context_mask":["BLACK_SWAN"],"copy_number":2,"dominance":1.1}],"lineage":{"parent_ids":["g7","g8"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":10,"dominance_bias":0.9},"mutation_log":[{"event":"vep_filtered_deleterious_mutation"}]}', '2026-06-22 09:00:00'),
-      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"copy_number":1,"dominance":1.0}],"lineage":{"parent_ids":["g6"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":11,"dominance_bias":1.05},"mutation_log":[{"event":"state_mutation"},{"event":"weight_nudge"}]}', '2026-06-22 10:00:00')
+      (1, 'm9', 'g9', 2, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"context_mask":["BLACK_SWAN"],"copy_number":2,"dominance":1.1}],"lineage":{"parent_ids":["g7","g8"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":10,"dominance_bias":0.9},"mutation_log":[{"event":"admin_context_override","gene_id":"sg9","context_key":"BLACK_SWAN","action":"added"},{"event":"vep_filtered_deleterious_mutation"}],"fitness_history":[{"validationScore":41.5,"holdoutScore":39.2,"runKey":"run-3"}]}', '2026-06-22 09:00:00'),
+      (2, 'm10', 'g10', 3, 'CULLED_LOW_PERFORMANCE', '{"strategy_genes":[{"copy_number":1,"dominance":1.0}],"lineage":{"parent_ids":["g6"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":11,"dominance_bias":1.05},"mutation_log":[{"event":"admin_state_override","gene_id":"sg10","from_state":"I","to_state":"A"},{"event":"state_mutation"},{"event":"weight_nudge"}],"fitness_history":[{"validationScore":47.8,"holdoutScore":45.1,"runKey":"run-4"}]}', '2026-06-22 10:00:00')
   `);
   await store.run(`
     INSERT INTO ais_council_members (member_id, name, dna_json, phenotype_json, generation, status)
@@ -276,6 +276,30 @@ async function main() {
       sg1: 2,
     },
   });
+  assert.deepStrictEqual(result.dnaAdminOverrideOutcome, {
+    stateOverrideActive: {
+      genomeCount: 1,
+      averageLatestValidationScore: 53,
+      averageLatestHoldoutScore: 50,
+    },
+    contextOverrideActive: {
+      genomeCount: 1,
+      averageLatestValidationScore: 53,
+      averageLatestHoldoutScore: 50,
+    },
+    stateOverrideArchive: {
+      archiveCount: 1,
+      lowPerformanceCount: 1,
+      averageLatestValidationScore: 47.8,
+      averageLatestHoldoutScore: 45.1,
+    },
+    contextOverrideArchive: {
+      archiveCount: 1,
+      lowPerformanceCount: 1,
+      averageLatestValidationScore: 41.5,
+      averageLatestHoldoutScore: 39.2,
+    },
+  });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
     {
       memberId: 'm1',
@@ -305,7 +329,7 @@ async function main() {
       archiveReason: 'CULLED_LOW_PERFORMANCE',
       archivedAt: '2026-06-22 10:00:00',
       parentIds: ['g6'],
-      mutationEvents: 2,
+      mutationEvents: 3,
       lastMutationEvent: 'weight_nudge',
       contextMaskSummary: [],
       expressionBudget: 11,
@@ -323,7 +347,7 @@ async function main() {
       archiveReason: 'CULLED_LOW_PERFORMANCE',
       archivedAt: '2026-06-22 09:00:00',
       parentIds: ['g7', 'g8'],
-      mutationEvents: 1,
+      mutationEvents: 2,
       lastMutationEvent: 'vep_filtered_deleterious_mutation',
       contextMaskSummary: ['BLACK_SWAN'],
       expressionBudget: 10,
