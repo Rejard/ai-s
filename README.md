@@ -383,3 +383,58 @@ Current service rules:
 - `BLACK_SWAN` is opt-in through mutation or explicit DNA `context_mask` values
 - AI-VEP applies stricter lethal screening to strong directional chase bias inside `BLACK_SWAN`
 - candidate and council DNA context visibility remains admin-only
+
+## Recent AIDL Operational Updates
+
+The current service has moved beyond the original A/I/D/L state engine and four-climate context mask into a more auditable admin-side operating model.
+
+### 1. BLACK_SWAN as a fifth context, not a replacement climate
+
+`BLACK_SWAN` is now implemented as a rare shock-only context on top of the existing four regular climates.
+
+- the four regular climates remain the default bootstrap and self-healing baseline
+- `BLACK_SWAN` is activated only when the live bar satisfies the shock gate
+- strategy genes can opt in through mutation or explicit `context_mask` membership
+- this keeps the normal seasonal model stable while still allowing rare shock specialization
+
+### 2. Shock gate detection logic
+
+The runtime treats a bar as `BLACK_SWAN` only when both conditions are true:
+
+- absolute close-to-close move is at least `6.0%`
+- current high-low range is at least `2.5x` the recent 14-bar average range
+
+This design intentionally avoids collapsing ordinary volatility into the fifth context.
+
+### 3. DNA expression and AI-VEP scope expansion
+
+Recent AIDL work extended the DNA operating surface in four ways:
+
+- `context_mask` mutation can now add or remove `BLACK_SWAN`
+- AI-VEP now tightens lethal filtering for directional chase bias inside `BLACK_SWAN`
+- holdout-collapse history further strengthens lethal blocking during unstable periods
+- runtime/admin reporting now treats context, override, lineage, and repair events as first-class audit signals
+
+### 4. Admin-only override and telemetry model
+
+Administrative DNA control is now paired with telemetry instead of remaining a blind force-write:
+
+- manual `A / I / D / L` state override is recorded as `admin_state_override`
+- manual `BLACK_SWAN` context on/off is recorded as `admin_context_override`
+- override events now snapshot `pre_validation_score`, `pre_holdout_score`, and `pre_run_key`
+- override outcome metrics expose active/archive averages
+- override snapshot metrics expose pre-vs-post averages
+- override coverage metrics expose how many events are comparable for snapshot and post-only timeline analysis
+- override timeline metrics now use post-override runs only
+
+### 5. Lineage and control surface completion
+
+The latest admin surface now covers the full AIDL operating chain:
+
+- accession and lineage visibility for active and archived genomes
+- runtime repair visibility for accession, `context_mask`, and `regulatory_profile`
+- strategy-gene override controls
+- subgene state override controls in the admin UI
+- admin-only DNA context visibility for candidate/council operation
+
+In short, AIDL is now documented and operated as a five-context, admin-auditable DNA evolution system rather than only a four-state genome experiment.
