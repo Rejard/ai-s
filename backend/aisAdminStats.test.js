@@ -325,6 +325,22 @@ async function main() {
       averageHoldoutDelta: 2.1,
     },
   });
+  assert.deepStrictEqual(result.dnaAdminOverrideSnapshot, {
+    stateOverride: {
+      overrideCount: 2,
+      preAverageValidationScore: 46,
+      preAverageHoldoutScore: 44,
+      postAverageValidationScore: 50.4,
+      postAverageHoldoutScore: 47.55,
+    },
+    contextOverride: {
+      overrideCount: 2,
+      preAverageValidationScore: 45,
+      preAverageHoldoutScore: 42.5,
+      postAverageValidationScore: 47.25,
+      postAverageHoldoutScore: 44.6,
+    },
+  });
   assert.deepStrictEqual(result.dnaOverrideLineageAttribution, {
     activeInheritedStateCount: 1,
     activeInheritedContextCount: 1,

@@ -51,6 +51,22 @@ assert.deepEqual(empty.dnaAdminOverrideDelta, {
   stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
   contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
 });
+assert.deepEqual(empty.dnaAdminOverrideSnapshot, {
+  stateOverride: {
+    overrideCount: 0,
+    preAverageValidationScore: 0,
+    preAverageHoldoutScore: 0,
+    postAverageValidationScore: 0,
+    postAverageHoldoutScore: 0,
+  },
+  contextOverride: {
+    overrideCount: 0,
+    preAverageValidationScore: 0,
+    preAverageHoldoutScore: 0,
+    postAverageValidationScore: 0,
+    postAverageHoldoutScore: 0,
+  },
+});
 assert.deepEqual(empty.dnaOverrideLineageAttribution, {
   activeInheritedStateCount: 0,
   activeInheritedContextCount: 0,
@@ -119,6 +135,22 @@ const populated = normalizeAisTrainingStats({
     stateOverrideDelta: { overrideCount: 5, averageValidationDelta: 2.4, averageHoldoutDelta: 1.8 },
     contextOverrideDelta: { overrideCount: 3, averageValidationDelta: -0.7, averageHoldoutDelta: -0.3 },
   },
+  dnaAdminOverrideSnapshot: {
+    stateOverride: {
+      overrideCount: 5,
+      preAverageValidationScore: 49.8,
+      preAverageHoldoutScore: 47.3,
+      postAverageValidationScore: 52.2,
+      postAverageHoldoutScore: 49.1,
+    },
+    contextOverride: {
+      overrideCount: 3,
+      preAverageValidationScore: 48.5,
+      preAverageHoldoutScore: 46.2,
+      postAverageValidationScore: 47.8,
+      postAverageHoldoutScore: 45.9,
+    },
+  },
   dnaOverrideLineageAttribution: {
     activeInheritedStateCount: 4,
     activeInheritedContextCount: 3,
@@ -184,6 +216,22 @@ assert.deepEqual(populated.dnaAdminOverrideOutcome, {
 assert.deepEqual(populated.dnaAdminOverrideDelta, {
   stateOverrideDelta: { overrideCount: 5, averageValidationDelta: 2.4, averageHoldoutDelta: 1.8 },
   contextOverrideDelta: { overrideCount: 3, averageValidationDelta: -0.7, averageHoldoutDelta: -0.3 },
+});
+assert.deepEqual(populated.dnaAdminOverrideSnapshot, {
+  stateOverride: {
+    overrideCount: 5,
+    preAverageValidationScore: 49.8,
+    preAverageHoldoutScore: 47.3,
+    postAverageValidationScore: 52.2,
+    postAverageHoldoutScore: 49.1,
+  },
+  contextOverride: {
+    overrideCount: 3,
+    preAverageValidationScore: 48.5,
+    preAverageHoldoutScore: 46.2,
+    postAverageValidationScore: 47.8,
+    postAverageHoldoutScore: 45.9,
+  },
 });
 assert.deepEqual(populated.dnaOverrideLineageAttribution, {
   activeInheritedStateCount: 4,

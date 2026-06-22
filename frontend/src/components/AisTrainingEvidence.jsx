@@ -47,6 +47,10 @@ function formatTimelineRuns(runs = []) {
   return runs.map((run) => `${run.runKey} V${run.averageValidationScore} H${run.averageHoldoutScore} G${run.genomeCount}`).join(', ');
 }
 
+function formatOverrideSnapshot(snapshot = {}) {
+  return `N ${snapshot.overrideCount || 0} / Pre V ${snapshot.preAverageValidationScore || 0} H ${snapshot.preAverageHoldoutScore || 0} / Post V ${snapshot.postAverageValidationScore || 0} H ${snapshot.postAverageHoldoutScore || 0}`;
+}
+
 function parseActiveStrategyGenes(activeMembers = []) {
   return activeMembers.flatMap((member) => {
     try {
@@ -113,6 +117,22 @@ export default function AisTrainingEvidence({
   const dnaAdminOverrideDelta = stats?.dnaAdminOverrideDelta || {
     stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
     contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
+  };
+  const dnaAdminOverrideSnapshot = stats?.dnaAdminOverrideSnapshot || {
+    stateOverride: {
+      overrideCount: 0,
+      preAverageValidationScore: 0,
+      preAverageHoldoutScore: 0,
+      postAverageValidationScore: 0,
+      postAverageHoldoutScore: 0,
+    },
+    contextOverride: {
+      overrideCount: 0,
+      preAverageValidationScore: 0,
+      preAverageHoldoutScore: 0,
+      postAverageValidationScore: 0,
+      postAverageHoldoutScore: 0,
+    },
   };
   const dnaOverrideLineageAttribution = stats?.dnaOverrideLineageAttribution || {
     activeInheritedStateCount: 0,
@@ -268,6 +288,11 @@ export default function AisTrainingEvidence({
       <Metric
         label="Override Archive"
         value={`State ${dnaAdminOverrideOutcome.stateOverrideArchive?.archiveCount || 0} / Low ${dnaAdminOverrideOutcome.stateOverrideArchive?.lowPerformanceCount || 0} / V ${dnaAdminOverrideOutcome.stateOverrideArchive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.stateOverrideArchive?.averageLatestHoldoutScore || 0} | Context ${dnaAdminOverrideOutcome.contextOverrideArchive?.archiveCount || 0} / Low ${dnaAdminOverrideOutcome.contextOverrideArchive?.lowPerformanceCount || 0} / V ${dnaAdminOverrideOutcome.contextOverrideArchive?.averageLatestValidationScore || 0} / H ${dnaAdminOverrideOutcome.contextOverrideArchive?.averageLatestHoldoutScore || 0}`}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Snapshot"
+        value={`State ${formatOverrideSnapshot(dnaAdminOverrideSnapshot.stateOverride)} | Context ${formatOverrideSnapshot(dnaAdminOverrideSnapshot.contextOverride)}`}
         color="#FBBF24"
       />
       <Metric

@@ -43,6 +43,22 @@ const emptyDnaAdminOverrideDelta = () => ({
   stateOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
   contextOverrideDelta: { overrideCount: 0, averageValidationDelta: 0, averageHoldoutDelta: 0 },
 });
+const emptyDnaAdminOverrideSnapshot = () => ({
+  stateOverride: {
+    overrideCount: 0,
+    preAverageValidationScore: 0,
+    preAverageHoldoutScore: 0,
+    postAverageValidationScore: 0,
+    postAverageHoldoutScore: 0,
+  },
+  contextOverride: {
+    overrideCount: 0,
+    preAverageValidationScore: 0,
+    preAverageHoldoutScore: 0,
+    postAverageValidationScore: 0,
+    postAverageHoldoutScore: 0,
+  },
+});
 const emptyDnaOverrideLineageAttribution = () => ({
   activeInheritedStateCount: 0,
   activeInheritedContextCount: 0,
@@ -68,6 +84,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaAdminOverrideTelemetry = data.dnaAdminOverrideTelemetry || {};
   const dnaAdminOverrideOutcome = data.dnaAdminOverrideOutcome || {};
   const dnaAdminOverrideDelta = data.dnaAdminOverrideDelta || {};
+  const dnaAdminOverrideSnapshot = data.dnaAdminOverrideSnapshot || {};
   const dnaOverrideLineageAttribution = data.dnaOverrideLineageAttribution || {};
   const dnaAdminOverrideTimeline = data.dnaAdminOverrideTimeline || {};
   const dnaLineage = data.dnaLineage || {};
@@ -140,6 +157,12 @@ export function normalizeAisTrainingStats(data = {}) {
       ...dnaAdminOverrideDelta,
       stateOverrideDelta: { ...emptyDnaAdminOverrideDelta().stateOverrideDelta, ...(dnaAdminOverrideDelta.stateOverrideDelta || {}) },
       contextOverrideDelta: { ...emptyDnaAdminOverrideDelta().contextOverrideDelta, ...(dnaAdminOverrideDelta.contextOverrideDelta || {}) },
+    },
+    dnaAdminOverrideSnapshot: {
+      ...emptyDnaAdminOverrideSnapshot(),
+      ...dnaAdminOverrideSnapshot,
+      stateOverride: { ...emptyDnaAdminOverrideSnapshot().stateOverride, ...(dnaAdminOverrideSnapshot.stateOverride || {}) },
+      contextOverride: { ...emptyDnaAdminOverrideSnapshot().contextOverride, ...(dnaAdminOverrideSnapshot.contextOverride || {}) },
     },
     dnaOverrideLineageAttribution: {
       ...emptyDnaOverrideLineageAttribution(),

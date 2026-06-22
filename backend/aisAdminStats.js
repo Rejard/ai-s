@@ -83,6 +83,23 @@ function emptyDnaAdminOverrideDelta() {
   };
 }
 
+function emptyOverrideSnapshot() {
+  return {
+    overrideCount: 0,
+    preAverageValidationScore: 0,
+    preAverageHoldoutScore: 0,
+    postAverageValidationScore: 0,
+    postAverageHoldoutScore: 0,
+  };
+}
+
+function emptyDnaAdminOverrideSnapshot() {
+  return {
+    stateOverride: emptyOverrideSnapshot(),
+    contextOverride: emptyOverrideSnapshot(),
+  };
+}
+
 function emptyDnaOverrideLineageAttribution() {
   return {
     activeInheritedStateCount: 0,
@@ -411,6 +428,49 @@ function buildOverrideDelta(rows, eventName) {
     overrideCount: matched.length,
     averageValidationDelta: roundMetric(totals.validationDelta / matched.length),
     averageHoldoutDelta: roundMetric(totals.holdoutDelta / matched.length),
+  };
+}
+
+function buildOverrideSnapshot(rows, eventName) {
+  const matched = [];
+  for (const row of rows) {
+    const dna = safeParseDna(row.dna_json);
+    const latestFitness = summarizeLatestFitness(dna);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    for (const entry of mutationLog) {
+      if (entry?.event !== eventName) continue;
+      const preValidationScore = Number(entry.pre_validation_score);
+      const preHoldoutScore = Number(entry.pre_holdout_score);
+      if (!Number.isFinite(preValidationScore) || !Number.isFinite(preHoldoutScore)) continue;
+      matched.push({
+        preValidationScore,
+        preHoldoutScore,
+        postValidationScore: latestFitness.validationScore,
+        postHoldoutScore: latestFitness.holdoutScore,
+      });
+    }
+  }
+  if (!matched.length) {
+    return emptyOverrideSnapshot();
+  }
+  const totals = matched.reduce((sum, item) => {
+    sum.preValidationScore += item.preValidationScore;
+    sum.preHoldoutScore += item.preHoldoutScore;
+    sum.postValidationScore += item.postValidationScore;
+    sum.postHoldoutScore += item.postHoldoutScore;
+    return sum;
+  }, {
+    preValidationScore: 0,
+    preHoldoutScore: 0,
+    postValidationScore: 0,
+    postHoldoutScore: 0,
+  });
+  return {
+    overrideCount: matched.length,
+    preAverageValidationScore: roundMetric(totals.preValidationScore / matched.length),
+    preAverageHoldoutScore: roundMetric(totals.preHoldoutScore / matched.length),
+    postAverageValidationScore: roundMetric(totals.postValidationScore / matched.length),
+    postAverageHoldoutScore: roundMetric(totals.postHoldoutScore / matched.length),
   };
 }
 
@@ -786,6 +846,10 @@ async function getAisTrainingStats(store) {
     stateOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
     contextOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
   };
+  const dnaAdminOverrideSnapshot = {
+    stateOverride: buildOverrideSnapshot(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
+    contextOverride: buildOverrideSnapshot(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
+  };
   const dnaAdminOverrideTimeline = {
     stateOverrideRuns: buildOverrideTimeline(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
     contextOverrideRuns: buildOverrideTimeline(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
@@ -830,6 +894,7 @@ async function getAisTrainingStats(store) {
     dnaAdminOverrideTelemetry: { ...emptyDnaAdminOverrideTelemetry(), ...dnaAdminOverrideTelemetry },
     dnaAdminOverrideOutcome: { ...emptyDnaAdminOverrideOutcome(), ...dnaAdminOverrideOutcome },
     dnaAdminOverrideDelta: { ...emptyDnaAdminOverrideDelta(), ...dnaAdminOverrideDelta },
+    dnaAdminOverrideSnapshot: { ...emptyDnaAdminOverrideSnapshot(), ...dnaAdminOverrideSnapshot },
     dnaAdminOverrideTimeline: { ...emptyDnaAdminOverrideTimeline(), ...dnaAdminOverrideTimeline },
     dnaOverrideLineageAttribution: { ...emptyDnaOverrideLineageAttribution(), ...dnaOverrideLineageAttribution },
     dnaStateTotals,
