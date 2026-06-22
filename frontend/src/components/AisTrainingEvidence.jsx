@@ -148,6 +148,16 @@ export default function AisTrainingEvidence({
         color="#93C5FD"
       />
       <Metric
+        label="Profile Detail"
+        value={`Budget ${dnaMutationTotals.profileMutationByKey?.expressionBudget || 0} / Dominance ${dnaMutationTotals.profileMutationByKey?.dominanceBias || 0} / Decay ${dnaMutationTotals.profileMutationByKey?.decayResistance || 0} / Reactivation ${dnaMutationTotals.profileMutationByKey?.reactivationBias || 0}`}
+        color="#93C5FD"
+      />
+      <Metric
+        label="Copy Direction"
+        value={`Up ${dnaMutationTotals.copyNumberDirection?.up || 0} / Down ${dnaMutationTotals.copyNumberDirection?.down || 0} / Flat ${dnaMutationTotals.copyNumberDirection?.flat || 0}`}
+        color="#93C5FD"
+      />
+      <Metric
         label="BLACK_SWAN"
         value={`Genes ${dnaContextSummary.blackSwanStrategyGenes || 0} / Active ${dnaContextSummary.blackSwanActiveGenomes || 0} / Archive ${dnaContextSummary.blackSwanArchivedGenomes || 0}`}
         color="#F472B6"

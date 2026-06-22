@@ -250,7 +250,14 @@ async function getAisTrainingStats(store) {
     totals.stateMutation += summary.stateMutation;
     totals.contextMaskMutation += summary.contextMaskMutation;
     totals.profileMutation += summary.profileMutation;
+    totals.profileMutationByKey.expressionBudget += summary.profileMutationByKey.expressionBudget;
+    totals.profileMutationByKey.dominanceBias += summary.profileMutationByKey.dominanceBias;
+    totals.profileMutationByKey.decayResistance += summary.profileMutationByKey.decayResistance;
+    totals.profileMutationByKey.reactivationBias += summary.profileMutationByKey.reactivationBias;
     totals.copyNumberMutation += summary.copyNumberMutation;
+    totals.copyNumberDirection.up += summary.copyNumberDirection.up;
+    totals.copyNumberDirection.down += summary.copyNumberDirection.down;
+    totals.copyNumberDirection.flat += summary.copyNumberDirection.flat;
     totals.weightNudge += summary.weightNudge;
     totals.vepFiltered += summary.vepFiltered;
     return totals;
@@ -258,7 +265,18 @@ async function getAisTrainingStats(store) {
     stateMutation: 0,
     contextMaskMutation: 0,
     profileMutation: 0,
+    profileMutationByKey: {
+      expressionBudget: 0,
+      dominanceBias: 0,
+      decayResistance: 0,
+      reactivationBias: 0,
+    },
     copyNumberMutation: 0,
+    copyNumberDirection: {
+      up: 0,
+      down: 0,
+      flat: 0,
+    },
     weightNudge: 0,
     vepFiltered: 0,
   });

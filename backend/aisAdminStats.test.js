@@ -119,7 +119,7 @@ async function main() {
     VALUES (
       'm1',
       'Active Alpha',
-      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"},{"event":"profile_mutation"},{"event":"copy_number_mutation"}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
+      '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation"},{"event":"profile_mutation","profile_key":"decay_resistance","from_value":0.2,"to_value":0.3},{"event":"copy_number_mutation","from_value":2,"to_value":3}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
       '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
       1,
       'ACTIVE'
@@ -164,7 +164,18 @@ async function main() {
     stateMutation: 1,
     contextMaskMutation: 1,
     profileMutation: 1,
+    profileMutationByKey: {
+      expressionBudget: 0,
+      dominanceBias: 0,
+      decayResistance: 1,
+      reactivationBias: 0,
+    },
     copyNumberMutation: 1,
+    copyNumberDirection: {
+      up: 1,
+      down: 0,
+      flat: 0,
+    },
     weightNudge: 0,
     vepFiltered: 0,
   });

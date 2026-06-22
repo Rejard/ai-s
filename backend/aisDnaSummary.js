@@ -35,7 +35,18 @@ function summarizeMutationLog(dnaInput) {
     stateMutation: 0,
     contextMaskMutation: 0,
     profileMutation: 0,
+    profileMutationByKey: {
+      expressionBudget: 0,
+      dominanceBias: 0,
+      decayResistance: 0,
+      reactivationBias: 0,
+    },
     copyNumberMutation: 0,
+    copyNumberDirection: {
+      up: 0,
+      down: 0,
+      flat: 0,
+    },
     weightNudge: 0,
     vepFiltered: 0,
   };
@@ -45,8 +56,25 @@ function summarizeMutationLog(dnaInput) {
     const event = entry && typeof entry === 'object' ? entry.event : null;
     if (event === 'state_mutation') summary.stateMutation += 1;
     else if (event === 'context_mask_mutation') summary.contextMaskMutation += 1;
-    else if (event === 'profile_mutation') summary.profileMutation += 1;
-    else if (event === 'copy_number_mutation') summary.copyNumberMutation += 1;
+    else if (event === 'profile_mutation') {
+      summary.profileMutation += 1;
+      const key = entry.profile_key;
+      if (key === 'expression_budget') summary.profileMutationByKey.expressionBudget += 1;
+      else if (key === 'dominance_bias') summary.profileMutationByKey.dominanceBias += 1;
+      else if (key === 'decay_resistance') summary.profileMutationByKey.decayResistance += 1;
+      else if (key === 'reactivation_bias') summary.profileMutationByKey.reactivationBias += 1;
+    } else if (event === 'copy_number_mutation') {
+      summary.copyNumberMutation += 1;
+      const fromValue = Number(entry.from_value);
+      const toValue = Number(entry.to_value);
+      if (Number.isFinite(fromValue) && Number.isFinite(toValue)) {
+        if (toValue > fromValue) summary.copyNumberDirection.up += 1;
+        else if (toValue < fromValue) summary.copyNumberDirection.down += 1;
+        else summary.copyNumberDirection.flat += 1;
+      } else {
+        summary.copyNumberDirection.flat += 1;
+      }
+    }
     else if (event === 'weight_nudge') summary.weightNudge += 1;
     else if (event === 'vep_filtered_deleterious_mutation') summary.vepFiltered += 1;
   }

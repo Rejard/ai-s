@@ -1,6 +1,15 @@
 const emptyDecision = () => ({ count: 0, correct: 0, accuracy: 0 });
 const emptyDnaStateTotals = () => ({ active: 0, inactive: 0, deprecated: 0, lethal: 0 });
-const emptyDnaMutationTotals = () => ({ stateMutation: 0, contextMaskMutation: 0, profileMutation: 0, copyNumberMutation: 0, weightNudge: 0, vepFiltered: 0 });
+const emptyDnaMutationTotals = () => ({
+  stateMutation: 0,
+  contextMaskMutation: 0,
+  profileMutation: 0,
+  profileMutationByKey: { expressionBudget: 0, dominanceBias: 0, decayResistance: 0, reactivationBias: 0 },
+  copyNumberMutation: 0,
+  copyNumberDirection: { up: 0, down: 0, flat: 0 },
+  weightNudge: 0,
+  vepFiltered: 0,
+});
 const emptySelectionTelemetry = () => ({ culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 });
 const emptyDnaOperations = () => ({ archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' });
 const emptyDnaRepairTelemetry = () => ({ accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' });
@@ -31,7 +40,18 @@ export function normalizeAisTrainingStats(data = {}) {
     shadowOnly: data.shadowOnly !== false,
     automaticPromotionEnabled: data.automaticPromotionEnabled === true,
     dnaStateTotals: { ...emptyDnaStateTotals(), ...dnaStateTotals },
-    dnaMutationTotals: { ...emptyDnaMutationTotals(), ...dnaMutationTotals },
+    dnaMutationTotals: {
+      ...emptyDnaMutationTotals(),
+      ...dnaMutationTotals,
+      profileMutationByKey: {
+        ...emptyDnaMutationTotals().profileMutationByKey,
+        ...(dnaMutationTotals.profileMutationByKey || {}),
+      },
+      copyNumberDirection: {
+        ...emptyDnaMutationTotals().copyNumberDirection,
+        ...(dnaMutationTotals.copyNumberDirection || {}),
+      },
+    },
     selectionTelemetry: { ...emptySelectionTelemetry(), ...selectionTelemetry },
     dnaOperations: { ...emptyDnaOperations(), ...dnaOperations },
     dnaRepairTelemetry: { ...emptyDnaRepairTelemetry(), ...dnaRepairTelemetry },
