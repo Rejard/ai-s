@@ -25,6 +25,30 @@ function emptyDnaLineage() {
   };
 }
 
+function emptyDnaContextSummary() {
+  return {
+    blackSwanStrategyGenes: 0,
+    blackSwanActiveGenomes: 0,
+    blackSwanArchivedGenomes: 0,
+  };
+}
+
+function summarizeContextMasks(dna) {
+  const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
+  return Array.from(new Set(strategyGenes.flatMap((gene) => (
+    Array.isArray(gene?.context_mask) ? gene.context_mask.filter((value) => typeof value === 'string' && value) : []
+  )))).sort();
+}
+
+function hasBlackSwanContext(dna) {
+  return summarizeContextMasks(dna).includes('BLACK_SWAN');
+}
+
+function countBlackSwanStrategyGenes(dna) {
+  const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
+  return strategyGenes.filter((gene) => Array.isArray(gene?.context_mask) && gene.context_mask.includes('BLACK_SWAN')).length;
+}
+
 function safeParseDna(value) {
   try {
     return JSON.parse(value || '{}');
@@ -36,6 +60,7 @@ function safeParseDna(value) {
 function buildGenomeLineageEntry(row, dna) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  const contextMaskSummary = summarizeContextMasks(dna);
   return {
     memberId: row.member_id,
     name: row.name || '',
@@ -46,12 +71,15 @@ function buildGenomeLineageEntry(row, dna) {
     mutationEvents: mutationLog.length,
     lastMutationEvent: mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '',
     stateSummary: summarizeDnaStates(dna),
+    contextMaskSummary,
+    blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
   };
 }
 
 function buildArchivedGenomeEntry(row, dna) {
   const lineage = dna?.lineage && typeof dna.lineage === 'object' ? dna.lineage : {};
   const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  const contextMaskSummary = summarizeContextMasks(dna);
   return {
     memberId: row.member_id,
     genomeId: row.genome_id || dna?.genome_id || '',
@@ -61,6 +89,8 @@ function buildArchivedGenomeEntry(row, dna) {
     parentIds: Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [],
     mutationEvents: mutationLog.length,
     lastMutationEvent: mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '',
+    contextMaskSummary,
+    blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
   };
 }
 
@@ -210,6 +240,15 @@ async function getAisTrainingStats(store) {
     ORDER BY archived_at DESC, id DESC
     LIMIT 5
   `).catch(() => []);
+  const allArchiveDnaRows = await store.all(`
+    SELECT dna_json
+    FROM ais_genome_archive
+  `).catch(() => []);
+  const dnaContextSummary = {
+    blackSwanStrategyGenes: activeCouncil.reduce((sum, row) => sum + countBlackSwanStrategyGenes(safeParseDna(row.dna_json)), 0),
+    blackSwanActiveGenomes: activeCouncil.reduce((sum, row) => sum + (hasBlackSwanContext(safeParseDna(row.dna_json)) ? 1 : 0), 0),
+    blackSwanArchivedGenomes: allArchiveDnaRows.reduce((sum, row) => sum + (hasBlackSwanContext(safeParseDna(row.dna_json)) ? 1 : 0), 0),
+  };
   const dnaLineage = {
     activeGenomes: activeCouncil.slice(0, 5).map((row) => {
       const dna = safeParseDna(row.dna_json);
@@ -235,6 +274,7 @@ async function getAisTrainingStats(store) {
     dnaOperations,
     dnaRepairTelemetry,
     dnaLineage: { ...emptyDnaLineage(), ...dnaLineage },
+    dnaContextSummary: { ...emptyDnaContextSummary(), ...dnaContextSummary },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,
@@ -244,3 +284,4 @@ async function getAisTrainingStats(store) {
 module.exports = {
   getAisTrainingStats,
 };
+

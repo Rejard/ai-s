@@ -12,7 +12,7 @@ from ais_dna import (
     validate_dna,
 )
 from ais_features import validate_centroids
-from train_ais import append_fitness_history, load_candidate_dna
+from train_ais import append_fitness_history, detect_market_context, load_candidate_dna
 
 
 class AiSDnaTests(unittest.TestCase):
@@ -158,6 +158,26 @@ class AiSDnaTests(unittest.TestCase):
         del dna["strategy_genes"][0]["subgenes"][0]["threshold"]
 
         self.assertFalse(validate_dna(dna))
+
+    def test_validate_dna_accepts_black_swan_context_mask(self):
+        dna = self._valid_dna()
+        dna["strategy_genes"][0]["context_mask"] = ["BLACK_SWAN"]
+
+        self.assertTrue(validate_dna(dna))
+
+    def test_detect_market_context_returns_black_swan_for_extreme_shock_bar(self):
+        base_prices = [100.0 + (index * 0.05) for index in range(260)]
+        close_prices = list(base_prices)
+        close_prices[258] = 100.0
+        close_prices[259] = 92.0
+        high_prices = [price + 0.4 for price in close_prices]
+        low_prices = [price - 0.4 for price in close_prices]
+        high_prices[259] = 108.0
+        low_prices[259] = 88.0
+
+        context = detect_market_context(close_prices, high_prices, low_prices, 259)
+
+        self.assertEqual(context, "BLACK_SWAN")
 
     def test_expression_plan_excludes_inactive_and_lethal_genes(self):
         dna = {
@@ -511,15 +531,13 @@ class AiSDnaTests(unittest.TestCase):
         from ais_dna import predict_variant_effect
         dna = self._valid_dna()
         
-        # 1. 극단적 가중치 임계 한도 초과
+        # 1. Extreme weight over the canonical feature limit.
         bad_dna_1 = copy.deepcopy(dna)
-        # FEATURE_ABS_LIMITS[0] is price_change_pct, limit is 20.0
         bad_dna_1["strategy_genes"][0]["subgenes"][0]["weight"] = 19.8
         self.assertEqual(predict_variant_effect(bad_dna_1), "LETHAL")
         
-        # 2. BEAR_EXPANSION 상황에서 RSI 과매도 기준 과도한 매수(BUY) 가중치
+        # 2. Aggressive BUY weight in BEAR_EXPANSION on RSI/price-change cues.
         bad_dna_2 = copy.deepcopy(dna)
-        # rsi_scaled (limit 2.0) BUY weight
         for sub in bad_dna_2["strategy_genes"][0]["subgenes"]:
             if sub["feature"] == "rsi_scaled" and sub["action"] == "BUY":
                 sub["weight"] = 1.8
@@ -576,9 +594,35 @@ class AiSDnaTests(unittest.TestCase):
 
         self.assertEqual(predict_variant_effect(dna), "LETHAL")
 
+    def test_predict_variant_effect_flags_black_swan_directional_chase_bias(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        dna["strategy_genes"][0]["context_mask"] = ["BLACK_SWAN"]
+        for sub in dna["strategy_genes"][0]["subgenes"]:
+            if sub["action"] == "BUY" and sub["feature"] == "price_change_pct":
+                sub["weight"] = 11.2
+            if sub["action"] == "BUY" and sub["feature"] == "sma5_to_sma20_spread_pct":
+                sub["weight"] = 12.4
+
+        self.assertEqual(predict_variant_effect(dna), "LETHAL")
+
+    def test_predict_variant_effect_allows_black_swan_defensive_bias(self):
+        from ais_dna import predict_variant_effect
+
+        dna = self._valid_dna()
+        dna["strategy_genes"][0]["context_mask"] = ["BLACK_SWAN"]
+        for sub in dna["strategy_genes"][0]["subgenes"]:
+            if sub["action"] == "BUY" and sub["feature"] == "price_change_pct":
+                sub["weight"] = 4.0
+            if sub["action"] == "BUY" and sub["feature"] == "sma5_to_sma20_spread_pct":
+                sub["weight"] = 4.5
+
+        self.assertEqual(predict_variant_effect(dna), "BENIGN")
+
     def test_mutation_filters_out_deleterious_effects(self):
         dna = self._valid_dna()
-        # 모든 돌연변이 시도가 LETHAL을 유도하도록 부모 가중치를 극단적인 경계값 근처로 세팅
+        # Force every mutation attempt to stay lethal so the VEP fallback path is exercised.
         for sub in dna["strategy_genes"][0]["subgenes"]:
             sub["weight"] = 19.2 if sub["feature"] == "price_change_pct" else sub["weight"]
             
@@ -592,8 +636,7 @@ class AiSDnaTests(unittest.TestCase):
         )
         log_events = [log["event"] for log in mutated.get("mutation_log", [])]
         
-        # 5회 시도 후 결국 위험 변이 필터링에 걸려 안전하게 롤백(vep_filtered_deleterious_mutation) 되었음을 확인
-        self.assertIn("vep_filtered_deleterious_mutation", log_events)
+        # 5????筌먲퐣?????濡ろ뜏?????ш낄援???怨뚮뼚?????ш낄援?轅곗땡??녠텥??癲꾧퀗?э㎖?????源놁벁????곕쿊 ?棺堉??먯쾸?vep_filtered_deleterious_mutation) ??筌????獄??嶺뚮Ĳ?됮?        self.assertIn("vep_filtered_deleterious_mutation", log_events)
 
 
     def test_mutation_can_reactivate_inactive_subgene(self):
@@ -663,6 +706,17 @@ class AiSDnaTests(unittest.TestCase):
 
         self.assertNotIn("state_mutation", [entry["event"] for entry in mutated["mutation_log"]])
 
+    def test_mutation_can_add_black_swan_context(self):
+        dna = self._valid_dna()
+
+        with patch("random.random", side_effect=[0.01, 0.99, 0.99]), patch(
+            "random.choice",
+            side_effect=lambda seq: "BLACK_SWAN" if "BLACK_SWAN" in seq else seq[0],
+        ):
+            mutated = mutate_dna(dna)
+
+        self.assertIn("BLACK_SWAN", mutated["strategy_genes"][0]["context_mask"])
+
     def test_load_candidate_dna_self_heals_missing_context_mask_and_profile_fields(self):
         broken = self._valid_dna()
         del broken["strategy_genes"][0]["context_mask"]
@@ -690,6 +744,26 @@ class AiSDnaTests(unittest.TestCase):
         self.assertEqual(healed["regulatory_profile"]["dominance_bias"], 1.0)
         self.assertEqual(healed["regulatory_profile"]["decay_resistance"], 0.3)
         self.assertEqual(healed["regulatory_profile"]["reactivation_bias"], 0.1)
+
+    def test_load_candidate_dna_self_healing_keeps_black_swan_opt_in(self):
+        broken = self._valid_dna()
+        del broken["strategy_genes"][0]["context_mask"]
+
+        healed = load_candidate_dna(
+            member_id="member-3",
+            dna_json=json.dumps(broken),
+            phenotype_json=None,
+            weights_json=None,
+            faction="MUTANT_ROOKIE",
+            generation=1,
+            fallback_weights=self._legacy_centroids(),
+        )
+
+        self.assertEqual(
+            healed["strategy_genes"][0]["context_mask"],
+            ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"],
+        )
+        self.assertNotIn("BLACK_SWAN", healed["strategy_genes"][0]["context_mask"])
 
     def test_load_candidate_dna_records_runtime_repair_events(self):
         broken = self._valid_dna()
@@ -733,3 +807,4 @@ class AiSDnaTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

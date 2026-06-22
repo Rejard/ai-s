@@ -15,6 +15,8 @@ from ais_features import (
     validate_centroids,
 )
 from ais_dna import (
+    BLACK_SWAN_CONTEXT,
+    REGULAR_AIDL_CONTEXTS,
     bootstrap_dna_from_legacy,
     build_phenotype_from_dna,
     crossover_dna,
@@ -28,16 +30,29 @@ DB_PATH = os.environ.get(
 )
 
 def detect_market_context(close_prices, high_prices, low_prices, index):
+    if index >= 14:
+        prev_price = float(close_prices[index - 1])
+        current_price = float(close_prices[index])
+        current_hl_range = float(high_prices[index]) - float(low_prices[index])
+        high_low_ranges = [
+            float(high_prices[j]) - float(low_prices[j])
+            for j in range(index - 14 + 1, index + 1)
+        ]
+        avg_hl_range = sum(high_low_ranges) / 14
+        shock_change_pct = abs(((current_price - prev_price) / prev_price) * 100.0) if prev_price else 0.0
+        atr_multiplier = (current_hl_range / avg_hl_range) if avg_hl_range > 0 else float("inf")
+        if shock_change_pct >= 6.0 and atr_multiplier >= 2.5:
+            return BLACK_SWAN_CONTEXT
+
     if index < 240:
         return "BULL_SQUEEZE"
         
-    # 1. SMA240 계산
-    window = close_prices[index - 240 + 1 : index + 1]
+    # 1. SMA240 ??壤굿?????    window = close_prices[index - 240 + 1 : index + 1]
     sma240 = sum(window) / 240
     current_price = close_prices[index]
     is_bull = current_price >= sma240
     
-    # 2. ATR14 대용 밴드폭 계산 (고가 - 저가 14일 이동평균)
+    # 2. ATR14 ??????ш끽維뽳쭩??????壤굿?????(????숈?? - ?????ル봿?? 14???????????
     high_low_ranges = [
         float(high_prices[j]) - float(low_prices[j])
         for j in range(index - 14 + 1, index + 1)
@@ -195,26 +210,24 @@ def determine_faction_from_weights(weights, name_or_id):
         return 'MUTANT_ROOKIE'
         
     try:
-        # BUY/SELL의 RSI(인덱스 2) 차이를 기반으로 판단
+        # BUY/SELL??RSI(??꿔꺂??????2) ?轅붽틓?蹂잛젂?④낮釉????뗭삏?????????泳?뿀??????????????
         buy_rsi = weights["BUY"][1]
         sell_rsi = weights["SELL"][1]
         if buy_rsi < -0.45 or sell_rsi > 0.45:
             return "VALUE_SEEKER"
             
-        # 가격변화율(인덱스 1) 가중치 강도를 기반으로 판단
+        # ???ル봿????β뼯援?硫⑸궔?????거??異???꿔꺂??????1) ???ル봿???μ떝?띄몭??袁㏉떋?????ル봿??類?ｄ펺??釉먯첁??醫됯눼????????泳?뿀??????????????
         buy_change = weights["BUY"][0]
         sell_change = weights["SELL"][0]
         if abs(buy_change) > 1.2 or abs(sell_change) > 1.2:
             return "TREND_FOLLOWER"
             
-        # 극단적으로 안전 지향적인 과매수/과매도 rsi 범주
-        if buy_rsi < -0.75 or sell_rsi > 0.75:
+        # ????얠뺏???????⑤뜪癲ル슢?뤺キ?????濚밸Ŧ?김린??轅붽틓??????????潁??????潁????rsi ?嶺????ш낄???        if buy_rsi < -0.75 or sell_rsi > 0.75:
             return "CONSERVATIVE_WATCHER"
     except Exception:
         pass
         
-    # 기본값
-    return random.choice(["MUTANT_ROOKIE", "TREND_FOLLOWER", "VALUE_SEEKER", "CONSERVATIVE_WATCHER"])
+    # ????????癲?    return random.choice(["MUTANT_ROOKIE", "TREND_FOLLOWER", "VALUE_SEEKER", "CONSERVATIVE_WATCHER"])
 
 def build_council_member_insert_payload(
     member_id,
@@ -313,7 +326,7 @@ def _heal_runtime_dna(parsed):
         "contextMaskRepaired": False,
         "profileRepaired": False,
     }
-    default_contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+    default_contexts = list(REGULAR_AIDL_CONTEXTS)
     for strategy in parsed.get("strategy_genes", []):
         if "context_mask" not in strategy or not isinstance(strategy["context_mask"], list):
             strategy["context_mask"] = list(default_contexts)
@@ -458,7 +471,7 @@ def evaluate_candidate(candidate_weights_or_dna, rows):
     return score_predictions(targets, predictions)
 
 def main():
-    print("[*] Initiating AI Council General Election & Culling 스케줄러...")
+    print("[*] Initiating AI Council General Election & Culling ????μ떝?띄몭??←솒????..")
     
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -563,7 +576,7 @@ def main():
                     
                 weights = build_phenotype_from_dna(dna)
                 gen = dna.get("generation", 1)
-                name = f"Mutant Challenger {total_in_db + k + 1} ({gen}세대)"
+                name = f"Mutant Challenger {total_in_db + k + 1} ({gen}???)"
                 faction = determine_faction_from_weights(weights, name)
                 dna["faction_hint"] = faction
                 new_inserts.append(build_council_member_insert_payload_from_dna(
@@ -714,7 +727,7 @@ def main():
             offspring_weights = build_phenotype_from_dna(offspring_dna)
             offspring_gen = offspring_dna["generation"]
             new_id = f"offspring_{uuid.uuid4().hex}"
-            name = f"Offspring Gen-{idx+1} ({offspring_gen}세대)"
+            name = f"Offspring Gen-{idx+1} ({offspring_gen}???)"
             faction = determine_faction_from_weights(offspring_weights, p1["name"])
             offspring_dna["faction_hint"] = faction
             new_offspring_inserts.append(build_council_member_insert_payload_from_dna(
@@ -723,7 +736,7 @@ def main():
             
         for idx in range(mutant_count):
             new_id = f"mutant_{uuid.uuid4().hex}"
-            name = f"Mutant Rookie Gen-{idx+1} (1세대)"
+            name = f"Mutant Rookie Gen-{idx+1} (1???)"
             weights = generate_random_weights()
             faction = determine_faction_from_weights(weights, name)
             dna = bootstrap_dna_from_legacy(weights, new_id, faction, 1)
@@ -740,7 +753,7 @@ def main():
         pool_count = cursor.fetchone()[0]
         while pool_count < 500:
             weights = generate_random_weights()
-            name = f"Mutant Pool Refill {pool_count + 1} (1세대)"
+            name = f"Mutant Pool Refill {pool_count + 1} (1???)"
             member_id = f"mutant_{uuid.uuid4().hex}"
             faction = determine_faction_from_weights(weights, name)
             dna = bootstrap_dna_from_legacy(weights, member_id, faction, 1)
@@ -798,8 +811,9 @@ def main():
                 WHERE member_id = ?
             """, (v_power, int(acc), 100, weights_json, dna_json, phenotype_json, member_id))
             
-            print(f"{idx+1}등. [{name}] - 정확도: {acc:.2f}%, 투표권 지분: {v_power:.2f}표")
             
+            print(f"{idx+1}. [{name}] - validation {acc:.2f}%, voting_power {v_power:.2f}")
+
         challenger_holdout_score = (
             sum(metric["utility_score"] for metric in holdout_metrics)
             / len(holdout_metrics)

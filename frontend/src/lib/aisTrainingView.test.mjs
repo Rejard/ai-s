@@ -12,6 +12,7 @@ assert.deepEqual(empty.dnaMutationTotals, { stateMutation: 0, contextMaskMutatio
 assert.deepEqual(empty.selectionTelemetry, { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 });
 assert.deepEqual(empty.dnaOperations, { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' });
 assert.deepEqual(empty.dnaRepairTelemetry, { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' });
+assert.deepEqual(empty.dnaContextSummary, { blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 });
 assert.deepEqual(empty.dnaLineage, { activeGenomes: [], recentArchives: [] });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
@@ -31,6 +32,7 @@ const populated = normalizeAisTrainingStats({
   selectionTelemetry: { culledCount: 12, offspringCount: 6, mutantCount: 6, archiveCount: 12 },
   dnaOperations: { archiveCount: 2, averageFitnessHistoryDepth: 1.5, latestArchivedAt: '2026-06-22 10:00:00' },
   dnaRepairTelemetry: { accessionRepairCount: 4, contextMaskRepairCount: 3, profileRepairCount: 2, lastRepairedAt: '2026-06-22 11:00:00' },
+  dnaContextSummary: { blackSwanStrategyGenes: 1, blackSwanActiveGenomes: 2, blackSwanArchivedGenomes: 3 },
   dnaLineage: {
     activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
     recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -44,6 +46,7 @@ assert.deepEqual(populated.dnaMutationTotals, { stateMutation: 5, contextMaskMut
 assert.deepEqual(populated.selectionTelemetry, { culledCount: 12, offspringCount: 6, mutantCount: 6, archiveCount: 12 });
 assert.deepEqual(populated.dnaOperations, { archiveCount: 2, averageFitnessHistoryDepth: 1.5, latestArchivedAt: '2026-06-22 10:00:00' });
 assert.deepEqual(populated.dnaRepairTelemetry, { accessionRepairCount: 4, contextMaskRepairCount: 3, profileRepairCount: 2, lastRepairedAt: '2026-06-22 11:00:00' });
+assert.deepEqual(populated.dnaContextSummary, { blackSwanStrategyGenes: 1, blackSwanActiveGenomes: 2, blackSwanArchivedGenomes: 3 });
 assert.deepEqual(populated.dnaLineage, {
   activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
   recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -51,3 +54,5 @@ assert.deepEqual(populated.dnaLineage, {
 assert.equal(populated.dnaStateTotalsAvailable, false);
 
 console.log('aisTrainingView tests passed');
+
+

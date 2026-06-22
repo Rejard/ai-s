@@ -1,11 +1,11 @@
 import React from 'react';
 
 const reasonLabels = {
-  MIN_LABELED_OBSERVATIONS: '유효 라벨 300건 미만',
-  LABEL_INTEGRITY_FAILURE: '현재 라벨 무결성 오류',
-  MIN_BENCHMARK_MARGIN: '벤치마크 대비 3%p 개선 미달',
-  MIN_CLASS_COVERAGE: 'BUY/SELL/HOLD 표본 부족',
-  INVALID_PROMOTION_METADATA: '승격 메타데이터 오류',
+  MIN_LABELED_OBSERVATIONS: 'Labeled samples below 300',
+  LABEL_INTEGRITY_FAILURE: 'Invalid labeled data remains',
+  MIN_BENCHMARK_MARGIN: 'Benchmark margin below 3%p',
+  MIN_CLASS_COVERAGE: 'BUY/SELL/HOLD class coverage too low',
+  INVALID_PROMOTION_METADATA: 'Promotion metadata is invalid',
 };
 
 function Metric({ label, value, color = '#F3F4F6' }) {
@@ -15,6 +15,13 @@ function Metric({ label, value, color = '#F3F4F6' }) {
       <strong style={{ color }}>{value}</strong>
     </div>
   );
+}
+
+function formatContextMaskSummary(contextMaskSummary = []) {
+  if (!Array.isArray(contextMaskSummary) || contextMaskSummary.length === 0) {
+    return 'none';
+  }
+  return contextMaskSummary.join(', ');
 }
 
 function parseActiveStrategyGenes(activeMembers = []) {
@@ -28,6 +35,8 @@ function parseActiveStrategyGenes(activeMembers = []) {
         geneId: gene.gene_id,
         state: gene.state,
         subgeneCount: Array.isArray(gene.subgenes) ? gene.subgenes.length : 0,
+        contextMaskSummary: Array.isArray(gene.context_mask) ? gene.context_mask : [],
+        blackSwanEnabled: Array.isArray(gene.context_mask) && gene.context_mask.includes('BLACK_SWAN'),
       }));
     } catch {
       return [];
@@ -51,6 +60,7 @@ export default function AisTrainingEvidence({
   const selectionTelemetry = stats?.selectionTelemetry || { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
   const dnaOperations = stats?.dnaOperations || { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
   const dnaRepairTelemetry = stats?.dnaRepairTelemetry || { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' };
+  const dnaContextSummary = stats?.dnaContextSummary || { blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', weightNudgeSize: '0.02' };
@@ -67,16 +77,16 @@ export default function AisTrainingEvidence({
       flexDirection: 'column',
       gap: '7px',
       fontSize: '10px',
-      color: 'var(--text-muted)'
+      color: 'var(--text-muted)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-        <strong style={{ color: '#C4B5FD' }}>Shadow Challenger 검증</strong>
-        
+        <strong style={{ color: '#C4B5FD' }}>Shadow Challenger Validation</strong>
+
         {!isEngineEligible ? (
           <button
             type="button"
             disabled
-            title="작동 엔진이 [공동 합의] 또는 [AiS 독자] 모드일 때만 자동 승격을 활성화할 수 있습니다."
+            title="Automatic promotion is available only in HYBRID_COOP or AIS_ONLY mode."
             style={{
               color: 'var(--text-dark)',
               background: 'rgba(255,255,255,0.03)',
@@ -87,16 +97,16 @@ export default function AisTrainingEvidence({
               fontSize: '9px',
               cursor: 'not-allowed',
               opacity: 0.6,
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
             }}
           >
-            자동 실전 승격 OFF (엔진 모드 제한)
+            Auto Promotion OFF (engine restricted)
           </button>
         ) : (
           <button
             type="button"
             onClick={handleToggleAutomaticPromotion}
-            title={isPromoEnabled ? "클릭 시 자동 승격 비활성화" : "클릭 시 자동 승격 활성화"}
+            title={isPromoEnabled ? 'Disable automatic promotion' : 'Enable automatic promotion'}
             style={{
               color: isPromoEnabled ? '#10B981' : '#FBBF24',
               background: isPromoEnabled ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.06)',
@@ -110,7 +120,7 @@ export default function AisTrainingEvidence({
               transition: 'all 0.2s ease-in-out',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px'
+              gap: '4px',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.03)';
@@ -121,14 +131,14 @@ export default function AisTrainingEvidence({
               e.currentTarget.style.background = isPromoEnabled ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.06)';
             }}
           >
-            <span>자동 실전 승격 {isPromoEnabled ? 'ON 🟢' : 'OFF 🟡'}</span>
+            <span>Auto Promotion {isPromoEnabled ? 'ON' : 'OFF'}</span>
           </button>
         )}
       </div>
 
-      <Metric label="라벨 상태" value={`유효 ${stats?.labeled || 0} / 대기 ${stats?.pending || 0} / 무효 ${stats?.invalid || 0}`} />
+      <Metric label="Label Status" value={`Labeled ${stats?.labeled || 0} / Pending ${stats?.pending || 0} / Invalid ${stats?.invalid || 0}`} />
       <Metric
-        label="DNA 상태"
+        label="DNA State"
         value={`A ${dnaStateTotals.active || 0} / I ${dnaStateTotals.inactive || 0} / D ${dnaStateTotals.deprecated || 0} / L ${dnaStateTotals.lethal || 0}`}
         color={stats?.dnaStateTotalsAvailable === false ? '#FBBF24' : '#C4B5FD'}
       />
@@ -136,6 +146,11 @@ export default function AisTrainingEvidence({
         label="DNA Mutation"
         value={`State ${dnaMutationTotals.stateMutation || 0} / Context ${dnaMutationTotals.contextMaskMutation || 0} / Nudge ${dnaMutationTotals.weightNudge || 0} / VEP ${dnaMutationTotals.vepFiltered || 0}`}
         color="#93C5FD"
+      />
+      <Metric
+        label="BLACK_SWAN"
+        value={`Genes ${dnaContextSummary.blackSwanStrategyGenes || 0} / Active ${dnaContextSummary.blackSwanActiveGenomes || 0} / Archive ${dnaContextSummary.blackSwanArchivedGenomes || 0}`}
+        color="#F472B6"
       />
       <Metric
         label="Selection"
@@ -157,36 +172,49 @@ export default function AisTrainingEvidence({
         value={`Accession ${dnaRepairTelemetry.accessionRepairCount || 0} / Context ${dnaRepairTelemetry.contextMaskRepairCount || 0} / Profile ${dnaRepairTelemetry.profileRepairCount || 0} / Latest ${dnaRepairTelemetry.lastRepairedAt || '-'}`}
         color="#FDBA74"
       />
+
       {dnaLineage.activeGenomes.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
           <strong style={{ color: '#93C5FD', fontSize: '10px' }}>Active DNA Lineage</strong>
           {dnaLineage.activeGenomes.map((genome) => (
-            <div key={`${genome.memberId}-${genome.genomeId}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '10px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>
-                {genome.name || genome.memberId} / {genome.genomeId} / G{genome.generation}
+            <div key={`${genome.memberId}-${genome.genomeId}`} style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {genome.name || genome.memberId} / {genome.genomeId} / G{genome.generation}
+                </span>
+                <strong style={{ color: genome.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>
+                  P{(genome.parentIds || []).length} M{genome.mutationEvents || 0} {genome.blackSwanEnabled ? '/ BLACK_SWAN' : ''}
+                </strong>
+              </div>
+              <span style={{ color: '#9CA3AF' }}>
+                Contexts: {formatContextMaskSummary(genome.contextMaskSummary)}
               </span>
-              <strong style={{ color: '#E5E7EB' }}>
-                P{(genome.parentIds || []).length} M{genome.mutationEvents || 0}
-              </strong>
             </div>
           ))}
         </div>
       )}
+
       {dnaLineage.recentArchives.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
           <strong style={{ color: '#FCA5A5', fontSize: '10px' }}>Recent DNA Archives</strong>
           {dnaLineage.recentArchives.map((archive) => (
-            <div key={`${archive.memberId}-${archive.genomeId}-${archive.archivedAt}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '10px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>
-                {archive.memberId} / {archive.genomeId} / {archive.archiveReason}
+            <div key={`${archive.memberId}-${archive.genomeId}-${archive.archivedAt}`} style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {archive.memberId} / {archive.genomeId} / {archive.archiveReason}
+                </span>
+                <strong style={{ color: archive.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>
+                  G{archive.generation} M{archive.mutationEvents || 0} {archive.blackSwanEnabled ? '/ BLACK_SWAN' : ''}
+                </strong>
+              </div>
+              <span style={{ color: '#9CA3AF' }}>
+                Contexts: {formatContextMaskSummary(archive.contextMaskSummary)}
               </span>
-              <strong style={{ color: '#E5E7EB' }}>
-                G{archive.generation} M{archive.mutationEvents || 0}
-              </strong>
             </div>
           ))}
         </div>
       )}
+
       {activeStrategyGenes.length > 0 && typeof handleAidlGeneStateUpdate === 'function' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '6px' }}>
           <strong style={{ color: '#FBBF24', fontSize: '10px' }}>Admin Gene Override</strong>
@@ -194,8 +222,11 @@ export default function AisTrainingEvidence({
             <div key={`${gene.memberId}:${gene.geneId}`} style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px' }}>
                 <span style={{ color: 'var(--text-muted)' }}>{gene.memberName} / {gene.geneId}</span>
-                <strong style={{ color: '#E5E7EB' }}>{gene.state} / subgenes {gene.subgeneCount}</strong>
+                <strong style={{ color: gene.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>{gene.state} / subgenes {gene.subgeneCount}</strong>
               </div>
+              <span style={{ color: '#9CA3AF' }}>
+                Contexts: {formatContextMaskSummary(gene.contextMaskSummary)}
+              </span>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {['A', 'I', 'D', 'L'].map((state) => {
                   const actionKey = `${gene.memberId}:${gene.geneId}:${state}`;
@@ -227,40 +258,39 @@ export default function AisTrainingEvidence({
           ))}
         </div>
       )}
+
       {['BUY', 'SELL', 'HOLD'].map((decision) => {
         const item = decisions[decision] || { count: 0, accuracy: 0 };
         return (
           <Metric
             key={decision}
-            label={`${decision} 검증`}
-            value={`${item.accuracy || 0}% (${item.count || 0}건)`}
+            label={`${decision} Validation`}
+            value={`${item.accuracy || 0}% (${item.count || 0})`}
           />
         );
       })}
 
       {latest ? (
         <>
-          <Metric label="검증 점수" value={`${latest.validationScore.toFixed(2)}%`} color="#60A5FA" />
-          <Metric label="홀드아웃 점수" value={`${latest.holdoutScore.toFixed(2)}%`} color="#34D399" />
-          <Metric label="HOLD 벤치마크" value={`${latest.benchmarkScore.toFixed(2)}%`} />
-          <Metric label="세대 / 상태" value={`${latest.generation}세대 / ${latest.status}`} />
+          <Metric label="Validation Score" value={`${latest.validationScore.toFixed(2)}%`} color="#60A5FA" />
+          <Metric label="Holdout Score" value={`${latest.holdoutScore.toFixed(2)}%`} color="#34D399" />
+          <Metric label="HOLD Benchmark" value={`${latest.benchmarkScore.toFixed(2)}%`} />
+          <Metric label="Generation / Status" value={`G${latest.generation} / ${latest.status}`} />
           <div style={{ color: latest.promotionEligible ? '#34D399' : '#FBBF24', lineHeight: '1.5' }}>
             {latest.promotionEligible
-              ? '승격 기준 충족. 실제 엔진 변경은 어드민 수동 승인만 가능합니다.'
-              : `승격 보류: ${(latest.promotionReasons || []).map(
-                (reason) => reasonLabels[reason] || reason
-              ).join(', ') || '검증 진행 중'}`}
+              ? 'Promotion gate passed. Live engine change still requires explicit admin confirmation.'
+              : `Promotion held: ${(latest.promotionReasons || []).map((reason) => reasonLabels[reason] || reason).join(', ') || 'validation running'}`}
           </div>
         </>
       ) : (
         <div style={{ color: '#FBBF24' }}>
-          아직 시간순 검증을 완료한 Challenger 실행 기록이 없습니다.
+          No completed challenger validation record is available yet.
         </div>
       )}
 
       {(stats?.invalid || 0) > 0 && (
         <div style={{ color: '#F87171', lineHeight: '1.5' }}>
-          기존 즉시 채점 데이터 {stats.invalid}건은 학습에서 제외되어 보존 중입니다.
+          {stats.invalid} legacy instant-scored rows remain excluded from training until they are repaired.
         </div>
       )}
     </div>

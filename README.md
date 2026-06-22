@@ -8,23 +8,23 @@ The production service is served from:
 https://edenai.alonics.com/
 ```
 
-## AIDL 공개 기록 및 권리 고지 / Public Disclosure and Rights Notice
+## AIDL 怨듦컻 湲곕줉 諛?沅뚮━ 怨좎? / Public Disclosure and Rights Notice
 
-### 한국어 (Korean)
+### ?쒓뎅??(Korean)
 
-AIDL DNA Evolution Engine은 이명학이 설계한 Active / Inactive / Deprecated / Lethal 상태 기반의 진화형 AI 유전자 제어 프레임워크입니다.
+AIDL DNA Evolution Engine? ?대챸?숈씠 ?ㅺ퀎??Active / Inactive / Deprecated / Lethal ?곹깭 湲곕컲??吏꾪솕??AI ?좎쟾???쒖뼱 ?꾨젅?꾩썙?ъ엯?덈떎.
 
-본 저장소는 AIDL 개념, 구조, 명칭, 구현 방향에 대한 공개 기록을 남기기 위한 목적도 포함하고 있습니다.
+蹂???μ냼??AIDL 媛쒕뀗, 援ъ“, 紐낆묶, 援ы쁽 諛⑺뼢?????怨듦컻 湲곕줉???④린湲??꾪븳 紐⑹쟻???ы븿?섍퀬 ?덉뒿?덈떎.
 
-작성자가 확인한 공개 AI 연구 및 투자 시스템 사례 기준으로, A/I/D/L 네 가지 유전자 상태를 명시적으로 사용하여 전략의 활성, 비활성, 감퇴, 치명 상태를 관리하는 구조는 발견하지 못했으며, 본 프로젝트에서는 이를 독자적으로 설계한 AIDL 프레임워크로 정의합니다.
+?묒꽦?먭? ?뺤씤??怨듦컻 AI ?곌뎄 諛??ъ옄 ?쒖뒪???щ? 湲곗??쇰줈, A/I/D/L ??媛吏 ?좎쟾???곹깭瑜?紐낆떆?곸쑝濡??ъ슜?섏뿬 ?꾨왂???쒖꽦, 鍮꾪솢?? 媛먰눜, 移섎챸 ?곹깭瑜?愿由ы븯??援ъ“??諛쒓껄?섏? 紐삵뻽?쇰ŉ, 蹂??꾨줈?앺듃?먯꽌???대? ?낆옄?곸쑝濡??ㅺ퀎??AIDL ?꾨젅?꾩썙?щ줈 ?뺤쓽?⑸땲??
 
-단, 본 문구는 법적 의미의 특허 등록 또는 세계 최초 확정을 의미하지 않습니다. 관련 권리 보호가 필요한 경우 별도의 특허, 상표, 저작권 검토가 필요할 수 있습니다.
+?? 蹂?臾멸뎄??踰뺤쟻 ?섎????뱁뿀 ?깅줉 ?먮뒗 ?멸퀎 理쒖큹 ?뺤젙???섎??섏? ?딆뒿?덈떎. 愿??沅뚮━ 蹂댄샇媛 ?꾩슂??寃쎌슦 蹂꾨룄???뱁뿀, ?곹몴, ??묎텒 寃?좉? ?꾩슂?????덉뒿?덈떎.
 
-본 저장소의 소스코드, 문서 및 설명 텍스트는 작성자의 저작물입니다.
+蹂???μ냼???뚯뒪肄붾뱶, 臾몄꽌 諛??ㅻ챸 ?띿뒪?몃뒗 ?묒꽦?먯쓽 ??묐Ъ?낅땲??
 
-"AIDL" 및 "AIDL DNA Evolution Engine" 명칭은 본 저장소를 통해 공개 기록된 프로젝트 식별자이며, 별도의 상표 등록이 이루어지지 않은 상태에서는 상표권을 주장하지 않습니다.
+"AIDL" 諛?"AIDL DNA Evolution Engine" 紐낆묶? 蹂???μ냼瑜??듯빐 怨듦컻 湲곕줉???꾨줈?앺듃 ?앸퀎?먯씠硫? 蹂꾨룄???곹몴 ?깅줉???대（?댁?吏 ?딆? ?곹깭?먯꽌???곹몴沅뚯쓣 二쇱옣?섏? ?딆뒿?덈떎.
 
-AIDL 개념 및 유전자 상태 모델은 공개 기록의 목적으로 게시되었으며, 별도의 특허 또는 상표 등록 없이 일반적인 진화형 알고리즘 개념에 대한 독점권을 주장하지 않습니다.
+AIDL 媛쒕뀗 諛??좎쟾???곹깭 紐⑤뜽? 怨듦컻 湲곕줉??紐⑹쟻?쇰줈 寃뚯떆?섏뿀?쇰ŉ, 蹂꾨룄???뱁뿀 ?먮뒗 ?곹몴 ?깅줉 ?놁씠 ?쇰컲?곸씤 吏꾪솕???뚭퀬由ъ쬁 媛쒕뀗??????낆젏沅뚯쓣 二쇱옣?섏? ?딆뒿?덈떎.
 
 ### English
 
@@ -32,7 +32,7 @@ AIDL DNA Evolution Engine is an evolutionary AI genome-control framework designe
 
 This repository also serves as a public disclosure record of the AIDL concept, structure, naming, and implementation direction.
 
-To the author’s knowledge, based on publicly known AI research and trading-system examples reviewed so far, no prior framework has been found that explicitly manages strategy genes through the four A/I/D/L states of activation, inactivity, degradation, and lethal suppression. In this project, this structure is defined as the independently designed AIDL framework.
+To the author?셲 knowledge, based on publicly known AI research and trading-system examples reviewed so far, no prior framework has been found that explicitly manages strategy genes through the four A/I/D/L states of activation, inactivity, degradation, and lethal suppression. In this project, this structure is defined as the independently designed AIDL framework.
 
 This statement does not constitute a legal confirmation of patent registration or worldwide priority. If formal protection is required, separate patent, trademark, and copyright review may be necessary.
 
@@ -328,7 +328,7 @@ We invite like-minded developers who believe in **survival through wild diversit
 
 ---
 
-## ⚖️ License and Commercial Use Inquiries
+## ?뽳툘 License and Commercial Use Inquiries
 
 **AI-S (Safe Gated RSI)** is provided under a **Dual License Policy** to ensure compliance with open-source licensing and rights preservation.
 
@@ -340,23 +340,23 @@ The AI-S project adopts a dual licensing policy where the copyright holder provi
 
 If you wish to integrate the AI-S architecture into a commercial proprietary product or require dedicated technical support, please contact us at the email below.
 
-- 📬 **Commercial & Technical Inquiries:** lemaiii@alonics.com
-- **Copyright:** © 2026 Alonics Inc. All Rights Reserved.
+- ?벉 **Commercial & Technical Inquiries:** lemaiii@alonics.com
+- **Copyright:** 짤 2026 Alonics Inc. All Rights Reserved.
 
 ---
 
-## 📚 References
+## ?뱴 References
 
 The genomic architecture, safety gates, and cryptographic transmissions of the AIDL DNA Evolution Engine were designed with reference to the following pioneering research, database standards, and cryptographic specifications:
 
 1.  **Google DeepMind AlphaGenome (2026)**
     *   *Research / Resource:* "Predicting genomic variant effects on gene expression and regulatory mechanisms using deep neural networks."
-    *   *Application:* Integrated the principles of Tissue-Specific Expression (tissue/biosample-dependent expression profiles) to map our 4 market climates (BULL/BEAR × EXPANSION/SQUEEZE) and govern conditional active/inactive gene expression.
+    *   *Application:* Integrated the principles of Tissue-Specific Expression (tissue/biosample-dependent expression profiles) to map our 4 market climates (BULL/BEAR 횞 EXPANSION/SQUEEZE) and govern conditional active/inactive gene expression.
 2.  **EMBL-EBI Ensembl Variant Effect Predictor (VEP) (2016)**
-    *   *Reference publication:* McLaren, W., et al. "The Ensembl Variant Effect Predictor." *Bioinformatics*, 32(10), 1570–1575.
+    *   *Reference publication:* McLaren, W., et al. "The Ensembl Variant Effect Predictor." *Bioinformatics*, 32(10), 1570??575.
     *   *Application:* Adopted as the conceptual basis for our AI-VEP engine (Lethal/Deleterious variant filtering) to screen out volatile weights and overfitting anomalies prior to sandbox backtesting.
 3.  **NCBI Entrez system & Sequence Databases (2018)**
-    *   *Reference:* "Database resources of the National Center for Biotechnology Information." *Nucleic Acids Research*, 46(D1), D8–D13.
+    *   *Reference:* "Database resources of the National Center for Biotechnology Information." *Nucleic Acids Research*, 46(D1), D8?밆13.
     *   *Application:* Designed the `AISG` Accession ID specification for unified gene sequence indexing and generation lineage tracking.
 4.  **NIST SP 800-38D (Galois/Counter Mode - GCM) (2007)**
     *   *Specification:* Dworkin, M. "Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC." *NIST Special Publication*, 800-38D.
@@ -365,3 +365,21 @@ The genomic architecture, safety gates, and cryptographic transmissions of the A
     *   *Standard:* "Secure Hash Standard (SHS)." *Federal Information Processing Standards Publication*, FIPS PUB 180-4.
     *   *Application:* Integrated SHA-256 hashing for 32-byte key stretching and derivation from user secret phrases.
 
+
+## BLACK_SWAN Context
+
+AIDL now supports a fifth market context named `BLACK_SWAN` in addition to the four regular climates: `BULL_EXPANSION`, `BULL_SQUEEZE`, `BEAR_EXPANSION`, and `BEAR_SQUEEZE`.
+
+`BLACK_SWAN` does not replace the four-climate model. It is a rare override context used only when the live bar shows an extreme shock profile.
+
+The current runtime classifies a bar as `BLACK_SWAN` when both of the following are true:
+
+- absolute close-to-close change is at least `6.0%`
+- current high-low range is at least `2.5x` the recent 14-bar average range
+
+Current service rules:
+
+- legacy bootstrap and runtime self-healing still default to the original four climates only
+- `BLACK_SWAN` is opt-in through mutation or explicit DNA `context_mask` values
+- AI-VEP applies stricter lethal screening to strong directional chase bias inside `BLACK_SWAN`
+- candidate and council DNA context visibility remains admin-only

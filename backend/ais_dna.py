@@ -14,7 +14,14 @@ FEATURE_ORDER = [
 ]
 
 AIDL_STATES = {"A", "I", "D", "L"}
-AIDL_CONTEXTS = {"BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"}
+REGULAR_AIDL_CONTEXTS = (
+    "BULL_EXPANSION",
+    "BULL_SQUEEZE",
+    "BEAR_EXPANSION",
+    "BEAR_SQUEEZE",
+)
+BLACK_SWAN_CONTEXT = "BLACK_SWAN"
+AIDL_CONTEXTS = set(REGULAR_AIDL_CONTEXTS + (BLACK_SWAN_CONTEXT,))
 ACTIONS = ("BUY", "SELL", "HOLD")
 STATE_MUTATION_TRANSITIONS = {
     "I": "A",
@@ -192,7 +199,7 @@ def bootstrap_dna_from_legacy(legacy_centroids, member_id, faction, generation):
         "state": "A",
         "dominance": 1.0,
         "copy_number": 1,
-        "context_mask": ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"],
+        "context_mask": list(REGULAR_AIDL_CONTEXTS),
         "length": len(FEATURE_ORDER),
         "subgenes": [],
     }
@@ -291,8 +298,7 @@ def build_phenotype_from_dna(dna, current_context=None):
 def predict_variant_effect(dna):
     """
     AI-VEP (AI Variant Effect Predictor)
-    과학적 VEP의 개념을 차용하여, 변이가 적용된 DNA 개체가 4대 시장 맥락 하에서
-    치명적 리스크(Lethal Effect)를 유발할 가능성이 있는지 선제적으로 예측 및 스크리닝합니다.
+    Screen mutated DNA against context-specific lethal risk before it reaches the sandbox.
     """
     history = dna.get("fitness_history", [])
     has_recent_fitness_collapse = False
@@ -312,13 +318,19 @@ def predict_variant_effect(dna):
             for feature_index, w in enumerate(weights):
                 feature_name = FEATURE_ORDER[feature_index]
                 limit = FEATURE_ABS_LIMITS[feature_index]
-                
-                # 1. 극단적 과적합 판정 (절대 한도의 95% 초과)
+
+                # 1. Global overfit guard near the canonical feature limit.
                 if abs(w) >= limit * 0.95:
                     return "LETHAL"
-                
-                # 2. 하락 확장기(BEAR_EXPANSION) 리스크 판정
-                # 하락 폭주 국면에서는 RSI 과매도나 가격 급등 폭을 보고 성급히 매수(BUY) 가중치를 과도하게 실으면 대량 청산 위험이 있음
+
+                # 2. BLACK_SWAN directional chase guard.
+                if context == BLACK_SWAN_CONTEXT and action in ("BUY", "SELL"):
+                    if feature_name in ("price_change_pct", "sma5_to_sma20_spread_pct") and abs(w) > limit * 0.55:
+                        return "LETHAL"
+                    if has_recent_fitness_collapse and feature_name in ("price_change_pct", "rsi_scaled") and abs(w) > limit * 0.45:
+                        return "LETHAL"
+
+                # 3. BEAR_EXPANSION downside-catching guard.
                 if context == "BEAR_EXPANSION" and action == "BUY":
                     if feature_name in ("rsi_scaled", "price_change_pct") and w > limit * 0.70:
                         return "LETHAL"
@@ -327,9 +339,8 @@ def predict_variant_effect(dna):
                 if context == "BULL_EXPANSION" and action == "BUY":
                     if feature_name in ("price_change_pct", "sma5_to_sma20_spread_pct") and w > limit * 0.75:
                         return "LETHAL"
-                        
-                # 3. 하락 수축기(BEAR_SQUEEZE) 리스크 판정
-                # 하락 횡보 국면에서 추세 돌파 매수 가중치가 지나치게 높으면 횡보 톱니에 찢길 수 있음
+
+                # 4. Squeeze-regime timing guard.
                 if context == "BEAR_SQUEEZE" and action == "BUY":
                     if feature_name == "sma5_to_sma20_spread_pct" and w > limit * 0.80:
                         return "LETHAL"
@@ -359,7 +370,7 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
     existing_parents = list(existing_lineage.get("parent_ids", []))
     policy = _resolve_runtime_policy(runtime_policy)
     
-    # 최대 5회 돌연변이 시도하여 VEP 스크리닝을 안전하게 통과하는 유전자 선별
+    # Try up to five mutation attempts and keep only variants that pass AI-VEP.
     for attempt in range(5):
         mutated = copy.deepcopy(dna)
         mutated["genome_id"] = _new_genome_id(mutated.get("generation", 1))
@@ -376,7 +387,7 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
         # 10% chance of Context Mask Mutation
         context_mutated = False
         if random.random() < policy["context_mutation_rate"]:
-            contexts = ["BULL_EXPANSION", "BULL_SQUEEZE", "BEAR_EXPANSION", "BEAR_SQUEEZE"]
+            contexts = list(AIDL_CONTEXTS)
             for strategy in mutated.get("strategy_genes", []):
                 mask = list(strategy.get("context_mask", []))
                 target = random.choice(contexts)
@@ -446,11 +457,10 @@ def mutate_dna(dna, preserve_parent_ids=False, runtime_policy=None):
                 {"generation": mutated.get("generation", 1), "event": "no_active_gene"}
             )
             
-        # VEP 치명 위험성 체크 통과 시 즉시 반환
+        # Return immediately when the mutation survives AI-VEP screening.
         if predict_variant_effect(mutated) != "LETHAL":
             return mutated
-            
-    # 5회 모두 치명 변이로 스크리닝된 경우 무변이 부모 세대 강제 회귀 (안전 롤백)
+    # After five lethal attempts, keep a safe fallback copy and log the VEP rejection.
     fallback = copy.deepcopy(dna)
     fallback["genome_id"] = _new_genome_id(fallback.get("generation", 1))
     fallback.setdefault("mutation_log", []).append(
@@ -513,3 +523,4 @@ def crossover_dna(first, second):
             subgene["weight"] = round(_clamp_feature_weight(subgene["feature"], blended), 4)
     child["mutation_log"] = []
     return child
+
