@@ -41,6 +41,7 @@ export function useAdminLogic(managerEmail) {
   );
   const [savingAiEngine, setSavingAiEngine] = useState(false);
   const [submittingAidlGeneState, setSubmittingAidlGeneState] = useState('');
+  const [submittingAidlGeneContext, setSubmittingAidlGeneContext] = useState('');
 
   // AI 의회 관련 추가 상태
   const [councilStats, setCouncilStats] = useState(null);
@@ -257,6 +258,28 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const handleAidlGeneContextUpdate = async (memberId, geneId, contextKey, enabled) => {
+    if (!isAdmin) return;
+    const actionKey = `${memberId}:${geneId}:${contextKey}:${enabled ? 'ON' : 'OFF'}`;
+    setSubmittingAidlGeneContext(actionKey);
+    try {
+      const res = await axios.post(`${API_BASE}/admin/aidl-gene-context`, {
+        memberId,
+        geneId,
+        contextKey,
+        enabled,
+      }, getAdminHeaders());
+      if (res.data.success) {
+        await Promise.all([fetchTrainingStats(), fetchCouncilStats()]);
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.message || err.message;
+      alert(`AIDL context override 변경 실패: ${errMsg}`);
+    } finally {
+      setSubmittingAidlGeneContext('');
+    }
+  };
+
 
   const handleSaveAiConfig = async (e) => {
     if (e) e.preventDefault();
@@ -426,7 +449,9 @@ export function useAdminLogic(managerEmail) {
     setAutomaticPromotionEnabled,
     handleToggleAutomaticPromotion,
     submittingAidlGeneState,
-    handleAidlGeneStateUpdate
+    handleAidlGeneStateUpdate,
+    submittingAidlGeneContext,
+    handleAidlGeneContextUpdate
   };
 
 }

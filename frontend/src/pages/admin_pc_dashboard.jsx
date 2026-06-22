@@ -60,7 +60,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
     loadingCouncilStats,
     handleToggleAutomaticPromotion,
     submittingAidlGeneState,
-    handleAidlGeneStateUpdate
+    handleAidlGeneStateUpdate,
+    submittingAidlGeneContext,
+    handleAidlGeneContextUpdate
   } = useAdminLogic(managerEmail);
 
 
@@ -372,6 +374,8 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 councilStats={councilStats}
                 submittingAidlGeneState={submittingAidlGeneState}
                 handleAidlGeneStateUpdate={handleAidlGeneStateUpdate}
+                submittingAidlGeneContext={submittingAidlGeneContext}
+                handleAidlGeneContextUpdate={handleAidlGeneContextUpdate}
               />
 
               <button

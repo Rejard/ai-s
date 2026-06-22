@@ -129,6 +129,55 @@ async function main() {
       }),
       /gene not found/i
     );
+
+    const contextEnabled = adminRouter.__private__.applyAidlGeneContextOverride({
+      dna,
+      geneId: 'sg_member_1',
+      contextKey: 'BLACK_SWAN',
+      enabled: true,
+    });
+    assert.deepEqual(contextEnabled.dna.strategy_genes[0].context_mask, [
+      'BULL_EXPANSION',
+      'BULL_SQUEEZE',
+      'BEAR_EXPANSION',
+      'BEAR_SQUEEZE',
+      'BLACK_SWAN',
+    ]);
+    assert.equal(
+      contextEnabled.dna.mutation_log.at(-1).event,
+      'admin_context_override'
+    );
+    assert.equal(
+      contextEnabled.dna.mutation_log.at(-1).action,
+      'added'
+    );
+
+    const contextDisabled = adminRouter.__private__.applyAidlGeneContextOverride({
+      dna: contextEnabled.dna,
+      geneId: 'sg_member_1',
+      contextKey: 'BLACK_SWAN',
+      enabled: false,
+    });
+    assert.deepEqual(contextDisabled.dna.strategy_genes[0].context_mask, [
+      'BULL_EXPANSION',
+      'BULL_SQUEEZE',
+      'BEAR_EXPANSION',
+      'BEAR_SQUEEZE',
+    ]);
+    assert.equal(
+      contextDisabled.dna.mutation_log.at(-1).action,
+      'removed'
+    );
+
+    assert.throws(
+      () => adminRouter.__private__.applyAidlGeneContextOverride({
+        dna,
+        geneId: 'buy_rsi',
+        contextKey: 'BLACK_SWAN',
+        enabled: true,
+      }),
+      /strategy gene not found/i
+    );
   } finally {
     await new Promise((resolve) => database.db.close(resolve));
     if (fs.existsSync(tempDbPath)) fs.unlinkSync(tempDbPath);

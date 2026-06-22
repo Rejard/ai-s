@@ -60,6 +60,8 @@ export default function AisTrainingEvidence({
   councilStats,
   submittingAidlGeneState,
   handleAidlGeneStateUpdate,
+  submittingAidlGeneContext,
+  handleAidlGeneContextUpdate,
 }) {
   const latest = stats?.latestRun;
   const decisions = stats?.byDecision || {};
@@ -315,6 +317,39 @@ export default function AisTrainingEvidence({
                   );
                 })}
               </div>
+              {typeof handleAidlGeneContextUpdate === 'function' && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'BLACK_SWAN ON', enabled: true },
+                    { label: 'BLACK_SWAN OFF', enabled: false },
+                  ].map((item) => {
+                    const actionKey = `${gene.memberId}:${gene.geneId}:BLACK_SWAN:${item.enabled ? 'ON' : 'OFF'}`;
+                    const hasBlackSwan = gene.blackSwanEnabled === true;
+                    const disabled = submittingAidlGeneContext === actionKey || (item.enabled ? hasBlackSwan : !hasBlackSwan);
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => handleAidlGeneContextUpdate(gene.memberId, gene.geneId, 'BLACK_SWAN', item.enabled)}
+                        style={{
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '9px',
+                          fontWeight: '800',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          opacity: disabled ? 0.5 : 1,
+                          color: item.enabled ? '#F472B6' : '#CBD5E1',
+                          background: 'rgba(0,0,0,0.18)',
+                        }}
+                      >
+                        {submittingAidlGeneContext === actionKey ? '...' : item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))}
         </div>

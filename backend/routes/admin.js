@@ -198,6 +198,57 @@ function applyAidlGeneStateOverride({ dna, geneId, nextState }) {
   };
 }
 
+function applyAidlGeneContextOverride({ dna, geneId, contextKey, enabled }) {
+  if (!dna || typeof dna !== 'object') {
+    throw new Error('DNA payload is required');
+  }
+  if (!geneId || typeof geneId !== 'string') {
+    throw new Error('geneId is required');
+  }
+  if (contextKey !== 'BLACK_SWAN') {
+    throw new Error('contextKey must be BLACK_SWAN');
+  }
+  if (typeof enabled !== 'boolean') {
+    throw new Error('enabled must be boolean');
+  }
+
+  const nextDna = JSON.parse(JSON.stringify(dna));
+  const targetGene = Array.isArray(nextDna.strategy_genes)
+    ? nextDna.strategy_genes.find((strategy) => strategy?.gene_id === geneId)
+    : null;
+  if (!targetGene) {
+    throw new Error('strategy gene not found');
+  }
+
+  const fromMask = Array.isArray(targetGene.context_mask) ? [...targetGene.context_mask] : [];
+  const hasContext = fromMask.includes(contextKey);
+  let toMask = [...fromMask];
+  let action = 'noop';
+  if (enabled && !hasContext) {
+    toMask = [...toMask, contextKey];
+    action = 'added';
+  } else if (!enabled && hasContext) {
+    toMask = toMask.filter((value) => value !== contextKey);
+    action = 'removed';
+  }
+  targetGene.context_mask = toMask;
+  nextDna.mutation_log = Array.isArray(nextDna.mutation_log) ? nextDna.mutation_log : [];
+  nextDna.mutation_log.push({
+    generation: Number(nextDna.generation || 1),
+    event: 'admin_context_override',
+    gene_id: geneId,
+    context_key: contextKey,
+    action,
+    from_mask: fromMask,
+    to_mask: [...toMask],
+  });
+
+  return {
+    dna: nextDna,
+    phenotype: buildPhenotypeFromDnaForAdmin(nextDna),
+  };
+}
+
 
 const MASTER_MANAGER_WALLET = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
@@ -614,6 +665,55 @@ router.post('/aidl-gene-state', async (req, res) => {
   }
 });
 
+router.post('/aidl-gene-context', async (req, res) => {
+  const { memberId, geneId, contextKey, enabled } = req.body || {};
+  if (!memberId || !geneId || !contextKey || typeof enabled !== 'boolean') {
+    return res.status(400).json({ success: false, message: 'memberId, geneId, contextKey, enabled are required.' });
+  }
+
+  try {
+    const row = await queries.get(`
+      SELECT member_id, dna_json
+      FROM ais_council_members
+      WHERE member_id = ?
+    `, [memberId]);
+    if (!row || !row.dna_json) {
+      return res.status(404).json({ success: false, message: 'Target DNA member not found.' });
+    }
+
+    const parsed = JSON.parse(row.dna_json);
+    const { dna, phenotype } = applyAidlGeneContextOverride({
+      dna: parsed,
+      geneId,
+      contextKey,
+      enabled,
+    });
+
+    await queries.run(`
+      UPDATE ais_council_members
+      SET dna_json = ?, phenotype_json = ?, weights_json = ?
+      WHERE member_id = ?
+    `, [
+      JSON.stringify(dna),
+      JSON.stringify(phenotype),
+      JSON.stringify(phenotype),
+      memberId,
+    ]);
+
+    res.json({
+      success: true,
+      memberId,
+      geneId,
+      contextKey,
+      enabled,
+      phenotype,
+    });
+  } catch (error) {
+    const status = /strategy gene not found|contextKey|enabled|DNA payload|geneId/i.test(error.message) ? 400 : 500;
+    res.status(status).json({ success: false, message: error.message });
+  }
+});
+
 /**
  * @route GET /api/admin/export-training-csv
  * @desc Export SQLite ais_training_data to fully compliant RFC 4180 CSV file
@@ -1002,4 +1102,5 @@ module.exports.__private__ = {
   buildGeminiTimeoutConfig,
   buildPhenotypeFromDnaForAdmin,
   applyAidlGeneStateOverride,
+  applyAidlGeneContextOverride,
 };
