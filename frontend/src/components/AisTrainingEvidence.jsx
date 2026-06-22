@@ -24,6 +24,14 @@ function formatContextMaskSummary(contextMaskSummary = []) {
   return contextMaskSummary.join(', ');
 }
 
+function formatEventCounts(eventCounts = {}) {
+  const entries = Object.entries(eventCounts).filter(([, count]) => Number(count) > 0);
+  if (!entries.length) {
+    return 'none';
+  }
+  return entries.map(([event, count]) => `${event} ${count}`).join(', ');
+}
+
 function parseActiveStrategyGenes(activeMembers = []) {
   return activeMembers.flatMap((member) => {
     try {
@@ -66,6 +74,12 @@ export default function AisTrainingEvidence({
     coreActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0, averageMutationEvents: 0 },
     blackSwanArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
     coreArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
+  };
+  const dnaContextPathway = stats?.dnaContextPathway || {
+    blackSwanActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
+    coreActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
+    blackSwanArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
+    coreArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
   };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
@@ -181,6 +195,16 @@ export default function AisTrainingEvidence({
       <Metric
         label="BS Archive Perf"
         value={`BS ${dnaContextPerformance.blackSwanArchive?.archiveCount || 0} / G ${dnaContextPerformance.blackSwanArchive?.averageGeneration || 0} / Low ${dnaContextPerformance.blackSwanArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPerformance.blackSwanArchive?.vepFilteredCount || 0} | Core ${dnaContextPerformance.coreArchive?.archiveCount || 0} / G ${dnaContextPerformance.coreArchive?.averageGeneration || 0} / Low ${dnaContextPerformance.coreArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPerformance.coreArchive?.vepFilteredCount || 0}`}
+        color="#F472B6"
+      />
+      <Metric
+        label="BS Path Active"
+        value={`BS VEP ${dnaContextPathway.blackSwanActive?.vepFilteredGenomes || 0} / Last ${formatEventCounts(dnaContextPathway.blackSwanActive?.lastMutationEventCounts)} | Core VEP ${dnaContextPathway.coreActive?.vepFilteredGenomes || 0} / Last ${formatEventCounts(dnaContextPathway.coreActive?.lastMutationEventCounts)}`}
+        color="#F472B6"
+      />
+      <Metric
+        label="BS Path Archive"
+        value={`BS Low ${dnaContextPathway.blackSwanArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPathway.blackSwanArchive?.vepFilteredCount || 0} / Last ${formatEventCounts(dnaContextPathway.blackSwanArchive?.lastMutationEventCounts)} | Core Low ${dnaContextPathway.coreArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPathway.coreArchive?.vepFilteredCount || 0} / Last ${formatEventCounts(dnaContextPathway.coreArchive?.lastMutationEventCounts)}`}
         color="#F472B6"
       />
       <Metric

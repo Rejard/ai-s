@@ -60,6 +60,32 @@ function emptyDnaContextPerformance() {
   };
 }
 
+function emptyActivePathway() {
+  return {
+    genomeCount: 0,
+    vepFilteredGenomes: 0,
+    lastMutationEventCounts: {},
+  };
+}
+
+function emptyArchivePathway() {
+  return {
+    archiveCount: 0,
+    lowPerformanceCount: 0,
+    vepFilteredCount: 0,
+    lastMutationEventCounts: {},
+  };
+}
+
+function emptyDnaContextPathway() {
+  return {
+    blackSwanActive: emptyActivePathway(),
+    coreActive: emptyActivePathway(),
+    blackSwanArchive: emptyArchivePathway(),
+    coreArchive: emptyArchivePathway(),
+  };
+}
+
 function summarizeCopyNumbers(dna) {
   const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
   const copyNumbers = strategyGenes
@@ -165,6 +191,44 @@ function buildArchivePerformance(rows) {
     lowPerformanceCount: totals.lowPerformanceCount,
     vepFilteredCount: totals.vepFilteredCount,
   };
+}
+
+function incrementEventCount(target, event) {
+  if (typeof event !== 'string' || !event) return;
+  target[event] = (target[event] || 0) + 1;
+}
+
+function buildActivePathway(rows) {
+  if (!rows.length) {
+    return emptyActivePathway();
+  }
+  return rows.reduce((summary, row) => {
+    const dna = safeParseDna(row.dna_json);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    const hasVepFiltered = mutationLog.some((entry) => entry?.event === 'vep_filtered_deleterious_mutation');
+    const lastEvent = mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '';
+    summary.genomeCount += 1;
+    if (hasVepFiltered) summary.vepFilteredGenomes += 1;
+    incrementEventCount(summary.lastMutationEventCounts, lastEvent);
+    return summary;
+  }, emptyActivePathway());
+}
+
+function buildArchivePathway(rows) {
+  if (!rows.length) {
+    return emptyArchivePathway();
+  }
+  return rows.reduce((summary, row) => {
+    const dna = safeParseDna(row.dna_json);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    const hasVepFiltered = mutationLog.some((entry) => entry?.event === 'vep_filtered_deleterious_mutation');
+    const lastEvent = mutationLog.length ? String(mutationLog[mutationLog.length - 1].event || '') : '';
+    summary.archiveCount += 1;
+    if (row.archive_reason === 'CULLED_LOW_PERFORMANCE') summary.lowPerformanceCount += 1;
+    if (hasVepFiltered) summary.vepFilteredCount += 1;
+    incrementEventCount(summary.lastMutationEventCounts, lastEvent);
+    return summary;
+  }, emptyArchivePathway());
 }
 
 function buildGenomeLineageEntry(row, dna) {
@@ -426,6 +490,12 @@ async function getAisTrainingStats(store) {
     blackSwanArchive: buildArchivePerformance(blackSwanArchiveCohort),
     coreArchive: buildArchivePerformance(coreArchiveCohort),
   };
+  const dnaContextPathway = {
+    blackSwanActive: buildActivePathway(blackSwanActiveRows),
+    coreActive: buildActivePathway(coreActiveRows),
+    blackSwanArchive: buildArchivePathway(blackSwanArchiveCohort),
+    coreArchive: buildArchivePathway(coreArchiveCohort),
+  };
   const dnaLineage = {
     activeGenomes: activeCouncil.slice(0, 5).map((row) => {
       const dna = safeParseDna(row.dna_json);
@@ -453,6 +523,7 @@ async function getAisTrainingStats(store) {
     dnaLineage: { ...emptyDnaLineage(), ...dnaLineage },
     dnaContextSummary: { ...emptyDnaContextSummary(), ...dnaContextSummary },
     dnaContextPerformance: { ...emptyDnaContextPerformance(), ...dnaContextPerformance },
+    dnaContextPathway: { ...emptyDnaContextPathway(), ...dnaContextPathway },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,

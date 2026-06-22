@@ -21,6 +21,12 @@ const emptyDnaContextPerformance = () => ({
   blackSwanArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
   coreArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
 });
+const emptyDnaContextPathway = () => ({
+  blackSwanActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
+  coreActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
+  blackSwanArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
+  coreArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
+});
 const emptyDnaLineage = () => ({ activeGenomes: [], recentArchives: [] });
 
 export function normalizeAisTrainingStats(data = {}) {
@@ -32,6 +38,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaRepairTelemetry = data.dnaRepairTelemetry || {};
   const dnaContextSummary = data.dnaContextSummary || {};
   const dnaContextPerformance = data.dnaContextPerformance || {};
+  const dnaContextPathway = data.dnaContextPathway || {};
   const dnaLineage = data.dnaLineage || {};
   return {
     total: Number(data.total || data.count || 0),
@@ -75,6 +82,14 @@ export function normalizeAisTrainingStats(data = {}) {
       coreActive: { ...emptyDnaContextPerformance().coreActive, ...(dnaContextPerformance.coreActive || {}) },
       blackSwanArchive: { ...emptyDnaContextPerformance().blackSwanArchive, ...(dnaContextPerformance.blackSwanArchive || {}) },
       coreArchive: { ...emptyDnaContextPerformance().coreArchive, ...(dnaContextPerformance.coreArchive || {}) },
+    },
+    dnaContextPathway: {
+      ...emptyDnaContextPathway(),
+      ...dnaContextPathway,
+      blackSwanActive: { ...emptyDnaContextPathway().blackSwanActive, ...(dnaContextPathway.blackSwanActive || {}) },
+      coreActive: { ...emptyDnaContextPathway().coreActive, ...(dnaContextPathway.coreActive || {}) },
+      blackSwanArchive: { ...emptyDnaContextPathway().blackSwanArchive, ...(dnaContextPathway.blackSwanArchive || {}) },
+      coreArchive: { ...emptyDnaContextPathway().coreArchive, ...(dnaContextPathway.coreArchive || {}) },
     },
     dnaLineage: {
       ...emptyDnaLineage(),

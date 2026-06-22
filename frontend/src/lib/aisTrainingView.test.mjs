@@ -29,6 +29,12 @@ assert.deepEqual(empty.dnaContextPerformance, {
   blackSwanArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
   coreArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
 });
+assert.deepEqual(empty.dnaContextPathway, {
+  blackSwanActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
+  coreActive: { genomeCount: 0, vepFilteredGenomes: 0, lastMutationEventCounts: {} },
+  blackSwanArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
+  coreArchive: { archiveCount: 0, lowPerformanceCount: 0, vepFilteredCount: 0, lastMutationEventCounts: {} },
+});
 assert.deepEqual(empty.dnaLineage, { activeGenomes: [], recentArchives: [] });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
@@ -65,6 +71,12 @@ const populated = normalizeAisTrainingStats({
     blackSwanArchive: { archiveCount: 5, averageGeneration: 4.2, lowPerformanceCount: 3, vepFilteredCount: 2 },
     coreArchive: { archiveCount: 6, averageGeneration: 3.1, lowPerformanceCount: 4, vepFilteredCount: 1 },
   },
+  dnaContextPathway: {
+    blackSwanActive: { genomeCount: 2, vepFilteredGenomes: 1, lastMutationEventCounts: { copy_number_mutation: 1 } },
+    coreActive: { genomeCount: 3, vepFilteredGenomes: 0, lastMutationEventCounts: { state_mutation: 2 } },
+    blackSwanArchive: { archiveCount: 5, lowPerformanceCount: 3, vepFilteredCount: 2, lastMutationEventCounts: { vep_filtered_deleterious_mutation: 2 } },
+    coreArchive: { archiveCount: 6, lowPerformanceCount: 4, vepFilteredCount: 1, lastMutationEventCounts: { weight_nudge: 3 } },
+  },
   dnaLineage: {
     activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
     recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -94,6 +106,12 @@ assert.deepEqual(populated.dnaContextPerformance, {
   coreActive: { genomeCount: 3, averageLatestValidationScore: 55.1, averageLatestHoldoutScore: 53.2, averageMutationEvents: 2 },
   blackSwanArchive: { archiveCount: 5, averageGeneration: 4.2, lowPerformanceCount: 3, vepFilteredCount: 2 },
   coreArchive: { archiveCount: 6, averageGeneration: 3.1, lowPerformanceCount: 4, vepFilteredCount: 1 },
+});
+assert.deepEqual(populated.dnaContextPathway, {
+  blackSwanActive: { genomeCount: 2, vepFilteredGenomes: 1, lastMutationEventCounts: { copy_number_mutation: 1 } },
+  coreActive: { genomeCount: 3, vepFilteredGenomes: 0, lastMutationEventCounts: { state_mutation: 2 } },
+  blackSwanArchive: { archiveCount: 5, lowPerformanceCount: 3, vepFilteredCount: 2, lastMutationEventCounts: { vep_filtered_deleterious_mutation: 2 } },
+  coreArchive: { archiveCount: 6, lowPerformanceCount: 4, vepFilteredCount: 1, lastMutationEventCounts: { weight_nudge: 3 } },
 });
 assert.deepEqual(populated.dnaLineage, {
   activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],

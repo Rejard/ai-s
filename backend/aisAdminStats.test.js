@@ -233,6 +233,36 @@ async function main() {
       vepFilteredCount: 0,
     },
   });
+  assert.deepStrictEqual(result.dnaContextPathway, {
+    blackSwanActive: {
+      genomeCount: 1,
+      vepFilteredGenomes: 0,
+      lastMutationEventCounts: {
+        copy_number_mutation: 1,
+      },
+    },
+    coreActive: {
+      genomeCount: 0,
+      vepFilteredGenomes: 0,
+      lastMutationEventCounts: {},
+    },
+    blackSwanArchive: {
+      archiveCount: 1,
+      lowPerformanceCount: 1,
+      vepFilteredCount: 1,
+      lastMutationEventCounts: {
+        vep_filtered_deleterious_mutation: 1,
+      },
+    },
+    coreArchive: {
+      archiveCount: 1,
+      lowPerformanceCount: 1,
+      vepFilteredCount: 0,
+      lastMutationEventCounts: {
+        weight_nudge: 1,
+      },
+    },
+  });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
     {
       memberId: 'm1',
