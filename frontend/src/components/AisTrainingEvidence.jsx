@@ -40,6 +40,13 @@ function formatGeneCounts(geneCounts = {}) {
   return entries.map(([geneId, count]) => `${geneId} ${count}`).join(', ');
 }
 
+function formatTimelineRuns(runs = []) {
+  if (!Array.isArray(runs) || runs.length === 0) {
+    return 'none';
+  }
+  return runs.map((run) => `${run.runKey} V${run.averageValidationScore} H${run.averageHoldoutScore} G${run.genomeCount}`).join(', ');
+}
+
 function parseActiveStrategyGenes(activeMembers = []) {
   return activeMembers.flatMap((member) => {
     try {
@@ -112,6 +119,10 @@ export default function AisTrainingEvidence({
     activeInheritedContextCount: 0,
     archivedInheritedStateCount: 0,
     archivedInheritedContextCount: 0,
+  };
+  const dnaAdminOverrideTimeline = stats?.dnaAdminOverrideTimeline || {
+    stateOverrideRuns: [],
+    contextOverrideRuns: [],
   };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
@@ -267,6 +278,11 @@ export default function AisTrainingEvidence({
       <Metric
         label="Override Lineage"
         value={`Active S ${dnaOverrideLineageAttribution.activeInheritedStateCount || 0} / C ${dnaOverrideLineageAttribution.activeInheritedContextCount || 0} | Archive S ${dnaOverrideLineageAttribution.archivedInheritedStateCount || 0} / C ${dnaOverrideLineageAttribution.archivedInheritedContextCount || 0}`}
+        color="#FBBF24"
+      />
+      <Metric
+        label="Override Timeline"
+        value={`State ${formatTimelineRuns(dnaAdminOverrideTimeline.stateOverrideRuns)} | Context ${formatTimelineRuns(dnaAdminOverrideTimeline.contextOverrideRuns)}`}
         color="#FBBF24"
       />
       <Metric

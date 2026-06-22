@@ -57,6 +57,10 @@ assert.deepEqual(empty.dnaOverrideLineageAttribution, {
   archivedInheritedStateCount: 0,
   archivedInheritedContextCount: 0,
 });
+assert.deepEqual(empty.dnaAdminOverrideTimeline, {
+  stateOverrideRuns: [],
+  contextOverrideRuns: [],
+});
 assert.deepEqual(empty.dnaLineage, { activeGenomes: [], recentArchives: [] });
 assert.equal(empty.dnaStateTotalsAvailable, true);
 
@@ -121,6 +125,14 @@ const populated = normalizeAisTrainingStats({
     archivedInheritedStateCount: 2,
     archivedInheritedContextCount: 1,
   },
+  dnaAdminOverrideTimeline: {
+    stateOverrideRuns: [
+      { runKey: 'run-7', genomeCount: 2, averageValidationScore: 52.2, averageHoldoutScore: 49.8 },
+    ],
+    contextOverrideRuns: [
+      { runKey: 'run-8', genomeCount: 1, averageValidationScore: 50.1, averageHoldoutScore: 48.4 },
+    ],
+  },
   dnaLineage: {
     activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],
     recentArchives: [{ memberId: 'm9', genomeId: 'g9' }],
@@ -178,6 +190,14 @@ assert.deepEqual(populated.dnaOverrideLineageAttribution, {
   activeInheritedContextCount: 3,
   archivedInheritedStateCount: 2,
   archivedInheritedContextCount: 1,
+});
+assert.deepEqual(populated.dnaAdminOverrideTimeline, {
+  stateOverrideRuns: [
+    { runKey: 'run-7', genomeCount: 2, averageValidationScore: 52.2, averageHoldoutScore: 49.8 },
+  ],
+  contextOverrideRuns: [
+    { runKey: 'run-8', genomeCount: 1, averageValidationScore: 50.1, averageHoldoutScore: 48.4 },
+  ],
 });
 assert.deepEqual(populated.dnaLineage, {
   activeGenomes: [{ memberId: 'm1', genomeId: 'g1' }],

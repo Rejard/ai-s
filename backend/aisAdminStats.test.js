@@ -331,6 +331,18 @@ async function main() {
     archivedInheritedStateCount: 0,
     archivedInheritedContextCount: 0,
   });
+  assert.deepStrictEqual(result.dnaAdminOverrideTimeline, {
+    stateOverrideRuns: [
+      { runKey: 'run-1', genomeCount: 1, averageValidationScore: 54.2, averageHoldoutScore: 52.1 },
+      { runKey: 'run-2', genomeCount: 1, averageValidationScore: 53, averageHoldoutScore: 50 },
+      { runKey: 'run-4', genomeCount: 1, averageValidationScore: 47.8, averageHoldoutScore: 45.1 },
+    ],
+    contextOverrideRuns: [
+      { runKey: 'run-1', genomeCount: 1, averageValidationScore: 54.2, averageHoldoutScore: 52.1 },
+      { runKey: 'run-2', genomeCount: 1, averageValidationScore: 53, averageHoldoutScore: 50 },
+      { runKey: 'run-3', genomeCount: 1, averageValidationScore: 41.5, averageHoldoutScore: 39.2 },
+    ],
+  });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
     {
       memberId: 'm1',

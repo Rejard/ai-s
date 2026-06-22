@@ -49,6 +49,10 @@ const emptyDnaOverrideLineageAttribution = () => ({
   archivedInheritedStateCount: 0,
   archivedInheritedContextCount: 0,
 });
+const emptyDnaAdminOverrideTimeline = () => ({
+  stateOverrideRuns: [],
+  contextOverrideRuns: [],
+});
 const emptyDnaLineage = () => ({ activeGenomes: [], recentArchives: [] });
 
 export function normalizeAisTrainingStats(data = {}) {
@@ -65,6 +69,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const dnaAdminOverrideOutcome = data.dnaAdminOverrideOutcome || {};
   const dnaAdminOverrideDelta = data.dnaAdminOverrideDelta || {};
   const dnaOverrideLineageAttribution = data.dnaOverrideLineageAttribution || {};
+  const dnaAdminOverrideTimeline = data.dnaAdminOverrideTimeline || {};
   const dnaLineage = data.dnaLineage || {};
   return {
     total: Number(data.total || data.count || 0),
@@ -139,6 +144,12 @@ export function normalizeAisTrainingStats(data = {}) {
     dnaOverrideLineageAttribution: {
       ...emptyDnaOverrideLineageAttribution(),
       ...dnaOverrideLineageAttribution,
+    },
+    dnaAdminOverrideTimeline: {
+      ...emptyDnaAdminOverrideTimeline(),
+      ...dnaAdminOverrideTimeline,
+      stateOverrideRuns: Array.isArray(dnaAdminOverrideTimeline.stateOverrideRuns) ? dnaAdminOverrideTimeline.stateOverrideRuns : [],
+      contextOverrideRuns: Array.isArray(dnaAdminOverrideTimeline.contextOverrideRuns) ? dnaAdminOverrideTimeline.contextOverrideRuns : [],
     },
     dnaLineage: {
       ...emptyDnaLineage(),

@@ -92,6 +92,13 @@ function emptyDnaOverrideLineageAttribution() {
   };
 }
 
+function emptyDnaAdminOverrideTimeline() {
+  return {
+    stateOverrideRuns: [],
+    contextOverrideRuns: [],
+  };
+}
+
 function emptyCohortActivePerformance() {
   return {
     genomeCount: 0,
@@ -407,6 +414,34 @@ function buildOverrideDelta(rows, eventName) {
   };
 }
 
+function buildOverrideTimeline(rows, eventName) {
+  const runMap = new Map();
+  for (const row of rows) {
+    const dna = safeParseDna(row.dna_json);
+    if (!hasOverrideEvent(dna, eventName)) continue;
+    const history = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
+    for (const entry of history) {
+      const runKey = typeof entry?.runKey === 'string' ? entry.runKey : '';
+      if (!runKey) continue;
+      if (!runMap.has(runKey)) {
+        runMap.set(runKey, { genomeCount: 0, validationScore: 0, holdoutScore: 0 });
+      }
+      const bucket = runMap.get(runKey);
+      bucket.genomeCount += 1;
+      bucket.validationScore += Number(entry.validationScore || 0);
+      bucket.holdoutScore += Number(entry.holdoutScore || 0);
+    }
+  }
+  return Array.from(runMap.entries())
+    .map(([runKey, bucket]) => ({
+      runKey,
+      genomeCount: bucket.genomeCount,
+      averageValidationScore: roundMetric(bucket.validationScore / bucket.genomeCount),
+      averageHoldoutScore: roundMetric(bucket.holdoutScore / bucket.genomeCount),
+    }))
+    .sort((a, b) => String(a.runKey).localeCompare(String(b.runKey)));
+}
+
 function buildOverrideSourceMap(rows) {
   const map = new Map();
   for (const row of rows) {
@@ -720,6 +755,10 @@ async function getAisTrainingStats(store) {
     stateOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
     contextOverrideDelta: buildOverrideDelta(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
   };
+  const dnaAdminOverrideTimeline = {
+    stateOverrideRuns: buildOverrideTimeline(activeCouncil.concat(allArchiveRows), 'admin_state_override'),
+    contextOverrideRuns: buildOverrideTimeline(activeCouncil.concat(allArchiveRows), 'admin_context_override'),
+  };
   const overrideSourceMap = buildOverrideSourceMap(activeCouncil.concat(allArchiveRows));
   const activeLineageRows = activeCouncil.map((row) => {
     const dna = safeParseDna(row.dna_json);
@@ -760,6 +799,7 @@ async function getAisTrainingStats(store) {
     dnaAdminOverrideTelemetry: { ...emptyDnaAdminOverrideTelemetry(), ...dnaAdminOverrideTelemetry },
     dnaAdminOverrideOutcome: { ...emptyDnaAdminOverrideOutcome(), ...dnaAdminOverrideOutcome },
     dnaAdminOverrideDelta: { ...emptyDnaAdminOverrideDelta(), ...dnaAdminOverrideDelta },
+    dnaAdminOverrideTimeline: { ...emptyDnaAdminOverrideTimeline(), ...dnaAdminOverrideTimeline },
     dnaOverrideLineageAttribution: { ...emptyDnaOverrideLineageAttribution(), ...dnaOverrideLineageAttribution },
     dnaStateTotals,
     dnaMutationTotals,
