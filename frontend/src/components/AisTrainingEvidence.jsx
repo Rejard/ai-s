@@ -61,6 +61,12 @@ export default function AisTrainingEvidence({
   const dnaOperations = stats?.dnaOperations || { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
   const dnaRepairTelemetry = stats?.dnaRepairTelemetry || { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' };
   const dnaContextSummary = stats?.dnaContextSummary || { blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 };
+  const dnaContextPerformance = stats?.dnaContextPerformance || {
+    blackSwanActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0, averageMutationEvents: 0 },
+    coreActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0, averageMutationEvents: 0 },
+    blackSwanArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
+    coreArchive: { archiveCount: 0, averageGeneration: 0, lowPerformanceCount: 0, vepFilteredCount: 0 },
+  };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
   const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', profileMutationRate: '0.08', copyNumberMutationRate: '0.06', weightNudgeSize: '0.02' };
@@ -165,6 +171,16 @@ export default function AisTrainingEvidence({
       <Metric
         label="BLACK_SWAN"
         value={`Genes ${dnaContextSummary.blackSwanStrategyGenes || 0} / Active ${dnaContextSummary.blackSwanActiveGenomes || 0} / Archive ${dnaContextSummary.blackSwanArchivedGenomes || 0}`}
+        color="#F472B6"
+      />
+      <Metric
+        label="BS Active Perf"
+        value={`BS ${dnaContextPerformance.blackSwanActive?.genomeCount || 0} / V ${dnaContextPerformance.blackSwanActive?.averageLatestValidationScore || 0} / H ${dnaContextPerformance.blackSwanActive?.averageLatestHoldoutScore || 0} / M ${dnaContextPerformance.blackSwanActive?.averageMutationEvents || 0} | Core ${dnaContextPerformance.coreActive?.genomeCount || 0} / V ${dnaContextPerformance.coreActive?.averageLatestValidationScore || 0} / H ${dnaContextPerformance.coreActive?.averageLatestHoldoutScore || 0} / M ${dnaContextPerformance.coreActive?.averageMutationEvents || 0}`}
+        color="#F472B6"
+      />
+      <Metric
+        label="BS Archive Perf"
+        value={`BS ${dnaContextPerformance.blackSwanArchive?.archiveCount || 0} / G ${dnaContextPerformance.blackSwanArchive?.averageGeneration || 0} / Low ${dnaContextPerformance.blackSwanArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPerformance.blackSwanArchive?.vepFilteredCount || 0} | Core ${dnaContextPerformance.coreArchive?.archiveCount || 0} / G ${dnaContextPerformance.coreArchive?.averageGeneration || 0} / Low ${dnaContextPerformance.coreArchive?.lowPerformanceCount || 0} / VEP ${dnaContextPerformance.coreArchive?.vepFilteredCount || 0}`}
         color="#F472B6"
       />
       <Metric

@@ -207,6 +207,32 @@ async function main() {
     blackSwanActiveGenomes: 1,
     blackSwanArchivedGenomes: 1,
   });
+  assert.deepStrictEqual(result.dnaContextPerformance, {
+    blackSwanActive: {
+      genomeCount: 1,
+      averageLatestValidationScore: 53,
+      averageLatestHoldoutScore: 50,
+      averageMutationEvents: 5,
+    },
+    coreActive: {
+      genomeCount: 0,
+      averageLatestValidationScore: 0,
+      averageLatestHoldoutScore: 0,
+      averageMutationEvents: 0,
+    },
+    blackSwanArchive: {
+      archiveCount: 1,
+      averageGeneration: 2,
+      lowPerformanceCount: 1,
+      vepFilteredCount: 1,
+    },
+    coreArchive: {
+      archiveCount: 1,
+      averageGeneration: 3,
+      lowPerformanceCount: 1,
+      vepFilteredCount: 0,
+    },
+  });
   assert.deepStrictEqual(result.dnaLineage.activeGenomes, [
     {
       memberId: 'm1',

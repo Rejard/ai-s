@@ -33,6 +33,33 @@ function emptyDnaContextSummary() {
   };
 }
 
+function emptyCohortActivePerformance() {
+  return {
+    genomeCount: 0,
+    averageLatestValidationScore: 0,
+    averageLatestHoldoutScore: 0,
+    averageMutationEvents: 0,
+  };
+}
+
+function emptyCohortArchivePerformance() {
+  return {
+    archiveCount: 0,
+    averageGeneration: 0,
+    lowPerformanceCount: 0,
+    vepFilteredCount: 0,
+  };
+}
+
+function emptyDnaContextPerformance() {
+  return {
+    blackSwanActive: emptyCohortActivePerformance(),
+    coreActive: emptyCohortActivePerformance(),
+    blackSwanArchive: emptyCohortArchivePerformance(),
+    coreArchive: emptyCohortArchivePerformance(),
+  };
+}
+
 function summarizeCopyNumbers(dna) {
   const strategyGenes = Array.isArray(dna?.strategy_genes) ? dna.strategy_genes : [];
   const copyNumbers = strategyGenes
@@ -80,6 +107,64 @@ function safeParseDna(value) {
   } catch {
     return {};
   }
+}
+
+function summarizeLatestFitness(dna) {
+  const fitnessHistory = Array.isArray(dna?.fitness_history) ? dna.fitness_history : [];
+  if (!fitnessHistory.length) {
+    return { validationScore: 0, holdoutScore: 0 };
+  }
+  const latest = fitnessHistory[fitnessHistory.length - 1] || {};
+  return {
+    validationScore: Number(latest.validationScore || 0),
+    holdoutScore: Number(latest.holdoutScore || 0),
+  };
+}
+
+function roundMetric(value) {
+  return Number(value.toFixed(2));
+}
+
+function buildActivePerformance(rows) {
+  if (!rows.length) {
+    return emptyCohortActivePerformance();
+  }
+  const totals = rows.reduce((sum, row) => {
+    const dna = safeParseDna(row.dna_json);
+    const latestFitness = summarizeLatestFitness(dna);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    sum.validationScore += latestFitness.validationScore;
+    sum.holdoutScore += latestFitness.holdoutScore;
+    sum.mutationEvents += mutationLog.length;
+    return sum;
+  }, { validationScore: 0, holdoutScore: 0, mutationEvents: 0 });
+  return {
+    genomeCount: rows.length,
+    averageLatestValidationScore: roundMetric(totals.validationScore / rows.length),
+    averageLatestHoldoutScore: roundMetric(totals.holdoutScore / rows.length),
+    averageMutationEvents: roundMetric(totals.mutationEvents / rows.length),
+  };
+}
+
+function buildArchivePerformance(rows) {
+  if (!rows.length) {
+    return emptyCohortArchivePerformance();
+  }
+  const totals = rows.reduce((sum, row) => {
+    const dna = safeParseDna(row.dna_json);
+    const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+    const hasVepFiltered = mutationLog.some((entry) => entry?.event === 'vep_filtered_deleterious_mutation');
+    sum.generation += Number(row.generation || dna?.generation || 0);
+    if (row.archive_reason === 'CULLED_LOW_PERFORMANCE') sum.lowPerformanceCount += 1;
+    if (hasVepFiltered) sum.vepFilteredCount += 1;
+    return sum;
+  }, { generation: 0, lowPerformanceCount: 0, vepFilteredCount: 0 });
+  return {
+    archiveCount: rows.length,
+    averageGeneration: roundMetric(totals.generation / rows.length),
+    lowPerformanceCount: totals.lowPerformanceCount,
+    vepFilteredCount: totals.vepFilteredCount,
+  };
 }
 
 function buildGenomeLineageEntry(row, dna) {
@@ -327,6 +412,20 @@ async function getAisTrainingStats(store) {
     blackSwanActiveGenomes: activeCouncil.reduce((sum, row) => sum + (hasBlackSwanContext(safeParseDna(row.dna_json)) ? 1 : 0), 0),
     blackSwanArchivedGenomes: allArchiveDnaRows.reduce((sum, row) => sum + (hasBlackSwanContext(safeParseDna(row.dna_json)) ? 1 : 0), 0),
   };
+  const blackSwanActiveRows = activeCouncil.filter((row) => hasBlackSwanContext(safeParseDna(row.dna_json)));
+  const coreActiveRows = activeCouncil.filter((row) => !hasBlackSwanContext(safeParseDna(row.dna_json)));
+  const allArchiveRows = await store.all(`
+    SELECT member_id, genome_id, generation, archive_reason, dna_json, archived_at
+    FROM ais_genome_archive
+  `).catch(() => []);
+  const blackSwanArchiveCohort = allArchiveRows.filter((row) => hasBlackSwanContext(safeParseDna(row.dna_json)));
+  const coreArchiveCohort = allArchiveRows.filter((row) => !hasBlackSwanContext(safeParseDna(row.dna_json)));
+  const dnaContextPerformance = {
+    blackSwanActive: buildActivePerformance(blackSwanActiveRows),
+    coreActive: buildActivePerformance(coreActiveRows),
+    blackSwanArchive: buildArchivePerformance(blackSwanArchiveCohort),
+    coreArchive: buildArchivePerformance(coreArchiveCohort),
+  };
   const dnaLineage = {
     activeGenomes: activeCouncil.slice(0, 5).map((row) => {
       const dna = safeParseDna(row.dna_json);
@@ -353,6 +452,7 @@ async function getAisTrainingStats(store) {
     dnaRepairTelemetry,
     dnaLineage: { ...emptyDnaLineage(), ...dnaLineage },
     dnaContextSummary: { ...emptyDnaContextSummary(), ...dnaContextSummary },
+    dnaContextPerformance: { ...emptyDnaContextPerformance(), ...dnaContextPerformance },
     dnaStateTotals,
     dnaMutationTotals,
     dnaStateTotalsAvailable,
