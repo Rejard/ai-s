@@ -41,6 +41,39 @@ const AIDL_FEATURE_ORDER = [
 const AIDL_ACTIONS = ['BUY', 'SELL', 'HOLD'];
 const AIDL_STATES = new Set(['A', 'I', 'D', 'L']);
 
+function normalizeAidlPolicyValue(value, fallback) {
+  const parsed = Number.parseFloat(value);
+  const fallbackValue = Number.parseFloat(fallback);
+  const safeValue = Number.isFinite(parsed) ? parsed : fallbackValue;
+  const clamped = Math.max(0, Math.min(1, safeValue));
+  return clamped.toFixed(2);
+}
+
+function normalizeAidlPolicyConfig(policy = {}) {
+  return {
+    contextMutationRate: normalizeAidlPolicyValue(
+      policy.contextMutationRate,
+      DEFAULT_AIDL_POLICY_CONFIG.contextMutationRate
+    ),
+    stateMutationRate: normalizeAidlPolicyValue(
+      policy.stateMutationRate,
+      DEFAULT_AIDL_POLICY_CONFIG.stateMutationRate
+    ),
+    profileMutationRate: normalizeAidlPolicyValue(
+      policy.profileMutationRate,
+      DEFAULT_AIDL_POLICY_CONFIG.profileMutationRate
+    ),
+    copyNumberMutationRate: normalizeAidlPolicyValue(
+      policy.copyNumberMutationRate,
+      DEFAULT_AIDL_POLICY_CONFIG.copyNumberMutationRate
+    ),
+    weightNudgeSize: normalizeAidlPolicyValue(
+      policy.weightNudgeSize,
+      DEFAULT_AIDL_POLICY_CONFIG.weightNudgeSize
+    ),
+  };
+}
+
 function buildAidlPolicyConfig(settings = []) {
   const policy = { ...DEFAULT_AIDL_POLICY_CONFIG };
   settings.forEach((setting) => {
@@ -50,7 +83,7 @@ function buildAidlPolicyConfig(settings = []) {
     if (setting.key === 'aidl_copy_number_mutation_rate') policy.copyNumberMutationRate = setting.value;
     if (setting.key === 'aidl_weight_nudge_size') policy.weightNudgeSize = setting.value;
   });
-  return policy;
+  return normalizeAidlPolicyConfig(policy);
 }
 function normalizeGeminiTimeoutMs(value) {
   const parsed = parseInt(value, 10);
@@ -371,21 +404,12 @@ router.post('/save-ai-config', async (req, res) => {
       await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('automatic_promotion_enabled', ?)`, [automaticPromotionEnabled.toString()]);
     }
     if (aidlPolicy) {
-      if (aidlPolicy.contextMutationRate !== undefined) {
-        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_context_mutation_rate', ?)`, [aidlPolicy.contextMutationRate.toString()]);
-      }
-      if (aidlPolicy.stateMutationRate !== undefined) {
-        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_state_mutation_rate', ?)`, [aidlPolicy.stateMutationRate.toString()]);
-      }
-      if (aidlPolicy.profileMutationRate !== undefined) {
-        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_profile_mutation_rate', ?)`, [aidlPolicy.profileMutationRate.toString()]);
-      }
-      if (aidlPolicy.copyNumberMutationRate !== undefined) {
-        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_copy_number_mutation_rate', ?)`, [aidlPolicy.copyNumberMutationRate.toString()]);
-      }
-      if (aidlPolicy.weightNudgeSize !== undefined) {
-        await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_weight_nudge_size', ?)`, [aidlPolicy.weightNudgeSize.toString()]);
-      }
+      const normalizedAidlPolicy = normalizeAidlPolicyConfig(aidlPolicy);
+      await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_context_mutation_rate', ?)`, [normalizedAidlPolicy.contextMutationRate]);
+      await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_state_mutation_rate', ?)`, [normalizedAidlPolicy.stateMutationRate]);
+      await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_profile_mutation_rate', ?)`, [normalizedAidlPolicy.profileMutationRate]);
+      await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_copy_number_mutation_rate', ?)`, [normalizedAidlPolicy.copyNumberMutationRate]);
+      await queries.run(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('aidl_weight_nudge_size', ?)`, [normalizedAidlPolicy.weightNudgeSize]);
     }
 
     res.json({ success: true, message: '글로벌 AI 두뇌 및 API Key 설정이 서버 DB에 안전하게 저장되었습니다.' });
@@ -971,6 +995,8 @@ module.exports = router;
 module.exports.__private__ = {
   DEFAULT_AIDL_POLICY_CONFIG,
   DEFAULT_GEMINI_TIMEOUT_MS,
+  normalizeAidlPolicyValue,
+  normalizeAidlPolicyConfig,
   normalizeGeminiTimeoutMs,
   buildAidlPolicyConfig,
   buildGeminiTimeoutConfig,

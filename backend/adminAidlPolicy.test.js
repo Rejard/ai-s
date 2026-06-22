@@ -36,6 +36,22 @@ async function main() {
       copyNumberMutationRate: '0.06',
       weightNudgeSize: '0.02',
     });
+    assert.deepEqual(
+      adminRouter.__private__.normalizeAidlPolicyConfig({
+        contextMutationRate: '1.7',
+        stateMutationRate: '-1',
+        profileMutationRate: 'abc',
+        copyNumberMutationRate: '0.3333',
+        weightNudgeSize: '9',
+      }),
+      {
+        contextMutationRate: '1.00',
+        stateMutationRate: '0.00',
+        profileMutationRate: '0.08',
+        copyNumberMutationRate: '0.33',
+        weightNudgeSize: '1.00',
+      }
+    );
 
     assert.equal(adminRouter.__private__.buildGeminiTimeoutConfig([]), '30000');
     assert.equal(
