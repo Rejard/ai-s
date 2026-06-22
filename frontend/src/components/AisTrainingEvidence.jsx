@@ -190,7 +190,7 @@ export default function AisTrainingEvidence({
                 Contexts: {formatContextMaskSummary(genome.contextMaskSummary)}
               </span>
               <span style={{ color: '#9CA3AF' }}>
-                Budget {genome.expressionBudget || 0} / Dominance {genome.dominanceBias || 0} / Copy avg {genome.averageCopyNumber || 0} / max {genome.maxCopyNumber || 0}
+                Budget {genome.expressionBudget || 0} / Dominance {genome.dominanceBias || 0} / Decay {genome.decayResistance || 0} / Reactivation {genome.reactivationBias || 0} / Copy avg {genome.averageCopyNumber || 0} / max {genome.maxCopyNumber || 0}
               </span>
             </div>
           ))}
@@ -214,7 +214,7 @@ export default function AisTrainingEvidence({
                 Contexts: {formatContextMaskSummary(archive.contextMaskSummary)}
               </span>
               <span style={{ color: '#9CA3AF' }}>
-                Budget {archive.expressionBudget || 0} / Dominance {archive.dominanceBias || 0} / Copy avg {archive.averageCopyNumber || 0} / max {archive.maxCopyNumber || 0}
+                Budget {archive.expressionBudget || 0} / Dominance {archive.dominanceBias || 0} / Decay {archive.decayResistance || 0} / Reactivation {archive.reactivationBias || 0} / Copy avg {archive.averageCopyNumber || 0} / max {archive.maxCopyNumber || 0}
               </span>
             </div>
           ))}

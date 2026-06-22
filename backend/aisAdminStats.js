@@ -53,6 +53,8 @@ function summarizeRegulatoryProfile(dna) {
   return {
     expressionBudget: Number(profile.expression_budget || 0),
     dominanceBias: Number(profile.dominance_bias || 0),
+    decayResistance: Number(profile.decay_resistance || 0),
+    reactivationBias: Number(profile.reactivation_bias || 0),
   };
 }
 
@@ -99,6 +101,8 @@ function buildGenomeLineageEntry(row, dna) {
     contextMaskSummary,
     expressionBudget: regulatoryProfile.expressionBudget,
     dominanceBias: regulatoryProfile.dominanceBias,
+    decayResistance: regulatoryProfile.decayResistance,
+    reactivationBias: regulatoryProfile.reactivationBias,
     averageCopyNumber: copyNumberSummary.average,
     maxCopyNumber: copyNumberSummary.max,
     blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
@@ -123,6 +127,8 @@ function buildArchivedGenomeEntry(row, dna) {
     contextMaskSummary,
     expressionBudget: regulatoryProfile.expressionBudget,
     dominanceBias: regulatoryProfile.dominanceBias,
+    decayResistance: regulatoryProfile.decayResistance,
+    reactivationBias: regulatoryProfile.reactivationBias,
     averageCopyNumber: copyNumberSummary.average,
     maxCopyNumber: copyNumberSummary.max,
     blackSwanEnabled: contextMaskSummary.includes('BLACK_SWAN'),
