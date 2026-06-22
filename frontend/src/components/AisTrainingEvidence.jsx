@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { extractAidlAdminGenes } from '../lib/aidlAdminGenes.js';
+
 const reasonLabels = {
   MIN_LABELED_OBSERVATIONS: 'Labeled samples below 300',
   LABEL_INTEGRITY_FAILURE: 'Invalid labeled data remains',
@@ -53,26 +55,6 @@ function formatOverrideSnapshot(snapshot = {}) {
 
 function formatOverrideCoverage(coverage = {}) {
   return `Total ${coverage.totalOverrideCount || 0} / Snapshot ${coverage.snapshotComparableCount || 0} / Timeline ${coverage.timelineComparableCount || 0}`;
-}
-
-function parseActiveStrategyGenes(activeMembers = []) {
-  return activeMembers.flatMap((member) => {
-    try {
-      const dna = JSON.parse(member.dna_json || '{}');
-      const strategyGenes = Array.isArray(dna.strategy_genes) ? dna.strategy_genes : [];
-      return strategyGenes.map((gene) => ({
-        memberId: member.member_id,
-        memberName: member.name,
-        geneId: gene.gene_id,
-        state: gene.state,
-        subgeneCount: Array.isArray(gene.subgenes) ? gene.subgenes.length : 0,
-        contextMaskSummary: Array.isArray(gene.context_mask) ? gene.context_mask : [],
-        blackSwanEnabled: Array.isArray(gene.context_mask) && gene.context_mask.includes('BLACK_SWAN'),
-      }));
-    } catch {
-      return [];
-    }
-  });
 }
 
 export default function AisTrainingEvidence({
@@ -161,7 +143,7 @@ export default function AisTrainingEvidence({
     contextOverrideRuns: [],
   };
   const dnaLineage = stats?.dnaLineage || { activeGenomes: [], recentArchives: [] };
-  const activeStrategyGenes = parseActiveStrategyGenes(councilStats?.activeMembers || []);
+  const activeStrategyGenes = extractAidlAdminGenes(councilStats?.activeMembers || []);
   const runtimePolicy = aidlPolicy || { contextMutationRate: '0.10', stateMutationRate: '0.10', profileMutationRate: '0.08', copyNumberMutationRate: '0.06', weightNudgeSize: '0.02' };
   const isEngineEligible = globalAiEngine === 'HYBRID_COOP' || globalAiEngine === 'AIS_ONLY';
   const isPromoEnabled = stats?.automaticPromotionEnabled;
@@ -406,8 +388,12 @@ export default function AisTrainingEvidence({
           {activeStrategyGenes.map((gene) => (
             <div key={`${gene.memberId}:${gene.geneId}`} style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '8px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px' }}>
-                <span style={{ color: 'var(--text-muted)' }}>{gene.memberName} / {gene.geneId}</span>
-                <strong style={{ color: gene.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>{gene.state} / subgenes {gene.subgeneCount}</strong>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {gene.memberName} / {gene.geneId}{gene.geneScope === 'subgene' ? ` / parent ${gene.parentGeneId}` : ''}
+                </span>
+                <strong style={{ color: gene.blackSwanEnabled ? '#F472B6' : '#E5E7EB' }}>
+                  {gene.state} / {gene.geneScope === 'subgene' ? 'subgene' : `subgenes ${gene.subgeneCount}`}
+                </strong>
               </div>
               <span style={{ color: '#9CA3AF' }}>
                 Contexts: {formatContextMaskSummary(gene.contextMaskSummary)}
@@ -439,7 +425,7 @@ export default function AisTrainingEvidence({
                   );
                 })}
               </div>
-              {typeof handleAidlGeneContextUpdate === 'function' && (
+              {gene.contextOverrideEligible && typeof handleAidlGeneContextUpdate === 'function' && (
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   {[
                     { label: 'BLACK_SWAN ON', enabled: true },
