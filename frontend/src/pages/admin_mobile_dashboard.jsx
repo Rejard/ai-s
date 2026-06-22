@@ -228,25 +228,25 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
               <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>🤖</span> 글로벌 AI 엔진 제어
+                <span>AI</span> 글로벌 AI 엔진 제어
               </h4>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-                모든 매니저 오토 봇의 공동 판단 두뇌가 되는 AI 모델의 설정을 관리합니다.
+                플랫폼 전체에서 공통으로 사용하는 AI 모델, API Key, 분석 주기, 응답 대기시간, AIDL 변이 정책을 설정합니다.
               </p>
 
               <form onSubmit={handleSaveAiConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <label className="form-label" style={{ fontSize: '12px' }}>사용할 AI 모델</label>
+                  <label className="form-label" style={{ fontSize: '12px' }}>사용 AI 모델</label>
                   <select
                     className="form-select"
                     value={globalAiModel}
                     onChange={(e) => setGlobalAiModel(e.target.value)}
                     style={{ padding: '14px', fontSize: '13px' }}
                   >
-                    <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (입력 $0.075 / 출력 $0.30 / 1M 토큰)</option>
-                    <option value="Gemini 2.5 Pro">Gemini 2.5 Pro (입력 $1.25 / 출력 $5.00 / 1M 토큰)</option>
-                    <option value="Gemini 2.5 Flash">Gemini 2.5 Flash (입력 $0.075 / 출력 $0.30 / 1M 토큰)</option>
-                    <option value="Gemini 3.1 Flash Lite">Gemini 3.1 Flash Lite (입력 $0.0375 / 출력 $0.15 / 1M 토큰)</option>
+                    <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (입력 $0.075 / 출력 $0.30 / 100만 토큰)</option>
+                    <option value="Gemini 2.5 Pro">Gemini 2.5 Pro (입력 $1.25 / 출력 $5.00 / 100만 토큰)</option>
+                    <option value="Gemini 2.5 Flash">Gemini 2.5 Flash (입력 $0.075 / 출력 $0.30 / 100만 토큰)</option>
+                    <option value="Gemini 3.1 Flash Lite">Gemini 3.1 Flash Lite (입력 $0.0375 / 출력 $0.15 / 100만 토큰)</option>
                   </select>
                 </div>
 
@@ -256,17 +256,17 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     type="password"
                     value={globalGeminiApiKey}
                     onChange={(e) => setGlobalGeminiApiKey(e.target.value)}
-                    placeholder="AI_..."
+                    placeholder="AI Studio에서 발급받은 API Key를 입력해 주세요"
                     className="form-input"
                     style={{ padding: '14px', fontSize: '13px' }}
                   />
                   <div style={{ fontSize: '10px', color: 'var(--danger-color)', marginTop: '6px' }}>
-                    * 보안 유지를 위해 서버 DB에 영구 저장됩니다.
+                    * 보안을 위해 서버 운영 설정에 저장됩니다.
                   </div>
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '12px' }}>AI 분석 주기 (의미 인식 간격)</label>
+                  <label className="form-label" style={{ fontSize: '12px' }}>AI 분석 주기 (분)</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', opacity: globalAiIntervalAuto === 'ON' ? 0.4 : 1, pointerEvents: globalAiIntervalAuto === 'ON' ? 'none' : 'auto' }}>
                     {['1', '3', '5', '10', '15', '30', '60'].map((mins) => (
                       <button
@@ -293,8 +293,8 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginTop: '12px' }}>
                     <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: '12px', color: '#FFF', fontWeight: 'bold' }}>⚡ AI 분석 주기 자동 최적화</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>시장 변동성에 맞춰 5m/15m/30m 자동 전환</div>
+                      <div style={{ fontSize: '12px', color: '#FFF', fontWeight: 'bold' }}>AI 분석 주기 자동 최적화</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>시장 변동성에 맞춰 5분, 15분, 30분 간격으로 자동 전환합니다.</div>
                     </div>
                     <input
                       type="checkbox"
@@ -307,7 +307,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>Gemini Timeout (ms)</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>Gemini 응답 대기시간 (ms)</label>
                     <input
                       type="number"
                       min="5000"
@@ -319,12 +319,12 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       style={{ padding: '14px', fontSize: '13px' }}
                     />
                     <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                      5000~120000ms ???? ??? Gemini ?? ?? ??? ?????.
+                      5000~120000ms 범위에서 설정합니다. Gemini 호출이 너무 빨리 끊기거나 너무 오래 대기하지 않도록 조정하는 값입니다.
                     </div>
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Context Rate</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 컨텍스트 변이율</label>
                     <input
                       type="number"
                       min="0"
@@ -337,7 +337,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL State Rate</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 상태 변이율</label>
                     <input
                       type="number"
                       min="0"
@@ -350,7 +350,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Nudge Size</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 가중치 조정폭</label>
                     <input
                       type="number"
                       min="0"
@@ -370,7 +370,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   disabled={savingAiConfig}
                   style={{ width: '100%', padding: '14px', fontSize: '14px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }}
                 >
-                  {savingAiConfig ? <Loader2 size={16} className="spin" /> : '💾 글로벌 AI 설정 저장'}
+                  {savingAiConfig ? <Loader2 size={16} className="spin" /> : '글로벌 AI 설정 저장'}
                 </button>
               </form>
             </div>
