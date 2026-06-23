@@ -1201,12 +1201,14 @@ async function performSystemDiagnostics(runHeavyTests) {
       evolutionStatus = "WARNING";
       evolutionDetails = "AI 유전자 모델 가중치 파일(ais_model_weights.json) 누락";
       warnings.push("모델 가중치 파일 없음");
-    } else {
       try {
         const weights = JSON.parse(fs.readFileSync(weightsPath, 'utf8'));
-        if (!weights.weights || !Array.isArray(weights.weights)) {
+        const hasBuy = Array.isArray(weights.BUY) && weights.BUY.length === 5;
+        const hasSell = Array.isArray(weights.SELL) && weights.SELL.length === 5;
+        const hasHold = Array.isArray(weights.HOLD) && weights.HOLD.length === 5;
+        if (!hasBuy || !hasSell || !hasHold) {
           evolutionStatus = "WARNING";
-          evolutionDetails = "AI 가중치 파일 스키마 형식 오류";
+          evolutionDetails = "AI 가중치 파일 스키마 형식 오류 (BUY/SELL/HOLD 키 또는 피처 배열 규격 미달)";
           warnings.push("모델 가중치 스키마 비정상");
         }
       } catch (e) {
