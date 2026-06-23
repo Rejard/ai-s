@@ -48,3 +48,12 @@ backend/uploads/
 scratch/
 backend/data/ai_decisions.csv
 .codex-remote-attachments/
+
+# AI Core Engine (Private)
+backend/train_ais.py
+backend/ais_dna.py
+backend/test_ais_dna.py
+backend/ais_inference.py
+backend/ais_features.py
+backend/test_ais_features.py
+backend/gridBot.js
