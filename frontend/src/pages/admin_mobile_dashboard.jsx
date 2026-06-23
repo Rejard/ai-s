@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../App';
 import {
   ShieldAlert, ShieldCheck, Users, Wallet, Trash2, UserPlus,
-  ArrowLeft, BarChart3, Loader2, Home, Settings, Receipt
+  ArrowLeft, BarChart3, Loader2, Home, Settings, Receipt, Activity
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
 import AisTrainingEvidence from '../components/AisTrainingEvidence';
@@ -784,9 +784,13 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
             </div>
+          </div>
+        )}
 
+        {activeTab === 'diagnostics' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* 4. Ais 시스템 구동 상태 진단 장부 */}
-            <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(255,255,255,0.06)', marginTop: '16px', textAlign: 'left' }}>
+            <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '16px' }}>⚡</span>
@@ -875,7 +879,6 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                 </div>
               )}
             </div>
-
           </div>
         )}
 
@@ -1255,6 +1258,14 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
         >
           <BarChart3 size={22} />
           <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 평가</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('diagnostics')}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'diagnostics' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <Activity size={22} />
+          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>자가 진단</span>
         </button>
       </div>
     </div>
