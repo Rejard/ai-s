@@ -62,7 +62,11 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
     submittingAidlGeneState,
     handleAidlGeneStateUpdate,
     submittingAidlGeneContext,
-    handleAidlGeneContextUpdate
+    handleAidlGeneContextUpdate,
+    diagnosticsData,
+    loadingDiagnostics,
+    runningDiagnostics,
+    runDiagnostics
   } = useAdminLogic(managerEmail);
 
 
@@ -1132,6 +1136,126 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 4. Ais 시스템 구동 상태 진단 장부 */}
+          <div className="glass-card" style={{ padding: '24px', background: 'rgba(17, 12, 46, 0.3)', border: '1px solid rgba(255,255,255,0.06)', marginTop: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>⚡</span>
+                <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '800' }}>⚡ Ais 시스템 구동 상태 진단 장부</h3>
+              </div>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={runningDiagnostics || loadingDiagnostics}
+                onClick={runDiagnostics}
+                style={{
+                  width: 'auto',
+                  padding: '6px 14px',
+                  fontSize: '11px',
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '700'
+                }}
+              >
+                {runningDiagnostics ? <Loader2 size={12} className="spin" /> : '⚡ 자가 동작 테스트 실행'}
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              {/* 왼쪽 4개 요소 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {(diagnosticsData?.diagnostics || []).slice(0, 4).map((item, idx) => (
+                  <div key={idx} style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', color: '#E4E4E7', fontWeight: '800' }}>{item.name}</span>
+                      <span style={{
+                        fontSize: '9px',
+                        fontWeight: '900',
+                        color: item.status === 'OK' ? '#10B981' : item.status === 'WARNING' ? '#FBBF24' : '#EF4444',
+                        background: item.status === 'OK' ? 'rgba(16,185,129,0.1)' : item.status === 'WARNING' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                        padding: '2px 8px',
+                        borderRadius: '4px'
+                      }}>
+                        {item.status} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: 0, textAlign: 'left', lineHeight: '1.4' }}>
+                      {item.details}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* 오른쪽 4개 요소 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {(diagnosticsData?.diagnostics || []).slice(4, 8).map((item, idx) => (
+                  <div key={idx} style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', color: '#E4E4E7', fontWeight: '800' }}>{item.name}</span>
+                      <span style={{
+                        fontSize: '9px',
+                        fontWeight: '900',
+                        color: item.status === 'OK' ? '#10B981' : item.status === 'WARNING' ? '#FBBF24' : '#EF4444',
+                        background: item.status === 'OK' ? 'rgba(16,185,129,0.1)' : item.status === 'WARNING' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                        padding: '2px 8px',
+                        borderRadius: '4px'
+                      }}>
+                        {item.status} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: 0, textAlign: 'left', lineHeight: '1.4' }}>
+                      {item.details}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
+              <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444') }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
+              <span>최근 진단 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</span>
+            </div>
+
+            {/* 에러 및 경고 상세 로그 리스트 */}
+            {((diagnosticsData?.errors && diagnosticsData.errors.length > 0) || 
+              (diagnosticsData?.warnings && diagnosticsData.warnings.length > 0)) && (
+              <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.2)', textAlign: 'left' }}>
+                <h4 style={{ fontSize: '12px', color: '#EF4444', margin: '0 0 10px 0', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  ⚠️ 검출된 시스템 무결성 에러 및 경고 세부 내역 ({ (diagnosticsData.errors || []).length + (diagnosticsData.warnings || []).length }건)
+                </h4>
+                
+                {/* 에러 목록 (빨간색) */}
+                {diagnosticsData.errors && diagnosticsData.errors.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '10px', color: '#EF4444', fontWeight: '700' }}>[치명적 에러]</span>
+                    {diagnosticsData.errors.map((err, idx) => (
+                      <div key={idx} style={{ fontSize: '11px', color: '#FCA5A5', background: 'rgba(239,68,68,0.1)', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace' }}>
+                        • {err}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* 경고 목록 (주황색) */}
+                {diagnosticsData.warnings && diagnosticsData.warnings.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '10px', color: '#FBBF24', fontWeight: '700' }}>[주의/경고]</span>
+                    {diagnosticsData.warnings.map((warn, idx) => (
+                      <div key={idx} style={{ fontSize: '11px', color: '#FDE68A', background: 'rgba(245,158,11,0.1)', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace' }}>
+                        • {warn}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>

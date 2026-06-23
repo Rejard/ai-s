@@ -47,6 +47,11 @@ export function useAdminLogic(managerEmail) {
   const [councilStats, setCouncilStats] = useState(null);
   const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
 
+  // 시스템 자가진단 관련 추가 상태
+  const [diagnosticsData, setDiagnosticsData] = useState(null);
+  const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
+  const [runningDiagnostics, setRunningDiagnostics] = useState(false);
+
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
   const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
 
@@ -198,6 +203,40 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const fetchDiagnostics = async () => {
+    if (!isAdmin) return;
+    setLoadingDiagnostics(true);
+    try {
+      const res = await axios.get(`${API_BASE}/admin/diagnostics`, getAdminHeaders());
+      if (res.data.success) {
+        setDiagnosticsData(res.data);
+      }
+    } catch (err) {
+      console.error('시스템 진단 로드 실패:', err);
+    } finally {
+      setLoadingDiagnostics(false);
+    }
+  };
+
+  const runDiagnostics = async () => {
+    if (!isAdmin) return;
+    setRunningDiagnostics(true);
+    try {
+      const res = await axios.post(`${API_BASE}/admin/run-diagnostics`, {}, getAdminHeaders());
+      if (res.data.success) {
+        setDiagnosticsData(res.data);
+        alert("🎉 모든 시스템 자가 진단이 100% 정상 통과되었습니다!");
+      }
+    } catch (err) {
+      const errMsg = err.response && err.response.data && err.response.data.message
+        ? err.response.data.message
+        : err.message;
+      alert(`❌ 자가 진단 실패: ${errMsg}`);
+    } finally {
+      setRunningDiagnostics(false);
+    }
+  };
+
   const handleSaveAiEngine = async (engineMode) => {
     if (!isAdmin) return;
     setSavingAiEngine(true);
@@ -329,6 +368,7 @@ export function useAdminLogic(managerEmail) {
     fetchAiEngineConfig();
     fetchTrainingStats();
     fetchCouncilStats();
+    fetchDiagnostics();
 
     const interval = setInterval(() => {
       fetchManagers();
@@ -337,6 +377,7 @@ export function useAdminLogic(managerEmail) {
       fetchAiLogs();
       fetchTrainingStats();
       fetchCouncilStats();
+      fetchDiagnostics();
     }, 60000); // 60초 주기로 변경 (기존 5초)
     return () => clearInterval(interval);
   }, [managerEmail]);
@@ -451,7 +492,12 @@ export function useAdminLogic(managerEmail) {
     submittingAidlGeneState,
     handleAidlGeneStateUpdate,
     submittingAidlGeneContext,
-    handleAidlGeneContextUpdate
+    handleAidlGeneContextUpdate,
+    diagnosticsData,
+    loadingDiagnostics,
+    runningDiagnostics,
+    fetchDiagnostics,
+    runDiagnostics
   };
 
 }

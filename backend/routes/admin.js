@@ -1112,6 +1112,354 @@ router.post('/force-evolution', async (req, res) => {
   }
 });
 
+// 1. 공통 정밀 진단 함수 정의
+async function performSystemDiagnostics(runHeavyTests) {
+  const fs = require('fs');
+  const path = require('path');
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+
+  const errors = [];
+  const warnings = [];
+
+  // --- 1. API 관문 및 어드민 코어 ---
+  let apiStatus = "OK";
+  let apiDetails = "Express 서버 정상 및 세션 인증 통과";
+  const envPath = path.join(__dirname, '..', '.env');
+  const envExists = fs.existsSync(envPath);
+  if (!envExists) {
+    apiStatus = "ERROR";
+    apiDetails = ".env 환경설정 파일 누락됨";
+    errors.push(".env 환경설정 파일 누락");
+  } else {
+    // 핵심 환경변수 검사
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    if (!envContent.includes('JWT_SECRET')) {
+      apiStatus = "WARNING";
+      apiDetails = ".env 파일 내 JWT_SECRET 설정 필요";
+      warnings.push("JWT_SECRET 미설정");
+    }
+  }
+
+  if (runHeavyTests && apiStatus !== "ERROR") {
+    try {
+      await execPromise('node adminAidlPolicy.test.js', { cwd: path.join(__dirname, '..') });
+      apiDetails = "Express API 코어 및 어드민 정책 설정 테스트 통과";
+    } catch (e) {
+      apiStatus = "ERROR";
+      apiDetails = `어드민 정책 테스트 실패: ${e.message.split('\n')[0]}`;
+      errors.push(`어드민 정책 테스트 오류: ${e.message.split('\n')[0]}`);
+    }
+  }
+
+  // --- 2. AI 실거래 매매 집행기 ---
+  let traderStatus = "OK";
+  let traderDetails = "Gate.io 거래소 모니터링 정상 작동 중";
+  const requiredTraderFiles = ['gridBot.js', 'gateioHelper.js', 'PlatformVaultBuild.json'];
+  const missingTraderFiles = requiredTraderFiles.filter(f => !fs.existsSync(path.join(__dirname, '..', f)));
+  if (missingTraderFiles.length > 0) {
+    traderStatus = "ERROR";
+    traderDetails = `핵심 파일 누락: ${missingTraderFiles.join(', ')}`;
+    errors.push(`매매 집행기 핵심 파일 누락: ${missingTraderFiles.join(', ')}`);
+  } else {
+    if (envExists) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const hasKey = envContent.includes('GATEIO_KEY') && !envContent.includes('GATEIO_KEY= ') && !envContent.includes('GATEIO_KEY=""');
+      const hasSecret = envContent.includes('GATEIO_SECRET') && !envContent.includes('GATEIO_SECRET= ') && !envContent.includes('GATEIO_SECRET=""');
+      if (!hasKey || !hasSecret) {
+        traderStatus = "WARNING";
+        traderDetails = "실거래 API 키 설정 필요 (비활성 또는 모의 투자 모드)";
+        warnings.push("Gate.io API 키 설정 누락");
+      }
+    }
+  }
+
+  // --- 3. AI 유전자 진화 엔진 ---
+  let evolutionStatus = "OK";
+  let evolutionDetails = "유전자 진화 모델 상태 정상";
+  const requiredEvolFiles = ['train_ais.py', 'ais_dna.py', 'test_ais_dna.py'];
+  const missingEvolFiles = requiredEvolFiles.filter(f => !fs.existsSync(path.join(__dirname, '..', f)));
+  if (missingEvolFiles.length > 0) {
+    evolutionStatus = "ERROR";
+    evolutionDetails = `유전자 스크립트 파일 누락: ${missingEvolFiles.join(', ')}`;
+    errors.push(`진화 엔진 파일 누락: ${missingEvolFiles.join(', ')}`);
+  } else {
+    const weightsPath = path.join(__dirname, '..', 'ais_model_weights.json');
+    if (!fs.existsSync(weightsPath)) {
+      evolutionStatus = "WARNING";
+      evolutionDetails = "AI 유전자 모델 가중치 파일(ais_model_weights.json) 누락";
+      warnings.push("모델 가중치 파일 없음");
+    } else {
+      try {
+        const weights = JSON.parse(fs.readFileSync(weightsPath, 'utf8'));
+        if (!weights.weights || !Array.isArray(weights.weights)) {
+          evolutionStatus = "WARNING";
+          evolutionDetails = "AI 가중치 파일 스키마 형식 오류";
+          warnings.push("모델 가중치 스키마 비정상");
+        }
+      } catch (e) {
+        evolutionStatus = "ERROR";
+        evolutionDetails = "AI 가중치 JSON 파일 손상(파싱 오류)";
+        errors.push("모델 가중치 JSON 파싱 오류");
+      }
+    }
+  }
+
+  // 24시간 이내 학습 성공 이력 검사 (DB)
+  try {
+    const latestRun = await queries.get(`
+      SELECT run_key, status, error_message, completed_at
+      FROM ais_model_runs
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+    if (latestRun) {
+      if (latestRun.status === 'FAILED' || latestRun.error_message) {
+        if (evolutionStatus !== "ERROR") {
+          evolutionStatus = "WARNING";
+          evolutionDetails = `최근 자동 학습 실패: ${latestRun.error_message}`;
+        }
+        warnings.push(`최근 자동 학습 에러: ${latestRun.error_message}`);
+      } else if (latestRun.completed_at) {
+        const lastCompleted = new Date(latestRun.completed_at).getTime();
+        const elapsed = Date.now() - lastCompleted;
+        if (elapsed > 24 * 60 * 60 * 1000) {
+          if (evolutionStatus !== "ERROR") {
+            evolutionStatus = "WARNING";
+            evolutionDetails = "최근 24시간 동안 완료된 학습 기록 없음";
+          }
+          warnings.push("최근 24시간 동안 유전자 학습 없음");
+        } else {
+          if (evolutionStatus === "OK") {
+            evolutionDetails = `최근 학습 완료: ${latestRun.run_key}`;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    if (evolutionStatus !== "ERROR") {
+      evolutionStatus = "WARNING";
+      evolutionDetails = "자동 학습 기록 조회 실패";
+    }
+    warnings.push("DB 학습 이력 테이블 조회 오류");
+  }
+
+  if (runHeavyTests && evolutionStatus !== "ERROR") {
+    // py 버전 및 유닛테스트 실행
+    try {
+      await execPromise('py --version');
+    } catch (e) {
+      evolutionStatus = "ERROR";
+      evolutionDetails = "로컬 Python py 런처를 실행할 수 없습니다.";
+      errors.push("파이썬 런처(py) 미설치 또는 환경변수 오류");
+    }
+
+    if (evolutionStatus !== "ERROR") {
+      try {
+        await execPromise('py test_ais_dna.py', { cwd: path.join(__dirname, '..') });
+        evolutionDetails = "유전자 진화 모델 및 DNA 구조 테스트 통과 완료";
+      } catch (e) {
+        evolutionStatus = "ERROR";
+        evolutionDetails = `DNA 테스트 실패: ${e.message.split('\n')[0]}`;
+        errors.push(`유전자 DNA 테스트 실패: ${e.message.split('\n')[0]}`);
+      }
+    }
+  }
+
+  // --- 4. AI 이상 변이 사전 필터 (AI-VEP) ---
+  let vepStatus = "OK";
+  let vepDetails = "이상 돌연변이 사전 위험 필터(AI-VEP) 활성화";
+  const requiredVepFiles = ['zeroTrustFilter.js', 'aisEvaluation.js', 'aisEvaluation.test.js'];
+  const missingVepFiles = requiredVepFiles.filter(f => !fs.existsSync(path.join(__dirname, '..', f)));
+  if (missingVepFiles.length > 0) {
+    vepStatus = "ERROR";
+    vepDetails = `사전 필터 파일 누락: ${missingVepFiles.join(', ')}`;
+    errors.push(`AI-VEP 파일 누락: ${missingVepFiles.join(', ')}`);
+  }
+
+  if (runHeavyTests && vepStatus !== "ERROR") {
+    try {
+      await execPromise('node aisEvaluation.test.js', { cwd: path.join(__dirname, '..') });
+      vepDetails = "AI-VEP 이상 변이 연산 및 평가 모델 무결성 검증 완료";
+    } catch (e) {
+      vepStatus = "ERROR";
+      vepDetails = `AI-VEP 평가 테스트 실패: ${e.message.split('\n')[0]}`;
+      errors.push(`AI-VEP 평가 테스트 실패: ${e.message.split('\n')[0]}`);
+    }
+  }
+
+  // --- 5. 보조지표 수학 가공기 ---
+  let featuresStatus = "OK";
+  let featuresDetails = "RSI 및 이평선 등 기술 지표 정규화 연산기 준비완료";
+  const requiredFeatureFiles = ['ais_features.py', 'test_ais_features.py'];
+  const missingFeatureFiles = requiredFeatureFiles.filter(f => !fs.existsSync(path.join(__dirname, '..', f)));
+  if (missingFeatureFiles.length > 0) {
+    featuresStatus = "ERROR";
+    featuresDetails = `피처 연산 파일 누락: ${missingFeatureFiles.join(', ')}`;
+    errors.push(`피처 가공기 파일 누락: ${missingFeatureFiles.join(', ')}`);
+  }
+
+  if (runHeavyTests && featuresStatus !== "ERROR") {
+    try {
+      await execPromise('py test_ais_features.py', { cwd: path.join(__dirname, '..') });
+      featuresDetails = "10개 핵심 보조지표 정규화 가공 유닛 테스트 통과 완료";
+    } catch (e) {
+      featuresStatus = "ERROR";
+      featuresDetails = `피처 가공 테스트 실패: ${e.message.split('\n')[0]}`;
+      errors.push(`보조지표 피처 가공 테스트 실패: ${e.message.split('\n')[0]}`);
+    }
+  }
+
+  // --- 6. 의회 진단 및 건강 분석기 ---
+  let councilStatus = "OK";
+  let councilDetails = "의회 다양성 및 연산 여유 마진율 모니터링 중";
+  const requiredCouncilFiles = ['councilHealthReport.js', 'councilBriefing.js', 'councilBriefingHistory.js'];
+  const missingCouncilFiles = requiredCouncilFiles.filter(f => !fs.existsSync(path.join(__dirname, '..', f)));
+  if (missingCouncilFiles.length > 0) {
+    councilStatus = "ERROR";
+    councilDetails = `의회 분석 모듈 파일 누락: ${missingCouncilFiles.join(', ')}`;
+    errors.push(`의회 분석 모듈 파일 누락: ${missingCouncilFiles.join(', ')}`);
+  } else {
+    try {
+      const dbStats = await queries.get(`
+        SELECT margin_rate, diversity_index 
+        FROM council_briefings 
+        ORDER BY id DESC 
+        LIMIT 1
+      `);
+      if (dbStats) {
+        if (dbStats.margin_rate < 10) {
+          councilStatus = "WARNING";
+          councilDetails = `경고: 틱 연산 여유 마진율 급감 (${dbStats.margin_rate.toFixed(1)}%)`;
+          warnings.push(`의회 연산 여유 마진 경고: ${dbStats.margin_rate}%`);
+        } else {
+          councilDetails = `정상: 틱 연산 여유 마진 ${dbStats.margin_rate.toFixed(1)}%, 다양성 지수 ${dbStats.diversity_index.toFixed(2)}`;
+        }
+      }
+    } catch (e) {
+      councilStatus = "WARNING";
+      councilDetails = "의회 데이터베이스 분석 정보 기록 조회 실패";
+      warnings.push("의회 상태 분석 테이블(council_briefings) 부재 또는 조회 실패");
+    }
+  }
+
+  // --- 7. 프론트엔드 UI 대시보드 ---
+  let frontendStatus = "OK";
+  let frontendDetails = "React UI 대시보드 컴파일 및 static 리소스 서빙 준비완료";
+  const frontendDistPath = path.join(__dirname, '..', '..', 'frontend', 'dist', 'index.html');
+  const frontendPackagePath = path.join(__dirname, '..', '..', 'frontend', 'package.json');
+  if (!fs.existsSync(frontendPackagePath)) {
+    frontendStatus = "ERROR";
+    frontendDetails = "프론트엔드 프로젝트 폴더 또는 package.json 없음";
+    errors.push("Frontend package.json 파일 누락");
+  } else if (!fs.existsSync(frontendDistPath)) {
+    frontendStatus = "WARNING";
+    frontendDetails = "정적 웹 리소스 빌드 폴더(frontend/dist) 없음. npm run build 필요";
+    warnings.push("React 빌드 결과물(frontend/dist)이 존재하지 않음");
+  }
+
+  // --- 8. 영구 데이터베이스 ---
+  let dbStatus = "OK";
+  let dbDetails = "platform.db 파일 I/O 및 테이블 스키마 무결성 정상";
+  const dbPath = path.join(__dirname, '..', 'platform.db');
+  if (!fs.existsSync(dbPath)) {
+    dbStatus = "ERROR";
+    dbDetails = "SQLite3 platform.db 데이터베이스 파일이 존재하지 않습니다.";
+    errors.push("platform.db 파일 누락");
+  } else {
+    const stats = fs.statSync(dbPath);
+    if (stats.size === 0) {
+      dbStatus = "ERROR";
+      dbDetails = "데이터베이스 파일 크기가 0바이트(공백)입니다.";
+      errors.push("platform.db 파일 크기가 0바이트임");
+    } else {
+      try {
+        await queries.get("SELECT 1");
+        
+        const pragmaResult = await queries.get("PRAGMA integrity_check");
+        if (pragmaResult && pragmaResult.integrity_check !== 'ok') {
+          dbStatus = "ERROR";
+          dbDetails = `SQLite 손상 감지: ${pragmaResult.integrity_check}`;
+          errors.push(`SQLite PRAGMA 무결성 체크 실패: ${pragmaResult.integrity_check}`);
+        } else {
+          const tables = ['ais_model_runs', 'ais_dna_pool', 'auto_trades', 'system_settings'];
+          const missingTables = [];
+          for (const table of tables) {
+            const tableCheck = await queries.get(`
+              SELECT name FROM sqlite_master WHERE type='table' AND name=?
+            `, [table]);
+            if (!tableCheck) {
+              missingTables.push(table);
+            }
+          }
+          if (missingTables.length > 0) {
+            dbStatus = "ERROR";
+            dbDetails = `데이터베이스 필수 테이블 누락: ${missingTables.join(', ')}`;
+            errors.push(`DB 필수 테이블 누락: ${missingTables.join(', ')}`);
+          } else {
+            dbDetails = `SQLite DB 연결 완료 (${(stats.size / 1024 / 1024).toFixed(2)} MB), 테이블 스키마 정상`;
+          }
+        }
+      } catch (e) {
+        dbStatus = "ERROR";
+        dbDetails = `DB 연결 및 PRAGMA 쿼리 실패: ${e.message}`;
+        errors.push(`DB 쿼리 에러: ${e.message}`);
+      }
+    }
+  }
+
+  // 종합 상태 판단
+  let overallStatus = "EXCELLENT";
+  if (errors.length > 0) {
+    overallStatus = "ERROR";
+  } else if (warnings.length > 0 || apiStatus === "WARNING" || traderStatus === "WARNING" || evolutionStatus === "WARNING" || frontendStatus === "WARNING") {
+    overallStatus = "WARNING";
+  }
+
+  const diagnostics = [
+    { name: "API 관문 및 어드민 코어", status: apiStatus, percentage: apiStatus === "OK" ? 100 : (apiStatus === "WARNING" ? 50 : 0), details: apiDetails },
+    { name: "AI 실거래 매매 집행기", status: traderStatus, percentage: traderStatus === "OK" ? 100 : (traderStatus === "WARNING" ? 50 : 0), details: traderDetails },
+    { name: "AI 유전자 진화 엔진", status: evolutionStatus, percentage: evolutionStatus === "OK" ? 100 : (evolutionStatus === "WARNING" ? 50 : 0), details: evolutionDetails },
+    { name: "AI 이상 변이 사전 필터 (AI-VEP)", status: vepStatus, percentage: vepStatus === "OK" ? 100 : 0, details: vepDetails },
+    { name: "보조지표 수학 가공기", status: featuresStatus, percentage: featuresStatus === "OK" ? 100 : 0, details: featuresDetails },
+    { name: "의회 진단 및 건강 분석기", status: councilStatus, percentage: councilStatus === "OK" ? 100 : (councilStatus === "WARNING" ? 50 : 0), details: councilDetails },
+    { name: "프론트엔드 UI 대시보드", status: frontendStatus, percentage: frontendStatus === "OK" ? 100 : (frontendStatus === "WARNING" ? 50 : 0), details: frontendDetails },
+    { name: "영구 데이터베이스", status: dbStatus, percentage: dbStatus === "OK" ? 100 : 0, details: dbDetails }
+  ];
+
+  return {
+    success: true,
+    diagnostics,
+    overallStatus,
+    errors,
+    warnings,
+    timestamp: new Date().toISOString()
+  };
+}
+
+// 1. GET /diagnostics (기본 시스템 진단 및 상태 점검)
+router.get('/diagnostics', async (req, res) => {
+  try {
+    const result = await performSystemDiagnostics(false);
+    res.json(result);
+  } catch (err) {
+    console.error("Fetch diagnostics error:", err);
+    res.status(500).json({ error: "Failed to fetch system diagnostics" });
+  }
+});
+
+// 2. POST /run-diagnostics (동작 테스트 실행 - 실시간 기동 검출)
+router.post('/run-diagnostics', async (req, res) => {
+  try {
+    const result = await performSystemDiagnostics(true);
+    res.json(result);
+  } catch (err) {
+    console.error("Run diagnostics error:", err);
+    res.status(500).json({ error: "Failed to run system diagnostics" });
+  }
+});
+
 module.exports = router;
 module.exports.__private__ = {
   DEFAULT_AIDL_POLICY_CONFIG,

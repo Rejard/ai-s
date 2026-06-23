@@ -63,7 +63,11 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
     submittingAidlGeneState,
     handleAidlGeneStateUpdate,
     submittingAidlGeneContext,
-    handleAidlGeneContextUpdate
+    handleAidlGeneContextUpdate,
+    diagnosticsData,
+    loadingDiagnostics,
+    runningDiagnostics,
+    runDiagnostics
   } = useAdminLogic(managerEmail);
 
 
@@ -779,6 +783,97 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* 4. Ais 시스템 구동 상태 진단 장부 */}
+            <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(255,255,255,0.06)', marginTop: '16px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <h3 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '800' }}>⚡ Ais 시스템 구동 상태 진단</h3>
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={runningDiagnostics || loadingDiagnostics}
+                  onClick={runDiagnostics}
+                  style={{
+                    width: 'auto',
+                    padding: '5px 10px',
+                    fontSize: '9px',
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                    fontWeight: '700'
+                  }}
+                >
+                  {runningDiagnostics ? <Loader2 size={10} className="spin" /> : '⚡ 자가 진단'}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {(diagnosticsData?.diagnostics || []).map((item, idx) => (
+                  <div key={idx} style={{ background: 'rgba(0,0,0,0.2)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', color: '#E4E4E7', fontWeight: '700' }}>{item.name}</span>
+                      <span style={{
+                        fontSize: '8px',
+                        fontWeight: '900',
+                        color: item.status === 'OK' ? '#10B981' : item.status === 'WARNING' ? '#FBBF24' : '#EF4444',
+                        background: item.status === 'OK' ? 'rgba(16,185,129,0.1)' : item.status === 'WARNING' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                        padding: '1px 6px',
+                        borderRadius: '3px'
+                      }}>
+                        {item.status} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '9px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.3' }}>
+                      {item.details}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '9px', color: 'var(--text-dark)' }}>
+                <div>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444') }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></div>
+                <div>최근 진단 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</div>
+              </div>
+
+              {/* 모바일 에러 및 경고 상세 리스트 */}
+              {((diagnosticsData?.errors && diagnosticsData.errors.length > 0) || 
+                (diagnosticsData?.warnings && diagnosticsData.warnings.length > 0)) && (
+                <div style={{ marginTop: '14px', padding: '12px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', textAlign: 'left' }}>
+                  <h4 style={{ fontSize: '10px', color: '#EF4444', margin: '0 0 8px 0', fontWeight: '800' }}>
+                    ⚠️ 검출된 시스템 무결성 에러/경고 ({ (diagnosticsData.errors || []).length + (diagnosticsData.warnings || []).length }건)
+                  </h4>
+                  
+                  {diagnosticsData.errors && diagnosticsData.errors.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '9px', color: '#EF4444', fontWeight: '700' }}>[에러]</span>
+                      {diagnosticsData.errors.map((err, idx) => (
+                        <div key={idx} style={{ fontSize: '9px', color: '#FCA5A5', background: 'rgba(239,68,68,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                          • {err}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {diagnosticsData.warnings && diagnosticsData.warnings.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '9px', color: '#FBBF24', fontWeight: '700' }}>[주의]</span>
+                      {diagnosticsData.warnings.map((warn, idx) => (
+                        <div key={idx} style={{ fontSize: '9px', color: '#FDE68A', background: 'rgba(245,158,11,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                          • {warn}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
           </div>
