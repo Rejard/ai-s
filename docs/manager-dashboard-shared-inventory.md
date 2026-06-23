@@ -102,7 +102,7 @@ After every small extraction:
 
 - Run `npm run test` in `frontend`
 - Run `npm run build` in `frontend`
-- Check `https://edenai.alonics.com/` in the browser, not localhost
+- Check `https://ais.alonics.com/` in the browser, not localhost
 - Confirm both desktop width and mobile width still render
 - Confirm no unexpected live Gate.io order or SUT transfer is triggered during testing
 

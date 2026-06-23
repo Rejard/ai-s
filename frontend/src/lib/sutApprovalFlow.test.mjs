@@ -6,20 +6,20 @@ import {
   hasApprovalRecoveryResumeFlag,
 } from './sutApprovalFlow.js';
 
-const resumeUrl = buildApprovalRecoveryResumeUrl('https://edenai.alonics.com/dashboard?foo=1');
+const resumeUrl = buildApprovalRecoveryResumeUrl('https://ais.alonics.com/dashboard?foo=1');
 assert.equal(
   resumeUrl,
-  'https://edenai.alonics.com/dashboard?foo=1&recover_sut_approval=1'
+  'https://ais.alonics.com/dashboard?foo=1&recover_sut_approval=1'
 );
 assert.equal(hasApprovalRecoveryResumeFlag(resumeUrl), true);
-assert.equal(hasApprovalRecoveryResumeFlag('https://edenai.alonics.com/dashboard'), false);
+assert.equal(hasApprovalRecoveryResumeFlag('https://ais.alonics.com/dashboard'), false);
 
 const alerts = [];
 const successSteps = [];
 
 const successResult = await executeSutApprovalFlow({
   ethereum: { isTrustWallet: true },
-  currentUrl: 'https://edenai.alonics.com/dashboard',
+  currentUrl: 'https://ais.alonics.com/dashboard',
   userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
   alertFn(message) {
     alerts.push(message);
@@ -61,7 +61,7 @@ assert.equal(alerts.length, 3);
 let redirectedTo = null;
 const mobileFallbackResult = await executeSutApprovalFlow({
   ethereum: undefined,
-  currentUrl: 'https://edenai.alonics.com/dashboard',
+  currentUrl: 'https://ais.alonics.com/dashboard',
   userAgent: 'Mozilla/5.0 (Linux; Android 14)',
   alertFn() {},
   confirmFn(message) {
@@ -78,7 +78,7 @@ const mobileFallbackResult = await executeSutApprovalFlow({
     throw new Error('wait should not run when wallet is missing');
   },
   buildOpenUrlFn(url) {
-    assert.equal(url, 'https://edenai.alonics.com/dashboard?recover_sut_approval=1');
+    assert.equal(url, 'https://ais.alonics.com/dashboard?recover_sut_approval=1');
     return `trust://open_url?url=${encodeURIComponent(url)}`;
   },
 });
@@ -86,13 +86,13 @@ const mobileFallbackResult = await executeSutApprovalFlow({
 assert.equal(mobileFallbackResult.status, 'redirected');
 assert.equal(
   redirectedTo,
-  'trust://open_url?url=https%3A%2F%2Fedenai.alonics.com%2Fdashboard%3Frecover_sut_approval%3D1'
+  'trust://open_url?url=https%3A%2F%2Fais.alonics.com%2Fdashboard%3Frecover_sut_approval%3D1'
 );
 
 let approveCalled = false;
 const mismatchedWallet = await executeSutApprovalFlow({
   ethereum: { isTrustWallet: true },
-  currentUrl: 'https://edenai.alonics.com/dashboard',
+  currentUrl: 'https://ais.alonics.com/dashboard',
   userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
   expectedWalletAddress: '0xabc',
   alertFn(message) {
@@ -124,7 +124,7 @@ assert.equal(approveCalled, false);
 
 const rejected = await executeSutApprovalFlow({
   ethereum: { isTrustWallet: true },
-  currentUrl: 'https://edenai.alonics.com/dashboard',
+  currentUrl: 'https://ais.alonics.com/dashboard',
   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
   alertFn() {},
   confirmFn() {

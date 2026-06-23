@@ -44,11 +44,11 @@ const tests = [
   }],
 
   ['builds direct Trust Wallet app open_url links', () => {
-    const url = buildTrustWalletOpenUrl('https://edenai.alonics.com/register?google_email=a%40b.com');
+    const url = buildTrustWalletOpenUrl('https://ais.alonics.com/register?google_email=a%40b.com');
 
     assert.equal(
       url,
-      'trust://open_url?coin_id=966&url=https%3A%2F%2Fedenai.alonics.com%2Fregister%3Fgoogle_email%3Da%2540b.com'
+      'trust://open_url?coin_id=966&url=https%3A%2F%2Fais.alonics.com%2Fregister%3Fgoogle_email%3Da%2540b.com'
     );
   }],
   ['resolves Trust Wallet from multiple injected providers', async () => {

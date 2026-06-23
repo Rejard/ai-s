@@ -4,7 +4,7 @@ AI-S는 폴리곤(Polygon) 블록체인 기반의 멤버십, 신원 인증(KYC),
 
 실서비스 주소:
 ```text
-https://edenai.alonics.com/
+https://ais.alonics.com/
 ```
 
 ## AIDL 공개 기록 및 권리 고지 / Public Disclosure and Rights Notice

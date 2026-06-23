@@ -21,16 +21,16 @@ import {
 } from './userDashboard.js';
 
 assert.equal(
-  buildDepositResumeUrl('https://edenai.alonics.com/dashboard?foo=1', '3'),
-  'https://edenai.alonics.com/dashboard?foo=1&resume_sut_deposit=1&resume_sut_amount=3'
+  buildDepositResumeUrl('https://ais.alonics.com/dashboard?foo=1', '3'),
+  'https://ais.alonics.com/dashboard?foo=1&resume_sut_deposit=1&resume_sut_amount=3'
 );
 assert.equal(
-  buildTrustWalletDepositRedirectUrl('https://edenai.alonics.com/dashboard?foo=1', '3'),
-  'trust://open_url?coin_id=966&url=https%3A%2F%2Fedenai.alonics.com%2Fdashboard%3Ffoo%3D1%26resume_sut_deposit%3D1%26resume_sut_amount%3D3'
+  buildTrustWalletDepositRedirectUrl('https://ais.alonics.com/dashboard?foo=1', '3'),
+  'trust://open_url?coin_id=966&url=https%3A%2F%2Fais.alonics.com%2Fdashboard%3Ffoo%3D1%26resume_sut_deposit%3D1%26resume_sut_amount%3D3'
 );
 assert.equal(
-  buildDepositFinalizeUrl('https://edenai.alonics.com/dashboard?foo=1&resume_sut_deposit=1&resume_sut_amount=3', '3', '0xtx'),
-  'https://edenai.alonics.com/dashboard?foo=1&finalize_sut_deposit=1&resume_sut_amount=3&sut_deposit_tx_hash=0xtx'
+  buildDepositFinalizeUrl('https://ais.alonics.com/dashboard?foo=1&resume_sut_deposit=1&resume_sut_amount=3', '3', '0xtx'),
+  'https://ais.alonics.com/dashboard?foo=1&finalize_sut_deposit=1&resume_sut_amount=3&sut_deposit_tx_hash=0xtx'
 );
 
 assert.deepEqual(buildNextPriceHistory([], 0.2, [0.18, 0.19]), [0.18, 0.19]);
@@ -300,7 +300,7 @@ const directDepositResult = await submitUserInvestmentTransaction({
   portfolio: { sutQuantity: 5 },
   ethereum: fakeTrustWalletMobileEthereum,
   userAgent: 'Mozilla/5.0 (Linux; Android 14; TrustWallet)',
-  currentUrl: 'https://edenai.alonics.com/dashboard?resume_sut_deposit=1&resume_sut_amount=3',
+  currentUrl: 'https://ais.alonics.com/dashboard?resume_sut_deposit=1&resume_sut_amount=3',
   axiosClient: fakeAxiosForSubmit,
   ethersLib: fakeEthersForBrokenBrowserProvider,
 });
@@ -322,7 +322,7 @@ const directDepositWithoutTrustUa = await submitUserInvestmentTransaction({
   portfolio: { sutQuantity: 5 },
   ethereum: fakeTrustWalletMobileEthereum,
   userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36',
-  currentUrl: 'https://edenai.alonics.com/dashboard?resume_sut_deposit=1&resume_sut_amount=3',
+  currentUrl: 'https://ais.alonics.com/dashboard?resume_sut_deposit=1&resume_sut_amount=3',
   axiosClient: fakeAxiosForSubmit,
   ethersLib: fakeEthersForBrokenBrowserProvider,
 });
@@ -422,7 +422,7 @@ await assert.rejects(
       portfolio: { sutQuantity: 5 },
       ethereum: undefined,
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
-      currentUrl: 'https://edenai.alonics.com/dashboard',
+      currentUrl: 'https://ais.alonics.com/dashboard',
       axiosClient: fakeAxiosForSubmit,
       ethersLib: fakeEthersForSubmit,
     });
@@ -431,7 +431,7 @@ await assert.rejects(
     assert.equal(error.code, 'MOBILE_TRUST_WALLET_REDIRECT');
     assert.equal(
       error.redirectUrl,
-      'trust://open_url?coin_id=966&url=https%3A%2F%2Fedenai.alonics.com%2Fdashboard%3Fresume_sut_deposit%3D1%26resume_sut_amount%3D1'
+      'trust://open_url?coin_id=966&url=https%3A%2F%2Fais.alonics.com%2Fdashboard%3Fresume_sut_deposit%3D1%26resume_sut_amount%3D1'
     );
     return true;
   }

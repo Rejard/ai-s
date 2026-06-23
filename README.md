@@ -5,7 +5,7 @@ AI-S is a Polygon-based membership, KYC, referral, and simulated SUT trading pla
 The production service is served from:
 
 ```text
-https://edenai.alonics.com/
+https://ais.alonics.com/
 ```
 
 ## AIDL 怨듦컻 湲곕줉 諛?沅뚮━ 怨좎? / Public Disclosure and Rights Notice
@@ -107,14 +107,14 @@ For the OAuth client ID used by the app, Google Cloud Console must include:
 Authorized JavaScript origins:
 
 ```text
-https://edenai.alonics.com
+https://ais.alonics.com
 ```
 
 Authorized redirect URIs:
 
 ```text
-https://edenai.alonics.com/
-https://edenai.alonics.com/login
+https://ais.alonics.com/
+https://ais.alonics.com/login
 ```
 
 Mobile Chrome uses the redirect flow to avoid the `accounts.google.com/gsi/transform` blank-page issue. The root redirect URI with the trailing slash is required.

@@ -21,7 +21,7 @@ This log is strictly for AI self-reference to avoid repeating developer mistakes
 - **Action**:
   1. **Import Checklist**: Double-check the top 40 lines of modified page files to ensure all imported modules are correctly listed.
   2. **Bundler Check**: Run `npm run build` in `frontend/` to spot compilation warnings or unresolved imports.
-  3. **Browser Check**: Always fire `browser_subagent` to navigate to the target site (`https://edenai.alonics.com/`) and inspect console logs for reference errors.
+  3. **Browser Check**: Always fire `browser_subagent` to navigate to the target site (`https://ais.alonics.com/`) and inspect console logs for reference errors.
 - **Case Example**:
   * *2026-06-09*: `SutPriceCard` and `ManagerTradeExecutions` imports were missing in `PcManagerDashboard.jsx` and `ManagerDashboard.jsx`, resulting in a runtime `ReferenceError` post-build. Resolved by restoring imports, rebuilding, and restarting `ai-s`.
 

@@ -24,7 +24,7 @@ import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
 import { clearAuthSession, getAuthToken, saveAuthSession } from './lib/authSession';
 
-export const API_BASE = import.meta.env.VITE_API_BASE || 'https://edenai.alonics.com/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || 'https://ais.alonics.com/api';
 
 const GOOGLE_CLIENT_ID = '327843712323-1se9k7pkfftu0d4r19mdf355ptj5j75u.apps.googleusercontent.com';
 const GOOGLE_OAUTH_SCOPE = 'openid email profile';
