@@ -1383,7 +1383,7 @@ async function performSystemDiagnostics(runHeavyTests) {
           dbDetails = `SQLite 손상 감지: ${pragmaResult.integrity_check}`;
           errors.push(`SQLite PRAGMA 무결성 체크 실패: ${pragmaResult.integrity_check}`);
         } else {
-          const tables = ['ais_model_runs', 'ais_dna_pool', 'auto_trades', 'system_settings'];
+          const tables = ['ais_model_runs', 'ais_council_members', 'manager_ai_settings', 'manager_trade_executions'];
           const missingTables = [];
           for (const table of tables) {
             const tableCheck = await queries.get(`
