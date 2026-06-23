@@ -341,6 +341,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       className="form-input"
                       style={{ padding: '14px', fontSize: '13px' }}
                     />
+                    <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left', lineHeight: '1.4' }}>
+                      * 장세 판단 필터 변경 빈도 (▲ 민감 대처 / ▼ 안정성)
+                    </div>
                   </div>
                   <div>
                     <label className="form-label" style={{ fontSize: '12px' }}>AIDL 노드 활성 변이율</label>
@@ -354,6 +357,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       className="form-input"
                       style={{ padding: '14px', fontSize: '13px' }}
                     />
+                    <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left', lineHeight: '1.4' }}>
+                      * 의원 유전자 세대교체 주기 (▲ 빠른 수혈 / ▼ 에이스 유지)
+                    </div>
                   </div>
                   <div>
                     <label className="form-label" style={{ fontSize: '12px' }}>AIDL 생체 특성 변이율</label>
@@ -367,6 +373,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       className="form-input"
                       style={{ padding: '14px', fontSize: '13px' }}
                     />
+                    <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left', lineHeight: '1.4' }}>
+                      * 기본 예산/규격 변동 빈도 (▲ 혁신 변칙 / ▼ 안전 튜닝)
+                    </div>
                   </div>
                   <div>
                     <label className="form-label" style={{ fontSize: '12px' }}>AIDL 유전자 복제수 변이율</label>
@@ -380,6 +389,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       className="form-input"
                       style={{ padding: '14px', fontSize: '13px' }}
                     />
+                    <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left', lineHeight: '1.4' }}>
+                      * 의석 지분율 조정 빈도 (▲ 특정 전략 몰빵 / ▼ 다수 합의)
+                    </div>
                   </div>
                   <div>
                     <label className="form-label" style={{ fontSize: '12px' }}>AIDL 가중치 미세 조정 폭</label>
@@ -393,6 +405,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       className="form-input"
                       style={{ padding: '14px', fontSize: '13px' }}
                     />
+                    <div style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left', lineHeight: '1.4' }}>
+                      * 매수·매도 타점 변경 보폭 (▲ 시점 변형 / ▼ 정밀 조준)
+                    </div>
                   </div>
                 </div>
 

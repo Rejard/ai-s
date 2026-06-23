@@ -256,6 +256,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     onChange={(e) => setAidlContextMutationRate(e.target.value)}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                   />
+                  <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '6px', textAlign: 'left', lineHeight: '1.3' }}>
+                    장세 판단 필터 변경 빈도<br />(▲ 민감 대처 / ▼ 안정성)
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 노드 활성 변이율</label>
@@ -268,6 +271,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     onChange={(e) => setAidlStateMutationRate(e.target.value)}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                   />
+                  <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '6px', textAlign: 'left', lineHeight: '1.3' }}>
+                    의원 유전자 세대교체 주기<br />(▲ 빠른 수혈 / ▼ 에이스 유지)
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 생체 특성 변이율</label>
@@ -280,6 +286,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     onChange={(e) => setAidlProfileMutationRate(e.target.value)}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                   />
+                  <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '6px', textAlign: 'left', lineHeight: '1.3' }}>
+                    기본 예산/규격 변동 빈도<br />(▲ 혁신 변칙 / ▼ 안전 튜닝)
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 유전자 복제수 변이율</label>
@@ -292,6 +301,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     onChange={(e) => setAidlCopyNumberMutationRate(e.target.value)}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                   />
+                  <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '6px', textAlign: 'left', lineHeight: '1.3' }}>
+                    의석 지분율 조정 빈도<br />(▲ 특정 전략 몰빵 / ▼ 다수 합의)
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 가중치 미세 조정 폭</label>
@@ -304,6 +316,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     onChange={(e) => setAidlWeightNudgeSize(e.target.value)}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                   />
+                  <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '6px', textAlign: 'left', lineHeight: '1.3' }}>
+                    매수·매도 타점 변경 보폭<br />(▲ 시점 변형 / ▼ 정밀 조준)
+                  </div>
                 </div>
               </div>
 
