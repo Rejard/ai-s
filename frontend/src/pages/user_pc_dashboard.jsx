@@ -25,6 +25,7 @@ import { DASHBOARD_COPY } from '../lib/dashboardCopy';
 import SutPriceCard from '../components/SutPriceCard';
 import SutPriceChart from '../components/SutPriceChart';
 import { isAdminGoogleAccount, isManagerAccount } from '../lib/accountIdentity';
+import { showFriendlyError } from '../lib/errorHandler';
 
 function UserPcDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
@@ -170,7 +171,7 @@ function UserPcDashboard({ walletAddress, userData, onLogout }) {
         window.location.href = err.redirectUrl;
         return;
       }
-      alert('거래 처리에 실패했습니다: ' + err.message);
+      showFriendlyError(err);
     } finally {
       setProcessingTx(false);
     }
@@ -272,7 +273,7 @@ function UserPcDashboard({ walletAddress, userData, onLogout }) {
         fetchTxHistory();
       })
       .catch((error) => {
-        alert('거래 처리에 실패했습니다: ' + error.message);
+        showFriendlyError(error);
       })
       .finally(() => {
         setProcessingTx(false);

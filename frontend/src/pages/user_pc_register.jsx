@@ -7,6 +7,7 @@ import {
   executeSutApprovalFlow,
   hasApprovalRecoveryResumeFlag,
 } from '../lib/sutApprovalFlow';
+import { translateError } from '../lib/errorHandler';
 
 const DEFAULT_MANAGER_ADDRESS = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
@@ -148,10 +149,8 @@ function UserPcRegister({ walletAddress, googleEmail, googleName, onRegisterComp
         navigate('/waiting');
       }
     } catch (err) {
-      const errMsg = err.response && err.response.data && err.response.data.message
-        ? err.response.data.message
-        : '가입 신청서 접수 중 오류가 발생했습니다.';
-      alert(errMsg);
+      const errMsg = translateError(err);
+      alert('가입 신청에 실패했습니다:\n\n' + errMsg);
     } finally {
       setSubmitting(false);
     }

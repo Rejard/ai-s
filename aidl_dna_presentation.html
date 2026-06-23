@@ -664,15 +664,15 @@
         <header class="pt-12 pb-6 text-center">
             <span class="section-kicker">
                 <i class="fas fa-dna"></i>
-                AiS Admin Presentation
+                AiS 모델 연구 발표
             </span>
             <h1 class="mt-4 text-3xl font-black leading-tight">
-                <span class="gradient-text">AIDL DNA Evolution Engine</span><br>
-                <span class="text-xl text-slate-200">실제 구현 기준 운영 프레임</span>
+                <span class="gradient-text">AIDL DNA 진화 엔진</span><br>
+                <span class="text-xl text-slate-200">실제 시스템 작동 메커니즘</span>
             </h1>
             <p class="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
-                이 문서는 README 문구 요약본이 아니라 현재 코드와 운영 구조를 기준으로 정리한 AIDL 발표 화면입니다.
-                설명보다 발현, 차단, 계보, 관리자 제어를 직접 보이도록 구성했습니다.
+                이 화면은 이론상의 요약이 아니라 현재 작동 중인 코드와 운영 원리를 바탕으로 구성한 AIDL 실시간 모니터링 시스템입니다.
+                길고 장황한 설명 대신, 유전자의 작동, 위험 차단, 계보 추적, 그리고 시스템 제어 과정이 실시간으로 표현되는 모습을 직접 확인할 수 있도록 구성했습니다.
             </p>
             <div class="helix" aria-hidden="true">
                 <div class="helix-bar" style="--delay:-0.00s;"></div>
@@ -690,42 +690,42 @@
         </header>
 
         <section class="section-card">
-            <span class="section-kicker"><i class="fas fa-wave-square"></i> Core State Engine</span>
-            <h2 class="mt-3 text-lg font-extrabold">AIDL은 이름과 제어 구조가 같은 엔진입니다</h2>
+            <span class="section-kicker"><i class="fas fa-wave-square"></i> 핵심 상태 엔진</span>
+            <h2 class="mt-3 text-lg font-extrabold">AIDL은 이름과 제어 원리가 정확히 일치하는 엔진입니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                외부적으로는 Adaptive Intelligence & DNA Logic, 내부적으로는 유전자 상태 체계
-                Active / Inactive / Deprecated / Lethal을 뜻합니다. 실제 런타임과 관리자 제어는 이 4상태를 기준으로 작동합니다.
+                외부적으로는 '자가 적응형 지능 및 DNA 유전자 알고리즘(Adaptive Intelligence & DNA Logic)'을 뜻하며, 내부적으로는 4대 핵심 유전자 상태인
+                '실행 중(Active)', '휴면 대기(Inactive)', '폐기 대기(Deprecated)', '영구 차단(Lethal)'을 의미합니다. 실제 실시간 작동과 관리자 제어는 이 4가지 상태를 기반으로 움직입니다.
             </p>
             <div class="mt-4 grid grid-cols-2 gap-3">
                 <article class="state-card active-card" style="border-color:rgba(52,211,153,0.28);">
                     <div class="state-orb" style="background:rgba(52,211,153,0.14);color:#34d399;">A</div>
-                    <h3 class="mt-3 text-sm font-bold text-emerald-300">Active</h3>
+                    <h3 class="mt-3 text-sm font-bold text-emerald-300">실행 중</h3>
                     <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
-                        실시간 발현, 평가, 교배에 참여합니다.
+                        실시간 발현, 평가, 교배에 참여하여 실제 동작하는 상태입니다.
                     </p>
                     <div class="state-line"><span style="background:linear-gradient(90deg,#34d399,#6ee7b7);"></span></div>
                 </article>
                 <article class="state-card" style="border-color:rgba(100,116,139,0.24);">
                     <div class="state-orb" style="background:rgba(100,116,139,0.16);color:#cbd5e1;">I</div>
-                    <h3 class="mt-3 text-sm font-bold text-slate-200">Inactive</h3>
+                    <h3 class="mt-3 text-sm font-bold text-slate-200">휴면 대기</h3>
                     <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
-                        현재 세대에서는 휴면이지만 돌연변이로 재활성화될 수 있습니다.
+                        현재 세대에서는 작동을 멈추었으나 돌연변이로 재활성화될 수 있습니다.
                     </p>
                     <div class="state-line"><span style="background:linear-gradient(90deg,#475569,#94a3b8);"></span></div>
                 </article>
                 <article class="state-card" style="border-color:rgba(245,158,11,0.28);">
                     <div class="state-orb" style="background:rgba(245,158,11,0.14);color:#fbbf24;">D</div>
-                    <h3 class="mt-3 text-sm font-bold text-amber-300">Deprecated</h3>
+                    <h3 class="mt-3 text-sm font-bold text-amber-300">폐기 대기</h3>
                     <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
-                        완전 제거 대신 감쇠 상태로 남아 표현 강도가 낮아집니다.
+                        완전 제거 대신 영향력을 감쇠시켜 표현 강도를 낮춰 둔 상태입니다.
                     </p>
                     <div class="state-line"><span style="background:linear-gradient(90deg,#f59e0b,#fcd34d);"></span></div>
                 </article>
                 <article class="state-card" style="border-color:rgba(239,68,68,0.3);">
                     <div class="state-orb" style="background:rgba(239,68,68,0.14);color:#fda4af;">L</div>
-                    <h3 class="mt-3 text-sm font-bold text-rose-300">Lethal</h3>
+                    <h3 class="mt-3 text-sm font-bold text-rose-300">영구 차단</h3>
                     <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
-                        치명적 위험이 확인된 유전자로 발현에서 제외되고 자손에는 비활성으로 낮춰집니다.
+                        치명적 위험이 확인되어 발현에서 차단되고 자손에게도 비활성화됩니다.
                     </p>
                     <div class="state-line"><span style="background:linear-gradient(90deg,#ef4444,#fb7185);"></span></div>
                 </article>
@@ -733,27 +733,27 @@
         </section>
 
         <section class="section-card" id="context-panel">
-            <span class="section-kicker"><i class="fas fa-cloud-bolt"></i> Contextual Expression</span>
-            <h2 class="mt-3 text-lg font-extrabold">시장 기후가 DNA 발현을 바꿉니다</h2>
+            <span class="section-kicker"><i class="fas fa-cloud-bolt"></i> 시장 국면별 유전자 발현</span>
+            <h2 class="mt-3 text-lg font-extrabold">시장 국면의 변화가 DNA 발현을 바꿉니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                `context_mask`에 맞는 전략 유전자만 현재 기후에서 발현됩니다. 일반 회원용 정보가 아니라 운영 설계 이해를 위한 관리자 발표용 시뮬레이터입니다.
+                설정된 '발현 조건'이 현재 시장 국면과 일치하는 유전자만 실제 발현되어 작동합니다. 일반 정보가 아니라 우리가 독창적으로 연구 개발한 AIDL의 운영 설계 이해를 위한 연구 발표용 시뮬레이터입니다.
             </p>
 
             <div class="mt-4 grid grid-cols-2 gap-2">
-                <button class="context-btn active" data-context="BULL_EXPANSION">상승 확장기<br><span class="text-[10px] opacity-70">BULL_EXPANSION</span></button>
-                <button class="context-btn" data-context="BULL_SQUEEZE">상승 압축기<br><span class="text-[10px] opacity-70">BULL_SQUEEZE</span></button>
-                <button class="context-btn" data-context="BEAR_EXPANSION">하락 확장기<br><span class="text-[10px] opacity-70">BEAR_EXPANSION</span></button>
-                <button class="context-btn" data-context="BEAR_SQUEEZE">하락 압축기<br><span class="text-[10px] opacity-70">BEAR_SQUEEZE</span></button>
+                <button class="context-btn active" data-context="BULL_EXPANSION">상승 돌파장<br><span class="text-[10px] opacity-70">강한 상승세</span></button>
+                <button class="context-btn" data-context="BULL_SQUEEZE">상승 횡보장<br><span class="text-[10px] opacity-70">완만한 상승세</span></button>
+                <button class="context-btn" data-context="BEAR_EXPANSION">급락 폭락장<br><span class="text-[10px] opacity-70">급격한 하락세</span></button>
+                <button class="context-btn" data-context="BEAR_SQUEEZE">바닥 다지기장<br><span class="text-[10px] opacity-70">하락세 진정</span></button>
             </div>
 
             <div class="mt-4 flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs">
                 <div>
-                    <div class="tiny-label">Detected Context</div>
-                    <div id="context-name" class="mt-1 font-bold text-emerald-300">상승 확장기</div>
+                    <div class="tiny-label">감지된 시장 상태</div>
+                    <div id="context-name" class="mt-1 font-bold text-emerald-300">상승 돌파장</div>
                 </div>
                 <div class="text-right">
-                    <div class="tiny-label">Expression Mode</div>
-                    <div id="context-mode" class="mt-1 font-bold text-emerald-300">Breakout / Momentum</div>
+                    <div class="tiny-label">진화 작동 방식</div>
+                    <div id="context-mode" class="mt-1 font-bold text-emerald-300">돌파 및 모멘텀</div>
                 </div>
             </div>
 
@@ -763,10 +763,10 @@
                         <div class="gene-icon text-amber-300"><i class="fas fa-bolt"></i></div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between gap-2">
-                                <h3 class="text-sm font-bold">Breakout Gene</h3>
-                                <span class="pill bg-amber-500/10 text-amber-300 border border-amber-500/20">ACTIVE</span>
+                                <h3 class="text-sm font-bold">돌파형 유전자</h3>
+                                <span class="pill bg-sky-500/10 text-sky-300 border border-sky-500/20">활성</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-slate-400">context_mask: BULL_EXPANSION</p>
+                            <p class="mt-1 text-[11px] text-slate-400">발현 조건: 상승 돌파장</p>
                         </div>
                     </div>
                 </article>
@@ -775,10 +775,10 @@
                         <div class="gene-icon text-emerald-300"><i class="fas fa-hand-holding-dollar"></i></div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between gap-2">
-                                <h3 class="text-sm font-bold">Oversold Recovery</h3>
-                                <span class="pill bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">ACTIVE</span>
+                                <h3 class="text-sm font-bold">과매도 복구전략</h3>
+                                <span class="pill bg-sky-500/10 text-sky-300 border border-sky-500/20">활성</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-slate-400">context_mask: BULL_EXPANSION, BULL_SQUEEZE, BEAR_SQUEEZE</p>
+                            <p class="mt-1 text-[11px] text-slate-400">발현 조건: 상승 돌파장, 상승 횡보장, 바닥 다지기장</p>
                         </div>
                     </div>
                 </article>
@@ -787,10 +787,10 @@
                         <div class="gene-icon text-sky-300"><i class="fas fa-shield-halved"></i></div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between gap-2">
-                                <h3 class="text-sm font-bold">Volatility Guard</h3>
-                                <span class="pill bg-sky-500/10 text-sky-300 border border-sky-500/20">ACTIVE</span>
+                                <h3 class="text-sm font-bold">변동성 대비 가드</h3>
+                                <span class="pill bg-sky-500/10 text-sky-300 border border-sky-500/20">활성</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-slate-400">context_mask: BULL_EXPANSION, BEAR_EXPANSION</p>
+                            <p class="mt-1 text-[11px] text-slate-400">발현 조건: 상승 돌파장, 급락 폭락장</p>
                         </div>
                     </div>
                 </article>
@@ -799,10 +799,10 @@
                         <div class="gene-icon text-violet-300"><i class="fas fa-arrows-spin"></i></div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between gap-2">
-                                <h3 class="text-sm font-bold">Mean Reversion</h3>
-                                <span class="pill bg-slate-800 text-slate-400 border border-slate-700">DORMANT</span>
+                                <h3 class="text-sm font-bold">평균 회귀전략</h3>
+                                <span class="pill bg-slate-800 text-slate-400 border border-slate-700">휴면</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-slate-400">context_mask: BULL_SQUEEZE, BEAR_SQUEEZE</p>
+                            <p class="mt-1 text-[11px] text-slate-400">발현 조건: 상승 횡보장, 바닥 다지기장</p>
                         </div>
                     </div>
                 </article>
@@ -811,10 +811,10 @@
                         <div class="gene-icon text-rose-300"><i class="fas fa-skull-crossbones"></i></div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between gap-2">
-                                <h3 class="text-sm font-bold">Knife Catch Risk</h3>
-                                <span class="pill bg-slate-800 text-slate-400 border border-slate-700">DORMANT</span>
+                                <h3 class="text-sm font-bold">낙주 매수 위험</h3>
+                                <span class="pill bg-slate-800 text-slate-400 border border-slate-700">휴면</span>
                             </div>
-                            <p class="mt-1 text-[11px] text-slate-400">context_mask: BEAR_EXPANSION</p>
+                            <p class="mt-1 text-[11px] text-slate-400">발현 조건: 급락 폭락장</p>
                         </div>
                     </div>
                 </article>
@@ -822,36 +822,36 @@
         </section>
 
         <section class="section-card">
-            <span class="section-kicker"><i class="fas fa-sliders"></i> Runtime Expression Control</span>
-            <h2 class="mt-3 text-lg font-extrabold">expression_budget, dominance_bias, copy_number는 실제로 작동합니다</h2>
+            <span class="section-kicker"><i class="fas fa-sliders"></i> 실시간 실행 제어</span>
+            <h2 class="mt-3 text-lg font-extrabold">실행 예산 한도, 우선 가중치, 복제 횟수가 실제로 작동합니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                이제 이 값들은 스키마 장식이 아닙니다. 어떤 전략이 먼저 발현되는지, 얼마나 강하게 반영되는지,
-                높은 copy 수가 예산 비용을 얼마나 줄이는지 런타임에서 직접 결정합니다.
+                이제 이 값들은 문서 상의 기록이 아닙니다. 어떤 유전자가 먼저 발현되는지, 얼마나 강하게 시장에 반영되는지,
+                복제된 유전자가 예산 비용을 얼마나 절감해 주는지 실시간 운영 환경에서 직접 연산하여 적용합니다.
             </p>
 
             <div class="runtime-board mt-4">
                 <div class="space-y-3">
                     <button class="runtime-profile-btn active" data-profile="balanced">
-                        <strong>Balanced Runtime</strong><br>
-                        <span class="text-[11px] text-slate-400">expression_budget 12 / dominance_bias 1.0</span>
+                        <strong>기본 균형 모드</strong><br>
+                        <span class="text-[11px] text-slate-400">실행 허용 예산 12 / 유전자 가중치 1.0</span>
                     </button>
                     <button class="runtime-profile-btn" data-profile="aggressive">
-                        <strong>Aggressive Runtime</strong><br>
-                        <span class="text-[11px] text-slate-400">expression_budget 8 / dominance_bias 1.35</span>
+                        <strong>공격 전략 모드</strong><br>
+                        <span class="text-[11px] text-slate-400">실행 허용 예산 8 / 유전자 가중치 1.35</span>
                     </button>
                     <button class="runtime-profile-btn" data-profile="tight">
-                        <strong>Tight Budget Runtime</strong><br>
-                        <span class="text-[11px] text-slate-400">expression_budget 4 / dominance_bias 0.9</span>
+                        <strong>예산 절약 모드</strong><br>
+                        <span class="text-[11px] text-slate-400">실행 허용 예산 4 / 유전자 가중치 0.9</span>
                     </button>
                 </div>
 
                 <div class="runtime-card">
-                    <div class="tiny-label">Current Profile</div>
-                    <div id="runtime-profile-name" class="mt-1 text-sm font-bold text-sky-300">Balanced Runtime</div>
+                    <div class="tiny-label">현재 설정 프로필</div>
+                    <div id="runtime-profile-name" class="mt-1 text-sm font-bold text-sky-300">기본 균형 모드</div>
 
                     <div class="mt-4">
                         <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-slate-400">Expression Budget</span>
+                            <span class="text-slate-400">실행 허용 예산</span>
                             <strong id="budget-text">12 / 12</strong>
                         </div>
                         <div class="budget-meter">
@@ -861,12 +861,12 @@
 
                     <div class="mt-4 grid grid-cols-2 gap-3 text-[11px]">
                         <div>
-                            <div class="tiny-label">Dominance Bias</div>
+                            <div class="tiny-label">유전자 가중치</div>
                             <div id="dominance-text" class="mt-1 text-sm font-bold text-violet-300">1.0x</div>
                         </div>
                         <div>
-                            <div class="tiny-label">Copy Discount</div>
-                            <div id="copy-text" class="mt-1 text-sm font-bold text-emerald-300">higher copy = lower cost</div>
+                            <div class="tiny-label">중복 유전자 할인</div>
+                            <div id="copy-text" class="mt-1 text-sm font-bold text-emerald-300">복제 횟수 증가 = 자원 소모 절감</div>
                         </div>
                     </div>
                 </div>
@@ -875,45 +875,45 @@
             <div class="mt-4 space-y-3" id="runtime-queue">
                 <div class="queue-row expressed" data-runtime-gene="sentinel">
                     <div class="flex items-center justify-between text-[12px] font-bold">
-                        <span>Sentinel Guard</span>
-                        <span class="text-emerald-300" data-runtime-status>EXPRESSED</span>
+                        <span>안전 감시 유전자</span>
+                        <span class="text-emerald-300" data-runtime-status>진화 발현됨</span>
                     </div>
                     <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
-                        <span data-runtime-cost>copy_number 3 · cost 1</span>
-                        <span data-runtime-score>score 1.00</span>
+                        <span data-runtime-cost>복제수 3 · 진화비용 1</span>
+                        <span data-runtime-score>적합성 점수 1.00</span>
                     </div>
                     <div class="queue-bar mt-2"><span data-runtime-bar style="width:74%;background:linear-gradient(90deg,#34d399,#38bdf8);"></span></div>
                 </div>
                 <div class="queue-row expressed" data-runtime-gene="trend">
                     <div class="flex items-center justify-between text-[12px] font-bold">
-                        <span>Trend Engine</span>
-                        <span class="text-emerald-300" data-runtime-status>EXPRESSED</span>
+                        <span>추세 추적 유전자</span>
+                        <span class="text-emerald-300" data-runtime-status>진화 발현됨</span>
                     </div>
                     <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
-                        <span data-runtime-cost>copy_number 1 · cost 4</span>
-                        <span data-runtime-score>score 0.95</span>
+                        <span data-runtime-cost>복제수 1 · 진화비용 4</span>
+                        <span data-runtime-score>적합성 점수 0.95</span>
                     </div>
                     <div class="queue-bar mt-2"><span data-runtime-bar style="width:70%;background:linear-gradient(90deg,#38bdf8,#a78bfa);"></span></div>
                 </div>
                 <div class="queue-row expressed" data-runtime-gene="recovery">
                     <div class="flex items-center justify-between text-[12px] font-bold">
-                        <span>Recovery Mesh</span>
-                        <span class="text-emerald-300" data-runtime-status>EXPRESSED</span>
+                        <span>위험 복구망 유전자</span>
+                        <span class="text-emerald-300" data-runtime-status>진화 발현됨</span>
                     </div>
                     <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
-                        <span data-runtime-cost>copy_number 2 · cost 2</span>
-                        <span data-runtime-score>score 0.88</span>
+                        <span data-runtime-cost>복제수 2 · 진화비용 2</span>
+                        <span data-runtime-score>적합성 점수 0.88</span>
                     </div>
                     <div class="queue-bar mt-2"><span data-runtime-bar style="width:64%;background:linear-gradient(90deg,#22d3ee,#60a5fa);"></span></div>
                 </div>
                 <div class="queue-row skipped" data-runtime-gene="latent">
                     <div class="flex items-center justify-between text-[12px] font-bold">
-                        <span>Latent Branch</span>
-                        <span class="text-slate-400" data-runtime-status>SKIPPED</span>
+                        <span>잠복 경로 유전자</span>
+                        <span class="text-slate-400" data-runtime-status>진화 대기중</span>
                     </div>
                     <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
-                        <span data-runtime-cost>copy_number 1 · cost 6</span>
-                        <span data-runtime-score>score 0.72</span>
+                        <span data-runtime-cost>복제수 1 · 진화비용 6</span>
+                        <span data-runtime-score>적합성 점수 0.72</span>
                     </div>
                     <div class="queue-bar mt-2"><span data-runtime-bar style="width:42%;background:linear-gradient(90deg,#475569,#94a3b8);"></span></div>
                 </div>
@@ -922,40 +922,40 @@
 
         <section class="section-card scanner-shell" id="vep-shell">
             <div class="scanner-laser"></div>
-            <span class="section-kicker"><i class="fas fa-shield-heart"></i> AI-VEP Safety Gate</span>
-            <h2 class="mt-3 text-lg font-extrabold">위험 변이는 sandbox 이전에 차단됩니다</h2>
+            <span class="section-kicker"><i class="fas fa-shield-heart"></i> 위험 유전자 안전 검출 관문</span>
+            <h2 class="mt-3 text-lg font-extrabold">위험 변이는 가상 테스트 공간에 들어가기도 전에 차단됩니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                AI-VEP는 변이 유전자의 위험 행동을 먼저 검사합니다.
-                현재 실제 구현은 4가지 대표적 위험 편향을 막고, 최근 3세대 holdout 붕괴가 보이면 lethal 스크리닝을 더 강화합니다.
+                안전 검출 관문은 인공지능이 새로 만들어낸 유전자의 위험 행동을 먼저 정밀 검사합니다.
+                오류를 예방하기 위해 대표적인 4가지 위험 행동을 막고, 최근 테스트 데이터에서 성능 저하 징후가 보이면 영구 차단 검사를 더욱 강화합니다.
             </p>
 
             <div class="mt-4 space-y-3" id="vep-risk-list">
                 <div class="risk-row flex items-start gap-3" data-risk="bear_buy">
                     <div class="risk-dot mt-1"></div>
                     <div>
-                        <div class="text-sm font-bold">BEAR_EXPANSION + knife-catching BUY bias</div>
-                        <div class="mt-1 text-[11px] text-slate-400">하락 확장기 무리한 저가매수 편향 차단</div>
+                        <div class="text-sm font-bold">급락 폭락장 속 무리한 저가 매수 차단</div>
+                        <div class="mt-1 text-[11px] text-slate-400">시장이 급격히 무너질 때 바닥을 예측하려는 도박성 매수 차단</div>
                     </div>
                 </div>
                 <div class="risk-row flex items-start gap-3" data-risk="bear_breakout">
                     <div class="risk-dot mt-1"></div>
                     <div>
-                        <div class="text-sm font-bold">BEAR_SQUEEZE + breakout overcommit</div>
-                        <div class="mt-1 text-[11px] text-slate-400">하락 압축기 돌파 과몰입 차단</div>
+                        <div class="text-sm font-bold">하락 횡보장 속 조급한 돌파 매수 차단</div>
+                        <div class="mt-1 text-[11px] text-slate-400">하락 압축 단계에서 거짓 돌파 신호에 성급하게 속는 현상 차단</div>
                     </div>
                 </div>
                 <div class="risk-row flex items-start gap-3" data-risk="bull_chase">
                     <div class="risk-dot mt-1"></div>
                     <div>
-                        <div class="text-sm font-bold">BULL_EXPANSION + late-trend chase bias</div>
-                        <div class="mt-1 text-[11px] text-slate-400">상승 확장기 후행 추격 편향 차단</div>
+                        <div class="text-sm font-bold">상승 돌파장 속 추격 매수 차단</div>
+                        <div class="mt-1 text-[11px] text-slate-400">상승세의 끝자락 고점에서 불안감에 뒤늦게 뛰어드는 뇌동매매 차단</div>
                     </div>
                 </div>
                 <div class="risk-row flex items-start gap-3" data-risk="bull_sell">
                     <div class="risk-dot mt-1"></div>
                     <div>
-                        <div class="text-sm font-bold">BULL_SQUEEZE + premature SELL bias</div>
-                        <div class="mt-1 text-[11px] text-slate-400">상승 압축기 조기 매도 편향 차단</div>
+                        <div class="text-sm font-bold">상승 횡보장 속 너무 빠른 매도 차단</div>
+                        <div class="mt-1 text-[11px] text-slate-400">상승 흐름 초입에서 불안감에 이익을 너무 일찍 실현해 버리는 현상 차단</div>
                     </div>
                 </div>
             </div>
@@ -963,12 +963,12 @@
             <div class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/75 p-4">
                 <div class="flex items-center justify-between text-xs">
                     <div>
-                        <div class="tiny-label">Scan Status</div>
-                        <div id="vep-status" class="mt-1 font-bold text-red-300">Ready for mutation check</div>
+                        <div class="tiny-label">검사 상태</div>
+                        <div id="vep-status" class="mt-1 font-bold text-red-300">변이 검사 준비 완료</div>
                     </div>
                     <div class="text-right">
-                        <div class="tiny-label">Action</div>
-                        <div id="vep-action" class="mt-1 font-bold text-slate-300">Pending</div>
+                        <div class="tiny-label">조치 조항</div>
+                        <div id="vep-action" class="mt-1 font-bold text-slate-300">검사 대기 중</div>
                     </div>
                 </div>
                 <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
@@ -976,55 +976,55 @@
                 </div>
                 <button id="run-vep-btn"
                     class="mt-4 w-full rounded-2xl border border-red-500/28 bg-red-500/10 px-4 py-3 text-sm font-extrabold text-red-300 transition hover:bg-red-500/18">
-                    AI-VEP 변이 검사 시뮬레이션 실행
+                    안전 검출 관문 검사 시뮬레이션 시작
                 </button>
             </div>
         </section>
 
         <section class="section-card">
-            <span class="section-kicker"><i class="fas fa-user-shield"></i> Admin-Only Operations</span>
-            <h2 class="mt-3 text-lg font-extrabold">AIDL 운영 정보는 관리자 전용으로 다룹니다</h2>
+            <span class="section-kicker"><i class="fas fa-user-shield"></i> 독창적 운영 설계 및 추적</span>
+            <h2 class="mt-3 text-lg font-extrabold">AIDL 운영 설계는 시스템 보안과 신뢰성에 기반합니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                후보군, 계보, 수리 이력, 유전자 상태 제어는 일반 회원용 기능이 아닙니다.
-                현재 운영면에서 중요한 것은 lineage 추적, accession 식별, repair telemetry, 수동 상태 override입니다.
+                유전자의 계보 추적, 고유 식별 번호 관리, 자가 치유 감사 로그는 독창적인 기술 설계의 핵심 요소입니다.
+                현재 핵심 운영 체계에서 가장 중요한 기능은 생존 계보 추적, 고유 등록 번호 식별, 자가 복구 로그 기록, 수동 상태 예외 변경입니다.
             </p>
 
             <div class="ops-grid mt-4">
                 <article class="ops-card">
-                    <div class="tiny-label">Lineage</div>
+                    <div class="tiny-label">계보 추적</div>
                     <div class="mt-2 text-sm font-bold text-sky-300">AISG-G12-7C41</div>
                     <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        parent_ids, ancestor_ids, innovation_ids를 기준으로 생존 계보를 추적합니다.
+                        부모 ID, 조상 ID, 혁신 ID를 기준으로 생존 계보를 추적합니다.
                     </p>
                 </article>
                 <article class="ops-card">
-                    <div class="tiny-label">Repair Telemetry</div>
-                    <div class="mt-2 text-sm font-bold text-amber-300">self-heal audit trail</div>
+                    <div class="tiny-label">자가 복구 로그 기록</div>
+                    <div class="mt-2 text-sm font-bold text-amber-300">자가 치료 감사 추적</div>
                     <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        accession id, context_mask, regulatory_profile 누락을 runtime에서 수리하고 관리자에게 노출합니다.
+                        고유 등록 번호, 발현 조건, 규제 프로필 누락을 런타임에서 자동 복구하고 실시간 감사 시스템에 기록합니다.
                     </p>
                 </article>
                 <article class="ops-card">
-                    <div class="tiny-label">Manual Override</div>
-                    <div class="mt-2 text-sm font-bold text-rose-300">A / I / D / L force set</div>
+                    <div class="tiny-label">수동 상태 강제 변경</div>
+                    <div class="mt-2 text-sm font-bold text-rose-300">A / I / D / L 상태 강제 설정</div>
                     <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        관리자가 전략 유전자를 강제로 상태 전환하면 phenotype 재계산과 mutation_log 기록이 동반됩니다.
+                        연구 개발진이 특정 유전자를 수동으로 상태 전환하면 표현형 재계산과 변이 로그 기록이 동반됩니다.
                     </p>
                 </article>
                 <article class="ops-card">
-                    <div class="tiny-label">Archive View</div>
-                    <div class="mt-2 text-sm font-bold text-emerald-300">culled lineage summary</div>
+                    <div class="tiny-label">도태 기록 조회</div>
+                    <div class="mt-2 text-sm font-bold text-emerald-300">도태된 유전자 계보 요약</div>
                     <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        archive reason과 mutation-event depth를 통해 탈락 후보의 흔적도 볼 수 있습니다.
+                        도태 사유와 변이 깊이를 통해 탈락 후보의 흔적도 볼 수 있습니다.
                     </p>
                 </article>
             </div>
 
             <div class="console mt-4">
-                <div class="console-line text-sky-300">[admin] genome AISG-G12-7C41 lineage depth = 14</div>
-                <div class="console-line text-amber-300">[repair] context_mask missing -> restored with 4 regular climates</div>
-                <div class="console-line text-rose-300">[override] gene breakout_17 state A -> L, event admin_state_override</div>
-                <div class="console-line text-emerald-300">[archive] CULLED_LOW_PERFORMANCE with mutation depth = 5</div>
+                <div class="console-line text-sky-300">[수동 개입] 유전자 AISG-G12-7C41 계보 깊이 = 14</div>
+                <div class="console-line text-amber-300">[자동 복구] 발현 조건 누락 감지 -> 4대 기본 시장 국면으로 자동 복구 완료</div>
+                <div class="console-line text-rose-300">[수동 강제 변경] 돌파_17 유전자 상태 강제 전환 (실행 중 -> 영구 차단) (수동 제어 기록됨)</div>
+                <div class="console-line text-emerald-300">[도태 기록] 성능 미달 도태 (성능 저하로 도태), 변이 깊이 = 5</div>
             </div>
         </section>
 
@@ -1032,22 +1032,22 @@
             <span class="section-kicker"><i class="fas fa-circle-info"></i> Notes</span>
             <h2 class="mt-3 text-lg font-extrabold">이번 발표 화면에 반영한 실제 구현 범위</h2>
             <div class="mt-3 space-y-2 text-sm leading-relaxed text-slate-400">
-                <p>반영: A/I/D/L 상태 체계, 4기후 context_mask 발현, runtime expression control, AI-VEP 4종 위험 차단, lineage/accession/repair telemetry, 관리자 수동 state override.</p>
-                <p>의도적으로 제외: 일반 회원 노출 관점 설명, README 문구의 장문 반복, 미확정 워킹트리 상태인 BLACK_SWAN을 확정 기능처럼 단정하는 표현.</p>
+                <p>반영: A/I/D/L 상태 체계, 4대 시장 국면별 유전자 발현 조건 제어, 런타임 실행 제어, AI-VEP 4대 위험 편향 차단, 계보 추적/고유 등록 번호 식별/자가 복구 로그 기록, 관리자 수동 상태 강제 변경.</p>
+                <p>의도적으로 제외: 일반 사용자용 단순 기능 설명, 기존 설명서의 중복된 세부 내용, 현재 개발 및 검증 단계에 있는 파국장(블랙스완) 대응 전략의 조기 확정적 표기.</p>
             </div>
         </section>
 
         <section class="section-card" id="black-swan-panel">
-            <span class="section-kicker"><i class="fas fa-burst"></i> BLACK_SWAN Shock Gate</span>
-            <h2 class="mt-3 text-lg font-extrabold">5번째 컨텍스트는 희귀 충격 게이트로만 열립니다</h2>
+            <span class="section-kicker"><i class="fas fa-burst"></i> 파국장 대응 관문</span>
+            <h2 class="mt-3 text-lg font-extrabold">5번째 비상 국면은 극단적인 파국장 관문으로만 열립니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                `BLACK_SWAN`은 기존 4기후를 대체하지 않습니다.
-                평상시 runtime은 4기후 체계를 유지하고, 극단적인 bar profile이 감지될 때만 추가 shock context가 열립니다.
+                파국장 방어 체계는 기존 4대 시장 국면을 완전히 바꾸어 버리는 것이 아닙니다.
+                평상시에는 기존 4대 시장 국면을 기초로 진화하되, 시장에 큰 충격이 발생하여 비상 수치가 감지될 때만 가격 방어용 비상 게이트를 열게 됩니다.
             </p>
 
             <div class="mt-4 grid grid-cols-2 gap-2">
-                <button class="context-btn active" data-swan="calm">평시 Regime<br><span class="text-[10px] opacity-70">4-climate only</span></button>
-                <button class="context-btn" data-swan="shock">충격 Regime<br><span class="text-[10px] opacity-70">BLACK_SWAN open</span></button>
+                <button class="context-btn active" data-swan="calm">일반 시장 국면<br><span class="text-[10px] opacity-70">평시 진화 엔진 작동</span></button>
+                <button class="context-btn" data-swan="shock">파국장 비상 체제<br><span class="text-[10px] opacity-70">안전 관문 즉시 개방</span></button>
             </div>
 
             <div class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/75 p-4">
@@ -1060,43 +1060,43 @@
 
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                        <div class="tiny-label">종가 변동 Gate</div>
-                        <div id="swan-close-text" class="mt-1 font-bold text-slate-200">3.2% / need 6.0%</div>
+                        <div class="tiny-label">관문 A (종가 변동폭)</div>
+                        <div id="swan-close-text" class="mt-1 font-bold text-slate-200">3.2% / 기준치 6.0%</div>
                         <div class="queue-bar mt-2"><span id="swan-close-bar" style="width:53%;background:linear-gradient(90deg,#475569,#94a3b8);"></span></div>
                     </div>
                     <div>
-                        <div class="tiny-label">Range Shock Gate</div>
-                        <div id="swan-range-text" class="mt-1 font-bold text-slate-200">1.4x / need 2.5x</div>
+                        <div class="tiny-label">관문 B (단기 가격 변동 충격)</div>
+                        <div id="swan-range-text" class="mt-1 font-bold text-slate-200">1.4배 / 기준치 2.5배</div>
                         <div class="queue-bar mt-2"><span id="swan-range-bar" style="width:56%;background:linear-gradient(90deg,#475569,#94a3b8);"></span></div>
                     </div>
                 </div>
 
                 <div class="signal-grid mt-4 text-xs">
                     <div id="swan-chip-close" class="signal-chip">
-                        <div class="tiny-label">Gate A</div>
+                        <div class="tiny-label">관문 A</div>
                         <div class="mt-1 text-sm font-bold text-slate-200">종가 변동이 아직 기준 미만입니다</div>
-                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">움직임은 감시할 수준이지만, 이것만으로 5번째 컨텍스트를 열 만큼 크지는 않습니다.</p>
+                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">움직임은 감시할 수준이지만, 이것만으로 5번째 비상 국면을 열 만큼 크지는 않습니다.</p>
                     </div>
                     <div id="swan-chip-range" class="signal-chip">
-                        <div class="tiny-label">Gate B</div>
-                        <div class="mt-1 text-sm font-bold text-slate-200">Range shock이 아직 약합니다</div>
-                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">Range 확장이 일반 변동성 범위 안에 있어서 기존 계절 라우팅이 계속 우선합니다.</p>
+                        <div class="tiny-label">관문 B</div>
+                        <div class="mt-1 text-sm font-bold text-slate-200">변동폭 충격이 아직 약합니다</div>
+                        <p class="mt-2 text-[11px] leading-relaxed text-slate-400">변동폭 확장이 일반 변동성 범위 안에 있어서 기존 4대 시장 국면이 계속 적용됩니다.</p>
                     </div>
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 gap-3 text-xs">
                     <div class="runtime-card">
-                        <div class="tiny-label">감지된 Runtime</div>
-                        <div id="swan-context-text" class="mt-1 text-sm font-bold text-sky-300">기존 climate가 계속 활성 상태입니다</div>
+                        <div class="tiny-label">실시간 시장 감지</div>
+                        <div id="swan-context-text" class="mt-1 text-sm font-bold text-sky-300">평시 시장 국면에 맞추어 유전자가 진화 중입니다</div>
                         <p id="swan-context-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                            Shock gate가 닫혀 있으므로 기존 4기후 안에서 일반 context matching이 계속 진행됩니다.
+                            파국장 관문이 닫혀 있으므로 기존 4대 시장 국면 안에서 일반 발현 조건 매칭이 계속 진행됩니다.
                         </p>
                     </div>
                     <div class="runtime-card">
-                        <div class="tiny-label">AIDL Intent</div>
-                        <div id="swan-intent-text" class="mt-1 text-sm font-bold text-rose-300">희귀 override 전용 분기</div>
+                        <div class="tiny-label">엔진 제어 정책</div>
+                        <div id="swan-intent-text" class="mt-1 text-sm font-bold text-rose-300">수동 예외 제어 적용</div>
                         <p id="swan-intent-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                            기본 bootstrap과 runtime self-healing은 여전히 기존 4기후만 기본 복원 대상으로 유지합니다.
+                            기본 초기 설정과 런타임 자가 복구는 여전히 기존 4대 시장 국면만 기본 복원 대상으로 유지합니다.
                         </p>
                     </div>
                 </div>
@@ -1104,107 +1104,107 @@
         </section>
 
         <section class="section-card" id="override-panel">
-            <span class="section-kicker"><i class="fas fa-chart-line"></i> Override Evidence</span>
-            <h2 class="mt-3 text-lg font-extrabold">수동 제어는 blind write가 아니라 evidence chain입니다</h2>
+            <span class="section-kicker"><i class="fas fa-chart-line"></i> 수동 변경 조작 이력 증적</span>
+            <h2 class="mt-3 text-lg font-extrabold">수동 제어는 무작정 덮어쓰는 것이 아니라 검증 가능한 증적 체인입니다</h2>
             <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                Admin override는 이제 `pre_validation_score`, `pre_holdout_score`, `pre_run_key`를 함께 남기고,
-                snapshot, coverage, post-only timeline metric으로 개입 이후 결과를 추적합니다.
+                수동 개입은 이제 변경 전 성능 및 실전 테스트 점수, 안전 변경 확인 키를 함께 남기고,
+                조작 전후 스냅샷과 실시간 추적을 통해 변경 후의 실제 진화 효과를 독립적으로 확인합니다.
             </p>
 
             <div class="mt-4 grid grid-cols-2 gap-2">
-                <button class="context-btn active" data-override-mode="state">상태 Override<br><span class="text-[10px] opacity-70">A / I / D / L</span></button>
-                <button class="context-btn" data-override-mode="context">컨텍스트 Override<br><span class="text-[10px] opacity-70">BLACK_SWAN on/off</span></button>
+                <button class="context-btn active" data-override-mode="state">유전자 상태 제어<br><span class="text-[10px] opacity-70">실행 / 휴면 / 폐기 / 차단</span></button>
+                <button class="context-btn" data-override-mode="context">시장 국면 제어<br><span class="text-[10px] opacity-70">파국장 자동 개방 온/오프</span></button>
             </div>
 
             <div class="mt-4 space-y-3">
                 <article class="runtime-card">
                     <div class="flex items-center justify-between gap-3 text-xs">
                         <div>
-                            <div class="tiny-label">Override Snapshot</div>
-                            <div id="override-snapshot-text" class="mt-1 text-sm font-bold text-amber-300">Pre V 46 / H 44 -> Post V 50.4 / H 47.55</div>
+                            <div class="tiny-label">변경 전후 스냅샷</div>
+                            <div id="override-snapshot-text" class="mt-1 text-sm font-bold text-amber-300">변경 전 검증 46.0 / 실전 44.0 -> 변경 후 검증 50.4 / 실전 47.6</div>
                         </div>
                         <div class="text-right">
-                            <div class="tiny-label">비교 가능 이벤트</div>
-                            <div id="override-coverage-text" class="mt-1 text-sm font-bold text-sky-300">snapshot 2 / timeline 2 / total 2</div>
+                            <div class="tiny-label">이력 기록 수</div>
+                            <div id="override-coverage-text" class="mt-1 text-sm font-bold text-sky-300">이력 기록 수: 2건</div>
                         </div>
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-3">
                         <div>
-                            <div class="tiny-label">Validation 상승폭</div>
+                            <div class="tiny-label">학습 검증 성능 향상</div>
                             <div class="queue-bar mt-2"><span id="override-validation-bar" style="width:78%;background:linear-gradient(90deg,#f59e0b,#fde68a);"></span></div>
                         </div>
                         <div>
-                            <div class="tiny-label">Holdout 상승폭</div>
+                            <div class="tiny-label">실전 테스트 성능 향상</div>
                             <div class="queue-bar mt-2"><span id="override-holdout-bar" style="width:70%;background:linear-gradient(90deg,#38bdf8,#a78bfa);"></span></div>
                         </div>
                     </div>
                 </article>
 
                 <article class="runtime-card">
-                    <div class="tiny-label">Evidence Rail</div>
+                    <div class="tiny-label">조작 증적 레일</div>
                     <div class="audit-rail mt-3 text-[11px]">
                         <div id="override-node-pre" class="audit-node active">
-                            <div class="font-bold text-slate-200">사전 점검</div>
-                            <div id="override-node-pre-text" class="mt-1 text-slate-400">validation과 holdout snapshot이 저장됩니다</div>
+                            <div class="font-bold text-slate-200">변경 전 점검</div>
+                            <div id="override-node-pre-text" class="mt-1 text-slate-400">변경 전 유전자 성능과 실전 점수의 기록을 안전하게 저장합니다.</div>
                         </div>
                         <div id="override-node-mid" class="audit-node warn active">
-                            <div class="font-bold text-slate-200">Override</div>
-                            <div id="override-node-mid-text" class="mt-1 text-slate-400">수동 개입이 run key와 함께 기록됩니다</div>
+                            <div class="font-bold text-slate-200">수동 상태 변경</div>
+                            <div id="override-node-mid-text" class="mt-1 text-slate-400">관리자의 수동 상태 제어 이력이 고유 승인 키와 함께 기록됩니다.</div>
                         </div>
                         <div id="override-node-post" class="audit-node active">
-                            <div class="font-bold text-slate-200">사후 판독</div>
-                            <div id="override-node-post-text" class="mt-1 text-slate-400">override 이후 결과만 분리해서 추적합니다</div>
+                            <div class="font-bold text-slate-200">사후 효과 추적</div>
+                            <div id="override-node-post-text" class="mt-1 text-slate-400">과거 이력과 확실히 분리하여, 변경 적용 이후의 진화 성과만 추적합니다.</div>
                         </div>
                     </div>
                 </article>
 
                 <article class="runtime-card">
-                    <div class="tiny-label">Post-Override Timeline</div>
-                    <div id="override-timeline-text" class="mt-2 text-sm font-bold text-slate-200">run-2 V53 H50, run-4 V47.8 H45.1</div>
+                    <div class="tiny-label">사후 경과 타임라인</div>
+                    <div id="override-timeline-text" class="mt-2 text-sm font-bold text-slate-200">실행 2회차 검증 53.0 실전 50.0, 실행 4회차 검증 47.8 실전 45.1</div>
                     <p id="override-timeline-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        Timeline은 이제 `pre_run_key` 이후 구간만 잘라서 사용하므로, override 이전 run이 evidence에 섞이지 않습니다.
+                        시간별 효과 추적은 변경 승인 이후의 구간만 정확히 분리하여 측정하므로, 변경 이전의 노이즈가 섞이지 않습니다.
                     </p>
                 </article>
 
                 <article class="runtime-card">
-                    <div class="tiny-label">Admin 제어 Surface</div>
-                    <div id="override-surface-text" class="mt-2 text-sm font-bold text-emerald-300">strategy gene + subgene 상태 override</div>
+                    <div class="tiny-label">관리자 제어 영역</div>
+                    <div id="override-surface-text" class="mt-2 text-sm font-bold text-emerald-300">전체 진화 전략 및 개별 유전자 수동 변경</div>
                     <p id="override-surface-desc" class="mt-2 text-[11px] leading-relaxed text-slate-400">
-                        backend는 이미 subgene 상태 override를 지원하고 있었고, 이제 admin UI도 top-level gene만이 아니라 같은 제어 surface를 그대로 엽니다.
+                        엔진 시스템은 내부적으로 개별 유전자의 직접 조정을 완벽히 처리하며, 관리 화면에서도 복잡한 연산 과정을 거치지 않고 직관적인 유전자 제어가 가능하도록 지원합니다.
                     </p>
                 </article>
             </div>
         </section>
 
         <footer class="pb-2 pt-4 text-center text-[11px] text-slate-500">
-            <p class="font-bold text-slate-300">Designed for AiS admin-side AIDL presentation</p>
-            <p class="mt-1">(c) 2026 AiS Platform | Powered by AIDL DNA Evolution Engine</p>
+            <p class="font-semibold text-slate-400">AiS AIDL 연구·개발·작성 : 이명학</p>
+            <p class="mt-1 text-[10px] opacity-60">(c) 2026 AiS Platform | Powered by AIDL DNA Logic Engine</p>
         </footer>
     </div>
 
     <script>
         const contextConfigs = {
             BULL_EXPANSION: {
-                title: "상승 확장기",
-                mode: "Breakout / Momentum",
+                title: "상승 돌파장",
+                mode: "돌파 및 모멘텀",
                 accent: "emerald",
                 activeGenes: ["breakout", "oversold", "volatility"]
             },
             BULL_SQUEEZE: {
-                title: "상승 압축기",
-                mode: "Stable exploit / controlled release",
+                title: "상승 횡보장",
+                mode: "안정적 활용 및 통제된 방출",
                 accent: "sky",
                 activeGenes: ["oversold", "meanrev"]
             },
             BEAR_EXPANSION: {
-                title: "하락 확장기",
-                mode: "Risk guard / drawdown defense",
+                title: "급락 폭락장",
+                mode: "위험 제어 및 최대 손실폭 방어",
                 accent: "rose",
                 activeGenes: ["volatility", "knife"]
             },
             BEAR_SQUEEZE: {
-                title: "하락 압축기",
-                mode: "Accumulation / mean reversion",
+                title: "바닥 다지기장",
+                mode: "매집 및 평균 회귀",
                 accent: "violet",
                 activeGenes: ["oversold", "meanrev"]
             }
@@ -1212,108 +1212,108 @@
 
         const runtimeProfiles = {
             balanced: {
-                name: "Balanced Runtime",
+                name: "기본 균형 모드",
                 budget: 12,
                 remaining: 5,
                 dominance: 1.0,
                 queue: {
-                    sentinel: { expressed: true, score: 1.0, width: 74, status: "EXPRESSED", cost: "copy_number 3 · cost 1" },
-                    trend: { expressed: true, score: 0.95, width: 70, status: "EXPRESSED", cost: "copy_number 1 · cost 4" },
-                    recovery: { expressed: true, score: 0.88, width: 64, status: "EXPRESSED", cost: "copy_number 2 · cost 2" },
-                    latent: { expressed: false, score: 0.72, width: 42, status: "SKIPPED", cost: "copy_number 1 · cost 6" }
+                    sentinel: { expressed: true, score: 1.0, width: 74, status: "진화 발현됨", cost: "복제수 3 · 진화비용 1" },
+                    trend: { expressed: true, score: 0.95, width: 70, status: "진화 발현됨", cost: "복제수 1 · 진화비용 4" },
+                    recovery: { expressed: true, score: 0.88, width: 64, status: "진화 발현됨", cost: "복제수 2 · 진화비용 2" },
+                    latent: { expressed: false, score: 0.72, width: 42, status: "진화 대기중", cost: "복제수 1 · 진화비용 6" }
                 }
             },
             aggressive: {
-                name: "Aggressive Runtime",
+                name: "공격 전략 모드",
                 budget: 8,
                 remaining: 1,
                 dominance: 1.35,
                 queue: {
-                    sentinel: { expressed: true, score: 1.35, width: 90, status: "EXPRESSED", cost: "copy_number 3 · cost 1" },
-                    trend: { expressed: true, score: 1.24, width: 83, status: "EXPRESSED", cost: "copy_number 1 · cost 4" },
-                    recovery: { expressed: true, score: 1.08, width: 72, status: "EXPRESSED", cost: "copy_number 2 · cost 2" },
-                    latent: { expressed: false, score: 0.92, width: 52, status: "SKIPPED", cost: "copy_number 1 · cost 6" }
+                    sentinel: { expressed: true, score: 1.35, width: 90, status: "진화 발현됨", cost: "복제수 3 · 진화비용 1" },
+                    trend: { expressed: true, score: 1.24, width: 83, status: "진화 발현됨", cost: "복제수 1 · 진화비용 4" },
+                    recovery: { expressed: true, score: 1.08, width: 72, status: "진화 발현됨", cost: "복제수 2 · 진화비용 2" },
+                    latent: { expressed: false, score: 0.92, width: 52, status: "진화 대기중", cost: "복제수 1 · 진화비용 6" }
                 }
             },
             tight: {
-                name: "Tight Budget Runtime",
+                name: "예산 절약 모드",
                 budget: 4,
                 remaining: 0,
                 dominance: 0.9,
                 queue: {
-                    sentinel: { expressed: true, score: 0.9, width: 68, status: "EXPRESSED", cost: "copy_number 3 · cost 1" },
-                    trend: { expressed: false, score: 0.86, width: 44, status: "SKIPPED", cost: "copy_number 1 · cost 4" },
-                    recovery: { expressed: true, score: 0.79, width: 58, status: "EXPRESSED", cost: "copy_number 2 · cost 2" },
-                    latent: { expressed: false, score: 0.65, width: 38, status: "SKIPPED", cost: "copy_number 1 · cost 6" }
+                    sentinel: { expressed: true, score: 0.9, width: 68, status: "진화 발현됨", cost: "복제수 3 · 진화비용 1" },
+                    trend: { expressed: false, score: 0.86, width: 44, status: "진화 대기중", cost: "복제수 1 · 진화비용 4" },
+                    recovery: { expressed: true, score: 0.79, width: 58, status: "진화 발현됨", cost: "복제수 2 · 진화비용 2" },
+                    latent: { expressed: false, score: 0.65, width: 38, status: "진화 대기중", cost: "복제수 1 · 진화비용 6" }
                 }
             }
         };
 
         const blackSwanConfigs = {
             calm: {
-                closeText: "3.2% / need 6.0%",
+                closeText: "3.2% / 기준치 6.0%",
                 closeWidth: 53,
-                rangeText: "1.4x / need 2.5x",
+                rangeText: "1.4배 / 기준치 2.5배",
                 rangeWidth: 56,
                 bar: "linear-gradient(90deg,#475569,#94a3b8)",
                 shellShock: false,
                 closeGateActive: false,
                 rangeGateActive: false,
                 closeChipTitle: "종가 변동이 아직 기준 미만입니다",
-                closeChipDesc: "움직임은 감시할 수준이지만, 이것만으로 5번째 컨텍스트를 열 만큼 크지는 않습니다.",
-                rangeChipTitle: "Range shock이 아직 약합니다",
-                rangeChipDesc: "Range 확장이 일반 변동성 범위 안에 있어서 기존 계절 라우팅이 계속 우선합니다.",
-                contextText: "기존 climate가 계속 활성 상태입니다",
-                contextDesc: "Shock gate가 닫혀 있으므로 기존 4기후 안에서 일반 context matching이 계속 진행됩니다.",
-                intentText: "희귀 override 전용 분기",
-                intentDesc: "기본 bootstrap과 runtime self-healing은 여전히 기존 4기후만 기본 복원 대상으로 유지합니다."
+                closeChipDesc: "움직임은 감시할 수준이지만, 이것만으로 5번째 기후를 열 만큼 크지는 않습니다.",
+                rangeChipTitle: "변동폭 충격이 아직 약합니다",
+                rangeChipDesc: "변동폭 확장이 일반 변동성 범위 안에 있어서 기존 4기후 시스템이 계속 우선 작동합니다.",
+                contextText: "평시 시장 기후에 맞추어 유전자가 진화 중입니다",
+                contextDesc: "파국장 관문이 닫혀 있으므로 기존 4기후 조건 하에 유전자들의 자동 매칭이 안정적으로 이루어집니다.",
+                intentText: "수동 예외 제어 적용",
+                intentDesc: "기본적인 엔진 제어 규칙과 실시간 자가 치료 시스템은 기존 4대 기후만을 제어 대상으로 설정합니다."
             },
             shock: {
-                closeText: "8.4% / need 6.0%",
+                closeText: "8.4% / 기준치 6.0%",
                 closeWidth: 100,
-                rangeText: "3.1x / need 2.5x",
+                rangeText: "3.1배 / 기준치 2.5배",
                 rangeWidth: 100,
                 bar: "linear-gradient(90deg,#ef4444,#f59e0b)",
                 shellShock: true,
                 closeGateActive: true,
                 rangeGateActive: true,
-                closeChipTitle: "종가 변동 Gate가 열렸습니다",
-                closeChipDesc: "종가 기준 변위가 충분히 커져서 희귀 방향성 shock 조건에 들어왔습니다.",
-                rangeChipTitle: "Range Shock Gate가 열렸습니다",
-                rangeChipDesc: "bar range가 rolling volatility 범위를 넘어서면서 4기후를 깨지 않고도 5번째 컨텍스트를 열 수 있습니다.",
-                contextText: "BLACK_SWAN context가 열렸습니다",
-                contextDesc: "이 bar는 이제 희귀 shock profile로 분류되므로, context_mask에 opt-in한 BLACK_SWAN 전용 gene이 발현에 참여할 수 있습니다.",
-                intentText: "4기후는 유지, 5번째 게이트만 개방",
-                intentDesc: "4기후 아키텍처를 대체하는 것이 아니라, BLACK_SWAN을 shock 전용 분기로 위에 추가한 구조입니다."
+                closeChipTitle: "종가 변동 관문이 개방되었습니다",
+                closeChipDesc: "종가 기준의 변화율이 설정 한계를 넘어 비상 상황으로 판단됩니다.",
+                rangeChipTitle: "가격 변동 충격 관문이 개방되었습니다",
+                rangeChipDesc: "일시적인 가격 충격 크기가 일상적인 변동 범위를 상회하여 안전 관문이 활성화되었습니다.",
+                contextText: "파국장 비상 안전 모드가 활성화되었습니다",
+                contextDesc: "극단적인 시장 충격이 감지되어, 리스크 방어 기능이 극대화된 전용 유전자가 실시간 진화 과정에 우선 개입합니다.",
+                intentText: "평시 국면 안정 유지 및 예외 관문 개방",
+                intentDesc: "기존 엔진 구조를 교체하는 것이 아니라, 비상 국면에서만 방어막을 덧씌우는 유연한 예외 처리 구조입니다."
             }
         };
 
         const overrideConfigs = {
             state: {
-                snapshotText: "Pre V 46 / H 44 -> Post V 50.4 / H 47.55",
-                coverageText: "snapshot 2 / timeline 2 / total 2",
+                snapshotText: "변경 전 검증 46.0 / 실전 44.0 -> 변경 후 검증 50.4 / 실전 47.6",
+                coverageText: "이력 기록 수: 2건",
                 validationWidth: 78,
                 holdoutWidth: 70,
-                preNodeText: "validation과 holdout snapshot이 저장됩니다",
-                midNodeText: "A / I / D / L override가 pre_run_key와 함께 기록됩니다",
-                postNodeText: "override 이전 이력과 분리된 post-only 결과만 읽습니다",
-                timelineText: "run-2 V53 H50, run-4 V47.8 H45.1",
-                timelineDesc: "State override evidence는 이제 pre_run_key 이후 구간만 사용하므로 override 이전 run이 섞이지 않습니다.",
-                surfaceText: "strategy gene + subgene 상태 override",
-                surfaceDesc: "이제 admin surface가 backend capability와 맞춰져서 A / I / D / L override를 strategy gene과 subgene 모두에 열어 줍니다."
+                preNodeText: "변경 전 유전자 성능과 실전 점수의 기록을 안전하게 저장합니다.",
+                midNodeText: "관리자의 수동 상태 제어 이력이 고유 승인 키와 함께 기록됩니다.",
+                postNodeText: "과거 이력과 확실히 분리하여, 변경 적용 이후의 진화 성과만 추적합니다.",
+                timelineText: "실행 2회차 검증 53.0 실전 50.0, 실행 4회차 검증 47.8 실전 45.1",
+                timelineDesc: "시간별 효과 추적은 변경 승인 이후의 구간만 정확히 분리하여 측정하므로, 변경 이전의 노이즈가 섞이지 않습니다.",
+                surfaceText: "전체 진화 전략 및 개별 유전자 수동 변경",
+                surfaceDesc: "전체 전략 방향성뿐만 아니라 세부 동작을 결정하는 하위 유전자까지 관리자가 동일한 수준으로 간편하게 제어할 수 있습니다."
             },
             context: {
-                snapshotText: "Pre V 45 / H 42.5 -> Post V 47.25 / H 44.6",
-                coverageText: "snapshot 2 / timeline 2 / total 2",
+                snapshotText: "변경 전 검증 45.0 / 실전 42.5 -> 변경 후 검증 47.3 / 실전 44.6",
+                coverageText: "이력 기록 수: 2건",
                 validationWidth: 64,
                 holdoutWidth: 63,
-                preNodeText: "context 결정 직전의 pre-shock baseline을 저장합니다",
-                midNodeText: "BLACK_SWAN on/off 결정이 admin context override로 기록됩니다",
-                postNodeText: "state override 이벤트와 섞지 않고 shock-context 결과만 따로 봅니다",
-                timelineText: "run-2 V53 H50, run-3 V41.5 H39.2",
-                timelineDesc: "Context override evidence는 별도로 추적되므로 BLACK_SWAN on/off 판단을 state override 결과와 섞지 않고 읽을 수 있습니다.",
-                surfaceText: "strategy gene context override 전용",
-                surfaceDesc: "BLACK_SWAN on/off는 strategy gene 레벨 제어로 유지되고, subgene은 독립 토글 대신 상위 strategy context를 상속합니다."
+                preNodeText: "비상 상황이 감지되기 직전의 평시 시장 기준 성과를 기록해 둡니다.",
+                midNodeText: "파국장 비상 안전망 개방 여부가 관리자 변경 이력에 등록됩니다.",
+                postNodeText: "일반적인 상태 변경 이력과 섞이지 않도록 비상 대응 상황의 모니터링 결과만 따로 관리합니다.",
+                timelineText: "실행 2회차 검증 53.0 실전 50.0, 실행 3회차 검증 41.5 실전 39.2",
+                timelineDesc: "비상 상황 조작 증적은 독립적으로 분리되어, 다른 전략의 유전자 변경 이력과 혼동 없이 깨끗한 진화 경로를 보여줍니다.",
+                surfaceText: "비상 예외 상황 대응 국면 수동 변경",
+                surfaceDesc: "파국장 작동 개방은 상위 수준에서 통합 결정되며, 하위 유전자들은 이 설정을 자동으로 상속받아 유기적으로 대처합니다."
             }
         };
 
@@ -1341,7 +1341,7 @@
                 geneCard.classList.toggle("inactive", !isActive);
                 const badge = geneCard.querySelector(".pill");
                 if (badge) {
-                    badge.textContent = isActive ? "ACTIVE" : "DORMANT";
+                    badge.textContent = isActive ? "활성" : "휴면";
                     badge.className = isActive
                         ? "pill bg-sky-500/10 text-sky-300 border border-sky-500/20"
                         : "pill bg-slate-800 text-slate-400 border border-slate-700";
@@ -1449,8 +1449,8 @@
         function resetVepVisuals() {
             document.querySelectorAll(".risk-row").forEach((row) => row.classList.remove("blocked"));
             document.getElementById("vep-progress").style.width = "0%";
-            document.getElementById("vep-status").textContent = "Ready for mutation check";
-            document.getElementById("vep-action").textContent = "Pending";
+            document.getElementById("vep-status").textContent = "변이 검사 준비 완료";
+            document.getElementById("vep-action").textContent = "검사 대기 중";
         }
 
         function runVepSimulation() {
@@ -1466,9 +1466,9 @@
             resetVepVisuals();
             shell.classList.add("scanning");
             button.disabled = true;
-            button.textContent = "Scanning mutated branch...";
-            status.textContent = "Context-aware mutation screening";
-            action.textContent = "Scanning";
+            button.textContent = "새로운 변이 유전자 위험성 분석 중...";
+            status.textContent = "상황별 위험 유전자 정밀 분석 진행 중";
+            action.textContent = "검사 진행 중";
 
             riskSequence.forEach((riskKey, index) => {
                 window.setTimeout(() => {
@@ -1480,11 +1480,11 @@
 
             window.setTimeout(() => {
                 progress.style.width = "100%";
-                status.textContent = "LETHAL mutation detected";
-                action.textContent = "Filtered and rolled back";
+                status.textContent = "치명적인 위험 변이 감지 (진화 배제 및 영구 차단)";
+                action.textContent = "위험 유전자 차단 및 안전한 이전 버전 복원 완료";
                 shell.classList.remove("scanning");
                 button.disabled = false;
-                button.textContent = "AI-VEP 변이 검사 시뮬레이션 재실행";
+                button.textContent = "안전 검출 관문 검사 시뮬레이션 재실행";
                 vepBusy = false;
             }, 3400);
         }

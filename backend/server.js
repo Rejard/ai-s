@@ -42,7 +42,7 @@ app.use((err, req, res, next) => {
   console.error('❌ Server Error Middleware Catch:', err.stack);
   res.status(500).json({
     success: false,
-    message: err.message || '서버 내부에서 예상치 못한 오류가 발생했습니다.'
+    message: '서버 내부에서 일시적인 통신 장애가 발생했습니다. 잠시 후 다시 시도해 주세요.'
   });
 });
 

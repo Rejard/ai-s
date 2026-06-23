@@ -103,7 +103,16 @@ export async function executeSutApprovalFlow({
       return { status: 'rejected' };
     }
 
-    alertFn(`SUT 승인 처리 중 오류가 발생했습니다: ${err?.message || err}`);
+    let errMsg = err?.message || String(err);
+    if (
+      errMsg.includes('could not coalesce error') ||
+      errMsg.includes('eth_getBalance') ||
+      errMsg.includes('UNKNOWN_ERROR')
+    ) {
+      errMsg = '폴리곤 블록체인 네트워크 또는 지갑 앱의 연결이 일시적으로 불안정합니다. 지갑 앱을 완전히 종료 후 재시작하거나 네트워크 상태를 확인한 후 다시 시도해 주세요.';
+    }
+
+    alertFn(`SUT 승인 처리 중 오류가 발생했습니다: ${errMsg}`);
     return { status: 'error', error: err };
   }
 }

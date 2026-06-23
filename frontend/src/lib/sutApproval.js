@@ -16,7 +16,11 @@ const POLYGON_CHAIN_PARAMS = {
   chainId: POLYGON_MAINNET_CHAIN_ID,
   chainName: 'Polygon Mainnet',
   nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-  rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
+  rpcUrls: [
+    'https://polygon-rpc.com',
+    'https://rpc.ankr.com/polygon',
+    'https://polygon-bor-rpc.publicnode.com'
+  ],
   blockExplorerUrls: ['https://polygonscan.com'],
 };
 
