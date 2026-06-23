@@ -112,7 +112,7 @@ function buildCouncilHealthReport({ totalCount, allMembers, latestRun }) {
   } else if (computationMargin < 20) {
     diversityGrade = 'WARNING';
     diagnosticClass = 'warning';
-    recommendationText = `⚠️ 서버 연산 주의: 매 5분당 AI 학습 필요 시간(${elapsedSeconds}초)이 한계치에 가까워 서버 마진이 부족합니다. 정원을 더 늘리면 의사결정 지연이 발생할 수 있으므로 현재 ${totalCount}명 정원 유지가 강력 권장됩니다.`;
+    recommendationText = `⚠️ 서버 연산 주의: 실시간 5분 틱당 AI 학습·검증 연산 시간(${elapsedSeconds}초)이 한계치에 가까워 서버 마진이 부족합니다. 정원을 더 늘리면 의사결정 지연이 발생할 수 있으므로 현재 ${totalCount}명 정원 유지가 강력 권장됩니다.`;
   }
 
   return {

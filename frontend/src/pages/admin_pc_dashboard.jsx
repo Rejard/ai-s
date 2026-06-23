@@ -672,7 +672,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                       {/* 연산 여유 마진 게이지 */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>⚡ 5분 틱 연산 여유율</span>
+                          <span style={{ color: 'var(--text-muted)' }}>⚡ 실시간 위험감지 연산 여유율 (5분 틱)</span>
                           <strong style={{ color: '#3B82F6' }}>{councilStats.healthReport.computationMargin}%</strong>
                         </div>
                         <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -684,7 +684,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                           }} />
                         </div>
                         <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '6px', textAlign: 'left' }}>
-                          최근 학습 소요 시간: {councilStats.healthReport.elapsedSeconds}초 / 300초
+                          최근 학습·검증 소요 시간: {councilStats.healthReport.elapsedSeconds}초 / 최대 허용 300초
                         </div>
                       </div>
                     </div>

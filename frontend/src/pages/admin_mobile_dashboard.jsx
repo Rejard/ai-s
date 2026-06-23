@@ -917,7 +917,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                         {/* 연산 여유 마진 게이지 */}
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>⚡ 5분 틱 연산 여유율</span>
+                            <span style={{ color: 'var(--text-muted)' }}>⚡ 실시간 위험감지 연산 여유율 (5분 틱)</span>
                             <strong style={{ color: '#3B82F6' }}>{councilStats.healthReport.computationMargin}%</strong>
                           </div>
                           <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
@@ -929,7 +929,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                             }} />
                           </div>
                           <div style={{ fontSize: '8px', color: 'var(--text-dark)', marginTop: '4px', textAlign: 'left' }}>
-                            최근 학습 소요 시간: {councilStats.healthReport.elapsedSeconds}초 / 300초
+                            최근 학습·검증 소요 시간: {councilStats.healthReport.elapsedSeconds}초 / 최대 허용 300초
                           </div>
                         </div>
                       </div>

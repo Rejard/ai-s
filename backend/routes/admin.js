@@ -1029,7 +1029,7 @@ router.get('/council-stats', async (req, res) => {
     } else if (computationMargin < 20) {
       diversityGrade = 'WARNING';
       diagnosticClass = 'warning';
-      recommendationText = `⚠️ 서버 과부하 주의: 매 5분 틱당 AI 학습 연산 소요 시간(${elapsedSeconds}초)이 한계에 달해 여유 마진이 부족합니다. 정원을 더 이상 늘리면 실거래 판단 지연이 발생할 수 있으므로, 현재의 ${totalCount}명 정원 유지가 적극 권장됩니다.`;
+      recommendationText = `⚠️ 서버 과부하 주의: 실시간 5분 틱당 AI 학습·검증 연산 시간(${elapsedSeconds}초)이 한계에 달해 여유 마진이 부족합니다. 정원을 더 이상 늘리면 실거래 판단 지연이 발생할 수 있으므로, 현재의 ${totalCount}명 정원 유지가 적극 권장됩니다.`;
     }
 
     const healthReport = buildCouncilHealthReport({ totalCount, allMembers, latestRun });

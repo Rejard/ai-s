@@ -172,10 +172,10 @@ export default function AisTrainingEvidence({
           marginBottom: '8px'
         }}>
           <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-            <span>⚠️</span> AI Auto-Training Execution Failure Detected!
+            <span>⚠️</span> AI 자동 학습 실행 실패 감지!
           </div>
           <div>
-            <strong>Last Run:</strong> {latest.runKey} ({latest.completedAt || latest.createdAt})
+            <strong>최근 실행:</strong> {latest.runKey} ({latest.completedAt || latest.createdAt})
           </div>
           <div style={{
             background: 'rgba(0,0,0,0.4)',
@@ -188,19 +188,19 @@ export default function AisTrainingEvidence({
             fontSize: '9px',
             color: '#FEE2E2'
           }}>
-            {latest.errorMessage || 'Unknown execution error'}
+            {latest.errorMessage || '알 수 없는 실행 에러'}
           </div>
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-        <strong style={{ color: '#C4B5FD' }}>Shadow Challenger Validation</strong>
+        <strong style={{ color: '#C4B5FD' }}>관망 후보군 AI 검증</strong>
 
         {!isEngineEligible ? (
           <button
             type="button"
             disabled
-            title="Automatic promotion is available only in HYBRID_COOP or AIS_ONLY mode."
+            title="자동 승격은 HYBRID_COOP 또는 AIS_ONLY 모드에서만 사용 가능합니다."
             style={{
               color: 'var(--text-dark)',
               background: 'rgba(255,255,255,0.03)',
@@ -214,13 +214,13 @@ export default function AisTrainingEvidence({
               transition: 'all 0.2s',
             }}
           >
-            Auto Promotion OFF (engine restricted)
+            자동 승격 OFF (엔진 제한됨)
           </button>
         ) : (
           <button
             type="button"
             onClick={handleToggleAutomaticPromotion}
-            title={isPromoEnabled ? 'Disable automatic promotion' : 'Enable automatic promotion'}
+            title={isPromoEnabled ? '자동 승격 비활성화' : '자동 승격 활성화'}
             style={{
               color: isPromoEnabled ? '#10B981' : '#FBBF24',
               background: isPromoEnabled ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.06)',
@@ -245,7 +245,7 @@ export default function AisTrainingEvidence({
               e.currentTarget.style.background = isPromoEnabled ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.06)';
             }}
           >
-            <span>Auto Promotion {isPromoEnabled ? 'ON' : 'OFF'}</span>
+            <span>자동 승격 {isPromoEnabled ? 'ON(켜짐)' : 'OFF(꺼짐)'}</span>
           </button>
         )}
       </div>
