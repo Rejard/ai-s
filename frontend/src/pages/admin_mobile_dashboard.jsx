@@ -330,7 +330,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Context Mutation</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 상황 마스크 변이율</label>
                     <input
                       type="number"
                       min="0"
@@ -343,7 +343,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL State Mutation</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 노드 활성 변이율</label>
                     <input
                       type="number"
                       min="0"
@@ -356,7 +356,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Profile Mutation</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 생체 특성 변이율</label>
                     <input
                       type="number"
                       min="0"
@@ -369,7 +369,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Copy Number</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 유전자 복제수 변이율</label>
                     <input
                       type="number"
                       min="0"
@@ -382,7 +382,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     />
                   </div>
                   <div>
-                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL Weight Nudge</label>
+                    <label className="form-label" style={{ fontSize: '12px' }}>AIDL 가중치 미세 조정 폭</label>
                     <input
                       type="number"
                       min="0"

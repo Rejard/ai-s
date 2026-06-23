@@ -246,7 +246,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Context Mutation</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 상황 마스크 변이율</label>
                   <input
                     type="number"
                     min="0"
@@ -258,7 +258,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL State Mutation</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 노드 활성 변이율</label>
                   <input
                     type="number"
                     min="0"
@@ -270,7 +270,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Profile Mutation</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 생체 특성 변이율</label>
                   <input
                     type="number"
                     min="0"
@@ -282,7 +282,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Copy Number</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 유전자 복제수 변이율</label>
                   <input
                     type="number"
                     min="0"
@@ -294,7 +294,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL Weight Nudge</label>
+                  <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textAlign: 'left' }}>AIDL 가중치 미세 조정 폭</label>
                   <input
                     type="number"
                     min="0"
