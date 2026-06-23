@@ -1135,10 +1135,10 @@ async function performSystemDiagnostics(runHeavyTests) {
   } else {
     // 핵심 환경변수 검사
     const envContent = fs.readFileSync(envPath, 'utf8');
-    if (!envContent.includes('JWT_SECRET')) {
+    if (!envContent.includes('AUTH_SESSION_SECRET')) {
       apiStatus = "WARNING";
-      apiDetails = ".env 파일 내 JWT_SECRET 설정 필요";
-      warnings.push("JWT_SECRET 미설정");
+      apiDetails = ".env 파일 내 AUTH_SESSION_SECRET 설정 필요";
+      warnings.push("AUTH_SESSION_SECRET 미설정");
     }
   }
 
