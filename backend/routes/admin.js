@@ -1335,25 +1335,43 @@ async function performSystemDiagnostics(runHeavyTests) {
     errors.push(`의회 분석 모듈 파일 누락: ${missingCouncilFiles.join(', ')}`);
   } else {
     try {
-      const dbStats = await queries.get(`
-        SELECT margin_rate, diversity_index 
-        FROM council_briefings 
-        ORDER BY id DESC 
+      const allMembers = await queries.all(`
+        SELECT id, faction, phenotype_json, weights_json 
+        FROM ais_council_members
+      `);
+      
+      const latestRun = await queries.get(`
+        SELECT run_key, status, error_message, completed_at, created_at
+        FROM ais_model_runs
+        ORDER BY id DESC
         LIMIT 1
       `);
-      if (dbStats) {
-        if (dbStats.margin_rate < 10) {
-          councilStatus = "WARNING";
-          councilDetails = `경고: 틱 연산 여유 마진율 급감 (${dbStats.margin_rate.toFixed(1)}%)`;
-          warnings.push(`의회 연산 여유 마진 경고: ${dbStats.margin_rate}%`);
-        } else {
-          councilDetails = `정상: 틱 연산 여유 마진 ${dbStats.margin_rate.toFixed(1)}%, 다양성 지수 ${dbStats.diversity_index.toFixed(2)}`;
-        }
+      
+      const { buildCouncilHealthReport } = require('../councilHealthReport');
+      const report = buildCouncilHealthReport({
+        totalCount: allMembers.length,
+        allMembers,
+        latestRun
+      });
+      
+      const margin = report.computationMargin;
+      const diversity = report.diversityScore;
+      
+      if (report.diagnosticClass === 'danger') {
+        councilStatus = "ERROR";
+        councilDetails = `의회 위기: 다양성 ${diversity}%, 연산 마진 ${margin}%`;
+        errors.push(`의회 건강 심각: 다양성 지수 임계값 미달`);
+      } else if (report.diagnosticClass === 'warning') {
+        councilStatus = "WARNING";
+        councilDetails = `의회 주의: 다양성 ${diversity}%, 연산 마진 ${margin}%`;
+        warnings.push(`의회 건강 주의: ${report.recommendationText.split('\n')[0]}`);
+      } else {
+        councilDetails = `정상: 틱 연산 여유 마진 ${margin}%, 다양성 지수 ${diversity}%`;
       }
     } catch (e) {
       councilStatus = "WARNING";
-      councilDetails = "의회 데이터베이스 분석 정보 기록 조회 실패";
-      warnings.push("의회 상태 분석 테이블(council_briefings) 부재 또는 조회 실패");
+      councilDetails = `의회 데이터 분석 중 연산 실패: ${e.message}`;
+      warnings.push(`의회 건강 상태 연산 및 분석 실패: ${e.message}`);
     }
   }
 
