@@ -68,6 +68,34 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
     runningDiagnostics,
     runDiagnostics
   } = useAdminLogic(managerEmail);
+  
+  const [activeDiagTab, setActiveDiagTab] = React.useState('algorithm');
+  const [terminalLogs, setTerminalLogs] = React.useState([]);
+
+  React.useEffect(() => {
+    if (runningDiagnostics) {
+      setTerminalLogs([
+        "> [SYSTEM] 19대 무결성 점검 체계 부트스트래핑 개시...",
+        "> [SYSTEM] 하드웨어 가용율 및 디스크 실시간 할당 대역 검사 중...",
+        "> [SYSTEM] 외부 거래소 및 Web3 RPC 노드 벤치마크 테스트 소켓 개방...",
+        "> [SYSTEM] SQLite3 I/O 스트레스 쓰기/읽기 벤치마킹 50회 개시...",
+        "> [SYSTEM] 유전자 의회의 팩션 분포 HHI 안전 계수 연산 개시..."
+      ]);
+    } else if (diagnosticsData) {
+      const logs = [
+        `> [SYSTEM] 19대 자가 진단 무결성 검증 완료 (${diagnosticsData.timestamp || new Date().toISOString()})`,
+        `> [SYSTEM] 전체 시스템 무결성 종합 판정: [ ${diagnosticsData.overallStatus || 'UNKNOWN'} ]`
+      ];
+      (diagnosticsData.diagnostics || []).forEach(d => {
+        logs.push(`> [${d.status === 'OK' ? 'PASS' : d.status}] ${d.name} -> ${d.details}`);
+      });
+      setTerminalLogs(logs);
+    } else {
+      setTerminalLogs([
+        "> [SYSTEM] 자가 진단 대기 중. 상단의 동작 테스트를 실행해 주십시오."
+      ]);
+    }
+  }, [runningDiagnostics, diagnosticsData]);
 
 
 
@@ -1139,11 +1167,17 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
           </div>
 
           {/* 4. Ais 시스템 구동 상태 진단 장부 */}
-          <div className="glass-card" style={{ padding: '24px', background: 'rgba(17, 12, 46, 0.3)', border: '1px solid rgba(255,255,255,0.06)', marginTop: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>⚡</span>
-                <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '800' }}>⚡ Ais 시스템 구동 상태 진단 장부</h3>
+          <div className="glass-card" style={{ padding: '28px', background: 'rgba(9, 6, 22, 0.45)', border: '1px solid rgba(139, 92, 246, 0.15)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', backdropFilter: 'blur(8px)', borderRadius: '16px', marginTop: '24px' }}>
+            {/* 상단 헤더 영역 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                  <span style={{ fontSize: '16px', textShadow: '0 0 8px rgba(139, 92, 246, 0.6)' }}>⚡</span>
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '800', letterSpacing: '0.5px' }}>⚡ Ais 시스템 무결성 자가 진단 장부</h3>
+                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0', textAlign: 'left' }}>실시간으로 19대 하드웨어, 인프라, 암호화 API 및 지표 연산 모듈 무결성 점검</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -1152,110 +1186,232 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 onClick={runDiagnostics}
                 style={{
                   width: 'auto',
-                  padding: '6px 14px',
+                  padding: '8px 18px',
                   fontSize: '11px',
-                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                  boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)',
                   border: 'none',
                   borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: '8px',
                   cursor: 'pointer',
-                  fontWeight: '700'
+                  fontWeight: '700',
+                  transition: 'all 0.3s ease'
                 }}
               >
-                {runningDiagnostics ? <Loader2 size={12} className="spin" /> : '⚡ 자가 동작 테스트 실행'}
+                {runningDiagnostics ? <Loader2 size={12} className="spin" /> : '⚡ 자가 진단 및 벤치마킹 실행'}
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              {/* 왼쪽 4개 요소 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {(diagnosticsData?.diagnostics || []).slice(0, 4).map((item, idx) => (
-                  <div key={idx} style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '12px', color: '#E4E4E7', fontWeight: '800' }}>{item.name}</span>
+            {/* 메인 진단 판넬 (2단 그리드: 게이지/탭 | 목록) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '28px', alignItems: 'start' }}>
+              {/* 좌측: 원형 게이지 & 탭 */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                {/* SVG 헬스 게이지 링 */}
+                {(() => {
+                  const items = diagnosticsData?.diagnostics || [];
+                  const okCount = items.filter(d => d.status === 'OK').length;
+                  const total = items.length || 18;
+                  const score = Math.round((okCount / total) * 100);
+                  const strokeColor = score === 100 ? '#10B981' : (score >= 70 ? '#FBBF24' : '#EF4444');
+                  const glowColor = score === 100 ? 'rgba(16,185,129,0.3)' : (score >= 70 ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)');
+                  const radius = 60;
+                  const strokeWidth = 8;
+                  const normalizedRadius = radius - strokeWidth * 2;
+                  const circumference = normalizedRadius * 2 * Math.PI;
+                  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+                  return (
+                    <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <svg height="130" width="130" style={{ transform: 'rotate(-90deg)' }}>
+                        <circle
+                          stroke="rgba(255, 255, 255, 0.04)"
+                          fill="transparent"
+                          strokeWidth={strokeWidth}
+                          r={normalizedRadius}
+                          cx="65"
+                          cy="65"
+                        />
+                        <circle
+                          stroke={strokeColor}
+                          fill="transparent"
+                          strokeWidth={strokeWidth}
+                          strokeDasharray={circumference + ' ' + circumference}
+                          style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.8s ease-in-out', filter: `drop-shadow(0 0 6px ${glowColor})` }}
+                          r={normalizedRadius}
+                          cx="65"
+                          cy="65"
+                        />
+                      </svg>
+                      <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '24px', fontWeight: '900', color: '#FFF', textShadow: `0 0 10px ${glowColor}` }}>
+                          {score}%
+                        </span>
+                        <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '1px', marginTop: '2px' }}>
+                          SYSTEM HEALTH
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 세로형 탭 네비게이션 */}
+                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '8px' }}>
+                  {[
+                    { id: 'algorithm', name: '핵심 알고리즘', count: 9, icon: '🧠' },
+                    { id: 'infrastructure', name: '외부 인프라 연동', count: 5, icon: '🌐' },
+                    { id: 'security', name: '보안 및 스트레스', count: 5, icon: '🛠️' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveDiagTab(tab.id)}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: activeDiagTab === tab.id ? 'rgba(139, 92, 246, 0.12)' : 'rgba(0,0,0,0.15)',
+                        border: activeDiagTab === tab.id ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(255,255,255,0.03)',
+                        color: activeDiagTab === tab.id ? '#C084FC' : '#A1A1AA',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.2s ease',
+                        boxShadow: activeDiagTab === tab.id ? '0 0 10px rgba(139, 92, 246, 0.1)' : 'none'
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{tab.icon}</span>
+                        <span>{tab.name}</span>
+                      </span>
                       <span style={{
                         fontSize: '9px',
-                        fontWeight: '900',
-                        color: item.status === 'OK' ? '#10B981' : item.status === 'WARNING' ? '#FBBF24' : '#EF4444',
-                        background: item.status === 'OK' ? 'rgba(16,185,129,0.1)' : item.status === 'WARNING' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                        padding: '2px 8px',
-                        borderRadius: '4px'
-                      }}>
-                        {item.status} ({item.percentage}%)
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: 0, textAlign: 'left', lineHeight: '1.4' }}>
-                      {item.details}
-                    </p>
-                  </div>
-                ))}
+                        background: activeDiagTab === tab.id ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        color: activeDiagTab === tab.id ? '#E9D5FF' : '#71717A'
+                      }}>{tab.count}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* 오른쪽 4개 요소 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {(diagnosticsData?.diagnostics || []).slice(4, 8).map((item, idx) => (
-                  <div key={idx} style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '12px', color: '#E4E4E7', fontWeight: '800' }}>{item.name}</span>
-                      <span style={{
-                        fontSize: '9px',
-                        fontWeight: '900',
-                        color: item.status === 'OK' ? '#10B981' : item.status === 'WARNING' ? '#FBBF24' : '#EF4444',
-                        background: item.status === 'OK' ? 'rgba(16,185,129,0.1)' : item.status === 'WARNING' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                        padding: '2px 8px',
-                        borderRadius: '4px'
-                      }}>
-                        {item.status} ({item.percentage}%)
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: 0, textAlign: 'left', lineHeight: '1.4' }}>
-                      {item.details}
-                    </p>
+              {/* 우측: 탭별 진단 목록 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '260px' }}>
+                {(() => {
+                  const items = diagnosticsData?.diagnostics || [];
+                  let filtered = [];
+                  if (activeDiagTab === 'algorithm') {
+                    filtered = items.slice(0, 9);
+                  } else if (activeDiagTab === 'infrastructure') {
+                    filtered = items.slice(9, 14);
+                  } else if (activeDiagTab === 'security') {
+                    filtered = items.slice(14, 19);
+                  }
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px dashed rgba(255,255,255,0.06)', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '11px' }}>
+                        데이터가 존재하지 않습니다. 자가 진단을 실행해주십시오.
+                      </div>
+                    );
+                  }
+
+                  return filtered.map((item, idx) => {
+                    const statusColor = item.status === 'OK' ? '#10B981' : (item.status === 'WARNING' ? '#FBBF24' : '#EF4444');
+                    const statusBg = item.status === 'OK' ? 'rgba(16,185,129,0.06)' : (item.status === 'WARNING' ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.06)');
+                    const statusBorder = item.status === 'OK' ? 'rgba(16,185,129,0.2)' : (item.status === 'WARNING' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)');
+                    const glowShadow = item.status === 'OK' ? '0 0 8px rgba(16,185,129,0.15)' : (item.status === 'WARNING' ? '0 0 8px rgba(245,158,11,0.15)' : '0 0 8px rgba(239,68,68,0.15)');
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          background: 'rgba(15, 10, 36, 0.25)',
+                          padding: '12px 16px',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255,255,255,0.02)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', flex: 1, paddingRight: '16px' }}>
+                          <span style={{ fontSize: '12px', color: '#FFF', fontWeight: '800' }}>{item.name}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.4' }}>{item.details}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: `${item.percentage}%`, height: '100%', background: statusColor }} />
+                          </div>
+                          <span style={{
+                            fontSize: '9px',
+                            fontWeight: '950',
+                            color: statusColor,
+                            background: statusBg,
+                            border: `1px solid ${statusBorder}`,
+                            boxShadow: glowShadow,
+                            padding: '2px 8px',
+                            borderRadius: '5px',
+                            letterSpacing: '0.5px'
+                          }}>
+                            {item.status} ({item.percentage}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* 실시간 진단 스트리밍 로그 콘솔 */}
+            <div style={{ marginTop: '24px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '800', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#8B5CF6', display: 'inline-block', boxShadow: '0 0 8px #8B5CF6' }} />
+                  REALTIME DIAGNOSTIC CONSOLE STREAM
+                </span>
+                <span style={{ fontSize: '9px', color: 'var(--text-dark)' }}>
+                  상태: {runningDiagnostics ? '점검 패킷 분석 중...' : '연결 대기'}
+                </span>
+              </div>
+              <div
+                style={{
+                  background: 'rgba(5, 3, 12, 0.9)',
+                  border: '1px solid rgba(139, 92, 246, 0.1)',
+                  borderRadius: '10px',
+                  padding: '14px 18px',
+                  fontFamily: 'Consolas, Monaco, monospace',
+                  fontSize: '10px',
+                  color: '#A78BFA',
+                  maxHeight: '140px',
+                  overflowY: 'auto',
+                  lineHeight: '1.6',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.8)'
+                }}
+              >
+                {terminalLogs.map((log, idx) => (
+                  <div key={idx} style={{
+                    color: log.includes('[ERROR]') || log.includes('[FAIL]') ? '#EF4444' : (log.includes('[WARNING]') ? '#FBBF24' : (log.includes('[PASS]') ? '#10B981' : '#A78BFA')),
+                    wordBreak: 'break-all'
+                  }}>
+                    {log}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
-              <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444') }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
-              <span>최근 진단 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</span>
+            {/* 하단 메타 데이터 장부 */}
+            <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
+              <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444'), textShadow: diagnosticsData ? `0 0 8px ${diagnosticsData.overallStatus === 'EXCELLENT' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` : 'none' }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
+              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/19개 완료</span>
+              <span>최근 서빙 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</span>
             </div>
-
-            {/* 에러 및 경고 상세 로그 리스트 */}
-            {((diagnosticsData?.errors && diagnosticsData.errors.length > 0) || 
-              (diagnosticsData?.warnings && diagnosticsData.warnings.length > 0)) && (
-              <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.2)', textAlign: 'left' }}>
-                <h4 style={{ fontSize: '12px', color: '#EF4444', margin: '0 0 10px 0', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  ⚠️ 검출된 시스템 무결성 에러 및 경고 세부 내역 ({ (diagnosticsData.errors || []).length + (diagnosticsData.warnings || []).length }건)
-                </h4>
-                
-                {/* 에러 목록 (빨간색) */}
-                {diagnosticsData.errors && diagnosticsData.errors.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-                    <span style={{ fontSize: '10px', color: '#EF4444', fontWeight: '700' }}>[치명적 에러]</span>
-                    {diagnosticsData.errors.map((err, idx) => (
-                      <div key={idx} style={{ fontSize: '11px', color: '#FCA5A5', background: 'rgba(239,68,68,0.1)', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace' }}>
-                        • {err}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* 경고 목록 (주황색) */}
-                {diagnosticsData.warnings && diagnosticsData.warnings.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ fontSize: '10px', color: '#FBBF24', fontWeight: '700' }}>[주의/경고]</span>
-                    {diagnosticsData.warnings.map((warn, idx) => (
-                      <div key={idx} style={{ fontSize: '11px', color: '#FDE68A', background: 'rgba(245,158,11,0.1)', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace' }}>
-                        • {warn}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
         </div>
