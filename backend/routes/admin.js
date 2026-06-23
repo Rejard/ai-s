@@ -1336,7 +1336,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   } else {
     try {
       const allMembers = await queries.all(`
-        SELECT id, faction, phenotype_json, weights_json 
+        SELECT member_id, faction, phenotype_json, weights_json 
         FROM ais_council_members
       `);
       
