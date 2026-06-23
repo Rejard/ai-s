@@ -1163,15 +1163,26 @@ async function performSystemDiagnostics(runHeavyTests) {
     traderDetails = `핵심 파일 누락: ${missingTraderFiles.join(', ')}`;
     errors.push(`매매 집행기 핵심 파일 누락: ${missingTraderFiles.join(', ')}`);
   } else {
-    if (envExists) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      const hasKey = envContent.includes('GATEIO_KEY') && !envContent.includes('GATEIO_KEY= ') && !envContent.includes('GATEIO_KEY=""');
-      const hasSecret = envContent.includes('GATEIO_SECRET') && !envContent.includes('GATEIO_SECRET= ') && !envContent.includes('GATEIO_SECRET=""');
-      if (!hasKey || !hasSecret) {
+    try {
+      const credentialCheck = await queries.get(`
+        SELECT COUNT(*) as cnt 
+        FROM manager_gateio_credentials 
+        WHERE encrypted_api_key IS NOT NULL 
+          AND encrypted_api_key != '' 
+          AND encrypted_api_secret IS NOT NULL 
+          AND encrypted_api_secret != ''
+      `);
+      if (!credentialCheck || credentialCheck.cnt === 0) {
         traderStatus = "WARNING";
-        traderDetails = "실거래 API 키 설정 필요 (비활성 또는 모의 투자 모드)";
-        warnings.push("Gate.io API 키 설정 누락");
+        traderDetails = "DB 내 암호화된 Gate.io API 키 설정 필요 (비활성 또는 모의 투자 모드)";
+        warnings.push("DB 내 Gate.io API 키 설정 누락");
+      } else {
+        traderDetails = `Gate.io 거래소 API 키 로드 완료 (총 ${credentialCheck.cnt}명의 매니저 연동 중)`;
       }
+    } catch (e) {
+      traderStatus = "WARNING";
+      traderDetails = "거래소 연동 정보 테이블 조회 실패";
+      warnings.push("DB 내 Gate.io 크레덴셜 테이블(manager_gateio_credentials) 조회 에러");
     }
   }
 
