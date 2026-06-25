@@ -8,8 +8,6 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 const RPC_URL = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-// ABI and Bytecode for MockUSDT & PlatformVault (for automatic deployment and interaction)
-
 const MockUSDT_ABI = [
   "constructor()",
   "function name() view returns (string)",
@@ -26,9 +24,7 @@ const MockUSDT_ABI = [
   "event Approval(address indexed owner, address indexed spender, uint256 value)"
 ];
 
-// MockUSDT compiled Bytecode (required for automatic deployment in ethers)
-// Minimum binary bytecode for deploying a very simple ERC20 token (simple stub for ethers.js deployment testing or mock functionality for skipped deployment)
-const MockUSDT_BYTECODE = "0x608060405234801561001057600080fd5b506103e86000540160005530600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282540192505081905550506103e8306001600033"; // In environments where actual deployment is not possible, respond with Mock mode
+const MockUSDT_BYTECODE = "0x608060405234801561001057600080fd5b506103e86000540160005530600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282540192505081905550506103e8306001600033";
 
 const PlatformVault_ABI = [
   "constructor(address _usdtTokenAddress)",
@@ -57,11 +53,6 @@ try {
   isSimulationMode = true;
 }
 
-/**
- * @dev Smart contract deployment automation function
- * Executed when there is a real RPC connection and testnet gas fee and no deployment address.
- * If connection fails or gas fee is insufficient, it automatically starts in "Simulation Mode (Virtual On-chain)".
- */
 async function autoDeployContracts() {
   if (isSimulationMode) return { usdtAddress: 'MOCK_USDT_ADDR', vaultAddress: 'MOCK_VAULT_ADDR', simulated: true };
 
@@ -71,7 +62,6 @@ async function autoDeployContracts() {
   }
 
   try {
-    // Gas fee balance check (with 3-second timeout to prevent server hang on RPC failure)
     const balance = await Promise.race([
       provider.getBalance(wallet.address),
       new Promise((_, reject) => setTimeout(() => reject(new Error("RPC Timeout")), 3000))
@@ -92,7 +82,6 @@ async function autoDeployContracts() {
       console.log(`✔ 수동 지급 관리형 아키텍처로 인해 스마트 컨트랙트 볼트 확인 절차를 생략합니다.`);
   } catch (err) {
     console.error("⚠ Error checking contracts on Mainnet:", err.message);
-    // throw err; // Commented out to prevent blocking server bootstrap
   }
 }
 
@@ -101,7 +90,6 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
   const amountInDecimals = ethers.parseUnits(amountSut.toString(), 18);
 
   if (isSimulationMode) {
-    // In simulation mode, return a virtual transaction hash and confirm normal operation
     const mockTxHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
     console.log(`[SIMULATED TX] Distributed ${amountSut} SUT. User: ${userWallet}, Ref1: ${referrer1}, Ref2: ${referrer2}, TxHash: ${mockTxHash}`);
     return {
