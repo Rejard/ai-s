@@ -11,7 +11,6 @@ async function checkGen1() {
         console.log('No 1st Gen members alive.');
     }
     
-    // Check if any Gen 1 is currently active (in the top 11)
     const activeGen1 = await queries.get("SELECT COUNT(*) as count FROM ais_council_members WHERE generation = 1 AND status = 'ACTIVE'");
     console.log('Active 1st Gen Members (Top 11):', activeGen1.count);
 

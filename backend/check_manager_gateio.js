@@ -1,6 +1,5 @@
 const { ethers } = require('ethers');
 
-// Tenderly public RPC or meowrpc usually allow large query ranges.
 const rpcUrls = [
   'https://gateway.tenderly.co/public/polygon',
   'https://polygon.meowrpc.com',
@@ -40,7 +39,6 @@ async function run() {
     try {
       console.log(`\n========================================`);
       console.log(`Trying RPC: ${rpcUrl}`);
-      // staticNetwork: true to bypass chainId detection in startup
       const provider = new ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
       const latestBlock = await provider.getBlockNumber();
       console.log(`Latest block: ${latestBlock}`);
@@ -54,7 +52,6 @@ async function run() {
       for (const manager of managers) {
         console.log(`🔍 Checking ${manager.name} (${manager.address})`);
         
-        // 1. Manager -> Gate.io
         const filterToGate = sutContract.filters.Transfer(manager.address, gateioAddress);
         const logsToGate = await tryQuery(provider, filterToGate, startBlock, latestBlock);
         if (logsToGate.length > 0) {
@@ -67,7 +64,6 @@ async function run() {
           console.log(`  No SUT transfers to Gate.io.`);
         }
 
-        // 2. Gate.io -> Manager
         const filterFromGate = sutContract.filters.Transfer(gateioAddress, manager.address);
         const logsFromGate = await tryQuery(provider, filterFromGate, startBlock, latestBlock);
         if (logsFromGate.length > 0) {

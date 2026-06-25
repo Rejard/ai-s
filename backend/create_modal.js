@@ -2,20 +2,16 @@ const fs = require('fs');
 
 const pageContent = fs.readFileSync('frontend/src/pages/EditUserPage.jsx', 'utf8');
 
-// We need to modify imports, props, and rendering.
 let modalContent = pageContent.replace(/import \{ useParams, useNavigate \} from 'react-router-dom';/, "import { useNavigate } from 'react-router-dom';\nimport { X } from 'lucide-react';");
 
 modalContent = modalContent.replace(/function EditUserPage\(\) \{/, 'function EditUserModal({ walletAddress: paramWalletAddress, managerEmail, onClose, onSuccess }) {');
 modalContent = modalContent.replace(/const \{ walletAddress: paramWalletAddress \} = useParams\(\);/, '');
 modalContent = modalContent.replace(/const navigate = useNavigate\(\);/, '');
 
-// Replace navigates
 modalContent = modalContent.replace(/navigate\('\/manager'\)/g, 'onClose()');
 
-// Replace headers using managerEmail instead of hardcoded 'lemaiiisk@gmail.com'
 modalContent = modalContent.replace(/const headers = \{ headers: \{ 'x-manager-email': 'lemaiiisk@gmail.com' \} \};/g, "const headers = { headers: { 'x-manager-email': managerEmail || 'lemaiiisk@gmail.com' } };");
 
-// We need to wrap the return statement in a modal overlay
 const returnRegex = /return \([\s\S]*?\n\s*<div style=\{\{ padding: '20px 20px 50px'/;
 modalContent = modalContent.replace(returnRegex, `return (
     <div style={{
@@ -45,18 +41,14 @@ modalContent = modalContent.replace(returnRegex, `return (
         </button>
         <div style={{ padding: '20px 20px 50px'`);
 
-// Replace the last closing div of the return
 modalContent = modalContent.replace(/<\/form>\s*<\/div>\s*\);\s*\}/, `</form>\s*</div>\s*</div>\s*</div>\s*);\s*}`);
 
-// Add success callbacks
 modalContent = modalContent.replace(/alert\('🎉 ' \+ res\.data\.message\);\s*onClose\(\);/g, "alert('🎉 ' + res.data.message);\n        if(onSuccess) onSuccess();\n        onClose();");
 modalContent = modalContent.replace(/alert\(`🎉 성공적으로 \$\{amountToSend\} SUT 온체인 실지급이 완료되었습니다!\\n거래 해시\(TxHash\): \$\{tx\.hash\}`\);\s*setPayoutAmount\(''\);/g, "alert(`🎉 성공적으로 ${amountToSend} SUT 온체인 실지급이 완료되었습니다!\\n거래 해시(TxHash): ${tx.hash}`);\n      setPayoutAmount('');\n      if(onSuccess) onSuccess();");
 
-// Fix ArrowLeft usage: Make the top header look better for modal
 modalContent = modalContent.replace(/<button\s*className="btn-secondary"\s*onClick=\{onClose\}\s*style=\{\{ width: '40px', height: '40px'.*?<\/button>/s, "");
 modalContent = modalContent.replace(/<h2 style=\{\{ fontSize: '18px', color: '#F9FAFB'/g, "<h2 style={{ fontSize: '18px', color: '#F9FAFB', marginTop: '10px'");
 
-// Change name
 modalContent = modalContent.replace(/export default EditUserPage;/, 'export default EditUserModal;');
 
 fs.writeFileSync('frontend/src/components/EditUserModal.jsx', modalContent, 'utf8');
