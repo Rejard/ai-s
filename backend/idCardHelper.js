@@ -8,9 +8,7 @@ if (!fs.existsSync(tempUploadDir)) {
   fs.mkdirSync(tempUploadDir, { recursive: true });
 }
 
-/**
- * 24시간 이상 승인(APPROVED)되지 않은 PENDING_KYC 회원의 가입 신청을 취소하고 신분증 파일을 자동 정리합니다.
- */
+
 async function cleanExpiredPendingKycUsers() {
   try {
 
