@@ -49,7 +49,7 @@ let usdtAddress = process.env.USDT_CONTRACT_ADDRESS;
 let vaultAddress = process.env.VAULT_CONTRACT_ADDRESS;
 
 try {
-  provider = new ethers.JsonRpcProvider(RPC_URL);
+  provider = new ethers.JsonRpcProvider(RPC_URL, 137, { staticNetwork: true });
   wallet = new ethers.Wallet(PRIVATE_KEY, provider);
   console.log(`📡 Ethers Connected. Operator Address: ${wallet.address}`);
 } catch (e) {

@@ -891,6 +891,93 @@
       line-height: 1.5;
       border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
+    /* 브라우저 모드 토글 */
+    .browser-mode-toggle {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      width: fit-content;
+    }
+
+    .browser-mode-btn {
+      padding: 8px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .browser-mode-btn.active {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+    }
+
+    .browser-mode-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* 삼성 모드 전용 화면 요소 */
+    .samsung-banner-mockup {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      display: none;
+    }
+
+    .samsung-banner-mockup .banner-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 3px;
+    }
+
+    .samsung-banner-mockup .banner-guide {
+      background: rgba(99, 102, 241, 0.06);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 6px;
+      font-size: 9px;
+      color: #c7d2fe;
+      line-height: 1.5;
+    }
+
+    body.samsung-mode .samsung-banner-mockup { display: block; }
+    body.samsung-mode .chrome-only { display: none !important; }
+    body:not(.samsung-mode) .samsung-only { display: none !important; }
+
+    .tw-transition-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 95;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      padding: 30px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -949,7 +1036,8 @@
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  브라우저의 캐시/쿠키 세션 충돌 문제일 수 있습니다. 크롬(Chrome) 브라우저를 사용해 보시거나, 시크릿 모드(InPrivate) 창을 열어 가입을 다시 시도해 주세요.
+                  브라우저의 캐시/쿠키 세션 충돌 문제일 수 있습니다. 크롬(Chrome) 브라우저를 사용해 보시거나, 시크릿 모드(InPrivate) 창을 열어 가입을 다시 시도해 주세요.<br><br>
+                  <strong>삼성 인터넷 브라우저</strong>를 사용 중이시라면, 구글 로그인은 삼성 인터넷에서 정상적으로 가능합니다. 로그인 완료 후 <strong>"트러스트 월렛 연결"</strong> 버튼을 누르면 자동으로 Trust Wallet 앱으로 이동되며, 로그인 상태가 유지됩니다.
                 </div>
               </div>
             </div>
@@ -961,6 +1049,21 @@
               <div class="faq-content">
                 <div class="faq-answer">
                   구글 공식 OAuth 2.0 보안 연동 프로토콜을 사용하므로, 비밀번호는 플랫폼에 절대 전송되거나 저장되지 않아 완전히 안전합니다.
+                </div>
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-trigger" onclick="toggleFaq(event, this)">
+                <span class="faq-question">💡 Q. 삼성 인터넷(Samsung Internet) 브라우저에서도 가입이 되나요?</span>
+                <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
+              </div>
+              <div class="faq-content">
+                <div class="faq-answer">
+                  네, 가능합니다! 삼성 인터넷 브라우저에서는 아래 순서로 진행해 주세요:<br>
+                  <strong>① 삼성 인터넷에서 구글 로그인</strong>을 먼저 완료합니다. (구글 로그인은 정상 작동합니다)<br>
+                  <strong>② "트러스트 월렛 연결하기" 버튼</strong>을 누르면 자동으로 Trust Wallet 앱의 DApp 브라우저로 이동됩니다.<br>
+                  <strong>③ Trust Wallet 내에서</strong> 지갑 연결 및 나머지 가입 절차가 이어집니다. 로그인 상태는 자동으로 유지됩니다.<br><br>
+                  ※ Trust Wallet 앱이 사전에 설치되어 있어야 합니다. 미설치 시 <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp" target="_blank" style="color: #8b5cf6;">Play Store에서 다운로드</a>해 주세요.
                 </div>
               </div>
             </div>
@@ -991,7 +1094,8 @@
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  모바일 기기에 트러스트 월렛(Trust Wallet) 또는 메타마스크(MetaMask) 앱이 정상적으로 설치 및 로그인되어 있는지 확인해 주세요.
+                  모바일 기기에 트러스트 월렛(Trust Wallet) 또는 메타마스크(MetaMask) 앱이 정상적으로 설치 및 로그인되어 있는지 확인해 주세요.<br><br>
+                  <strong>삼성 인터넷 브라우저</strong>를 사용 중이시라면, 구글 로그인을 먼저 완료한 후 "트러스트 월렛 연결" 버튼을 누르시면 자동으로 Trust Wallet 앱으로 전환됩니다. 삼성 인터넷에서 직접 지갑 연결이 되지 않는 것은 정상이며, Trust Wallet 앱에서 이어서 진행하시면 됩니다.
                 </div>
               </div>
             </div>
@@ -1124,6 +1228,16 @@
         우측 폰 화면에서 가상으로 폼을 클릭해 보세요
       </div>
 
+      <!-- 브라우저 모드 토글 -->
+      <div class="browser-mode-toggle">
+        <button class="browser-mode-btn active" id="btn-mode-chrome" onclick="setBrowserMode('chrome')">
+          크롬 · Trust Wallet
+        </button>
+        <button class="browser-mode-btn" id="btn-mode-samsung" onclick="setBrowserMode('samsung')">
+          <span id="toggle-label-unsupported">Safari · 삼성 인터넷</span>
+        </button>
+      </div>
+
       <div class="phone-mockup">
         
         <div class="phone-notch">
@@ -1151,7 +1265,16 @@
               </div>
             </div>
 
-            <div class="glass-card glow-active" style="display: flex; flex-direction: column; gap: 14px; margin-top: 40px; text-align: center;">
+            <!-- 삼성 모드 경고 배너 -->
+            <div class="samsung-banner-mockup">
+              <div class="banner-title" id="mockup-banner-title">⚠️ 브라우저 지갑 연동 안내</div>
+              <div id="mockup-banner-desc">이 브라우저는 블록체인 지갑 연동을 지원하지 않습니다.</div>
+              <div class="banner-guide">
+                <strong style="color: #a78bfa;">이용 방법:</strong> 이 브라우저에서 Google 로그인을 먼저 완료해 주세요. 이후 "트러스트 월렛 연결" 버튼을 누르면 <strong>자동으로 Trust Wallet 앱으로 이동</strong>되며, 로그인 상태가 유지됩니다.
+              </div>
+            </div>
+
+            <div class="glass-card glow-active" style="display: flex; flex-direction: column; gap: 14px; margin-top: 20px; text-align: center;">
               <h4 style="font-size: 13px; color: white; font-weight: 700;">플랫폼 시작하기</h4>
               <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">본 서비스는 자금세탁방지(AML) 규정에 따라 구글 본인 인증이 필수적입니다.</p>
               
@@ -1213,6 +1336,52 @@
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
               <span>지갑 연결 시뮬레이션 버튼을 클릭하세요!</span>
             </div>
+          </div>
+
+          <!-- ==================== 가상 STEP 2 VIEW (삼성 전용) ==================== -->
+          <div class="slide-view samsung-only" id="view-step2-samsung">
+            <div style="text-align: center; margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+              <div class="logo-icon" style="width: 44px; height: 44px; font-size: 20px; border-radius: 12px;">S</div>
+              <div>
+                <h3 style="font-size: 16px; color: white; font-family: 'Outfit';">AI-S INVESTMENT SYSTEM</h3>
+                <p id="samsung-step2-subtitle" style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">Samsung Internet · 지갑 연동 단계</p>
+              </div>
+            </div>
+
+            <!-- Google 로그인 완료 배지 -->
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); padding: 10px 14px; border-radius: 10px; font-size: 11px; color: #10b981; display: flex; align-items: center; gap: 6px; margin-top: 20px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
+              🌟 Google 계정 연동됨: <span id="samsung-step2-email" style="font-weight: 600;">support@example.com</span>
+            </div>
+
+            <div class="glass-card glow-active" style="display: flex; flex-direction: column; gap: 14px; margin-top: 15px; text-align: center;">
+              <div style="font-size: 12px; color: #a78bfa; font-weight: 600;">📲 2단계: 폴리곤 지갑 연결</div>
+              <p style="font-size: 10px; color: var(--text-muted); line-height: 1.5;">삼성 인터넷에서는 지갑 직접 연결이 불가합니다.<br>Trust Wallet 앱으로 자동 전환하여 연결합니다.</p>
+
+              <button class="btn-primary" style="height: 46px;" onclick="simulateSamsungToTrustWallet()">
+                <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
+                트러스트 월렛 연결하기
+              </button>
+            </div>
+
+            <div style="margin-top: auto; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 8px; padding: 10px; font-size: 9px; color: var(--text-muted); line-height: 1.5;">
+              ⚠️ 버튼을 누르면 Trust Wallet 앱이 열립니다. 앱이 설치되어 있지 않으면 <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp" target="_blank" style="color: #8b5cf6;">Play Store</a>에서 먼저 설치해 주세요.
+            </div>
+
+            <div class="tutorial-tooltip" id="tooltip-step2-samsung" style="top: 280px; left: 30px;">
+              <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
+              <span>Trust Wallet 연결 버튼을 클릭하세요!</span>
+            </div>
+          </div>
+
+          <!-- Trust Wallet 전환 오버레이 애니메이션 -->
+          <div class="tw-transition-overlay" id="tw-transition-overlay">
+            <div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 800; box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);">
+              T
+            </div>
+            <div style="font-size: 14px; color: white; font-weight: 600;">Trust Wallet 앱으로 전환 중...</div>
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">로그인 상태를 유지하며 이동합니다</div>
+            <div style="width: 30px; height: 30px; border: 3px solid rgba(59, 130, 246, 0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
           </div>
 
           <!-- ==================== 가상 STEP 3 VIEW ==================== -->
@@ -1572,6 +1741,16 @@
       if (container) {
         container.addEventListener('scroll', handleStep4Scroll);
       }
+
+      // UA 기반 삼성 인터넷 / iOS Safari 자동 감지
+      const ua = navigator.userAgent || '';
+      const isSamsungBrowser = /SamsungBrowser/i.test(ua);
+      const isIOSSafari = /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS|DuckDuckGo/i.test(ua) && !/(Chrome|Chromium)/i.test(ua);
+      if (isSamsungBrowser) {
+        setBrowserMode('samsung', '삼성 인터넷');
+      } else if (isIOSSafari) {
+        setBrowserMode('samsung', 'Safari');
+      }
     });
 
     // 시뮬레이터 가상 상태 머신 데이터
@@ -1587,34 +1766,127 @@
     let selectedName = "홍길동";
     let selectedEmail = "support@example.com";
 
+    // 브라우저 모드 ('chrome' | 'samsung')
+    let browserMode = 'chrome';
+    let unsupportedBrowserName = '';
+
+    // UA 기반 브라우저명 판별
+    function detectBrowserName() {
+      const ua = navigator.userAgent || '';
+      if (/SamsungBrowser/i.test(ua)) return '삼성 인터넷';
+      if (/iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS|DuckDuckGo/i.test(ua) && !/(Chrome|Chromium)/i.test(ua)) return 'Safari';
+      return 'Safari · 삼성 인터넷';
+    }
+
+    function setBrowserMode(mode, browserName) {
+      browserMode = mode;
+
+      if (mode === 'samsung') {
+        unsupportedBrowserName = browserName || detectBrowserName();
+      }
+
+      document.getElementById('btn-mode-chrome').classList.toggle('active', mode === 'chrome');
+      document.getElementById('btn-mode-samsung').classList.toggle('active', mode === 'samsung');
+      document.body.classList.toggle('samsung-mode', mode === 'samsung');
+
+      // 토글 라벨 갱신
+      const toggleLabel = document.getElementById('toggle-label-unsupported');
+      if (toggleLabel && unsupportedBrowserName && unsupportedBrowserName !== 'Safari · 삼성 인터넷') {
+        toggleLabel.textContent = unsupportedBrowserName;
+      }
+
+      // 배너 텍스트 갱신
+      if (mode === 'samsung') {
+        const name = unsupportedBrowserName || '이';
+        const bannerTitle = document.getElementById('mockup-banner-title');
+        const bannerDesc = document.getElementById('mockup-banner-desc');
+        const step2Sub = document.getElementById('samsung-step2-subtitle');
+        if (bannerTitle) bannerTitle.textContent = '⚠️ ' + name + ' 브라우저 지갑 연동 안내';
+        if (bannerDesc) bannerDesc.textContent = name + ' 브라우저는 블록체인 지갑 연동을 지원하지 않습니다.';
+        if (step2Sub) step2Sub.textContent = name + ' · 지갑 연동 단계';
+      }
+
+      updateTimelineDescriptions();
+      resetTutorial();
+    }
+
+    function updateTimelineDescriptions() {
+      const step1Desc = document.querySelector('#node-step1 .step-desc');
+      const step2Title = document.querySelector('#node-step2 .step-title');
+      const step2Desc = document.querySelector('#node-step2 .step-desc');
+      const name = unsupportedBrowserName || '이';
+
+      if (browserMode === 'samsung') {
+        if (step1Desc) step1Desc.innerHTML = name + ' 브라우저에서 구글 계정으로 로그인합니다. ' + name + '에서도 구글 OAuth 로그인은 정상 작동하므로, 이 단계는 동일합니다.';
+        if (step2Title) step2Title.innerHTML = '<i data-lucide="smartphone" style="width: 18px; height: 18px;"></i>Trust Wallet 앱으로 전환';
+        if (step2Desc) step2Desc.innerHTML = name + '은(는) 블록체인 지갑을 지원하지 않으므로, Google 로그인 완료 후 <strong>"트러스트 월렛 연결하기"</strong> 버튼을 눌러 Trust Wallet 앱으로 자동 전환합니다. 로그인 상태는 자동으로 유지됩니다.';
+      } else {
+        if (step1Desc) step1Desc.innerHTML = 'AI-S 플랫폼 가입의 첫 단계는 구글 계정 연동입니다. 구글 인증을 통하여 이메일 및 실명 정보를 안전하게 연동 및 검증합니다.';
+        if (step2Title) step2Title.innerHTML = '<i data-lucide="wallet" style="width: 18px; height: 18px;"></i>지갑 주소 로그인';
+        if (step2Desc) step2Desc.innerHTML = '본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet이나 Metamask 등의 브라우저를 사용하여 안전하게 주소를 연결합니다.';
+      }
+      lucide.createIcons();
+    }
+
+    // 삼성 모드: Trust Wallet 전환 시뮬레이션
+    function simulateSamsungToTrustWallet() {
+      const overlay = document.getElementById('tw-transition-overlay');
+      overlay.style.display = 'flex';
+
+      // 툴팁 숨기기
+      const tooltip = document.getElementById('tooltip-step2-samsung');
+      if (tooltip) tooltip.style.display = 'none';
+
+      // 1.5초 후 트러스트월렛 전환 완료 → Step 3으로 이동
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        // 삼성 모드에서 TW로 전환 완료 — 이제 지갑 연결된 상태로 처리
+        userWalletConnected = true;
+        switchMockupStep(3);
+      }, 1500);
+    }
+
     // 목업의 뷰 전환 기능
     function switchMockupStep(stepNum) {
-      // 1. 왼쪽의 설명 타임라인 노드 활성화 클래스 조절
       document.querySelectorAll('.step-node').forEach(node => {
         node.classList.remove('active');
       });
       const targetNode = document.getElementById(`node-step${stepNum}`);
       if (targetNode) targetNode.classList.add('active');
 
-      // 2. 폰 내부의 뷰 슬라이드 전환
       document.querySelectorAll('.slide-view').forEach(view => {
         view.classList.remove('active');
       });
-      const targetView = document.getElementById(`view-step${stepNum}`);
-      if (targetView) targetView.classList.add('active');
 
-      // 3. 툴팁 표시 및 숨김 처리
+      // 삼성 모드에서 Step 2는 전용 뷰를 표시
+      if (browserMode === 'samsung' && stepNum === 2) {
+        const samsungView = document.getElementById('view-step2-samsung');
+        if (samsungView) samsungView.classList.add('active');
+        // 이메일 동기화
+        const emailEl = document.getElementById('samsung-step2-email');
+        if (emailEl) emailEl.textContent = selectedEmail;
+      } else {
+        const targetView = document.getElementById(`view-step${stepNum}`);
+        if (targetView) targetView.classList.add('active');
+      }
+
+      // 툴팁 표시 및 숨김 처리
       document.querySelectorAll('.tutorial-tooltip').forEach(tooltip => {
         tooltip.style.display = 'none';
       });
-      const activeTooltip = document.getElementById(`tooltip-step${stepNum}`);
-      if (activeTooltip) activeTooltip.style.display = 'flex';
+
+      // 삼성 모드 Step 2일 때 전용 툴팁 표시
+      if (browserMode === 'samsung' && stepNum === 2) {
+        const sTooltip = document.getElementById('tooltip-step2-samsung');
+        if (sTooltip) sTooltip.style.display = 'flex';
+      } else {
+        const activeTooltip = document.getElementById(`tooltip-step${stepNum}`);
+        if (activeTooltip) activeTooltip.style.display = 'flex';
+      }
       
-      // 모바일 스크롤 초기화
       const screen = document.querySelector('.phone-screen');
       if (screen) screen.scrollTop = 0;
 
-      // 4단계 스크롤 컨테이너 스크롤 초기화 및 인디케이터 갱신
       const step4Container = document.getElementById('step4-scroll-container');
       if (step4Container) step4Container.scrollTop = 0;
       handleStep4Scroll();
@@ -1695,21 +1967,30 @@
       selectedEmail = email;
       googleAuthCompleted = true;
 
-      // 4단계 폼에 미리 연동 정보 뿌리기
       document.getElementById('mock-email').innerText = email;
       document.getElementById('mock-name').value = name;
 
-      // 툴팁 텍스트 갱신
       const tooltip = document.getElementById('tooltip-step1');
-      if (tooltip) {
-        tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! 지갑 연결 단계로 이동합니다.</span>';
-        lucide.createIcons();
-      }
 
-      // 0.8초 뒤에 자동으로 Step 2 화면으로 전환
-      setTimeout(() => {
-        switchMockupStep(2);
-      }, 800);
+      if (browserMode === 'samsung') {
+        // 삼성 모드: Step 2 삼성 전용 뷰로 이동
+        if (tooltip) {
+          tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! Trust Wallet 연결 단계로 이동합니다.</span>';
+          lucide.createIcons();
+        }
+        setTimeout(() => {
+          switchMockupStep(2);
+        }, 800);
+      } else {
+        // 크롬 모드: 기존 Step 2 지갑 연결 뷰로 이동
+        if (tooltip) {
+          tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! 지갑 연결 단계로 이동합니다.</span>';
+          lucide.createIcons();
+        }
+        setTimeout(() => {
+          switchMockupStep(2);
+        }, 800);
+      }
     }
 
     // 2단계 지갑 연결 모의 작동
@@ -1924,6 +2205,14 @@
       const tooltip2 = document.getElementById('tooltip-step2');
       if (tooltip2) {
         tooltip2.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>지갑 연결 시뮬레이션 버튼을 클릭하세요!</span>';
+      }
+
+      // 삼성 모드 전용 요소 초기화
+      const twOverlay = document.getElementById('tw-transition-overlay');
+      if (twOverlay) twOverlay.style.display = 'none';
+      const tooltipS2 = document.getElementById('tooltip-step2-samsung');
+      if (tooltipS2) {
+        tooltipS2.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>Trust Wallet 연결 버튼을 클릭하세요!</span>';
       }
 
       // STEP 2 인풋 초기화

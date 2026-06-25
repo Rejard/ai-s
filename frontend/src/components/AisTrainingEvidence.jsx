@@ -499,6 +499,7 @@ export default function AisTrainingEvidence({
         </div>
       )}
 
+
       {['BUY', 'SELL', 'HOLD'].map((decision) => {
         const item = decisions[decision] || { count: 0, accuracy: 0 };
         const decisionLabel = decision === 'BUY' ? '매수 (BUY)' : decision === 'SELL' ? '매도 (SELL)' : '관망 (HOLD)';

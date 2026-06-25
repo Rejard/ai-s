@@ -23,6 +23,8 @@ import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } 
 import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
 import { clearAuthSession, getAuthToken, saveAuthSession } from './lib/authSession';
+import { detectUnsupportedBrowser } from './lib/browserCompat';
+import UnsupportedBrowserBanner from './components/UnsupportedBrowserBanner';
 
 export const API_BASE = import.meta.env.VITE_API_BASE || 'https://ais.alonics.com/api';
 
@@ -93,6 +95,11 @@ function AppContent() {
   const location = useLocation();
   const isManagerRoute = location.pathname.startsWith('/manager');
   const isPcView = !isMobileDevice && screenWidth > 768;
+
+  const unsupportedBrowser = React.useMemo(
+    () => detectUnsupportedBrowser(navigator.userAgent, window.ethereum),
+    []
+  );
 
   const buildGoogleOAuthRedirectUrl = () => {
     const params = new URLSearchParams({
@@ -438,7 +445,13 @@ function AppContent() {
   const renderIntro = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '0 20px', margin: 'auto 0' }}>
-        <div className="glass-card glow-active" style={{ textAlign: 'center', padding: '35px 20px' }}>
+        {!unsupportedBrowser.supported && (
+            <UnsupportedBrowserBanner
+              browserName={unsupportedBrowser.browserName}
+              reason={unsupportedBrowser.reason}
+            />
+          )}
+          <div className="glass-card glow-active" style={{ textAlign: 'center', padding: '35px 20px' }}>
           <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(139,92,246,0.1)', marginBottom: '16px' }}>
             <Shield size={44} color="#8B5CF6" />
           </div>
@@ -569,6 +582,12 @@ function AppContent() {
         </div>
 
         <div style={{ width: '420px', flexShrink: 0 }}>
+          {!unsupportedBrowser.supported && (
+            <UnsupportedBrowserBanner
+              browserName={unsupportedBrowser.browserName}
+              reason={unsupportedBrowser.reason}
+            />
+          )}
           <div className="glass-card glow-active" style={{ padding: '40px 30px', textAlign: 'center' }}>
             <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(139,92,246,0.08)', marginBottom: '20px' }}>
               <Wallet size={48} color="#8B5CF6" />
