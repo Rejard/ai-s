@@ -752,7 +752,7 @@ async function syncGateIoTradesToDb(managerEmail, apiKey, apiSecret) {
 
 async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
   try {
-    // 1. 입금 내역 동기화
+
     const depositsRes = await getGateIoDeposits(apiKey, apiSecret);
     if (depositsRes.success && Array.isArray(depositsRes.data)) {
       for (const d of depositsRes.data) {
@@ -775,7 +775,7 @@ async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
       }
     }
 
-    // 2. 출금 내역 동기화
+
     const withdrawalsRes = await getGateIoWithdrawals(apiKey, apiSecret);
     if (withdrawalsRes.success && Array.isArray(withdrawalsRes.data)) {
       for (const w of withdrawalsRes.data) {
@@ -816,11 +816,11 @@ router.get('/gateio-performance', async (req, res) => {
 
     const managerEmail = req.managerEmail;
 
-    // 1. 거래소 실시간 체결 및 입출금 기록을 DB로 동기화
+
     await syncGateIoTradesToDb(managerEmail, apiKey, apiSecret);
     await syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret);
 
-    // 2. 잔고 조회 (SUT 및 USDT 현금 모두 조회)
+
     const balanceRes = await getGateIoBalances(apiKey, apiSecret);
     if (!balanceRes.success) {
       return res.json({ success: false, error: balanceRes.message || '잔고 조회 실패' });
@@ -828,14 +828,14 @@ router.get('/gateio-performance', async (req, res) => {
     const sutBalance = balanceRes.balances.SUT || 0;
     const usdtBalance = balanceRes.balances.USDT || 0;
 
-    // 3. 로컬 DB에서 거래 기록 전체 조회 (최신순)
+
     const dbTrades = await queries.all(`
       SELECT * FROM manager_gateio_trades
       WHERE LOWER(manager_email) = LOWER(?)
       ORDER BY CAST(create_time AS REAL) DESC
     `, [managerEmail]);
 
-    // 4. 기존 Gate.io API 데이터 포맷과 100% 호환되도록 가공 (UI 수정 방지)
+    // Shape DB rows to match Gate.io API response format so the UI needs no changes
     const trades = (dbTrades || []).map(t => ({
       id: t.trade_id,
       order_id: t.order_id,
@@ -874,9 +874,9 @@ router.get('/gateio-performance', async (req, res) => {
       sutPriceHistory24h = new Array(48).fill(sutPrice);
     }
 
-    // 📊 [MWR: 금액가중수익률 및 실계좌 자산 연산]
+
     
-    // DB에서 모든 입출금 내역 조회
+
     const transfers = await queries.all(`
       SELECT * FROM manager_gateio_transfers
       WHERE LOWER(manager_email) = LOWER(?)
@@ -893,8 +893,7 @@ router.get('/gateio-performance', async (req, res) => {
       } else if (tr.currency === 'SUT') {
         val = amt * sutPrice; // SUT 입출금 가치는 실시간 시가 기준 반영
       } else {
-        // [FIX] 기타 코인(POL 등)은 강제로 1:1 가치로 계산하지 않고 0으로 처리. 
-        // 이후 트레이딩 내역 기반의 폴백 로직을 통해 실제 SUT 매수 비용으로 원금이 역산되도록 유도함.
+        // [FIX] Non-SUT/USDT coins (e.g. POL) valued at 0; fallback below derives cost basis from trade history
         val = 0;
       }
 
@@ -905,13 +904,13 @@ router.get('/gateio-performance', async (req, res) => {
       }
     });
 
-    // 순 투자 원금 (Net Invested)
+
     let netInvested = totalDepositUsdt - totalWithdrawUsdt;
 
-    // 현재 계좌의 총 자산 가치 (SUT 평가액 + USDT 현금 잔고)
+
     const currentValue = (sutBalance * sutPrice) + usdtBalance;
 
-    // 만약 입출금 내역이 없거나 원금이 0 이하로 잡힐 경우의 폴백 처리
+    // Fallback: when no transfer history exists or net invested <= 0, derive cost basis from trade history
     if (netInvested <= 0) {
       let holdingQty = 0;
       let avgPrice = 0;
@@ -938,9 +937,9 @@ router.get('/gateio-performance', async (req, res) => {
       netInvested = totalCost > 0 ? totalCost : 100;
     }
 
-    const totalBuyUsdt = netInvested; // 하위 호환성 유지
+    const totalBuyUsdt = netInvested; // backward-compat alias
 
-    // 수익률 계산 (MWR)
+
     let yieldPercent = 0;
     const isDustBalance = sutBalance < 1.0 && usdtBalance < 1.0;
 
@@ -1110,7 +1109,7 @@ router.post('/sync-transactions', async (req, res) => {
     const vaultAddress = process.env.VAULT_CONTRACT_ADDRESS || '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
     const managerAddress = req.managerWallet;
 
-    // 1. 가입 승인된 모든 회원의 지갑 주소 조회
+
     const approvedUsers = await queries.all(
       "SELECT LOWER(wallet_address) as wallet FROM users WHERE status = 'APPROVED' AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
       [managerAddress]
@@ -1141,7 +1140,7 @@ router.post('/sync-transactions', async (req, res) => {
     if (syncStatusRow && syncStatusRow.last_synced_block) {
       startBlock = syncStatusRow.last_synced_block + 1;
     } else {
-      // 최초 동기화 시 최근 80,000 블록(약 2일 치) 스캔
+      // Initial sync: scan last 80,000 blocks (~2 days on Polygon)
       startBlock = latestBlock - 80000;
     }
 
@@ -1164,7 +1163,7 @@ router.post('/sync-transactions', async (req, res) => {
 
     const promises = [];
 
-    // 1) 수신(입금) 추적: to 가 매니저 지갑인 이벤트들 (병렬 처리용 Promise 생성)
+    // Incoming transfers: Transfer events where to == manager wallet (batched for parallel RPC)
     for (const addr of targetAddresses) {
       const filter = sutContract.filters.Transfer(null, addr);
       for (let currentStart = startBlock; currentStart <= latestBlock; currentStart += step) {
@@ -1180,7 +1179,7 @@ router.post('/sync-transactions', async (req, res) => {
       }
     }
 
-    // 2) 송신(출금/정산) 추적: from 이 매니저 지갑인 이벤트들 (병렬 처리용 Promise 생성)
+    // Outgoing transfers: Transfer events where from == manager wallet (batched for parallel RPC)
     for (const addr of targetAddresses) {
       const filter = sutContract.filters.Transfer(addr, null);
       for (let currentStart = startBlock; currentStart <= latestBlock; currentStart += step) {
@@ -1196,7 +1195,7 @@ router.post('/sync-transactions', async (req, res) => {
       }
     }
 
-    // 모든 RPC 쿼리를 병렬로 실행하여 응답 속도 비약적으로 개선 (504 Gateway Timeout 근본 방지)
+    // Parallel RPC execution to prevent 504 Gateway Timeout on large block ranges
     const results = await Promise.all(promises);
     let allTransfers = [];
     for (const batch of results) {
@@ -1238,13 +1237,13 @@ router.post('/sync-transactions', async (req, res) => {
             [txHash]
           );
           if (!existing) {
-            // 1) WITHDRAW_REQUEST (SUCCESS) 등록
+
             await queries.run(`
               INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
               VALUES (?, ?, 'WITHDRAW_REQUEST', 'SUCCESS', ?)
             `, [toAddr, amount, txHash]);
 
-            // 2) DEPOSIT 음수액 등록 (실보유량 차감용)
+            // Insert negative DEPOSIT to offset the user's ledger balance for this withdrawal
             await queries.run(`
               INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
               VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
