@@ -704,6 +704,55 @@ async function getAisTrainingStats(store) {
     };
   }
 
+
+  const modeRows = await store.all(`
+    SELECT engine_mode,
+      COUNT(*) as total,
+      SUM(CASE WHEN is_correct_decision = 1 THEN 1 ELSE 0 END) as correct
+    FROM ais_training_data
+    WHERE evaluation_status = 'LABELED' AND label_version = ?
+    GROUP BY engine_mode
+  `, [LABEL_VERSION]);
+
+  const byMode = {};
+  for (const row of modeRows) {
+    byMode[row.engine_mode] = {
+      total: row.total,
+      correct: row.correct,
+      accuracy: row.total > 0 ? parseFloat(((row.correct / row.total) * 100).toFixed(2)) : 0
+    };
+  }
+
+  const modeDecisionRows = await store.all(`
+    SELECT engine_mode, gemini_decision,
+      COUNT(*) as total,
+      SUM(CASE WHEN is_correct_decision = 1 THEN 1 ELSE 0 END) as correct
+    FROM ais_training_data
+    WHERE evaluation_status = 'LABELED' AND label_version = ?
+    GROUP BY engine_mode, gemini_decision
+  `, [LABEL_VERSION]);
+
+  const byModeDecision = {};
+  for (const row of modeDecisionRows) {
+    if (!byModeDecision[row.engine_mode]) byModeDecision[row.engine_mode] = {};
+    byModeDecision[row.engine_mode][row.gemini_decision] = {
+      total: row.total,
+      correct: row.correct,
+      accuracy: row.total > 0 ? parseFloat(((row.correct / row.total) * 100).toFixed(2)) : 0
+    };
+  }
+
+  const modeLatestRows = await store.all(`
+    SELECT engine_mode, MAX(timestamp) as latest_at
+    FROM ais_training_data
+    WHERE engine_mode IS NOT NULL
+    GROUP BY engine_mode
+  `);
+  const byModeLastUpdated = {};
+  for (const row of modeLatestRows) {
+    byModeLastUpdated[row.engine_mode] = row.latest_at;
+  }
+
   let latestRun = null;
   if (latest) {
     let promotionReasons = [];
@@ -922,9 +971,12 @@ async function getAisTrainingStats(store) {
     pending: Number(totals?.pending || 0),
     invalid: Number(totals?.invalid || 0),
     byDecision,
+    byMode,
+    byModeDecision,
+    byModeLastUpdated,
     latestRun,
     labelVersion: LABEL_VERSION,
-    shadowOnly: true,
+    shadowOnly: false,
     automaticPromotionEnabled,
     selectionTelemetry,
     dnaOperations,

@@ -26,12 +26,12 @@ export function useAdminLogic(managerEmail) {
   const [aidlCopyNumberMutationRate, setAidlCopyNumberMutationRate] = useState('0.06');
   const [aidlWeightNudgeSize, setAidlWeightNudgeSize] = useState('0.02');
 
-  // 새로 추가된 상태
+
   const [vaultSutBalance, setVaultSutBalance] = useState(0);
   const [stats, setStats] = useState(null);
   const [aiLogs, setAiLogs] = useState([]);
   
-  // AiS Shadow 및 엔진 스위칭 관련 추가 상태
+
   const [globalAiEngine, setGlobalAiEngine] = useState('GEMINI_ONLY');
   const [trainingDataCount, setTrainingDataCount] = useState(0);
   const [aisLastTrainedAt, setAisLastTrainedAt] = useState('');
@@ -43,11 +43,11 @@ export function useAdminLogic(managerEmail) {
   const [submittingAidlGeneState, setSubmittingAidlGeneState] = useState('');
   const [submittingAidlGeneContext, setSubmittingAidlGeneContext] = useState('');
 
-  // AI 의회 관련 추가 상태
+
   const [councilStats, setCouncilStats] = useState(null);
   const [loadingCouncilStats, setLoadingCouncilStats] = useState(true);
 
-  // 시스템 자가진단 관련 추가 상태
+
   const [diagnosticsData, setDiagnosticsData] = useState(null);
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
   const [runningDiagnostics, setRunningDiagnostics] = useState(false);
@@ -378,7 +378,7 @@ export function useAdminLogic(managerEmail) {
       fetchTrainingStats();
       fetchCouncilStats();
       fetchDiagnostics();
-    }, 60000); // 60초 주기로 변경 (기존 5초)
+    }, 60000);
     return () => clearInterval(interval);
   }, [managerEmail]);
 

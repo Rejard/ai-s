@@ -35,7 +35,7 @@ export function translateError(error) {
     const status = error.response.status;
     const serverMessage = error.response.data?.message;
 
-    // 서버에서 한글 검증 오류(비즈니스 밸리데이션)를 반환한 경우 (예: "이미 가입 승인된 회원입니다.")
+    // Passthrough: server returns localized validation messages directly to UI
     if (
       serverMessage &&
       typeof serverMessage === 'string' &&

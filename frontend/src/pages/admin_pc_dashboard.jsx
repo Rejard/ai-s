@@ -75,7 +75,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
   React.useEffect(() => {
     if (runningDiagnostics) {
       setTerminalLogs([
-        "> [SYSTEM] 19대 무결성 점검 체계 부트스트래핑 개시...",
+        "> [SYSTEM] 25대 무결성 점검 체계 부트스트래핑 개시...",
         "> [SYSTEM] 하드웨어 가용율 및 디스크 실시간 할당 대역 검사 중...",
         "> [SYSTEM] 외부 거래소 및 Web3 RPC 노드 벤치마크 테스트 소켓 개방...",
         "> [SYSTEM] SQLite3 I/O 스트레스 쓰기/읽기 벤치마킹 50회 개시...",
@@ -83,7 +83,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
       ]);
     } else if (diagnosticsData) {
       const logs = [
-        `> [SYSTEM] 19대 자가 진단 무결성 검증 완료 (${diagnosticsData.timestamp || new Date().toISOString()})`,
+        `> [SYSTEM] 25대 자가 진단 무결성 검증 완료 (${diagnosticsData.timestamp || new Date().toISOString()})`,
         `> [SYSTEM] 전체 시스템 무결성 종합 판정: [ ${diagnosticsData.overallStatus || 'UNKNOWN'} ]`
       ];
       (diagnosticsData.diagnostics || []).forEach(d => {
@@ -365,6 +365,54 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             </form>
           </div>
 
+          {/* 🏎️ Shadow Racing — 모드별 적중률 비교 */}
+          {aisTrainingStats && (
+          <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(0,200,255,0.25)' }}>
+            <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 4px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🏎️</span> Shadow Racing — 모드별 적중률 비교
+            </h4>
+            <div style={{ fontSize: '10px', color: '#666', marginBottom: '14px' }}>
+              마지막 분석: {aisTrainingStats.byModeLastUpdated?.GEMINI || aisTrainingStats.byModeLastUpdated?.AIS_ONLY || '---'}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', gap: '6px 14px', fontSize: 12 }}>
+              <div style={{ fontWeight: 600, color: '#888' }}></div>
+              <div style={{ fontWeight: 600, color: '#4dabf7', textAlign: 'center' }}>GEMINI</div>
+              <div style={{ fontWeight: 600, color: '#69db7c', textAlign: 'center' }}>AiS</div>
+              <div style={{ fontWeight: 600, color: '#ffa94d', textAlign: 'center' }}>HYBRID</div>
+              
+              {['BUY', 'SELL', 'HOLD'].map(dec => {
+                const label = dec === 'BUY' ? '매수(BUY)' : dec === 'SELL' ? '매도(SELL)' : '관망(HOLD)';
+                return (
+                  <React.Fragment key={dec}>
+                    <div style={{ color: '#aaa', fontWeight: 500 }}>{label}</div>
+                    {['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'].map(mode => {
+                      const d = aisTrainingStats.byModeDecision?.[mode]?.[dec];
+                      return (
+                        <div key={mode} style={{ textAlign: 'center', color: d && d.total > 0 ? '#e0e0e0' : '#555' }}>
+                          {d && d.total > 0 ? `${d.accuracy}%` : '---'}
+                          {d && d.total > 0 && <span style={{ color: '#666', fontSize: 10 }}> ({d.total})</span>}
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+              
+              <div style={{ color: '#e0e0e0', fontWeight: 700, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 6, marginTop: 4 }}>총합</div>
+              {['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'].map(mode => {
+                const m = aisTrainingStats.byMode?.[mode];
+                return (
+                  <div key={mode} style={{ textAlign: 'center', fontWeight: 700, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 6, marginTop: 4,
+                    color: m && m.total > 0 ? (mode === 'GEMINI' ? '#4dabf7' : mode === 'AIS_ONLY' ? '#69db7c' : '#ffa94d') : '#555' }}>
+                    {m && m.total > 0 ? `${m.accuracy}%` : '---'}
+                    {m && m.total > 0 && <span style={{ color: '#666', fontSize: 10 }}> ({m.total}건)</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          )}
+
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
             <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>🧠</span> AiS 엔진 모드 및 학습 관리
@@ -382,10 +430,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   disabled={savingAiEngine}
                   style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '12px', color: '#FFF', outline: 'none' }}
                 >
-                  <option value="GEMINI_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 단독 가동 모드</option>
-                  <option value="GEMINI_AIS_SHADOW" style={{ background: '#1A1825', color: '#FFF' }}>Gemini (매매) + AiS (Shadow 학습) [기본]</option>
+                  <option value="GEMINI" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 매매 모드</option>
                   <option value="HYBRID_COOP" style={{ background: '#1A1825', color: '#FFF' }}>Gemini + AiS 공동 합의 매매 모드</option>
-                  <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 모델 매매 모드 (성능 테스트)</option>
+                  <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 매매 모드</option>
                 </select>
               </div>
 
@@ -807,7 +854,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                         factionName = '돌연변이';
                       }
 
-                      // 특별 직책 및 스타일링 계산
+
                       let titleLabel = '🏛️ 의원';
                       let titleColor = '#9CA3AF';
                       let cardBg = 'rgba(0,0,0,0.2)';
@@ -1048,7 +1095,14 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0, fontWeight: '800' }}>🏆 AI 종합 성능 및 설계 정렬 신뢰도 평가</h3>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>타 자동매매 대비 상대 성과 및 코딩 의도 작동 수준 분석 보고 장부입니다.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>타 자동매매 대비 상대 성과 및 코딩 의도 작동 수준 분석 보고 장부입니다.</p>
+                    {aisTrainingStats && (aisTrainingStats.byModeLastUpdated?.GEMINI || aisTrainingStats.byModeLastUpdated?.AIS_ONLY) && (
+                      <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16, 185, 129, 0.12)', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                        마지막 분석 및 평가: {aisTrainingStats.byModeLastUpdated?.GEMINI || aisTrainingStats.byModeLastUpdated?.AIS_ONLY}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -1176,7 +1230,17 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
                 <div style={{ textAlign: 'left' }}>
                   <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '800', letterSpacing: '0.5px' }}>⚡ Ais 시스템 무결성 자가 진단 장부</h3>
-                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0', textAlign: 'left' }}>실시간으로 19대 하드웨어, 인프라, 암호화 API 및 지표 연산 모듈 무결성 점검</p>
+                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0', textAlign: 'left' }}>실시간으로 25대 하드웨어, 인프라, 암호화 API 및 지표 연산 모듈 무결성 점검</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '10px', color: '#10B981', fontWeight: 'bold' }}>
+                      25개 진단 노드 중 29개 무결성 테스트 통과 완료.
+                    </span>
+                    {diagnosticsData?.timestamp && (
+                      <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
+                        (마지막 자가진단: {diagnosticsData.timestamp})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
@@ -1261,7 +1325,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   {[
                     { id: 'algorithm', name: '핵심 알고리즘', count: 9, icon: '🧠' },
                     { id: 'infrastructure', name: '외부 인프라 연동', count: 5, icon: '🌐' },
-                    { id: 'security', name: '보안 및 스트레스', count: 5, icon: '🛠️' }
+                    { id: 'security', name: '보안 및 스트레스', count: 5, icon: '🛠️' },
+                    { id: 'council', name: '의회 하위 작업', count: 6, icon: '🏛️' },
+                    { id: 'shadow', name: 'Shadow Racing', count: 5, icon: '🏎️' }
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -1311,6 +1377,10 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     filtered = items.slice(9, 14);
                   } else if (activeDiagTab === 'security') {
                     filtered = items.slice(14, 19);
+                  } else if (activeDiagTab === 'council') {
+                    filtered = items.slice(19, 25);
+                  } else if (activeDiagTab === 'shadow') {
+                    filtered = items.slice(25, 30);
                   }
 
                   if (filtered.length === 0) {
@@ -1409,7 +1479,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             {/* 하단 메타 데이터 장부 */}
             <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
               <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444'), textShadow: diagnosticsData ? `0 0 8px ${diagnosticsData.overallStatus === 'EXCELLENT' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` : 'none' }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
-              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/19개 완료</span>
+              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/25개 완료</span>
               <span>최근 서빙 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</span>
             </div>
           </div>

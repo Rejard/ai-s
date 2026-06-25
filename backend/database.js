@@ -215,6 +215,7 @@ function initializeDatabase() {
           proposed_amount REAL NOT NULL,
           proposed_lower REAL DEFAULT 0.15,
           proposed_upper REAL DEFAULT 0.30,
+          engine_mode TEXT DEFAULT 'GEMINI',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `, (err) => { if (err) return reject(err); });
@@ -312,7 +313,8 @@ function initializeDatabase() {
           is_correct_decision INTEGER DEFAULT -1,
           evaluation_due_at TEXT,
           evaluation_status TEXT DEFAULT 'PENDING',
-          label_version INTEGER DEFAULT 2
+          label_version INTEGER DEFAULT 2,
+          engine_mode TEXT NOT NULL DEFAULT 'GEMINI'
         )
       `, (err) => {
         if (err) return reject(err);
@@ -390,6 +392,24 @@ function initializeDatabase() {
         if (err && !err.message.includes("duplicate column name")) {
           console.error("??manager_ai_settings ?뚯씠釉?ai_grid_auto_range 而щ읆 留덉씠洹몃젅?댁뀡 ?ㅽ뙣:", err.message);
         }
+      });
+
+      // Shadow Racing: engine_mode column migration
+      db.run("ALTER TABLE ais_training_data ADD COLUMN engine_mode TEXT NOT NULL DEFAULT 'GEMINI'", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ ais_training_data engine_mode 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
+      db.run("ALTER TABLE manager_ai_logs ADD COLUMN engine_mode TEXT DEFAULT 'GEMINI'", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ manager_ai_logs engine_mode 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
+      // Workaround: consolidate deprecated GEMINI_ONLY/GEMINI_AIS_SHADOW modes into GEMINI
+      db.run("UPDATE platform_settings SET value = 'GEMINI' WHERE key = 'global_ai_engine' AND value IN ('GEMINI_ONLY', 'GEMINI_AIS_SHADOW')", (err) => {
+        if (err) console.error("❌ platform_settings 엔진 모드 통합 마이그레이션 실패:", err.message);
       });
 
       // users table schema migration: remove tier, trial_ends_at columns if exists

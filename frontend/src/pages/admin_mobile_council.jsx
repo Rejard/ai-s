@@ -248,7 +248,7 @@ function AdminMobileCouncil() {
                   factionName = '돌연변이';
                 }
 
-                // 특별 직책 및 스타일링 계산
+
                 let titleLabel = '🏛️ 의원';
                 let titleColor = '#9CA3AF';
                 let cardBg = 'rgba(0,0,0,0.2)';

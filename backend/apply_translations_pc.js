@@ -13,9 +13,7 @@ const warningBlockStr = `
 
 let pcContent = fs.readFileSync(pcFile, 'utf8');
 
-// The original PC has this warning block:
-// <strong style={{ color: 'var(--danger-color)' }}>거래소 API 밴 주의</strong><br />
-// 과도한 요청(하루 20회 초과)은 거래소 보안 정책 위반으로 차단될 수 있습니다. 기본 빈도를 유지해 주십시오.
+
 
 const oldWarningRegex = /<strong style=\{\{ color: 'var\(--danger-color\)' \}\}>거래소 API 밴 주의<\/strong><br \/>\s*과도한 요청\(하루 20회 초과\)은 거래소 보안 정책 위반으로 차단될 수 있습니다\. 기본 빈도를 유지해 주십시오\./;
 
