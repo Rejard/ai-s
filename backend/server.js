@@ -28,12 +28,10 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/investment', require('./routes/investment'));
 
 
-// Serve aidl presentation directly
 app.get('/aidl_dna_presentation.html', (req, res) => {
   res.sendFile(path.resolve(__dirname, '../aidl_dna_presentation.html'));
 });
 
-// All root requests except for API fallback serving to React SPA build index file
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
@@ -58,7 +56,6 @@ async function bootstrap() {
     const councilState = await repairAiCouncilState();
     console.log(`[AI COUNCIL] Pool verified: ${councilState.total}/500, active voters: ${councilState.active}/11`);
 
-    // 2. Smart contract deployment automation (includes automatic Mock mode switching based on network balance)
 
     app.listen(PORT, () => {
       console.log(`==================================================================`);
