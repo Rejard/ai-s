@@ -530,7 +530,7 @@ router.get('/ai-config', async (req, res) => {
 router.get('/ai-engine', async (req, res) => {
   try {
     const row = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
-    const engineMode = row ? row.value : 'GEMINI_ONLY';
+    const engineMode = row ? row.value : 'GEMINI';
     res.json({ success: true, engineMode });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -543,7 +543,7 @@ router.get('/ai-engine', async (req, res) => {
  */
 router.post('/save-ai-engine', async (req, res) => {
   const { engineMode } = req.body;
-  const validModes = ['GEMINI_ONLY', 'GEMINI_AIS_SHADOW', 'AIS_ONLY', 'HYBRID_COOP'];
+  const validModes = ['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'];
   if (!engineMode || !validModes.includes(engineMode)) {
     return res.status(400).json({ success: false, message: '올바르지 않은 AI 구동 모드 선택입니다.' });
   }
@@ -554,7 +554,7 @@ router.post('/save-ai-engine', async (req, res) => {
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `, [engineMode]);
 
-    if (engineMode === 'GEMINI_ONLY' || engineMode === 'GEMINI_AIS_SHADOW') {
+    if (engineMode === 'GEMINI') {
       await queries.run(`
         INSERT INTO platform_settings (key, value)
         VALUES ('automatic_promotion_enabled', 'OFF')
@@ -575,9 +575,9 @@ router.post('/save-ai-engine', async (req, res) => {
 router.post('/toggle-automatic-promotion', async (req, res) => {
   try {
     const engineRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
-    const engineMode = engineRow ? engineRow.value : 'GEMINI_ONLY';
+    const engineMode = engineRow ? engineRow.value : 'GEMINI';
     
-    if (engineMode === 'GEMINI_ONLY' || engineMode === 'GEMINI_AIS_SHADOW') {
+    if (engineMode === 'GEMINI') {
       return res.status(400).json({
         success: false,
         message: '작동 엔진이 [공동 합의] 또는 [AiS 독자 모델] 모드일 때만 자동 실전 승격을 활성화할 수 있습니다.'
@@ -899,9 +899,9 @@ function generateFallbackBriefing(factionStats, activeMembers, generationStats) 
 router.get('/council-stats', async (req, res) => {
   try {
     const factionRows = await queries.all(`
-      SELECT faction, COUNT(*) as count 
+      SELECT COALESCE(faction, 'MUTANT_ROOKIE') as faction, COUNT(*) as count 
       FROM ais_council_members 
-      GROUP BY faction
+      GROUP BY COALESCE(faction, 'MUTANT_ROOKIE')
     `);
 
     const totalRow = await queries.get("SELECT COUNT(*) as total FROM ais_council_members");
@@ -940,7 +940,7 @@ router.get('/council-stats', async (req, res) => {
       percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
     }));
 
-    // 1. 유전 다양성 계산 (Shannon/Euclidean Variance)
+
     const allMembers = await queries.all("SELECT weights_json, phenotype_json FROM ais_council_members");
     let diversityScore = 100;
     let rawStdDev = 0.15;
@@ -987,12 +987,12 @@ router.get('/council-stats', async (req, res) => {
         }
 
         rawStdDev = validDimensions > 0 ? (totalStdDev / validDimensions) : 0.15;
-        // 표준편차가 0.25 이상이면 100% 다양성, 0에 가까우면 0%로 매핑
+        // maps stddev to 0-100%: stddev >= 0.25 => 100%, near 0 => 0%
         diversityScore = Math.min(100, Math.max(0, Math.round((rawStdDev / 0.25) * 100)));
       }
     }
 
-    // 2. 학습 연산 여유 마진 계산
+
     const latestRun = await queries.get(`
       SELECT run_key, created_at, completed_at 
       FROM ais_model_runs 
@@ -1013,7 +1013,7 @@ router.get('/council-stats', async (req, res) => {
       }
     }
 
-    // 3. 진단 메시지 및 등급 판단
+
     let diversityGrade = 'GOOD';
     let recommendationText = `현재 ${totalCount}명 정원은 유전자 다양성(${diversityScore}%)과 서버 연산 마진(${computationMargin}%) 모두 최상의 밸런스를 유지하고 있습니다. 무작정 정원을 늘릴 필요가 없는 매우 이상적인 규모입니다.`;
     let diagnosticClass = 'success';
@@ -1112,13 +1112,13 @@ router.post('/force-evolution', async (req, res) => {
   }
 });
 
-// Windows 디스크 용량 감지 헬퍼 함수
+
 async function getWindowsDiskSpace() {
   const { exec } = require('child_process');
   const util = require('util');
   const execPromise = util.promisify(exec);
   try {
-    const { stdout } = await execPromise('wmic logicaldisk get caption,freeSpace,size');
+    const { stdout } = await execPromise('wmic logicaldisk get caption,freeSpace,size', { windowsHide: true });
     const lines = stdout.trim().split('\n');
     for (const line of lines) {
       if (line.includes('C:')) {
@@ -1142,7 +1142,7 @@ async function getWindowsDiskSpace() {
   return null;
 }
 
-// 1. 공통 정밀 진단 함수 정의
+
 async function performSystemDiagnostics(runHeavyTests) {
   const fs = require('fs');
   const path = require('path');
@@ -1162,13 +1162,13 @@ async function performSystemDiagnostics(runHeavyTests) {
     frontendCheck: { status: "OK", message: "정상" },
     traderCheck: { status: "OK", message: "정상" },
     councilCheck: { status: "OK", message: "정상" },
-    // 고도화 정밀 점검 필드
+
     gateioApiCheck: { status: "OK", message: "진단 대기" },
     web3Check: { status: "OK", message: "진단 대기" },
     systemResourceCheck: { status: "OK", message: "진단 대기" },
     dataPipelineCheck: { status: "OK", message: "진단 대기" },
     geminiCheck: { status: "OK", message: "진단 대기" },
-    // 오버 스트레스 및 보안 벤치마크 필드
+
     pm2Check: { status: "OK", message: "진단 대기" },
     networkBenchmarkCheck: { status: "OK", message: "진단 대기" },
     dbPerformanceCheck: { status: "OK", message: "진단 대기" },
@@ -1177,7 +1177,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     sslCertificateCheck: { status: "OK", message: "진단 대기" }
   };
 
-  // --- 1. API 관문 및 어드민 코어 ---
+
   let apiStatus = "OK";
   let apiDetails = "Express 서버 정상 및 세션 인증 통과";
   const envPath = path.join(__dirname, '..', '.env');
@@ -1188,7 +1188,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     errors.push(".env 환경설정 파일 누락");
     details.envCheck = { status: "ERROR", message: "환경설정 파일 누락됨" };
   } else {
-    // 핵심 환경변수 검사
+
     const envContent = fs.readFileSync(envPath, 'utf8');
     if (!envContent.includes('AUTH_SESSION_SECRET')) {
       apiStatus = "WARNING";
@@ -1200,7 +1200,7 @@ async function performSystemDiagnostics(runHeavyTests) {
 
   if (runHeavyTests && apiStatus !== "ERROR") {
     try {
-      await execPromise('node adminAidlPolicy.test.js', { cwd: path.join(__dirname, '..') });
+      await execPromise('node adminAidlPolicy.test.js', { cwd: path.join(__dirname, '..'), windowsHide: true });
       apiDetails = "Express API 코어 및 어드민 정책 설정 테스트 통과";
     } catch (e) {
       apiStatus = "ERROR";
@@ -1210,7 +1210,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // --- 2. AI 실거래 매매 집행기 ---
+
   let traderStatus = "OK";
   let traderDetails = "Gate.io 거래소 모니터링 정상 작동 중";
   const requiredTraderFiles = ['gridBot.js', 'gateioHelper.js', 'PlatformVaultBuild.json'];
@@ -1246,7 +1246,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // --- 3. AI 유전자 진화 엔진 ---
+
   let evolutionStatus = "OK";
   let evolutionDetails = "유전자 진화 모델 상태 정상";
   const requiredEvolFiles = ['train_ais.py', 'ais_dna.py', 'test_ais_dna.py'];
@@ -1284,7 +1284,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // 24시간 이내 학습 성공 이력 검사 (DB)
+
   try {
     const latestRun = await queries.get(`
       SELECT run_key, status, error_message, completed_at
@@ -1324,9 +1324,9 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
 
   if (runHeavyTests && evolutionStatus !== "ERROR") {
-    // py 버전 및 유닛테스트 실행
+
     try {
-      await execPromise('py --version');
+      await execPromise('py --version', { windowsHide: true });
     } catch (e) {
       evolutionStatus = "ERROR";
       evolutionDetails = "로컬 Python py 런처를 실행할 수 없습니다.";
@@ -1336,7 +1336,7 @@ async function performSystemDiagnostics(runHeavyTests) {
 
     if (evolutionStatus !== "ERROR") {
       try {
-        await execPromise('py test_ais_dna.py', { cwd: path.join(__dirname, '..') });
+        await execPromise('py test_ais_dna.py', { cwd: path.join(__dirname, '..'), windowsHide: true });
         evolutionDetails = "유전자 진화 모델 및 DNA 구조 테스트 통과 완료";
       } catch (e) {
         evolutionStatus = "ERROR";
@@ -1346,7 +1346,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // --- 4. AI 이상 변이 사전 필터 (AI-VEP) ---
+
   let vepStatus = "OK";
   let vepDetails = "이상 돌연변이 사전 위험 필터(AI-VEP) 활성화";
   const requiredVepFiles = ['zeroTrustFilter.js', 'aisEvaluation.js', 'aisEvaluation.test.js'];
@@ -1360,7 +1360,7 @@ async function performSystemDiagnostics(runHeavyTests) {
 
   if (runHeavyTests && vepStatus !== "ERROR") {
     try {
-      await execPromise('node aisEvaluation.test.js', { cwd: path.join(__dirname, '..') });
+      await execPromise('node aisEvaluation.test.js', { cwd: path.join(__dirname, '..'), windowsHide: true });
       vepDetails = "AI-VEP 이상 변이 연산 및 평가 모델 무결성 검증 완료";
     } catch (e) {
       vepStatus = "ERROR";
@@ -1369,7 +1369,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // --- 5. 보조지표 수학 가공기 ---
+
   let featuresStatus = "OK";
   let featuresDetails = "RSI 및 이평선 등 기술 지표 정규화 연산기 준비완료";
   const requiredFeatureFiles = ['ais_features.py', 'test_ais_features.py'];
@@ -1383,7 +1383,7 @@ async function performSystemDiagnostics(runHeavyTests) {
 
   if (runHeavyTests && featuresStatus !== "ERROR") {
     try {
-      await execPromise('py test_ais_features.py', { cwd: path.join(__dirname, '..') });
+      await execPromise('py test_ais_features.py', { cwd: path.join(__dirname, '..'), windowsHide: true });
       featuresDetails = "10개 핵심 보조지표 정규화 가공 유닛 테스트 통과 완료";
     } catch (e) {
       featuresStatus = "ERROR";
@@ -1392,7 +1392,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // --- 6. 의회 진단 및 건강 분석기 ---
+
   let councilStatus = "OK";
   let councilDetails = "의회 다양성 및 연산 여유 마진율 모니터링 중";
   const requiredCouncilFiles = ['councilHealthReport.js', 'councilBriefing.js', 'councilBriefingHistory.js'];
@@ -1447,7 +1447,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // --- 7. 프론트엔드 UI 대시보드 ---
+
   let frontendStatus = "OK";
   let frontendDetails = "React UI 대시보드 컴파일 및 static 리소스 서빙 준비완료";
   const frontendDistPath = path.join(__dirname, '..', '..', 'frontend', 'dist', 'index.html');
@@ -1464,7 +1464,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     details.frontendCheck = { status: "WARNING", message: "빌드 아티팩트 dist 폴더 미검출" };
   }
 
-  // --- 8. 영구 데이터베이스 ---
+
   let dbStatus = "OK";
   let dbDetails = "platform.db 파일 I/O 및 테이블 스키마 무결성 정상";
   const dbPath = path.join(__dirname, '..', 'platform.db');
@@ -1520,7 +1520,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
 
   // ==========================================
-  // --- [고도화 추가 진단 항목 #1] Gate.io API 실시간 통신 및 잔고 실사 ---
+
   let gateioApiStatus = "OK";
   let gateioApiMsg = "Gate.io 거래소 API 키 로딩 전";
   try {
@@ -1557,7 +1557,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.gateioApiCheck = { status: gateioApiStatus, message: gateioApiMsg };
 
-  // --- [고도화 추가 진단 항목 #2] Web3 RPC 노드 및 가스비 잔액 진단 ---
+
   let web3Status = "OK";
   let web3Msg = "RPC 노드 연결 상태 대기 중";
   try {
@@ -1587,7 +1587,7 @@ async function performSystemDiagnostics(runHeavyTests) {
           connectedRpc = url;
           break;
         } catch (err) {
-          // 백업 노드로 Fallback
+          // fallback to next RPC node on connection failure
         }
       }
       
@@ -1622,7 +1622,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.web3Check = { status: web3Status, message: web3Msg };
 
-  // --- [고도화 추가 진단 항목 #3] 서버 자원 및 디스크 I/O 생태계 진단 ---
+
   let systemStatus = "OK";
   let systemMsg = "서버 물리 자원 진단 대기 중";
   try {
@@ -1632,7 +1632,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     const memPct = parseFloat(((freeMem / totalMem) * 100).toFixed(1));
     const cpuCores = os.cpus().length;
     
-    // 디스크 조회
+
     let diskMsg = "";
     if (os.platform() === 'win32') {
       const diskInfo = await getWindowsDiskSpace();
@@ -1654,7 +1654,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.systemResourceCheck = { status: systemStatus, message: systemMsg };
 
-  // --- [고도화 추가 진단 항목 #4] 학습 데이터셋 유입 활성도 진단 ---
+
   let pipelineStatus = "OK";
   let pipelineMsg = "데이터 수집 파이프라인 정상 가동 중";
   try {
@@ -1684,7 +1684,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.dataPipelineCheck = { status: pipelineStatus, message: pipelineMsg };
 
-  // --- [고도화 추가 진단 항목 #5] Gemini AI API 연결성 및 레이턴시 진단 ---
+
   let geminiStatus = "OK";
   let geminiMsg = "Gemini API 연결 상태 대기 중";
   try {
@@ -1726,11 +1726,11 @@ async function performSystemDiagnostics(runHeavyTests) {
   details.geminiCheck = { status: geminiStatus, message: geminiMsg };
   // ==========================================
 
-  // --- [오버 진단 항목 #1] PM2 프로세스 헬스 진단 ---
+
   let pm2Status = "OK";
   let pm2Msg = "PM2 환경 정상 작동 중";
   try {
-    const { stdout } = await execPromise('pm2 jlist');
+    const { stdout } = await execPromise('pm2 jlist', { windowsHide: true });
     const apps = JSON.parse(stdout);
     const aisApp = apps.find(app => app.name === 'ai-s');
     if (aisApp) {
@@ -1761,7 +1761,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.pm2Check = { status: pm2Status, message: pm2Msg };
 
-  // --- [오버 진단 항목 #2] 외부 서비스 네트워크 레이턴시 벤치마크 ---
+
   let networkStatus = "OK";
   let networkMsg = "네트워크 망 상태 대기 중";
   try {
@@ -1809,7 +1809,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.networkBenchmarkCheck = { status: networkStatus, message: networkMsg };
 
-  // --- [오버 진단 항목 #3] SQLite3 DB I/O 성능 벤치마크 ---
+
   let dbPerfStatus = "OK";
   let dbPerfMsg = "데이터베이스 I/O 벤치마크 대기 중";
   try {
@@ -1844,14 +1844,14 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.dbPerformanceCheck = { status: dbPerfStatus, message: dbPerfMsg };
 
-  // --- [오버 진단 항목 #4] 유전자 다양성 HHI 집중도 지수 분석 ---
+
   let hhiStatus = "OK";
   let hhiMsg = "유전자 다양성 HHI 진단 대기 중";
   try {
     const factionCounts = await queries.all(`
-      SELECT faction, COUNT(*) as cnt 
+      SELECT COALESCE(faction, 'MUTANT_ROOKIE') as faction, COUNT(*) as cnt 
       FROM ais_council_members 
-      GROUP BY faction
+      GROUP BY COALESCE(faction, 'MUTANT_ROOKIE')
     `);
     
     const totalMembers = factionCounts.reduce((acc, cur) => acc + cur.cnt, 0);
@@ -1886,7 +1886,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.geneDiversityHhiCheck = { status: hhiStatus, message: hhiMsg };
 
-  // --- [오버 진단 항목 #6] 의회 스케줄러 동작 무결성 검증 ---
+
   let schedulerStatus = "OK";
   let schedulerMsg = "의회 스케줄러 정상 작동 중";
   try {
@@ -1900,15 +1900,30 @@ async function performSystemDiagnostics(runHeavyTests) {
       LIMIT 1
     `);
 
+    const latestTraining = await queries.get(`
+      SELECT timestamp
+      FROM ais_training_data
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+
     const lastEvolutionRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
     const lastEvoTime = lastEvolutionRow && lastEvolutionRow.value ? parseInt(lastEvolutionRow.value, 10) : 0;
 
     const now = Date.now();
-    let runDelayMinutes = 9999;
+
+    let modelRunTime = 0;
     if (latestRun) {
-      const lastRunTime = new Date(latestRun.completed_at || latestRun.created_at).getTime();
-      runDelayMinutes = Math.round((now - lastRunTime) / (1000 * 60));
+      modelRunTime = new Date(latestRun.completed_at || latestRun.created_at).getTime();
     }
+
+    let trainingTime = 0;
+    if (latestTraining && latestTraining.timestamp) {
+      trainingTime = new Date(latestTraining.timestamp).getTime();
+    }
+
+    const lastActivityTime = Math.max(modelRunTime, trainingTime);
+    const runDelayMinutes = lastActivityTime > 0 ? Math.round((now - lastActivityTime) / (1000 * 60)) : 9999;
 
     let evoDelayHours = 9999;
     if (lastEvoTime > 0) {
@@ -1916,20 +1931,20 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
 
     const schedLogs = [];
-    schedLogs.push(`최근 AI 런: ${runDelayMinutes === 9999 ? '기록 없음' : runDelayMinutes + '분 전'} (설정: ${intervalMinutes}분 주기)`);
+    schedLogs.push(`최근 스케줄러 활동: ${runDelayMinutes === 9999 ? '기록 없음' : runDelayMinutes + '분 전'} (설정: ${intervalMinutes}분 주기)`);
     schedLogs.push(`최근 진화: ${lastEvoTime === 0 ? '기록 없음' : evoDelayHours + '시간 전'}`);
 
     const runThresholdWarning = Math.max(30, intervalMinutes * 3);
-    const runThresholdError = 120; // 2시간
+    const runThresholdError = 120;
 
     if (runDelayMinutes > runThresholdError) {
       schedulerStatus = "ERROR";
       schedulerMsg = `의회 스케줄러 중단 의심: ${schedLogs.join(' / ')}`;
-      errors.push(`의회 스케줄러 기동 지연 (최근 런: ${runDelayMinutes}분 전)`);
+      errors.push(`의회 스케줄러 기동 지연 (최근 활동: ${runDelayMinutes}분 전)`);
     } else if (runDelayMinutes > runThresholdWarning) {
       schedulerStatus = "WARNING";
       schedulerMsg = `의회 스케줄러 작동 지연 주의: ${schedLogs.join(' / ')}`;
-      warnings.push(`의회 스케줄러 작동 지연 (최근 런: ${runDelayMinutes}분 전)`);
+      warnings.push(`의회 스케줄러 작동 지연 (최근 활동: ${runDelayMinutes}분 전)`);
     } else if (lastEvoTime > 0 && evoDelayHours > 26) {
       schedulerStatus = "WARNING";
       schedulerMsg = `유전자 진화 스케줄 누락 주의: ${schedLogs.join(' / ')}`;
@@ -1944,7 +1959,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.councilSchedulerCheck = { status: schedulerStatus, message: schedulerMsg };
 
-  // --- [오버 진단 항목 #5] SSL 인증서 유효기간 감지 ---
+
   let sslStatus = "OK";
   let sslMsg = "SSL 보안 진단 대기 중";
   try {
@@ -1995,7 +2010,169 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.sslCertificateCheck = { status: sslStatus, message: sslMsg };
 
-  // 종합 상태 판단
+
+  let votingStatus = "OK";
+  let votingMsg = "AI 의회 투표 정상";
+  try {
+    const engineMode = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
+    const mode = engineMode ? engineMode.value : 'GEMINI';
+    const latestVote = await queries.get("SELECT timestamp FROM ais_council_voting_history ORDER BY id DESC LIMIT 1");
+    const voteCount = await queries.get("SELECT COUNT(*) as cnt FROM ais_council_voting_history");
+    const total = voteCount ? voteCount.cnt : 0;
+
+    if (mode === 'AIS_ONLY' || mode === 'HYBRID_COOP') {
+      if (!latestVote) {
+        votingStatus = "WARNING";
+        votingMsg = `투표 모드 활성(${mode})이나 투표 기록 없음`;
+        warnings.push(`AI 의회 투표 기록 없음 (모드: ${mode})`);
+      } else {
+        const agoMin = Math.round((Date.now() - new Date(latestVote.timestamp).getTime()) / 60000);
+        if (agoMin > 120) {
+          votingStatus = "WARNING";
+          votingMsg = `투표 지연: 최근 ${agoMin}분 전 (모드: ${mode}, 총 ${total}건)`;
+          warnings.push(`AI 의회 투표 지연 (${agoMin}분 전)`);
+        } else {
+          votingMsg = `정상 투표 중: 최근 ${agoMin}분 전 (모드: ${mode}, 총 ${total}건)`;
+        }
+      }
+    } else {
+      votingMsg = `투표 비활성 (엔진: ${mode}) - 총 ${total}건 누적`;
+    }
+  } catch (e) {
+    votingStatus = "WARNING";
+    votingMsg = `투표 활성 분석 에러: ${e.message}`;
+  }
+  details.councilVotingCheck = { status: votingStatus, message: votingMsg };
+
+
+  let electionStatus = "OK";
+  let electionMsg = "총선 사이클 정상";
+  try {
+    const latestRun = await queries.get("SELECT completed_at, status FROM ais_model_runs ORDER BY id DESC LIMIT 1");
+    if (!latestRun) {
+      electionStatus = "WARNING";
+      electionMsg = "AiS 총선 기록 없음 (ais_model_runs 비어있음)";
+      warnings.push("AiS 총선 기록 없음");
+    } else {
+      const agoHrs = Math.round((Date.now() - new Date(latestRun.completed_at).getTime()) / (1000 * 60 * 60));
+      if (agoHrs > 48) {
+        electionStatus = "ERROR";
+        electionMsg = `총선 장기 미실행: ${agoHrs}시간 전 (${latestRun.status})`;
+        errors.push(`AiS 총선 48시간 초과 미실행 (${agoHrs}h)`);
+      } else if (agoHrs > 26) {
+        electionStatus = "WARNING";
+        electionMsg = `총선 지연: ${agoHrs}시간 전 (${latestRun.status}) - 24h 주기 초과`;
+        warnings.push(`AiS 총선 26시간 초과 (${agoHrs}h)`);
+      } else {
+        electionMsg = `정상: 최근 총선 ${agoHrs}시간 전 (${latestRun.status})`;
+      }
+    }
+  } catch (e) {
+    electionStatus = "WARNING";
+    electionMsg = `총선 분석 에러: ${e.message}`;
+  }
+  details.councilElectionCheck = { status: electionStatus, message: electionMsg };
+
+
+  let poolStatus = "OK";
+  let poolMsg = "500인 후보군 풀 정상";
+  try {
+    const poolCount = await queries.get("SELECT COUNT(*) as cnt FROM ais_council_members");
+    const total = poolCount ? poolCount.cnt : 0;
+    if (total < 490) {
+      poolStatus = "ERROR";
+      poolMsg = `후보군 풀 부족: ${total}/500명 (10명 이상 결원)`;
+      errors.push(`AI 의회 후보군 풀 심각 결원 (${total}/500)`);
+    } else if (total < 500) {
+      poolStatus = "WARNING";
+      poolMsg = `후보군 풀 소폭 결원: ${total}/500명`;
+      warnings.push(`AI 의회 후보군 풀 결원 (${total}/500)`);
+    } else {
+      poolMsg = `후보군 풀 정원 충족: ${total}/500명`;
+    }
+  } catch (e) {
+    poolStatus = "WARNING";
+    poolMsg = `후보군 풀 조회 에러: ${e.message}`;
+  }
+  details.councilPoolCheck = { status: poolStatus, message: poolMsg };
+
+
+  let quorumStatus = "OK";
+  let quorumMsg = "11인 의원 정족수 충족";
+  try {
+    const activeCount = await queries.get("SELECT COUNT(*) as cnt FROM ais_council_members WHERE status = 'ACTIVE'");
+    const active = activeCount ? activeCount.cnt : 0;
+    if (active < 7) {
+      quorumStatus = "ERROR";
+      quorumMsg = `의원 정족수 미달: ${active}/11명 활성 (의결 불능)`;
+      errors.push(`AI 의회 의원 정족수 심각 미달 (${active}/11)`);
+    } else if (active < 11) {
+      quorumStatus = "WARNING";
+      quorumMsg = `의원 소폭 결원: ${active}/11명 활성`;
+      warnings.push(`AI 의회 의원 결원 (${active}/11)`);
+    } else {
+      quorumMsg = `의원 정족수 충족: ${active}/11명 활성`;
+    }
+  } catch (e) {
+    quorumStatus = "WARNING";
+    quorumMsg = `의원 정족수 조회 에러: ${e.message}`;
+  }
+  details.councilQuorumCheck = { status: quorumStatus, message: quorumMsg };
+
+
+  let cycleStatus = "OK";
+  let cycleMsg = "도태·생성 사이클 정상";
+  try {
+    const archiveCount = await queries.get("SELECT COUNT(*) as cnt FROM ais_genome_archive");
+    const latestArchive = await queries.get("SELECT archived_at, archive_reason FROM ais_genome_archive ORDER BY id DESC LIMIT 1");
+    const totalArchives = archiveCount ? archiveCount.cnt : 0;
+
+    if (totalArchives === 0) {
+      cycleStatus = "WARNING";
+      cycleMsg = "도태 기록 없음 (진화 사이클 미작동 가능성)";
+      warnings.push("게놈 아카이브 0건 - 도태 사이클 미작동");
+    } else {
+      const agoHrs = latestArchive ? Math.round((Date.now() - new Date(latestArchive.archived_at).getTime()) / (1000*60*60)) : 9999;
+      if (agoHrs > 48) {
+        cycleStatus = "WARNING";
+        cycleMsg = `도태 지연: 최근 ${agoHrs}시간 전 (총 ${totalArchives}건, 사유: ${latestArchive.archive_reason})`;
+        warnings.push(`도태 사이클 48시간 초과 (${agoHrs}h)`);
+      } else {
+        cycleMsg = `정상: 최근 도태 ${agoHrs}시간 전 (총 ${totalArchives}건, 사유: ${latestArchive.archive_reason})`;
+      }
+    }
+  } catch (e) {
+    cycleStatus = "WARNING";
+    cycleMsg = `도태·생성 분석 에러: ${e.message}`;
+  }
+  details.councilCycleCheck = { status: cycleStatus, message: cycleMsg };
+
+
+  let labelStatus = "OK";
+  let labelMsg = "라벨링 큐 정상";
+  try {
+    const pending = await queries.get("SELECT COUNT(*) as cnt FROM ais_training_data WHERE evaluation_status = 'PENDING'");
+    const labeled = await queries.get("SELECT COUNT(*) as cnt FROM ais_training_data WHERE evaluation_status = 'LABELED'");
+    const invalid = await queries.get("SELECT COUNT(*) as cnt FROM ais_training_data WHERE evaluation_status = 'INVALID'");
+    const pCnt = pending ? pending.cnt : 0;
+    const lCnt = labeled ? labeled.cnt : 0;
+    const iCnt = invalid ? invalid.cnt : 0;
+    const total = pCnt + lCnt + iCnt;
+
+    if (pCnt > 50) {
+      labelStatus = "WARNING";
+      labelMsg = `라벨링 적체 주의: PENDING ${pCnt}건 (LABELED: ${lCnt}, INVALID: ${iCnt}, 총 ${total}건)`;
+      warnings.push(`학습 데이터 라벨링 적체 (PENDING: ${pCnt}건)`);
+    } else {
+      labelMsg = `정상: PENDING ${pCnt}건, LABELED ${lCnt}건, INVALID ${iCnt}건 (총 ${total}건)`;
+    }
+  } catch (e) {
+    labelStatus = "WARNING";
+    labelMsg = `라벨링 분석 에러: ${e.message}`;
+  }
+  details.labelingBacklogCheck = { status: labelStatus, message: labelMsg };
+
+
   let overallStatus = "EXCELLENT";
   if (errors.length > 0) {
     overallStatus = "ERROR";
@@ -2015,12 +2192,73 @@ async function performSystemDiagnostics(runHeavyTests) {
     dbPerfStatus === "WARNING" ||
     hhiStatus === "WARNING" ||
     schedulerStatus === "WARNING" ||
-    sslStatus === "WARNING"
+    sslStatus === "WARNING" ||
+    votingStatus === "WARNING" ||
+    electionStatus === "WARNING" ||
+    poolStatus === "WARNING" ||
+    quorumStatus === "WARNING" ||
+    cycleStatus === "WARNING" ||
+    labelStatus === "WARNING"
   ) {
     overallStatus = "WARNING";
   }
 
-  // 19대 전체 점검 리스트 구성
+
+  let srGeminiStatus = 'OK', srGeminiMsg = 'Gemini 분석 데이터 정상 유입 중';
+  let srAisStatus = 'OK', srAisMsg = 'AiS 분석 데이터 정상 유입 중';
+  let srHybridStatus = 'OK', srHybridMsg = 'Hybrid 분석 데이터 정상 유입 중';
+  let srDataStatus = 'OK', srDataMsg = '모든 모드 데이터 충분';
+  let srTrainStatus = 'OK', srTrainMsg = 'AiS 진화 학습 정상 실행 중';
+
+  try {
+    const modeChecks = ['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'];
+    for (const modeKey of modeChecks) {
+      const latest = await queries.get(
+        "SELECT timestamp FROM ais_training_data WHERE engine_mode = ? ORDER BY id DESC LIMIT 1",
+        [modeKey]
+      );
+      let st = 'OK', msg = `${modeKey} 최근 데이터 정상`;
+      if (!latest) {
+        st = 'WARNING'; msg = `${modeKey} 데이터 없음 (Shadow Racing 미시작)`;
+      } else {
+        const agoMin = Math.round((Date.now() - new Date(latest.timestamp).getTime()) / 60000);
+        if (agoMin > 360) { st = 'ERROR'; msg = `${modeKey} 최종 기록 ${agoMin}분 전 (6시간+ 중단)`; errors.push(msg); }
+        else if (agoMin > 120) { st = 'WARNING'; msg = `${modeKey} 최종 기록 ${agoMin}분 전 (2시간+ 지연)`; warnings.push(msg); }
+        else { msg = `${modeKey} 최종 기록 ${agoMin}분 전`; }
+      }
+      if (modeKey === 'GEMINI') { srGeminiStatus = st; srGeminiMsg = msg; }
+      else if (modeKey === 'AIS_ONLY') { srAisStatus = st; srAisMsg = msg; }
+      else { srHybridStatus = st; srHybridMsg = msg; }
+    }
+
+    const modeCounts = await queries.all(
+      "SELECT engine_mode, COUNT(*) as cnt FROM ais_training_data WHERE evaluation_status = 'LABELED' GROUP BY engine_mode"
+    );
+    const countMap = {};
+    for (const r of modeCounts) countMap[r.engine_mode] = r.cnt;
+    const insufficientModes = modeChecks.filter(m => (countMap[m] || 0) < 50);
+    if (insufficientModes.length >= 2) {
+      srDataStatus = 'ERROR'; srDataMsg = `${insufficientModes.join(', ')} 모드 데이터 50건 미달`; errors.push(srDataMsg);
+    } else if (insufficientModes.length === 1) {
+      srDataStatus = 'WARNING'; srDataMsg = `${insufficientModes[0]} 모드 데이터 50건 미달`; warnings.push(srDataMsg);
+    } else {
+      srDataMsg = `모든 모드 LABELED 데이터 50건+ 확보 (GEMINI: ${countMap['GEMINI']||0}, AIS: ${countMap['AIS_ONLY']||0}, HYBRID: ${countMap['HYBRID_COOP']||0})`;
+    }
+
+    const lastTrain = await queries.get("SELECT value FROM platform_settings WHERE key = 'ais_last_trained_at'");
+    if (lastTrain && lastTrain.value) {
+      const hoursAgo = (Date.now() - new Date(lastTrain.value).getTime()) / (1000 * 60 * 60);
+      if (hoursAgo > 48) { srTrainStatus = 'ERROR'; srTrainMsg = `마지막 학습 ${Math.round(hoursAgo)}시간 전 (48시간+ 중단)`; errors.push(srTrainMsg); }
+      else if (hoursAgo > 36) { srTrainStatus = 'WARNING'; srTrainMsg = `마지막 학습 ${Math.round(hoursAgo)}시간 전 (36시간+ 지연)`; warnings.push(srTrainMsg); }
+      else { srTrainMsg = `마지막 학습 ${Math.round(hoursAgo)}시간 전`; }
+    } else {
+      srTrainStatus = 'WARNING'; srTrainMsg = '학습 이력 없음'; warnings.push(srTrainMsg);
+    }
+  } catch (srErr) {
+    console.error('Shadow Racing 진단 오류:', srErr.message);
+  }
+
+
   const diagnostics = [
     { name: "API 관문 및 어드민 코어", status: apiStatus, percentage: apiStatus === "OK" ? 100 : (apiStatus === "WARNING" ? 50 : 0), details: apiDetails },
     { name: "AI 실거래 매매 집행기", status: traderStatus, percentage: traderStatus === "OK" ? 100 : (traderStatus === "WARNING" ? 50 : 0), details: traderDetails },
@@ -2032,19 +2270,34 @@ async function performSystemDiagnostics(runHeavyTests) {
     { name: "영구 데이터베이스", status: dbStatus, percentage: dbStatus === "OK" ? 100 : 0, details: dbDetails },
     { name: "의회 스케줄러 동작 무결성", status: schedulerStatus, percentage: schedulerStatus === "OK" ? 100 : (schedulerStatus === "WARNING" ? 50 : 0), details: schedulerMsg },
     
-    // 고도화 5개 항목
+
     { name: "Gate.io API 실시간 잔고", status: gateioApiStatus, percentage: gateioApiStatus === "OK" ? 100 : (gateioApiStatus === "WARNING" ? 50 : 0), details: gateioApiMsg },
     { name: "Web3 가스비 잔액 (POL)", status: web3Status, percentage: web3Status === "OK" ? 100 : (web3Status === "WARNING" ? 50 : 0), details: web3Msg },
     { name: "서버 물리 자원 & 디스크", status: systemStatus, percentage: systemStatus === "OK" ? 100 : (systemStatus === "WARNING" ? 50 : 0), details: systemMsg },
     { name: "학습 데이터 유입 속도", status: pipelineStatus, percentage: pipelineStatus === "OK" ? 100 : (pipelineStatus === "WARNING" ? 50 : 0), details: pipelineMsg },
     { name: "Gemini API 호출 속도", status: geminiStatus, percentage: geminiStatus === "OK" ? 100 : (geminiStatus === "WARNING" ? 50 : 0), details: geminiMsg },
     
-    // 오버 5개 항목
+
     { name: "PM2 프로세스 생존성", status: pm2Status, percentage: pm2Status === "OK" ? 100 : (pm2Status === "WARNING" ? 50 : 0), details: pm2Msg },
     { name: "외부 망 레이턴시 벤치마크", status: networkStatus, percentage: networkStatus === "OK" ? 100 : (networkStatus === "WARNING" ? 50 : 0), details: networkMsg },
     { name: "SQLite3 DB I/O 속도", status: dbPerfStatus, percentage: dbPerfStatus === "OK" ? 100 : (dbPerfStatus === "WARNING" ? 50 : 0), details: dbPerfMsg },
     { name: "의회 Faction 쏠림 (HHI)", status: hhiStatus, percentage: hhiStatus === "OK" ? 100 : (hhiStatus === "WARNING" ? 50 : 0), details: hhiMsg },
-    { name: "SSL 인증서 보안 검증", status: sslStatus, percentage: sslStatus === "OK" ? 100 : (sslStatus === "WARNING" ? 50 : 0), details: sslMsg }
+    { name: "SSL 인증서 보안 검증", status: sslStatus, percentage: sslStatus === "OK" ? 100 : (sslStatus === "WARNING" ? 50 : 0), details: sslMsg },
+    
+
+    { name: "AI 의회 투표 활성도", status: votingStatus, percentage: votingStatus === "OK" ? 100 : (votingStatus === "WARNING" ? 50 : 0), details: votingMsg },
+    { name: "AiS 총선 정기 실행", status: electionStatus, percentage: electionStatus === "OK" ? 100 : (electionStatus === "WARNING" ? 50 : 0), details: electionMsg },
+    { name: "500인 후보군 풀 정족수", status: poolStatus, percentage: poolStatus === "OK" ? 100 : (poolStatus === "WARNING" ? 50 : 0), details: poolMsg },
+    { name: "11인 의원 정족수", status: quorumStatus, percentage: quorumStatus === "OK" ? 100 : (quorumStatus === "WARNING" ? 50 : 0), details: quorumMsg },
+    { name: "도태·생성 사이클 건전성", status: cycleStatus, percentage: cycleStatus === "OK" ? 100 : (cycleStatus === "WARNING" ? 50 : 0), details: cycleMsg },
+    { name: "학습 데이터 라벨링 적체", status: labelStatus, percentage: labelStatus === "OK" ? 100 : (labelStatus === "WARNING" ? 50 : 0), details: labelMsg },
+
+
+    { name: "Gemini 매매 분석 정상 가동", status: srGeminiStatus, percentage: srGeminiStatus === "OK" ? 100 : (srGeminiStatus === "WARNING" ? 50 : 0), details: srGeminiMsg },
+    { name: "AiS 의회 매매 분석 정상 가동", status: srAisStatus, percentage: srAisStatus === "OK" ? 100 : (srAisStatus === "WARNING" ? 50 : 0), details: srAisMsg },
+    { name: "Hybrid 합의 분석 정상 가동", status: srHybridStatus, percentage: srHybridStatus === "OK" ? 100 : (srHybridStatus === "WARNING" ? 50 : 0), details: srHybridMsg },
+    { name: "모드별 적중률 데이터 충분성", status: srDataStatus, percentage: srDataStatus === "OK" ? 100 : (srDataStatus === "WARNING" ? 50 : 0), details: srDataMsg },
+    { name: "AiS 진화 학습 정기 실행", status: srTrainStatus, percentage: srTrainStatus === "OK" ? 100 : (srTrainStatus === "WARNING" ? 50 : 0), details: srTrainMsg }
   ];
 
   return {
@@ -2059,7 +2312,7 @@ async function performSystemDiagnostics(runHeavyTests) {
 }
 
 
-// 1. GET /diagnostics (기본 시스템 진단 및 상태 점검)
+
 router.get('/diagnostics', async (req, res) => {
   try {
     const result = await performSystemDiagnostics(false);
@@ -2070,7 +2323,7 @@ router.get('/diagnostics', async (req, res) => {
   }
 });
 
-// 2. POST /run-diagnostics (동작 테스트 실행 - 실시간 기동 검출)
+
 router.post('/run-diagnostics', async (req, res) => {
   try {
     const result = await performSystemDiagnostics(true);
