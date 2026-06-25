@@ -465,9 +465,9 @@ function generateFallbackBriefing(factionStats, activeMembers, generationStats) 
 router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
   try {
     const factionRows = await queries.all(`
-      SELECT faction, COUNT(*) as count 
+      SELECT COALESCE(faction, 'MUTANT_ROOKIE') as faction, COUNT(*) as count 
       FROM ais_council_members 
-      GROUP BY faction
+      GROUP BY COALESCE(faction, 'MUTANT_ROOKIE')
     `);
 
     const totalRow = await queries.get("SELECT COUNT(*) as total FROM ais_council_members");
