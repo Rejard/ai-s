@@ -27,7 +27,6 @@ function ManagerAiConfigSection({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* 🤖 자동화 AI 그리드 트레이딩 봇 설정 카드 */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -192,7 +191,6 @@ function ManagerAiConfigSection({
         </div>
       </div>
 
-      {/* 📊 Gate.io API 실거래 연동 현황 카드 */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}>
         <div>
           <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -235,7 +233,6 @@ function ManagerAiConfigSection({
         </div>
       </div>
 
-      {/* 💰 SUT 자산 통합 관리 현황 카드 */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
         <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '14px' }}>💰</span> SUT 자산 통합 관리 현황
@@ -270,7 +267,6 @@ function ManagerAiConfigSection({
         </div>
       </div>
 
-      {/* ⚙️ Gate.io API 키 및 주소 설정 카드 */}
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Settings size={18} color="#A78BFA" />

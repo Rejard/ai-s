@@ -3,7 +3,6 @@ const POLYGON_COIN_ID = 966;
 
 const eip6963Providers = [];
 
-// Bypass window listener setup when window is undefined in node.js test environment
 if (typeof window !== 'undefined') {
   window.addEventListener('eip6963:announceProvider', (event) => {
     if (!eip6963Providers.some((p) => p.info.uuid === event.detail.info.uuid)) {

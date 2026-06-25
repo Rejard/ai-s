@@ -365,7 +365,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             </form>
           </div>
 
-          {/* 🏎️ Shadow Racing — 모드별 적중률 비교 */}
           {aisTrainingStats && (
           <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(0,200,255,0.25)' }}>
             <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 4px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -621,7 +620,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
 
           </div>
 
-          {/* 🏛️ AI Council (의회) 현황 및 분파 의석 지분율 섹션 */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(59, 130, 246, 0.25)', textAlign: 'left' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -642,7 +640,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
               <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>의회 정보를 불러오지 못했습니다.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* 1. 500인 전체 의회 분파(정당) 점유율 게이지 */}
                 <div>
                   <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700' }}>
                     📊 500인 후보군 분파별 점유율 (의석 분포)
@@ -677,7 +674,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     })}
                   </div>
                   
-                  {/* 범례 */}
                   <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '10px' }}>
                     {[
                       { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA/모멘텀)', color: '#2563EB' },
@@ -696,7 +692,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                {/* 🏛️ AI 의회 표본 적합성 및 다양성 건강도 진단 카드 */}
                 {councilStats.healthReport && (
                   <div style={{ 
                     background: 'rgba(0,0,0,0.3)', 
@@ -729,7 +724,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                      {/* 다양성 수치 게이지 */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                           <span style={{ color: 'var(--text-muted)' }}>🧬 유전적 다양성 지수</span>
@@ -748,7 +742,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                         </div>
                       </div>
 
-                      {/* 연산 여유 마진 게이지 */}
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                           <span style={{ color: 'var(--text-muted)' }}>⚡ 실시간 위험감지 연산 여유율 (5분 틱)</span>
@@ -820,7 +813,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   </div>
                 )}
 
-                {/* 2. 현재 당선된 11인의 ACTIVE 의원 명부 */}
                 <div>
                   <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700' }}>
                     🏛️ 현직 라이브 의원 탑 11인 (ACTIVE)
@@ -860,17 +852,17 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                       let cardBg = 'rgba(0,0,0,0.2)';
                       if (i === 0) {
                         titleLabel = '👑 의장';
-                        titleColor = '#F59E0B'; // Gold
+                        titleColor = '#F59E0B';
                         cardBg = 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
                         borderCol = 'rgba(245, 158, 11, 0.3)';
                       } else if (i === 1) {
                         titleLabel = '🥈 부의장';
-                        titleColor = '#E5E7EB'; // Silver
+                        titleColor = '#E5E7EB';
                         cardBg = 'linear-gradient(135deg, rgba(229, 231, 235, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
                         borderCol = 'rgba(229, 231, 235, 0.3)';
                       } else if (i === 2) {
                         titleLabel = '🥉 상임위원장';
-                        titleColor = '#B45309'; // Bronze
+                        titleColor = '#B45309';
                         cardBg = 'linear-gradient(135deg, rgba(180, 83, 9, 0.08) 0%, rgba(20, 16, 45, 0.3) 100%)';
                         borderCol = 'rgba(180, 83, 9, 0.3)';
                       }
@@ -911,7 +903,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                {/* 3. 최근 의결 투표 흐름 */}
                 <div>
                   <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
                     🔔 최근 매매 의사 결정 11명 AI 의원들의 개별 투표 결과
@@ -948,7 +939,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             )}
           </div>
 
-          {/* 🤖 AI 틱 결정 히스토리 내역 섹션 (PC 최적화) */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(139, 92, 246, 0.25)', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1086,7 +1076,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             })()}
           </div>
 
-          {/* 🏆 AI 종합 성능 및 설계 정렬 신뢰도 평가 섹션 (PC용) */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(16, 185, 129, 0.25)', textAlign: 'left', marginTop: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1114,7 +1103,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              {/* 왼쪽: 시장 성능 대비 우수성 지표 (Alpha vs Beta) */}
               <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '10px' }}>
                   <BarChart3 size={16} color="#3B82F6" />
@@ -1122,7 +1110,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* 알파 초과 수익 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                       <span style={{ color: 'var(--text-muted)' }}>📈 알파 초과 수익률 (vs 일반 그리드 봇)</span>
@@ -1136,7 +1123,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* 샤프 지수 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                       <span style={{ color: 'var(--text-muted)' }}>💎 샤프 지수 (위험 대비 수익율)</span>
@@ -1150,7 +1136,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* 최대 낙폭 방어 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                       <span style={{ color: 'var(--text-muted)' }}>🛡️ MDD 최대 낙폭 방어율</span>
@@ -1166,7 +1151,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              {/* 오른쪽: 개발 설계 의도 작동률 (Fidelity & Alignment) */}
               <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '10px' }}>
                   <span style={{ fontSize: '14px' }}>🧬</span>
@@ -1174,7 +1158,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* 블랙스완 방어 일치율 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                       <span style={{ color: 'var(--text-muted)' }}>🚨 블랙스완 자동 회피 작동률</span>
@@ -1188,7 +1171,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* 유전 도태 충실도 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                       <span style={{ color: 'var(--text-muted)' }}>🧪 부적합 유전자 자연도태율 (Cull)</span>
@@ -1202,7 +1184,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* 다양성 건강 지수 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                       <span style={{ color: 'var(--text-muted)' }}>🩺 의회 다양성 및 세력 균형도</span>
@@ -1220,9 +1201,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
             </div>
           </div>
 
-          {/* 4. Ais 시스템 구동 상태 진단 장부 */}
           <div className="glass-card" style={{ padding: '28px', background: 'rgba(9, 6, 22, 0.45)', border: '1px solid rgba(139, 92, 246, 0.15)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', backdropFilter: 'blur(8px)', borderRadius: '16px', marginTop: '24px' }}>
-            {/* 상단 헤더 영역 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
@@ -1268,11 +1247,8 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
               </button>
             </div>
 
-            {/* 메인 진단 판넬 (2단 그리드: 게이지/탭 | 목록) */}
             <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '28px', alignItems: 'start' }}>
-              {/* 좌측: 원형 게이지 & 탭 */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                {/* SVG 헬스 게이지 링 */}
                 {(() => {
                   const items = diagnosticsData?.diagnostics || [];
                   const okCount = items.filter(d => d.status === 'OK').length;
@@ -1320,7 +1296,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   );
                 })()}
 
-                {/* 세로형 탭 네비게이션 */}
                 <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '8px' }}>
                   {[
                     { id: 'algorithm', name: '핵심 알고리즘', count: 9, icon: '🧠' },
@@ -1366,7 +1341,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              {/* 우측: 탭별 진단 목록 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '260px' }}>
                 {(() => {
                   const items = diagnosticsData?.diagnostics || [];
@@ -1439,7 +1413,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 실시간 진단 스트리밍 로그 콘솔 */}
             <div style={{ marginTop: '24px', textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span style={{ fontSize: '11px', color: '#8B5CF6', fontWeight: '800', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1476,7 +1449,6 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 하단 메타 데이터 장부 */}
             <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
               <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444'), textShadow: diagnosticsData ? `0 0 8px ${diagnosticsData.overallStatus === 'EXCELLENT' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` : 'none' }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
               <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/25개 완료</span>

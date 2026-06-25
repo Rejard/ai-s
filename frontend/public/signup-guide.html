@@ -4,15 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI-S 회원가입 & KYC 가이드 및 가상 튜토리얼</title>
-  <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <style>
-    /* CSS 디자인 시스템 */
     :root {
       --bg-color: #09090b;
       --surface-color: #121214;
@@ -45,7 +42,6 @@
       flex-direction: column;
     }
 
-    /* 배경 데코레이션 그라데이션 오버레이 */
     .bg-glow-1 {
       position: absolute;
       width: 600px;
@@ -67,7 +63,6 @@
       pointer-events: none;
     }
 
-    /* 헤더 스타일 */
     header {
       padding: 24px 5%;
       border-bottom: 1px solid var(--surface-border);
@@ -124,7 +119,6 @@
       gap: 6px;
     }
 
-    /* 메인 컨테이너 레이아웃 */
     main {
       flex: 1;
       max-width: 1400px;
@@ -143,7 +137,6 @@
       }
     }
 
-    /* 왼쪽 가이드 설명 섹션 */
     .guide-section {
       display: flex;
       flex-direction: column;
@@ -166,7 +159,6 @@
       max-width: 600px;
     }
 
-    /* 단계별 설명 카드 */
     .step-timeline {
       display: flex;
       flex-direction: column;
@@ -257,7 +249,6 @@
       margin-top: 2px;
     }
 
-    /* 인터랙티브 모바일 목업 프레임 */
     .mockup-container {
       position: sticky;
       top: 100px;
@@ -280,7 +271,6 @@
       flex-direction: column;
     }
 
-    /* 노치 디자인 */
     .phone-notch {
       position: absolute;
       top: 0;
@@ -303,11 +293,10 @@
       border-radius: 50%;
     }
 
-    /* 모바일 내부 화면 영역 */
     .phone-screen {
       flex: 1;
       background: #0d0d0f;
-      padding-top: 24px; /* 노치 하단 여백 */
+      padding-top: 24px;
       display: flex;
       flex-direction: column;
       color: #e4e4e7;
@@ -315,7 +304,6 @@
       position: relative;
     }
 
-    /* 모바일 상태 표시바 */
     .status-bar {
       height: 24px;
       display: flex;
@@ -331,7 +319,6 @@
       z-index: 45;
     }
 
-    /* 모바일 글래스 카드 컴포넌트 */
     .glass-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.06);
@@ -345,7 +332,6 @@
       border-color: rgba(139, 92, 246, 0.25);
     }
 
-    /* 모바일 인풋 & 폼 컨트롤 */
     .form-group {
       display: flex;
       flex-direction: column;
@@ -392,7 +378,6 @@
       cursor: pointer;
     }
 
-    /* 모바일 버튼 컴포넌트 */
     .btn-primary {
       width: 100%;
       height: 52px;
@@ -445,7 +430,6 @@
       background: rgba(255, 255, 255, 0.08);
     }
 
-    /* 튜토리얼 안내용 툴팁 뱃지 (말풍선 모양) */
     .tutorial-tooltip {
       position: absolute;
       background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
@@ -464,7 +448,6 @@
       animation: nudge-jump 2.2s infinite ease-in-out;
     }
 
-    /* 말풍선 꼬리 (아래쪽 중앙 기준 왼쪽 정렬) */
     .tutorial-tooltip::after {
       content: '';
       position: absolute;
@@ -484,13 +467,11 @@
       stroke: #09090b !important;
     }
 
-    /* 튜토리얼 툴팁 위치 지정 */
     #tooltip-step1 { top: 260px; left: 30px; }
     #tooltip-step2 { top: 320px; left: 30px; }
     #tooltip-step3 { bottom: 90px; left: 30px; }
     #tooltip-step4 { bottom: 8px; left: 45px; }
 
-    /* 4단계 전용 말풍선 꼬리 (위쪽 가리키기) */
     #tooltip-step4::after {
       bottom: auto;
       top: -6px;
@@ -501,10 +482,9 @@
       border-top: 1px solid rgba(255, 255, 255, 0.4);
     }
 
-    /* 스크롤 안내 플로팅 화살표 툴팁 */
     .scroll-indicator-tooltip {
       position: absolute;
-      bottom: 72px; /* 최종 가입 버튼 위 */
+      bottom: 72px;
       left: 50%;
       transform: translateX(-50%);
       background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
@@ -540,7 +520,6 @@
       z-index: -1;
     }
 
-    /* Google Auth 가상 오버레이 팝업 */
     .google-popup-overlay {
       position: absolute;
       inset: 0;
@@ -651,7 +630,6 @@
       color: #5f6368;
     }
 
-    /* 체크 및 입력 필요 영역 강조 하일라이트 */
     .highlight-pulse {
       animation: highlight-pulse-animation 1.4s infinite alternate ease-in-out;
       border-width: 1px;
@@ -692,7 +670,6 @@
       }
     }
 
-    /* Trust Wallet 가상 오버레이 팝업 */
     .wallet-popup-overlay {
       position: absolute;
       inset: 0;
@@ -748,7 +725,6 @@
       font-size: 10px;
     }
 
-    /* 시뮬레이션 인터랙티브 요소 애니메이션용 클래스들 */
     .slide-view {
       position: absolute;
       inset: 24px 0 0 0;
@@ -768,7 +744,6 @@
       to { transform: translateX(0); opacity: 1; }
     }
 
-    /* 가상 타이핑 텍스트 및 로드바 효과 */
     .shimmer-loading {
       background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
       background-size: 200% 100%;
@@ -780,7 +755,6 @@
       100% { background-position: -200% 0; }
     }
 
-    /* 푸터 스타일 */
     footer {
       border-top: 1px solid var(--surface-border);
       padding: 30px;
@@ -829,7 +803,6 @@
       transform: translateY(-2px);
     }
 
-    /* FAQ 아코디언 스타일 */
     .faq-container {
       margin-top: 15px;
       display: flex;
@@ -891,7 +864,6 @@
       line-height: 1.5;
       border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
-    /* 브라우저 모드 토글 */
     .browser-mode-toggle {
       display: flex;
       background: rgba(255, 255, 255, 0.04);
@@ -926,7 +898,6 @@
       background: rgba(255, 255, 255, 0.05);
     }
 
-    /* 삼성 모드 전용 화면 요소 */
     .samsung-banner-mockup {
       background: rgba(245, 158, 11, 0.08);
       border: 1px solid rgba(245, 158, 11, 0.25);
@@ -985,7 +956,6 @@
   <div class="bg-glow-1"></div>
   <div class="bg-glow-2"></div>
 
-  <!-- 헤더 -->
   <header>
     <div class="logo-container">
       <div class="logo-icon">S</div>
@@ -997,10 +967,8 @@
     </div>
   </header>
 
-  <!-- 메인 레이아웃 -->
   <main>
     
-    <!-- 왼쪽: 가이드 가이드라인 텍스트 -->
     <section class="guide-section">
       <div style="display: flex; flex-direction: column; gap: 10px;">
         <h1 class="hero-title">AI-S 신규 회원가입 &<br>KYC 서류 접수 절차서</h1>
@@ -1009,10 +977,8 @@
         </p>
       </div>
 
-      <!-- 단계별 설명 타임라인 -->
       <div class="step-timeline">
         
-        <!-- STEP 1 -->
         <div class="step-node active" id="node-step1" onclick="switchMockupStep(1)">
           <div class="step-badge">Step 01</div>
           <h3 class="step-title">
@@ -1027,7 +993,6 @@
             <span>연동된 이메일과 실명은 이후 KYC 심사 서류 검증 시 본인 확인용 데이터로 자동 활용됩니다.</span>
           </div>
 
-          <!-- Step 1 FAQ -->
           <div class="faq-container">
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
@@ -1070,7 +1035,6 @@
           </div>
         </div>
 
-        <!-- STEP 2 -->
         <div class="step-node" id="node-step2" onclick="switchMockupStep(2)">
           <div class="step-badge">Step 02</div>
           <h3 class="step-title">
@@ -1085,7 +1049,6 @@
             <span>지갑 연결 시 서명(Signature)만 발생하며, 비밀키(Private Key)는 절대 요구하지 않으므로 안심하셔도 됩니다.</span>
           </div>
 
-          <!-- Step 2 FAQ -->
           <div class="faq-container">
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
@@ -1113,7 +1076,6 @@
           </div>
         </div>
 
-        <!-- STEP 3 -->
         <div class="step-node" id="node-step3" onclick="switchMockupStep(3)">
           <div class="step-badge">Step 03</div>
           <h3 class="step-title">
@@ -1128,7 +1090,6 @@
             <span>1차 모집 정원은 500명으로 한정되어 있습니다. 우측 상단의 실시간 모집 상태 표시줄을 참고하세요.</span>
           </div>
 
-          <!-- Step 3 FAQ -->
           <div class="faq-container">
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
@@ -1144,7 +1105,6 @@
           </div>
         </div>
 
-        <!-- STEP 4 -->
         <div class="step-node" id="node-step4" onclick="switchMockupStep(4)">
           <div class="step-badge">Step 04</div>
           <h3 class="step-title">
@@ -1159,7 +1119,6 @@
             <span>매니저 주소는 소속 코드 역할을 합니다. 반드시 사전에 부여받은 지갑 주소를 입력하고 [검증]을 통과해야 합니다.</span>
           </div>
 
-          <!-- Step 4 FAQ -->
           <div class="faq-container">
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
@@ -1186,7 +1145,6 @@
           </div>
         </div>
 
-        <!-- STEP 5 -->
         <div class="step-node" id="node-step5" onclick="switchMockupStep(5)">
           <div class="step-badge">Step 05</div>
           <h3 class="step-title">
@@ -1201,7 +1159,6 @@
             <span>※ 가입 신청 후 24시간 이내에 승인이 완료되지 않는다면, 보안을 위해 서버에 보관 중인 신분증 서류는 영구 파기 및 취소 처리됩니다.</span>
           </div>
 
-          <!-- Step 5 FAQ -->
           <div class="faq-container">
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
@@ -1220,7 +1177,6 @@
       </div>
     </section>
 
-    <!-- 오른쪽: 가상 스마트폰 시뮬레이터 -->
     <section class="mockup-container">
       
       <div style="font-size: 13px; color: var(--accent-color); font-weight: 600; display: flex; align-items: center; gap: 6px;">
@@ -1228,7 +1184,6 @@
         우측 폰 화면에서 가상으로 폼을 클릭해 보세요
       </div>
 
-      <!-- 브라우저 모드 토글 -->
       <div class="browser-mode-toggle">
         <button class="browser-mode-btn active" id="btn-mode-chrome" onclick="setBrowserMode('chrome')">
           크롬 · Trust Wallet
@@ -1255,7 +1210,6 @@
 
         <div class="phone-screen">
           
-          <!-- ==================== 가상 STEP 1 VIEW ==================== -->
           <div class="slide-view active" id="view-step1">
             <div style="text-align: center; margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
               <div class="logo-icon" style="width: 50px; height: 50px; font-size: 24px; border-radius: 14px;">S</div>
@@ -1265,7 +1219,6 @@
               </div>
             </div>
 
-            <!-- 삼성 모드 경고 배너 -->
             <div class="samsung-banner-mockup">
               <div class="banner-title" id="mockup-banner-title">⚠️ 브라우저 지갑 연동 안내</div>
               <div id="mockup-banner-desc">이 브라우저는 블록체인 지갑 연동을 지원하지 않습니다.</div>
@@ -1294,14 +1247,12 @@
               <span>구글 OAuth 2.0 보안 표준을 준수하여 개인정보를 안전하게 처리합니다.</span>
             </div>
 
-            <!-- STEP 1용 튜토리얼 툴팁 -->
             <div class="tutorial-tooltip" id="tooltip-step1">
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
               <span>구글 로그인 버튼을 클릭하세요!</span>
             </div>
           </div>
 
-          <!-- ==================== 가상 STEP 2 VIEW ==================== -->
           <div class="slide-view" id="view-step2">
             <div style="text-align: center; margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
               <div class="logo-icon" style="width: 50px; height: 50px; font-size: 24px; border-radius: 14px;">S</div>
@@ -1331,14 +1282,12 @@
               <span>지갑 연결 시 개인키(Private Key)는 절대 유출되지 않으므로 안심하시기 바랍니다.</span>
             </div>
 
-            <!-- STEP 2용 튜토리얼 툴팁 -->
             <div class="tutorial-tooltip" id="tooltip-step2">
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
               <span>지갑 연결 시뮬레이션 버튼을 클릭하세요!</span>
             </div>
           </div>
 
-          <!-- ==================== 가상 STEP 2 VIEW (삼성 전용) ==================== -->
           <div class="slide-view samsung-only" id="view-step2-samsung">
             <div style="text-align: center; margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
               <div class="logo-icon" style="width: 44px; height: 44px; font-size: 20px; border-radius: 12px;">S</div>
@@ -1348,7 +1297,6 @@
               </div>
             </div>
 
-            <!-- Google 로그인 완료 배지 -->
             <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); padding: 10px 14px; border-radius: 10px; font-size: 11px; color: #10b981; display: flex; align-items: center; gap: 6px; margin-top: 20px;">
               <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
               🌟 Google 계정 연동됨: <span id="samsung-step2-email" style="font-weight: 600;">support@example.com</span>
@@ -1374,7 +1322,6 @@
             </div>
           </div>
 
-          <!-- Trust Wallet 전환 오버레이 애니메이션 -->
           <div class="tw-transition-overlay" id="tw-transition-overlay">
             <div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 800; box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);">
               T
@@ -1384,9 +1331,7 @@
             <div style="width: 30px; height: 30px; border: 3px solid rgba(59, 130, 246, 0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
           </div>
 
-          <!-- ==================== 가상 STEP 3 VIEW ==================== -->
           <div class="slide-view" id="view-step3">
-            <!-- 1차 선착순 모집 현황 게이지 -->
             <div class="glass-card" style="padding: 12px; margin-top: 10px;">
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; color: var(--text-muted)">
                 <span>🔥 1차 500명 선착순 특별 모집</span>
@@ -1404,7 +1349,6 @@
 
             <div style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
               
-              <!-- 동의서 1 -->
               <div class="glass-card highlight-pulse" id="card-loss" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 8px; align-items: flex-start;">
                   <input type="checkbox" id="chk-loss" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;" onchange="checkAgreements()">
@@ -1417,7 +1361,6 @@
                 </div>
               </div>
 
-              <!-- 동의서 2 -->
               <div class="glass-card highlight-pulse" id="card-auth" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 8px; align-items: flex-start;">
                   <input type="checkbox" id="chk-auth" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;" onchange="checkAgreements()">
@@ -1430,7 +1373,6 @@
                 </div>
               </div>
 
-              <!-- 동의서 3 -->
               <div class="glass-card highlight-pulse" id="card-kyc" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 8px; align-items: flex-start;">
                   <input type="checkbox" id="chk-kyc" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;" onchange="checkAgreements()">
@@ -1450,24 +1392,20 @@
               동의 완료 및 회원정보 작성
             </button>
 
-            <!-- STEP 3용 튜토리얼 툴팁 -->
             <div class="tutorial-tooltip" id="tooltip-step3">
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
               <span>약관 3개에 모두 동의 체크하세요!</span>
             </div>
           </div>
 
-          <!-- ==================== 가상 STEP 4 VIEW ==================== -->
           <div class="slide-view" id="view-step4" style="padding: 10px 15px 25px;">
             <div style="text-align: center; margin-bottom: 5px;">
               <h3 style="font-size: 15px; color: white; font-weight: 700;">New Member KYC Registration</h3>
               <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">나머지 인적 사항과 신분증 서류 및 인출 권한을 등록하십시오.</p>
             </div>
 
-            <!-- 스크롤 뷰 구현 -->
             <div id="step4-scroll-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
               
-              <!-- 1. 지갑 주소 (읽기 전용) -->
               <div class="form-group">
                 <span class="form-label">👤 내 폴리곤 지갑 주소</span>
                 <div style="background: rgba(0,0,0,0.4); border: 1px dashed rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 8px; font-size: 10px; color: var(--text-muted); word-break: break-all;">
@@ -1475,7 +1413,6 @@
                 </div>
               </div>
 
-              <!-- 2. 연동된 이메일 (구글) -->
               <div class="form-group">
                 <span class="form-label">📧 구글 인증 이메일</span>
                 <div id="google-email-badge" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); padding: 8px 12px; border-radius: 8px; font-size: 11px; color: var(--success-color); display: flex; align-items: center; gap: 6px;">
@@ -1484,19 +1421,16 @@
                 </div>
               </div>
 
-              <!-- 3. 이름 -->
               <div class="form-group">
                 <span class="form-label">회원 실명 (구글 매핑)</span>
                 <input type="text" class="form-input" id="mock-name" style="height: 38px; font-size: 11px;" value="홍길동" readonly>
               </div>
 
-              <!-- 4. 전화번호 -->
               <div class="form-group highlight-pulse" id="group-phone">
                 <span class="form-label">전화번호</span>
                 <input type="tel" class="form-input" id="input-phone" style="height: 38px; font-size: 11px;" placeholder="010-1234-5678" oninput="checkRegisterForm()">
               </div>
 
-              <!-- 5. 국가 -->
               <div class="form-group">
                 <span class="form-label">거주 국가</span>
                 <select class="form-select" style="height: 38px; font-size: 11px; padding: 0 12px;">
@@ -1506,7 +1440,6 @@
                 </select>
               </div>
 
-              <!-- 6. 추천 매니저 지갑 주소 -->
               <div class="form-group highlight-pulse" id="group-manager">
                 <span class="form-label">👑 담당 매니저 지갑 주소</span>
                 <div style="display: flex; gap: 8px;">
@@ -1518,7 +1451,6 @@
                 </div>
               </div>
 
-              <!-- 7. 신분증 첨부 -->
               <div class="form-group">
                 <span class="form-label">🪪 KYC 심사용 신분증 사진</span>
                 <div id="idcard-uploader" class="highlight-pulse" style="border: 2px dashed rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; text-align: center; background: rgba(0,0,0,0.2); cursor: pointer;" onclick="simulateIdUpload()">
@@ -1528,7 +1460,6 @@
                 </div>
               </div>
 
-              <!-- 8. SUT 인출 권한 Approve 승인 -->
               <div class="glass-card highlight-pulse" id="card-sut" style="padding: 12px; border: 1px solid rgba(139,92,246,0.15); display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 6px; align-items: flex-start;">
                   <i data-lucide="key" style="width: 16px; height: 16px; color: #8b5cf6; flex-shrink: 0; margin-top: 1px;"></i>
@@ -1549,13 +1480,11 @@
 
             </div>
 
-            <!-- 아래로 스크롤 가이드 화살표 플로팅 툴팁 -->
             <div class="scroll-indicator-tooltip" id="step4-scroll-indicator" onclick="scrollMockupToApprove()" style="display: none;">
               <span>아래에 스크롤할 내용이 있어요</span>
               <i data-lucide="chevrons-down" style="width: 14px; height: 14px;"></i>
             </div>
 
-            <!-- 최종 가입 버튼 -->
             <button class="btn-primary" id="btn-submit-form" disabled onclick="switchMockupStep(5)" style="margin-top: 10px; height: 46px;">
               회원 가입 및 KYC 서류 제출
             </button>
@@ -1566,7 +1495,6 @@
             </div>
           </div>
 
-          <!-- ==================== 가상 STEP 5 VIEW ==================== -->
           <div class="slide-view" id="view-step5" style="justify-content: center; align-items: center; text-align: center; gap: 20px;">
             <div style="display: inline-flex; padding: 20px; border-radius: 50%; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); animation: pulse-glow 2s infinite;">
               <i data-lucide="loader" style="width: 44px; height: 44px; color: var(--accent-color); animation: spin 4s linear infinite;"></i>
@@ -1593,7 +1521,6 @@
 
         </div>
 
-        <!-- ==================== 가상 Google Auth 계정 선택 팝업 (오버레이) ==================== -->
         <div class="google-popup-overlay" id="google-overlay" onclick="closeGooglePopup()">
           <div class="google-popup" id="google-popup" onclick="event.stopPropagation()">
             <div class="google-header">
@@ -1632,7 +1559,6 @@
           </div>
         </div>
 
-        <!-- ==================== 가상 Trust Wallet Connect 팝업 (오버레이) ==================== -->
         <div class="wallet-popup-overlay" id="wallet-connect-overlay" onclick="closeConnectPopup()">
           <div class="wallet-popup" id="wallet-connect-popup" onclick="event.stopPropagation()">
             <div class="wallet-header">
@@ -1662,7 +1588,6 @@
           </div>
         </div>
 
-        <!-- ==================== 가상 Trust Wallet Approve 팝업 (오버레이) ==================== -->
         <div class="wallet-popup-overlay" id="wallet-overlay" onclick="closeWalletPopup()">
           <div class="wallet-popup" id="wallet-popup" onclick="event.stopPropagation()">
             <div class="wallet-header">
@@ -1712,7 +1637,6 @@
 
   </main>
 
-  <!-- 푸터 -->
   <footer>
     <div class="footer-links">
       <a href="/guide.html" class="footer-btn">
@@ -1732,17 +1656,14 @@
   </footer>
 
   <script>
-    // Lucide 아이콘 초기화
     lucide.createIcons();
 
-    // DOM 로드 완료 후 스크롤 리스너 연동
     document.addEventListener('DOMContentLoaded', () => {
       const container = document.getElementById('step4-scroll-container');
       if (container) {
         container.addEventListener('scroll', handleStep4Scroll);
       }
 
-      // UA 기반 삼성 인터넷 / iOS Safari 자동 감지
       const ua = navigator.userAgent || '';
       const isSamsungBrowser = /SamsungBrowser/i.test(ua);
       const isIOSSafari = /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS|DuckDuckGo/i.test(ua) && !/(Chrome|Chromium)/i.test(ua);
@@ -1753,7 +1674,6 @@
       }
     });
 
-    // 시뮬레이터 가상 상태 머신 데이터
     let googleAuthCompleted = false;
     let userWalletConnected = false;
     let agreementsChecked = false;
@@ -1762,15 +1682,12 @@
     let idCardUploaded = false;
     let walletApproved = false;
 
-    // 가상으로 연동된 계정 정보
     let selectedName = "홍길동";
     let selectedEmail = "support@example.com";
 
-    // 브라우저 모드 ('chrome' | 'samsung')
     let browserMode = 'chrome';
     let unsupportedBrowserName = '';
 
-    // UA 기반 브라우저명 판별
     function detectBrowserName() {
       const ua = navigator.userAgent || '';
       if (/SamsungBrowser/i.test(ua)) return '삼성 인터넷';
@@ -1789,13 +1706,11 @@
       document.getElementById('btn-mode-samsung').classList.toggle('active', mode === 'samsung');
       document.body.classList.toggle('samsung-mode', mode === 'samsung');
 
-      // 토글 라벨 갱신
       const toggleLabel = document.getElementById('toggle-label-unsupported');
       if (toggleLabel && unsupportedBrowserName && unsupportedBrowserName !== 'Safari · 삼성 인터넷') {
         toggleLabel.textContent = unsupportedBrowserName;
       }
 
-      // 배너 텍스트 갱신
       if (mode === 'samsung') {
         const name = unsupportedBrowserName || '이';
         const bannerTitle = document.getElementById('mockup-banner-title');
@@ -1828,25 +1743,19 @@
       lucide.createIcons();
     }
 
-    // 삼성 모드: Trust Wallet 전환 시뮬레이션
     function simulateSamsungToTrustWallet() {
       const overlay = document.getElementById('tw-transition-overlay');
       overlay.style.display = 'flex';
 
-      // 툴팁 숨기기
-      const tooltip = document.getElementById('tooltip-step2-samsung');
       if (tooltip) tooltip.style.display = 'none';
 
-      // 1.5초 후 트러스트월렛 전환 완료 → Step 3으로 이동
       setTimeout(() => {
         overlay.style.display = 'none';
-        // 삼성 모드에서 TW로 전환 완료 — 이제 지갑 연결된 상태로 처리
         userWalletConnected = true;
         switchMockupStep(3);
       }, 1500);
     }
 
-    // 목업의 뷰 전환 기능
     function switchMockupStep(stepNum) {
       document.querySelectorAll('.step-node').forEach(node => {
         node.classList.remove('active');
@@ -1858,11 +1767,9 @@
         view.classList.remove('active');
       });
 
-      // 삼성 모드에서 Step 2는 전용 뷰를 표시
       if (browserMode === 'samsung' && stepNum === 2) {
         const samsungView = document.getElementById('view-step2-samsung');
         if (samsungView) samsungView.classList.add('active');
-        // 이메일 동기화
         const emailEl = document.getElementById('samsung-step2-email');
         if (emailEl) emailEl.textContent = selectedEmail;
       } else {
@@ -1870,12 +1777,10 @@
         if (targetView) targetView.classList.add('active');
       }
 
-      // 툴팁 표시 및 숨김 처리
       document.querySelectorAll('.tutorial-tooltip').forEach(tooltip => {
         tooltip.style.display = 'none';
       });
 
-      // 삼성 모드 Step 2일 때 전용 툴팁 표시
       if (browserMode === 'samsung' && stepNum === 2) {
         const sTooltip = document.getElementById('tooltip-step2-samsung');
         if (sTooltip) sTooltip.style.display = 'flex';
@@ -1892,7 +1797,6 @@
       handleStep4Scroll();
     }
 
-    // 4단계 스크롤 가이드 화살표 제어 로직
     function handleStep4Scroll() {
       const container = document.getElementById('step4-scroll-container');
       const targetCard = document.getElementById('card-sut');
@@ -1900,7 +1804,6 @@
 
       if (!container || !targetCard || !indicator) return;
 
-      // 4단계 뷰가 active일 때만 화살표를 갱신
       const isStep4Active = document.getElementById('view-step4').classList.contains('active');
       if (!isStep4Active) {
         indicator.style.display = 'none';
@@ -1910,7 +1813,6 @@
       const containerRect = container.getBoundingClientRect();
       const cardRect = targetCard.getBoundingClientRect();
 
-      // 카드의 위쪽 경계가 스크롤 컨테이너의 아래쪽 경계 안으로 들어왔는지 여부 판별
       const isVisible = (cardRect.top < containerRect.bottom - 40);
 
       if (isVisible) {
@@ -1922,13 +1824,11 @@
         }, 300);
       } else {
         indicator.style.display = 'flex';
-        // Reflow를 유도하여 transition이 먹히도록 조절
         indicator.offsetHeight; 
         indicator.style.opacity = '1';
       }
     }
 
-    // 화살표 툴팁 클릭 시 자동 부드러운 스크롤 이동
     function scrollMockupToApprove() {
       const container = document.getElementById('step4-scroll-container');
       if (container) {
@@ -1939,7 +1839,6 @@
       }
     }
 
-    // 1단계 구글 로그인 팝업 열기
     function openGooglePopup() {
       const overlay = document.getElementById('google-overlay');
       const popup = document.getElementById('google-popup');
@@ -1949,7 +1848,6 @@
       }, 50);
     }
 
-    // 1단계 구글 로그인 팝업 닫기
     function closeGooglePopup() {
       const overlay = document.getElementById('google-overlay');
       const popup = document.getElementById('google-popup');
@@ -1959,7 +1857,6 @@
       }, 300);
     }
 
-    // 1단계 구글 계정 선택 모의 작동
     function simulateGoogleSelect(name, email) {
       closeGooglePopup();
       
@@ -1973,7 +1870,6 @@
       const tooltip = document.getElementById('tooltip-step1');
 
       if (browserMode === 'samsung') {
-        // 삼성 모드: Step 2 삼성 전용 뷰로 이동
         if (tooltip) {
           tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! Trust Wallet 연결 단계로 이동합니다.</span>';
           lucide.createIcons();
@@ -1982,7 +1878,6 @@
           switchMockupStep(2);
         }, 800);
       } else {
-        // 크롬 모드: 기존 Step 2 지갑 연결 뷰로 이동
         if (tooltip) {
           tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! 지갑 연결 단계로 이동합니다.</span>';
           lucide.createIcons();
@@ -1993,12 +1888,10 @@
       }
     }
 
-    // 2단계 지갑 연결 모의 작동
     function simulateWalletConnection() {
       openConnectPopup();
     }
 
-    // 2단계 지갑 연결 팝업 열기
     function openConnectPopup() {
       const overlay = document.getElementById('wallet-connect-overlay');
       const popup = document.getElementById('wallet-connect-popup');
@@ -2008,7 +1901,6 @@
       }, 50);
     }
 
-    // 2단계 지갑 연결 팝업 닫기
     function closeConnectPopup() {
       const overlay = document.getElementById('wallet-connect-overlay');
       const popup = document.getElementById('wallet-connect-popup');
@@ -2018,7 +1910,6 @@
       }, 300);
     }
 
-    // 2단계 지갑 연결 팝업 승인 모의 작동
     function simulateWalletConnectApprove() {
       closeConnectPopup();
 
@@ -2027,26 +1918,22 @@
       input.style.color = "#E5E7EB";
       userWalletConnected = true;
 
-      // 툴팁 텍스트 갱신
       const tooltip = document.getElementById('tooltip-step2');
       if (tooltip) {
         tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>지갑 주소 연동 완료! 약관 동의 단계로 이동합니다.</span>';
         lucide.createIcons();
       }
 
-      // 0.8초 뒤에 자동으로 Step 3 화면으로 전환
       setTimeout(() => {
         switchMockupStep(3);
       }, 800);
     }
 
-    // 3단계 동의서 클릭 시 유효성 검사
     function checkAgreements() {
       const chkLoss = document.getElementById('chk-loss').checked;
       const chkAuth = document.getElementById('chk-auth').checked;
       const chkKyc = document.getElementById('chk-kyc').checked;
 
-      // 체크 여부에 따라 실시간으로 테두리 하일라이트 제거/추가
       if (chkLoss) document.getElementById('card-loss').classList.remove('highlight-pulse');
       else document.getElementById('card-loss').classList.add('highlight-pulse');
 
@@ -2061,7 +1948,6 @@
         btnNext.removeAttribute('disabled');
         agreementsChecked = true;
         
-        // 툴팁 텍스트 갱신
         const tooltip = document.getElementById('tooltip-step3');
         if (tooltip) {
           tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>동의 완료! 버튼을 클릭해 진행하세요.</span>';
@@ -2073,12 +1959,10 @@
       }
     }
 
-    // 4단계 입력 폼 유효성 체크
     function checkRegisterForm() {
       const phoneVal = document.getElementById('input-phone').value.trim();
       phoneInputFilled = phoneVal.length >= 10;
 
-      // 전화번호 입력 완료 시 하일라이트 제거
       if (phoneInputFilled) document.getElementById('group-phone').classList.remove('highlight-pulse');
       else document.getElementById('group-phone').classList.add('highlight-pulse');
 
@@ -2087,7 +1971,6 @@
         btnSubmit.removeAttribute('disabled');
         btnSubmit.style.opacity = "1";
         
-        // 툴팁 텍스트 갱신
         const tooltip = document.getElementById('tooltip-step4');
         if (tooltip) {
           tooltip.innerHTML = '<i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i><span>준비 완료! 가입 신청 버튼을 클릭하세요!</span>';
@@ -2099,14 +1982,12 @@
       }
     }
 
-    // 4단계 매니저 검증 모의 작동
     function simulateManagerVerify() {
       const statusSpan = document.getElementById('manager-status');
       const btnVerify = document.getElementById('btn-manager-verify');
       const inputManager = document.getElementById('input-manager');
 
       managerVerified = true;
-      // 매니저 인증 시 하일라이트 해제
       document.getElementById('group-manager').classList.remove('highlight-pulse');
       
       btnVerify.style.background = "rgba(16, 185, 129, 0.1)";
@@ -2122,14 +2003,12 @@
       checkRegisterForm();
     }
 
-    // 4단계 신분증 사진 업로드 모의 작동
     function simulateIdUpload() {
       const text = document.getElementById('idcard-text');
       const icon = document.getElementById('idcard-icon');
       const uploader = document.getElementById('idcard-uploader');
 
       idCardUploaded = true;
-      // 신분증 업로드 완료 시 하일라이트 해제
       uploader.classList.remove('highlight-pulse');
       
       text.innerText = "✓ kyc-id-verification-card.jpg 첨부완료";
@@ -2141,7 +2020,6 @@
       checkRegisterForm();
     }
 
-    // 4단계 지갑 권한 승인 팝업 열기
     function openWalletPopup() {
       const overlay = document.getElementById('wallet-overlay');
       const popup = document.getElementById('wallet-popup');
@@ -2151,7 +2029,6 @@
       }, 50);
     }
 
-    // 4단계 지갑 권한 승인 팝업 닫기
     function closeWalletPopup() {
       const overlay = document.getElementById('wallet-overlay');
       const popup = document.getElementById('wallet-popup');
@@ -2161,13 +2038,11 @@
       }, 300);
     }
 
-    // 4단계 지갑 승인 완료 모의 작동
     function simulateWalletApprove() {
       closeWalletPopup();
       
       const btnApprove = document.getElementById('btn-wallet-approve');
       walletApproved = true;
-      // 지갑 승인 완료 시 하일라이트 해제
       document.getElementById('card-sut').classList.remove('highlight-pulse');
 
       btnApprove.style.background = "rgba(16, 185, 129, 0.08)";
@@ -2180,7 +2055,6 @@
       checkRegisterForm();
     }
 
-    // 튜토리얼 초기화 및 재시작
     function resetTutorial() {
       closeConnectPopup();
       closeWalletPopup();
@@ -2197,7 +2071,6 @@
       selectedName = "홍길동";
       selectedEmail = "support@example.com";
 
-      // 툴팁 1 & 2의 초기화
       const tooltip1 = document.getElementById('tooltip-step1');
       if (tooltip1) {
         tooltip1.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>구글 로그인 버튼을 클릭하세요!</span>';
@@ -2207,7 +2080,6 @@
         tooltip2.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>지갑 연결 시뮬레이션 버튼을 클릭하세요!</span>';
       }
 
-      // 삼성 모드 전용 요소 초기화
       const twOverlay = document.getElementById('tw-transition-overlay');
       if (twOverlay) twOverlay.style.display = 'none';
       const tooltipS2 = document.getElementById('tooltip-step2-samsung');
@@ -2215,11 +2087,9 @@
         tooltipS2.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>Trust Wallet 연결 버튼을 클릭하세요!</span>';
       }
 
-      // STEP 2 인풋 초기화
       document.getElementById('mock-wallet-addr').value = "";
       document.getElementById('mock-wallet-addr').style.color = "var(--text-dark)";
       
-      // STEP 3 체크박스 및 하일라이트 초기화
       document.getElementById('chk-loss').checked = false;
       document.getElementById('chk-auth').checked = false;
       document.getElementById('chk-kyc').checked = false;
@@ -2233,7 +2103,6 @@
         tooltip3.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>약관 3개에 모두 동의 체크하세요!</span>';
       }
 
-      // STEP 4 인풋 & 버튼 초기화
       document.getElementById('mock-email').innerText = "support@example.com";
       document.getElementById('mock-name').value = "홍길동";
 
@@ -2286,7 +2155,6 @@
       switchMockupStep(1);
     }
 
-    // FAQ 아코디언 토글 함수
     function toggleFaq(event, element) {
       event.stopPropagation();
       const item = element.closest('.faq-item');

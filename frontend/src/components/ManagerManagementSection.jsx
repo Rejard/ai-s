@@ -18,7 +18,6 @@ function ManagerManagementSection({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
       
-      {/* 통계 요약 카드 */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
           <div className="glass-card" style={{ padding: '12px', textAlign: 'center' }}>
@@ -43,7 +42,6 @@ function ManagerManagementSection({
         </div>
       )}
 
-      {/* 가입 심사 카드 */}
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
           <ShieldAlert size={18} color="#F59E0B" />
@@ -131,7 +129,6 @@ function ManagerManagementSection({
         )}
       </div>
 
-      {/* 지급 심사 카드 */}
       <div className="glass-card" style={{ border: '1px solid rgba(245, 158, 11, 0.3)' }}>
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
           <Receipt size={18} color="#F59E0B" />

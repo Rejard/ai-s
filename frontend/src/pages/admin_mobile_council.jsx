@@ -54,7 +54,6 @@ function AdminMobileCouncil() {
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '100vh', backgroundColor: 'var(--bg-app)', overflowX: 'hidden' }}>
       
-      {/* 상단 네비게이션 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid var(--glass-border)' }}>
         <button 
           onClick={() => navigate('/dashboard')}
@@ -104,7 +103,6 @@ function AdminMobileCouncil() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* 1. 500인 전체 의회 분파 점유율 게이지 */}
           <div className="glass-card" style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span>📊</span> 500인 후보군 분파별 점유율 (의석)
@@ -139,7 +137,6 @@ function AdminMobileCouncil() {
               })}
             </div>
             
-            {/* 범례 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
               {[
                 { key: 'TREND_FOLLOWER', label: '추세추종 (SMA)', color: '#2563EB' },
@@ -160,7 +157,6 @@ function AdminMobileCouncil() {
             </div>
           </div>
 
-          {/* 500인 후보군의 특징 분석 */}
           {councilStats.briefing && (
             <div style={{
               background: 'rgba(59, 130, 246, 0.05)',
@@ -180,7 +176,6 @@ function AdminMobileCouncil() {
             </div>
           )}
 
-          {/* 2. 최근 의결 투표 흐름 */}
           <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span>🔔</span> 최근 AI 의원 투표 현황
@@ -214,7 +209,6 @@ function AdminMobileCouncil() {
             </div>
           </div>
 
-          {/* 3. 현재 당선된 11인의 ACTIVE 의원 명부 */}
           <div className="glass-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span>🏛️</span> 현직 라이브 의원 탑 11 (ACTIVE)

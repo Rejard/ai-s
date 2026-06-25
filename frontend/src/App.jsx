@@ -84,7 +84,6 @@ function AppContent() {
     };
   }, [googleLoggedIn, googleEmail, isRegistered]);
 
-  // 🌟 [PC Exclusive Manager Security] Mobile device (smartphone/tablet) connection judgment
   const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const shouldUseGoogleRedirectLogin = isMobileDevice;
 

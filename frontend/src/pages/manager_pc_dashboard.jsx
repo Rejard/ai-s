@@ -79,7 +79,6 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
   const [tradeExecutions, setTradeExecutions] = useState([]);
   const [openOrders, setOpenOrders] = useState([]);
 
-  // New: Strategy ID reference for preventing duplicate execution
   const lastExecutedStrategyIdRef = useRef(null);
   const lastServerGridSettingsRef = useRef(null);
   const lastRequestIdRef = useRef(0);
@@ -1106,7 +1105,6 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
           <ManagerAiDecisionHistory logs={aiLogs} />
           <ManagerTradeExecutions executions={tradeExecutions} />
 
-          {/* 최근 Gate.io 실거래 미체결 대기 주문 카드 (PC용) */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
             <h4 style={{ fontSize: '14px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px' }}>⏳</span>
@@ -1517,7 +1515,6 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
 
 
 
-          {/* 최근 Gate.io 실거래 체결 내역 카드 추가 */}
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <h4 style={{ fontSize: '14px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Receipt size={18} color="#10B981" />

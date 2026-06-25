@@ -8,7 +8,6 @@ export const saveIdCardLocally = (userId, blob) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains('idCards')) {
         db.close();
-        // Trigger a new version to create the store if it somehow missed onupgradeneeded
         const req2 = indexedDB.open('AiSManagerDB', db.version + 1);
         req2.onupgradeneeded = (e2) => e2.target.result.createObjectStore('idCards');
         req2.onsuccess = (e2) => {

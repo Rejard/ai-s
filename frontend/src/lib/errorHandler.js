@@ -1,7 +1,6 @@
 export function translateError(error) {
   if (!error) return '알 수 없는 오류가 발생했습니다.';
 
-  // 1. Web3 / Wallet / Transaction Error Handling
   const errMsg = error?.message || String(error);
 
   if (
@@ -30,12 +29,10 @@ export function translateError(error) {
     return '[지갑/네트워크 불안정] 현재 블록체인 응답 노드가 매우 혼잡하여 접속이 지연되고 있습니다. 지갑 앱을 강제 종료 후 다시 켜시거나, 와이파이를 끄고 모바일 데이터(LTE/5G) 상태에서 다시 시도해 주세요.';
   }
 
-  // 2. HTTP (Axios) Request Error Handling
   if (error.response) {
     const status = error.response.status;
     const serverMessage = error.response.data?.message;
 
-    // Passthrough: server returns localized validation messages directly to UI
     if (
       serverMessage &&
       typeof serverMessage === 'string' &&
@@ -64,7 +61,6 @@ export function translateError(error) {
     }
   }
 
-  // 3. Network Connection Issue (Offline, Timeout)
   if (errMsg === 'Network Error' || errMsg.includes('timeout') || errMsg.includes('NetworkError')) {
     return '[네트워크 확인 필요] 인터넷 연결 신호가 불안정하여 자산 서버와 통신할 수 없습니다. 기기의 와이파이 수신 상태 또는 모바일 네트워크 연결 상태를 확인해 주세요.';
   }

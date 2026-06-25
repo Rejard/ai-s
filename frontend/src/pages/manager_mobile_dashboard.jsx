@@ -205,7 +205,6 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
       });
       if (res.data.success) {
         alert('가입이 승인되었습니다.');
-        // Remove ID card from IndexedDB upon approval
         await deleteIdCardLocally(userWallet);
         fetchDashboardData();
       } else {
@@ -459,10 +458,8 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
   };
   const handleDownloadIdCard = async (userId, name) => {
     try {
-      // 1. Try to load from IndexedDB first
       let blob = await getIdCardLocally(userId);
 
-      // 2. If not in IndexedDB, fetch from server and save to IndexedDB
       if (!blob) {
         const token = localStorage.getItem('auth_token') || localStorage.getItem('sut_token') || localStorage.getItem('token');
         const res = await axios.get(`${API_BASE}/manager/download-id-card/${userId}`, {
@@ -947,7 +944,6 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 🤖 분리된 AI 트레이딩 설정 및 API 연동 섹션 컴포넌트 마운트 */}
       <ManagerAiConfigSection
         gridSettings={gridSettings}
         setGridSettings={setGridSettings}
@@ -1144,7 +1140,6 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 🛡️ 분리된 가입 신청/지급 요청 심사 및 통계 섹션 컴포넌트 마운트 */}
       <ManagerManagementSection
         pendingUsers={pendingUsers}
         withdrawals={withdrawals}
@@ -1160,7 +1155,6 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
         hasDownloadedId={hasDownloadedId}
       />
 
-      {/* 최근 자산 예치/정산 내역 */}
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <h3 style={{ fontSize: '15px', color: '#F3F4F6', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1245,7 +1239,6 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 전체 회원 명부 */}
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
           <Users size={18} color="#10B981" />
@@ -1324,7 +1317,6 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
         )}
       </div>
 
-      {/* 신분증 이미지 팝업 모달 */}
       {selectedIdCard && (
         <div style={{
           position: 'fixed',

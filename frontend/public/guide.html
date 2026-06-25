@@ -4,11 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI-S 가입 FAQ 센터 - 자주 묻는 질문</title>
-  <!-- Google Fonts: Inter & Outfit & Noto Sans KR -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <style>
@@ -147,7 +145,6 @@
       color: var(--text-muted);
     }
 
-    /* 검색 박스 */
     .search-wrapper {
       position: relative;
       width: 100%;
@@ -183,7 +180,6 @@
       pointer-events: none;
     }
 
-    /* 카테고리 탭 */
     .category-tabs {
       display: flex;
       gap: 10px;
@@ -223,7 +219,6 @@
       box-shadow: var(--glow-shadow);
     }
 
-    /* FAQ 리스트 */
     .faq-list {
       display: flex;
       flex-direction: column;
@@ -369,7 +364,6 @@
       </div>
     </div>
 
-    <!-- 카테고리 필터 탭 -->
     <div class="category-tabs">
       <button class="tab-btn active" onclick="filterCategory('all', this)">전체</button>
       <button class="tab-btn" onclick="filterCategory('step1', this)">구글 로그인</button>
@@ -379,10 +373,8 @@
       <button class="tab-btn" onclick="filterCategory('step5', this)">심사 대기</button>
     </div>
 
-    <!-- FAQ 리스트 -->
     <div class="faq-list" id="faq-list-container">
       
-      <!-- 구글 로그인 FAQ -->
       <div class="faq-item" data-category="step1">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
@@ -416,7 +408,6 @@
         </div>
       </div>
 
-      <!-- 지갑 연결 FAQ -->
       <div class="faq-item" data-category="step2">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
@@ -462,7 +453,6 @@
         </div>
       </div>
 
-      <!-- 약관 동의 FAQ -->
       <div class="faq-item" data-category="step3">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
@@ -478,7 +468,6 @@
         </div>
       </div>
 
-      <!-- 정보 입력 & KYC FAQ -->
       <div class="faq-item" data-category="step4">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
@@ -525,7 +514,6 @@
         </div>
       </div>
 
-      <!-- 심사 대기 FAQ -->
       <div class="faq-item" data-category="step5">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
@@ -559,7 +547,6 @@
 
     </div>
 
-    <!-- 검색 결과 없음 안내 -->
     <div class="no-results" id="no-results-msg">
       검색된 자주 묻는 질문이 없습니다. 다른 키워드를 입력해 보세요.
     </div>
@@ -586,14 +573,12 @@
   <script>
     lucide.createIcons();
 
-    // FAQ 아코디언 토글
     function toggleFaq(element) {
       const item = element.closest('.faq-item');
       const content = item.querySelector('.faq-content');
       const icon = item.querySelector('.faq-icon i');
       const isOpen = content.classList.contains('open');
 
-      // 다중 열림 방지를 위해 다른 열려있는 아코디언 닫기
       document.querySelectorAll('.faq-content.open').forEach(openedContent => {
         if (openedContent !== content) {
           openedContent.classList.remove('open');
@@ -611,20 +596,17 @@
       }
     }
 
-    // 카테고리 필터링
     let currentCategory = 'all';
 
     function filterCategory(category, button) {
       currentCategory = category;
       
-      // 탭 액티브 상태 변경
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
 
       applyFilter();
     }
 
-    // 키워드 검색 및 카테고리 필터 복합 적용
     function applyFilter() {
       const query = document.getElementById('search-box').value.toLowerCase().trim();
       const items = document.querySelectorAll('.faq-item');
@@ -643,7 +625,6 @@
           visibleCount++;
         } else {
           item.style.display = 'none';
-          // 닫기 처리
           item.querySelector('.faq-content').classList.remove('open');
           const icon = item.querySelector('.faq-icon i');
           if (icon) icon.style.transform = 'rotate(0deg)';
@@ -658,7 +639,6 @@
       }
     }
 
-    // 검색 박스 타이핑 필터
     function filterFaqs() {
       applyFilter();
     }

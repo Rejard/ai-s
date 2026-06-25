@@ -1,7 +1,5 @@
 const CACHE_NAME = 'ai-s-pwa-cache-v2';
 
-// 🌟 Disable resource caching to permanently prevent white screen freezing caused by cache mismatch.
-// Simply meeting PWA installation eligibility, all requests are always bypassed to the real-time network.
 const urlsToCache = [];
 
 self.addEventListener('install', (event) => {
