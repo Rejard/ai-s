@@ -297,7 +297,6 @@ const adminAuthMiddleware = (req, res, next) => {
   next();
 };
 
-// Mount security middleware on all Admin-specific API routes
 router.use(zeroTrustMiddleware);
 router.use(requireAuthenticatedSession);
 router.use(adminAuthMiddleware);
@@ -448,7 +447,6 @@ router.post('/delete-manager', async (req, res) => {
 
     console.log(`[Admin Account Cleanup] Migrated ${migrateRes.changes} users under ${cleanWallet} to Master Manager ${MASTER_MANAGER_WALLET}.`);
 
-    // 3. The Manager's ledger payment (payments) history is also deleted for data integrity
     await queries.run("DELETE FROM payments WHERE wallet_address = ?", [cleanWallet]);
 
     await queries.run("DELETE FROM users WHERE wallet_address = ?", [cleanWallet]);
@@ -523,10 +521,6 @@ router.get('/ai-config', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/admin/ai-engine
- * @desc Get global AI engine switching mode
- */
 router.get('/ai-engine', async (req, res) => {
   try {
     const row = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
@@ -537,10 +531,6 @@ router.get('/ai-engine', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/admin/save-ai-engine
- * @desc Save global AI engine switching mode
- */
 router.post('/save-ai-engine', async (req, res) => {
   const { engineMode } = req.body;
   const validModes = ['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'];
@@ -568,10 +558,6 @@ router.post('/save-ai-engine', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/admin/toggle-automatic-promotion
- * @desc Toggle automatic promotion enabled mode (ON/OFF)
- */
 router.post('/toggle-automatic-promotion', async (req, res) => {
   try {
     const engineRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
@@ -604,10 +590,6 @@ router.post('/toggle-automatic-promotion', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/admin/training-stats
- * @desc Retrieve total count of records in ais_training_data
- */
 router.get('/training-stats', async (req, res) => {
   try {
     const trainingStats = await getAisTrainingStats(queries);
@@ -735,10 +717,6 @@ router.post('/aidl-gene-context', async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/admin/export-training-csv
- * @desc Export SQLite ais_training_data to fully compliant RFC 4180 CSV file
- */
 router.get('/export-training-csv', async (req, res) => {
   try {
     const rows = await queries.all(`
@@ -750,12 +728,10 @@ router.get('/export-training-csv', async (req, res) => {
       ORDER BY id ASC
     `);
 
-    // Build CSV compliant header and body rows
     const header = 'timestamp,current_price,price_change_ratio,rsi_14,sma_5,sma_20,gemini_decision,gemini_proposed_price,gemini_amount_ratio,gemini_reason,next_price_5m,realized_price_change,is_correct_decision,evaluation_due_at,evaluation_status,label_version\n';
     
     let csvContent = header;
     rows.forEach(r => {
-      // Escape reasons containing quotes or newlines to prevent parsing crashes in ML packages
       const escapedReason = String(r.gemini_reason || '')
         .replace(/"/g, '""')
         .replace(/\r?\n|\r/g, ' ');
@@ -775,7 +751,7 @@ router.get('/export-training-csv', async (req, res) => {
 
 const adminBriefingRefreshCoordinator = createRefreshCoordinator();
 const ADMIN_BRIEFING_SCOPE = 'ADMIN';
-const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours cache (aligns with daily evolutionary cycle)
+const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000;
 
 async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats) {
   try {
@@ -841,7 +817,7 @@ Rules:
         const response = await axios.post(url, {
           contents: [{ parts: [{ text: promptText }] }],
           generationConfig: makeCouncilBriefingGenerationConfig()
-        }, { timeout: 300000 }); // 5 minutes
+        }, { timeout: 300000 });
 
         return extractCompleteGeminiText(response.data);
       } catch (err) {
@@ -892,10 +868,6 @@ function generateFallbackBriefing(factionStats, activeMembers, generationStats) 
   return `현재 500인의 후보군 중 ${factionName}가 ${leadingFaction.percentage}%의 의석을 확보하여 다수당을 차지하고 있습니다. ${chairmanText} 시장의 움직임에 대응하여 ${opinionText}`;
 }
 
-/**
- * @route GET /api/admin/council-stats
- * @desc Retrieve AI Council members faction statistics, active members, and voting histories
- */
 router.get('/council-stats', async (req, res) => {
   try {
     const factionRows = await queries.all(`
@@ -987,7 +959,6 @@ router.get('/council-stats', async (req, res) => {
         }
 
         rawStdDev = validDimensions > 0 ? (totalStdDev / validDimensions) : 0.15;
-        // maps stddev to 0-100%: stddev >= 0.25 => 100%, near 0 => 0%
         diversityScore = Math.min(100, Math.max(0, Math.round((rawStdDev / 0.25) * 100)));
       }
     }
@@ -1096,13 +1067,11 @@ router.get('/council-stats', async (req, res) => {
   }
 });
 
-// [BACKDOOR] Force GA Evolution
 router.post('/force-evolution', async (req, res) => {
   try {
     const { runDailyEvolution } = require('../evolution.js');
     const stats = await runDailyEvolution();
     
-    // Update platform_settings to trigger briefing cache flush
     await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('last_evolution_time', ?)", [Date.now().toString()]);
     
     res.json({ success: true, stats, message: "강제 세대 진화 알고리즘이 완료되었습니다." });
@@ -1519,8 +1488,6 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   }
 
-  // ==========================================
-
   let gateioApiStatus = "OK";
   let gateioApiMsg = "Gate.io 거래소 API 키 로딩 전";
   try {
@@ -1587,7 +1554,6 @@ async function performSystemDiagnostics(runHeavyTests) {
           connectedRpc = url;
           break;
         } catch (err) {
-          // fallback to next RPC node on connection failure
         }
       }
       
@@ -1724,8 +1690,6 @@ async function performSystemDiagnostics(runHeavyTests) {
     warnings.push(`Gemini API 통신 실패: ${e.message}`);
   }
   details.geminiCheck = { status: geminiStatus, message: geminiMsg };
-  // ==========================================
-
 
   let pm2Status = "OK";
   let pm2Msg = "PM2 환경 정상 작동 중";
