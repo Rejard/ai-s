@@ -27,8 +27,6 @@ function normalizePositiveInteger(value, fallback = 1) {
 }
 
 function isCanonicalCentroidShape(weights) {
-  // DB bootstrap preserves legacy seed values, so Task 2 checks schema shape only.
-  // Python DNA validation can enforce feature-range limits after the full cutover.
   if (!weights || typeof weights !== 'object' || Array.isArray(weights)) return false;
   if (!AIDL_ACTIONS.every((action) => Object.prototype.hasOwnProperty.call(weights, action))) return false;
   if (Object.keys(weights).some((key) => !AIDL_ACTIONS.includes(key))) return false;
@@ -186,7 +184,6 @@ function initializeDatabase() {
         )
       `, (err) => {
         if (err) return reject(err);
-        // Insert default mock yield (initial value 0.0)
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_mock_profit_percent', '0.0')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_engine', 'GEMINI_ONLY')`);
         db.run(`INSERT OR IGNORE INTO platform_settings (key, value) VALUES ('global_ai_interval_auto', 'OFF')`);
@@ -369,7 +366,6 @@ function initializeDatabase() {
         )
       `, [rootReferrerAddress]);
 
-      // Even if an existing DB file is already created, force integrity correction and rectification of email column and name with Lee Myung-hak's Master information
       db.run("ALTER TABLE users ADD COLUMN is_manager INTEGER DEFAULT 0", (err) => {
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ users 테이블 is_manager 컬럼 마이그레이션 실패:", err.message);
@@ -390,11 +386,10 @@ function initializeDatabase() {
 
       db.run("ALTER TABLE manager_ai_settings ADD COLUMN ai_grid_auto_range TEXT NOT NULL DEFAULT 'OFF'", (err) => {
         if (err && !err.message.includes("duplicate column name")) {
-          console.error("??manager_ai_settings ?뚯씠釉?ai_grid_auto_range 而щ읆 留덉씠洹몃젅?댁뀡 ?ㅽ뙣:", err.message);
+          console.error("manager_ai_settings table ai_grid_auto_range column migration failed:", err.message);
         }
       });
 
-      // Shadow Racing: engine_mode column migration
       db.run("ALTER TABLE ais_training_data ADD COLUMN engine_mode TEXT NOT NULL DEFAULT 'GEMINI'", (err) => {
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ ais_training_data engine_mode 컬럼 마이그레이션 실패:", err.message);
@@ -407,12 +402,10 @@ function initializeDatabase() {
         }
       });
 
-      // Workaround: consolidate deprecated GEMINI_ONLY/GEMINI_AIS_SHADOW modes into GEMINI
       db.run("UPDATE platform_settings SET value = 'GEMINI' WHERE key = 'global_ai_engine' AND value IN ('GEMINI_ONLY', 'GEMINI_AIS_SHADOW')", (err) => {
         if (err) console.error("❌ platform_settings 엔진 모드 통합 마이그레이션 실패:", err.message);
       });
 
-      // users table schema migration: remove tier, trial_ends_at columns if exists
       db.serialize(() => {
         db.all("PRAGMA table_info(users)", (pragmaErr, columns) => {
           if (!pragmaErr && columns && columns.length > 0) {
@@ -469,7 +462,6 @@ function initializeDatabase() {
         WHERE is_manager = 1
       `);
 
-      // payments table schema update migration: if type constraint is old, migrate to new schema
       db.serialize(() => {
         db.all("SELECT id, type FROM payments WHERE type IN ('MONTHLY_SUBSCRIPTION', 'MEMBERSHIP_FEE')", (selErr, selRows) => {
           if (!selErr && selRows && selRows.length > 0) {
