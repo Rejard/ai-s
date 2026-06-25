@@ -68,7 +68,6 @@ const requireAdminCouncilAccess = (req, res, next) => {
   next();
 };
 
-// SUT price memory cache (default market price for simulation)
 let cachedPrices = {
   sut: { usd: 1.0, usd_24h_change: 0.0, usd_24h_high: 1.0, usd_24h_low: 1.0 }
 };
@@ -78,7 +77,6 @@ let lastHistoryFetchTime = 0;
 
 async function getLivePrices() {
   const now = Date.now();
-  // Maintain 10-second cache to prevent Gate.io API Rate Limit (compared to dashboard 5-second polling)
   if (now - lastPriceFetchTime < 10000) {
     return cachedPrices;
   }
@@ -271,10 +269,6 @@ router.post('/update-ratio', requireAuthenticatedSession, verifyWalletOwnership,
   }
 });
 
-/**
- * @route POST /api/investment/deposit
- * @desc Register additional fund Deposit mock transaction
- */
 router.post('/deposit', requireAuthenticatedSession, verifyWalletOwnership, async (req, res) => {
   const { walletAddress, amount, txHash } = req.body;
   if (!walletAddress || !amount) {
@@ -341,7 +335,7 @@ router.get('/history/:walletAddress', requireAuthenticatedSession, verifyWalletO
 
 const investmentBriefingRefreshCoordinator = createRefreshCoordinator();
 const INVESTMENT_BRIEFING_SCOPE = 'INVESTMENT';
-const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours cache (aligns with daily evolutionary cycle)
+const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000;
 
 async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats) {
   try {
@@ -407,7 +401,7 @@ Rules:
         const response = await axios.post(url, {
           contents: [{ parts: [{ text: promptText }] }],
           generationConfig: makeCouncilBriefingGenerationConfig()
-        }, { timeout: 300000 }); // 5 minutes
+        }, { timeout: 300000 });
 
         return extractCompleteGeminiText(response.data);
       } catch (err) {
@@ -458,10 +452,6 @@ function generateFallbackBriefing(factionStats, activeMembers, generationStats) 
   return `현재 500인의 후보군 중 ${factionName}가 ${leadingFaction.percentage}%의 의석을 확보하여 다수당을 차지하고 있습니다. ${chairmanText} 시장의 움직임에 대응하여 ${opinionText}`;
 }
 
-/**
- * @route GET /api/investment/council-stats
- * @desc Retrieve AI Council members faction statistics, active members, and voting histories
- */
 router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
   try {
     const factionRows = await queries.all(`
