@@ -46,18 +46,15 @@ function applyReplacements(content) {
   return newContent;
 }
 
-// 1. Process Mobile
 let mContent = fs.readFileSync(mFile, 'utf8');
 mContent = applyReplacements(mContent);
 mContent = mContent.replace(warningBlockOldRegex, warningBlockStr.trim());
 fs.writeFileSync(mFile, mContent, 'utf8');
 console.log('Mobile Dashboard updated.');
 
-// 2. Process PC
 let pcContent = fs.readFileSync(pcFile, 'utf8');
 pcContent = applyReplacements(pcContent);
 
-// Add missing warning block in PC. Look for where grid Settings Save button is.
 const saveBtnRegex = /(<button[^>]*onClick=\{handleSaveGridSettings\}[^>]*>[\s\S]*?<\/button>\s*<\/div>\s*)(<\/div>\s*<\/div>\s*<\/div>)/;
 if (pcContent.match(saveBtnRegex)) {
   if (!pcContent.includes('컴플라이언스 가이드')) {
