@@ -14,7 +14,7 @@ const {
   getManagedWithdrawal,
 } = require('../managerOrganization');
 
-// Ironclad security middleware that completely blocks illegal viewing and control of other Managers' data!
+
 
 router.use((req, res, next) => {
   if (req.path.includes('/download-id-card')) {
@@ -55,7 +55,7 @@ const managerAuthMiddleware = async (req, res, next) => {
   }
 };
 
-// Force mount security blocking middleware on all Manager routes!
+
 router.use(requireAuthenticatedSession);
 router.use(managerAuthMiddleware);
 
@@ -107,7 +107,7 @@ router.get('/download-id-card/:userId', async (req, res) => {
 
     const isMaster = req.managerWallet.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase();
     
-    // SAFEGUARD: Check if manager_address is null before calling toLowerCase
+
     if (!user.manager_address) {
        console.log(`[KYC DOWNLOAD-ONCE] User ${userId} has no manager_address in DB`);
        return res.status(403).json({ success: false, message: '권한 경보: 본인 하위 지참 회원의 신분증 파일만 조회 가능합니다.' });
@@ -475,10 +475,7 @@ router.post('/manual-adjustment', async (req, res) => {
   }
 });
 
-/**
- * @route POST /api/manager/trigger-ai-profit
- * @desc Simulation engine where the Manager forces Distribution of AI trading profit (SUT) to all Active Members
- */
+
 router.post('/trigger-ai-profit', async (req, res) => {
   const { profitPercentage } = req.body;
 
@@ -835,7 +832,7 @@ router.get('/gateio-performance', async (req, res) => {
       ORDER BY CAST(create_time AS REAL) DESC
     `, [managerEmail]);
 
-    // Shape DB rows to match Gate.io API response format so the UI needs no changes
+
     const trades = (dbTrades || []).map(t => ({
       id: t.trade_id,
       order_id: t.order_id,
@@ -849,7 +846,7 @@ router.get('/gateio-performance', async (req, res) => {
       create_time_ms: parseFloat(t.create_time_ms || 0)
     }));
 
-    let sutPrice = 0.19; // Default fallback price
+    let sutPrice = 0.19;
     let sutHigh24h = 0.19;
     let sutLow24h = 0.19;
     try {
@@ -893,7 +890,6 @@ router.get('/gateio-performance', async (req, res) => {
       } else if (tr.currency === 'SUT') {
         val = amt * sutPrice;
       } else {
-        // [FIX] Non-SUT/USDT coins (e.g. POL) valued at 0; fallback below derives cost basis from trade history
         val = 0;
       }
 
@@ -910,7 +906,7 @@ router.get('/gateio-performance', async (req, res) => {
 
     const currentValue = (sutBalance * sutPrice) + usdtBalance;
 
-    // Fallback: when no transfer history exists or net invested <= 0, derive cost basis from trade history
+
     if (netInvested <= 0) {
       let holdingQty = 0;
       let avgPrice = 0;
@@ -937,7 +933,7 @@ router.get('/gateio-performance', async (req, res) => {
       netInvested = totalCost > 0 ? totalCost : 100;
     }
 
-    const totalBuyUsdt = netInvested; // backward-compat alias
+    const totalBuyUsdt = netInvested;
 
 
     let yieldPercent = 0;
@@ -1004,7 +1000,7 @@ router.get('/gateio-performance', async (req, res) => {
       yieldPercent,
       tradesCount: trades.length,
       trades: sortedTrades.slice(0, 20),
-      // Provide masked information for security (to prevent lock display on other local device UIs)
+
       maskedApiKey: apiKey ? `${apiKey.substring(0, 6)}******` : '',
       maskedApiSecret: apiSecret ? `${apiSecret.substring(0, 6)}******` : '',
       depositAddress: depositAddress,
@@ -1133,14 +1129,14 @@ router.post('/sync-transactions', async (req, res) => {
 
     const latestBlock = await provider.getBlockNumber();
     
-    // Retrieve last_synced_block from DB
+
     const syncStatusRow = await queries.get("SELECT last_synced_block FROM manager_sync_status WHERE wallet_address = ?", [managerAddress]);
     
     let startBlock;
     if (syncStatusRow && syncStatusRow.last_synced_block) {
       startBlock = syncStatusRow.last_synced_block + 1;
     } else {
-      // Initial sync: scan last 80,000 blocks (~2 days on Polygon)
+
       startBlock = latestBlock - 80000;
     }
 
@@ -1163,7 +1159,7 @@ router.post('/sync-transactions', async (req, res) => {
 
     const promises = [];
 
-    // Incoming transfers: Transfer events where to == manager wallet (batched for parallel RPC)
+
     for (const addr of targetAddresses) {
       const filter = sutContract.filters.Transfer(null, addr);
       for (let currentStart = startBlock; currentStart <= latestBlock; currentStart += step) {
@@ -1179,7 +1175,7 @@ router.post('/sync-transactions', async (req, res) => {
       }
     }
 
-    // Outgoing transfers: Transfer events where from == manager wallet (batched for parallel RPC)
+
     for (const addr of targetAddresses) {
       const filter = sutContract.filters.Transfer(addr, null);
       for (let currentStart = startBlock; currentStart <= latestBlock; currentStart += step) {
@@ -1195,7 +1191,7 @@ router.post('/sync-transactions', async (req, res) => {
       }
     }
 
-    // Parallel RPC execution to prevent 504 Gateway Timeout on large block ranges
+
     const results = await Promise.all(promises);
     let allTransfers = [];
     for (const batch of results) {
@@ -1243,7 +1239,7 @@ router.post('/sync-transactions', async (req, res) => {
               VALUES (?, ?, 'WITHDRAW_REQUEST', 'SUCCESS', ?)
             `, [toAddr, amount, txHash]);
 
-            // Insert negative DEPOSIT to offset the user's ledger balance for this withdrawal
+
             await queries.run(`
               INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
               VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
@@ -1256,7 +1252,7 @@ router.post('/sync-transactions', async (req, res) => {
       }
     }
 
-    // Save latest block as last_synced_block
+
     await queries.run(`
       INSERT INTO manager_sync_status (wallet_address, last_synced_block, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
