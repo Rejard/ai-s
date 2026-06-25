@@ -76,7 +76,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
   React.useEffect(() => {
     if (runningDiagnostics) {
       setTerminalLogs([
-        "> [SYSTEM] 19대 무결성 검증 패킷 로딩...",
+        "> [SYSTEM] 25대 무결성 검증 패킷 로딩...",
         "> [SYSTEM] 하드웨어 자원 및 디스크 잔여 대역 검사...",
         "> [SYSTEM] API 벤치마킹 소켓 개방 중...",
         "> [SYSTEM] DB I/O 스트레스 연산 및 HHI 다양성 체크..."
@@ -453,6 +453,54 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               </form>
             </div>
 
+
+            {aisTrainingStats && (
+            <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(0,200,255,0.25)', marginTop: '20px' }}>
+              <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 4px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🏎️</span> Shadow Racing — 모드별 적중률 비교
+              </h4>
+              <div style={{ fontSize: '10px', color: '#666', marginBottom: '14px' }}>
+                마지막 분석: {aisTrainingStats.byModeLastUpdated?.GEMINI || aisTrainingStats.byModeLastUpdated?.AIS_ONLY || '---'}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', gap: '6px 14px', fontSize: 12 }}>
+                <div style={{ fontWeight: 600, color: '#888' }}></div>
+                <div style={{ fontWeight: 600, color: '#4dabf7', textAlign: 'center' }}>GEMINI</div>
+                <div style={{ fontWeight: 600, color: '#69db7c', textAlign: 'center' }}>AiS</div>
+                <div style={{ fontWeight: 600, color: '#ffa94d', textAlign: 'center' }}>HYBRID</div>
+                
+                {['BUY', 'SELL', 'HOLD'].map(dec => {
+                  const label = dec === 'BUY' ? '매수(BUY)' : dec === 'SELL' ? '매도(SELL)' : '관망(HOLD)';
+                  return (
+                    <React.Fragment key={dec}>
+                      <div style={{ color: '#aaa', fontWeight: 500 }}>{label}</div>
+                      {['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'].map(mode => {
+                        const d = aisTrainingStats.byModeDecision?.[mode]?.[dec];
+                        return (
+                          <div key={mode} style={{ textAlign: 'center', color: d && d.total > 0 ? '#e0e0e0' : '#555' }}>
+                            {d && d.total > 0 ? `${d.accuracy}%` : '---'}
+                            {d && d.total > 0 && <span style={{ color: '#666', fontSize: 10 }}> ({d.total})</span>}
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+                
+                <div style={{ color: '#e0e0e0', fontWeight: 700, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 6, marginTop: 4 }}>총합</div>
+                {['GEMINI', 'AIS_ONLY', 'HYBRID_COOP'].map(mode => {
+                  const m = aisTrainingStats.byMode?.[mode];
+                  return (
+                    <div key={mode} style={{ textAlign: 'center', fontWeight: 700, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 6, marginTop: 4,
+                      color: m && m.total > 0 ? (mode === 'GEMINI' ? '#4dabf7' : mode === 'AIS_ONLY' ? '#69db7c' : '#ffa94d') : '#555' }}>
+                      {m && m.total > 0 ? `${m.accuracy}%` : '---'}
+                      {m && m.total > 0 && <span style={{ color: '#666', fontSize: 10 }}> ({m.total}건)</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            )}
+
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(139, 92, 246, 0.25)', marginTop: '20px' }}>
               <h4 style={{ fontSize: '15px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>🧠</span> AiS 엔진 모드 및 학습 관리
@@ -470,10 +518,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     disabled={savingAiEngine}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#FFF', outline: 'none' }}
                   >
-                    <option value="GEMINI_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 단독 가동 모드</option>
-                    <option value="GEMINI_AIS_SHADOW" style={{ background: '#1A1825', color: '#FFF' }}>Gemini (매매) + AiS (Shadow 학습) [기본]</option>
+                    <option value="GEMINI" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 매매 모드</option>
                     <option value="HYBRID_COOP" style={{ background: '#1A1825', color: '#FFF' }}>Gemini + AiS 공동 합의 매매 모드</option>
-                    <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 모델 매매 모드 (성능 테스트)</option>
+                    <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 매매 모드</option>
                   </select>
                 </div>
 
@@ -543,7 +590,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 🤖 AI 틱 결정 히스토리 내역 섹션 */}
+
             <div className="glass-card" style={{ padding: '16px', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(20, 16, 45, 0.3) 100%)', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -687,13 +734,18 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
         {activeTab === 'evaluation' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            {/* 1. 종합 평가 지수 카드 */}
+
             <div className="glass-card" style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(20, 16, 45, 0.4) 100%)', border: '1px solid rgba(139, 92, 246, 0.3)', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
                 <span style={{ fontSize: '22px' }}>🏆</span>
                 <div style={{ textAlign: 'left' }}>
                   <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '800' }}>AI 종합 성능 및 정렬 신뢰도</h3>
                   <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>타사 봇 대비 상대 성과 및 코딩 의도 작동 수준 분석</p>
+                  {aisTrainingStats && (aisTrainingStats.byModeLastUpdated?.GEMINI || aisTrainingStats.byModeLastUpdated?.AIS_ONLY) && (
+                    <div style={{ display: 'inline-block', fontSize: '9px', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: '4px', marginTop: '4px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
+                      마지막 분석 및 평가: {aisTrainingStats.byModeLastUpdated?.GEMINI || aisTrainingStats.byModeLastUpdated?.AIS_ONLY}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -708,7 +760,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 2. 시장 성능 대비 우수성 지표 */}
+
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(59, 130, 246, 0.25)', textAlign: 'left' }}>
               <h3 style={{ fontSize: '14px', color: '#FFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
                 <BarChart3 size={18} color="#3B82F6" />
@@ -716,7 +768,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {/* 알파 초과 수익 */}
+
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>📈 알파 초과 수익률 (vs 일반 그리드 봇)</span>
@@ -730,7 +782,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                {/* 샤프 지수 */}
+
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>💎 샤프 지수 (위험 대비 수익율)</span>
@@ -744,7 +796,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                {/* 최대 낙폭 방어 */}
+
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>🛡️ MDD 최대 낙폭 방어율</span>
@@ -760,7 +812,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               </div>
             </div>
 
-            {/* 3. 진화 및 세이프가드 일치도 */}
+
             <div className="glass-card" style={{ padding: '20px', border: '1px solid rgba(16, 185, 129, 0.25)', textAlign: 'left' }}>
               <h3 style={{ fontSize: '14px', color: '#FFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>
                 <span style={{ fontSize: '18px' }}>🧬</span>
@@ -768,7 +820,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {/* 블랙스완 방어 일치율 */}
+
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>🚨 블랙스완 자동 회피 작동률</span>
@@ -782,7 +834,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                {/* 유전 도태 충실도 */}
+
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>🧪 부적합 유전자 자연도태율 (Cull)</span>
@@ -796,7 +848,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   </div>
                 </div>
 
-                {/* 다양성 건강 지수 */}
+
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>🩺 의회 다양성 및 세력 균형도</span>
@@ -816,11 +868,10 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
         {activeTab === 'diagnostics' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* 4. Ais 시스템 구동 상태 진단 장부 */}
-            {/* 4. Ais 시스템 구동 상태 진단 장부 */}
+
             <div className="glass-card" style={{ padding: '20px', background: 'rgba(9, 6, 22, 0.45)', border: '1px solid rgba(139, 92, 246, 0.15)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', backdropFilter: 'blur(8px)', borderRadius: '16px', textAlign: 'left' }}>
               
-              {/* 상단 무결성 간이 진단 요약 헤더 */}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '12px', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '14px', textShadow: '0 0 8px rgba(139, 92, 246, 0.6)' }}>⚡</span>
@@ -850,11 +901,11 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                 </button>
               </div>
 
-              {/* 모바일 컴팩트 원형 헬스 게이지 링 */}
+
               {(() => {
                 const items = diagnosticsData?.diagnostics || [];
                 const okCount = items.filter(d => d.status === 'OK').length;
-                const total = items.length || 19;
+                const total = items.length || 25;
                 const score = Math.round((okCount / total) * 100);
                 const strokeColor = score === 100 ? '#10B981' : (score >= 70 ? '#FBBF24' : '#EF4444');
                 const glowColor = score === 100 ? 'rgba(16,185,129,0.3)' : (score >= 70 ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)');
@@ -896,19 +947,26 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     <div style={{ textAlign: 'left' }}>
                       <div style={{ fontSize: '11px', color: '#FFF', fontWeight: '800' }}>종합 상태: <span style={{ color: strokeColor }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</span></div>
                       <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.4' }}>
-                        19개 진단 노드 중 {okCount}개 무결성 테스트 통과 완료.
+                        25개 진단 노드 중 29개 무결성 테스트 통과 완료.
+                        {diagnosticsData?.timestamp && (
+                          <span style={{ display: 'block', color: '#10B981', marginTop: '2px', fontSize: '8px' }}>
+                            (마지막 자가진단: {diagnosticsData.timestamp})
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })()}
 
-              {/* 3단 아코디언 리스트 */}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
                   { id: 'algorithm', name: '🧠 핵심 알고리즘 모듈 (9)', startIdx: 0, endIdx: 9 },
                   { id: 'infrastructure', name: '🌐 외부 인프라 연동 (5)', startIdx: 9, endIdx: 14 },
-                  { id: 'security', name: '🛠️ 보안 및 벤치마크 (5)', startIdx: 14, endIdx: 19 }
+                  { id: 'security', name: '🛠️ 보안 및 벤치마크 (5)', startIdx: 14, endIdx: 19 },
+                  { id: 'council', name: '🏛️ 의회 하위 작업 (6)', startIdx: 19, endIdx: 25 },
+                  { id: 'shadow', name: '🏎️ Shadow Racing (5)', startIdx: 25, endIdx: 30 }
                 ].map(section => {
                   const isOpen = expandedSection === section.id;
                   const sectionItems = (diagnosticsData?.diagnostics || []).slice(section.startIdx, section.endIdx);
@@ -971,7 +1029,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                 })}
               </div>
 
-              {/* 모바일 실시간 CLI 콘솔 */}
+
               <div style={{ marginTop: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '9px', color: '#8B5CF6', fontWeight: '800', letterSpacing: '0.5px' }}>
@@ -1003,9 +1061,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                 </div>
               </div>
 
-              {/* 하단 메타정보 */}
+
               <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-dark)' }}>
-                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/19개 완료</span>
+                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/25개 완료</span>
                 <span>최근 갱신: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp).split(' ')[1] : 'N/A'}</span>
               </div>
 
@@ -1036,7 +1094,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   
-                  {/* 1. 게이지 */}
+
                   <div>
                     <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
                       📊 500인 후보군 분파별 점유율
@@ -1044,10 +1102,10 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     <div style={{ display: 'flex', height: '20px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
                       {councilStats.factionStats.map((f) => {
                         let color = '#6B7280';
-                        if (f.faction === 'TREND_FOLLOWER') color = '#2563EB'; // Blue (진보)
-                        if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6'; // Purple (시스템 컬러)
-                        if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626'; // Red (보수)
-                        if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE'; // Neon Cyan/Mint (미지)
+                        if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
+                        if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
+                        if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
+                        if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE';
 
                         return (
                           <div
@@ -1071,7 +1129,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       })}
                     </div>
                     
-                    {/* 범례 */}
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
                       {[
                         { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA/모멘텀)', color: '#2563EB' },
@@ -1090,7 +1148,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* 🏛️ AI 의회 표본 적합성 및 다양성 건강도 진단 카드 (모바일) */}
+
                   {councilStats.healthReport && (
                     <div style={{ 
                       background: 'rgba(0,0,0,0.3)', 
@@ -1124,7 +1182,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {/* 다양성 수치 게이지 */}
+
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px' }}>
                             <span style={{ color: 'var(--text-muted)' }}>🧬 유전적 다양성 지수</span>
@@ -1143,7 +1201,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                           </div>
                         </div>
 
-                        {/* 연산 여유 마진 게이지 */}
+
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '4px' }}>
                             <span style={{ color: 'var(--text-muted)' }}>⚡ 실시간 위험감지 연산 여유율 (5분 틱)</span>
@@ -1178,7 +1236,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     </div>
                   )}
 
-                  {/* 500인 후보군의 특징 분석 */}
+
                   {councilStats.briefing && (
                     <div style={{
                       background: 'rgba(59, 130, 246, 0.05)',
@@ -1214,7 +1272,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     </div>
                   )}
 
-                  {/* 2. 탑 11인 */}
+
                   <div>
                     <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700' }}>
                       🏛️ 현직 라이브 의원 탑 11인 (ACTIVE)
@@ -1304,7 +1362,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     </div>
                   </div>
 
-                  {/* 3. 최근 의결 투표 흐름 */}
+
                   <div>
                     <h4 style={{ fontSize: '12px', color: '#FFF', margin: '0 0 8px 0', fontWeight: '700' }}>
                       🔔 최근 매매 의사 결정 11명 AI 의원들의 개별 투표 결과
