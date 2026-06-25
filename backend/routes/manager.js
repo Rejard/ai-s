@@ -891,7 +891,7 @@ router.get('/gateio-performance', async (req, res) => {
       if (tr.currency === 'USDT') {
         val = amt;
       } else if (tr.currency === 'SUT') {
-        val = amt * sutPrice; // SUT 입출금 가치는 실시간 시가 기준 반영
+        val = amt * sutPrice;
       } else {
         // [FIX] Non-SUT/USDT coins (e.g. POL) valued at 0; fallback below derives cost basis from trade history
         val = 0;

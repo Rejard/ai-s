@@ -13,8 +13,7 @@ if (!fs.existsSync(tempUploadDir)) {
  */
 async function cleanExpiredPendingKycUsers() {
   try {
-    // 24시간이 경과한 PENDING_KYC 회원들을 조회합니다.
-    // SQLite의 joined_at은 로컬 시간 또는 UTC 타임스탬프를 보므로, 두 조건을 안전하게 포함시킵니다.
+
     const expiredUsers = await queries.all(`
       SELECT id, wallet_address, id_card_path, joined_at
       FROM users
@@ -61,14 +60,12 @@ async function cleanExpiredPendingKycUsers() {
   }
 }
 
-/**
- * 24시간 만료 체크 스케줄러를 가동합니다. (1시간 주기)
- */
+
 function initIdCardCleanupScheduler() {
-  // 백엔드 실행 시 즉시 1회 작동
+
   cleanExpiredPendingKycUsers();
   
-  // 1시간마다 주기적으로 실행 (1 * 60 * 60 * 1000 = 3600000)
+
   setInterval(() => {
     cleanExpiredPendingKycUsers();
   }, 3600000);

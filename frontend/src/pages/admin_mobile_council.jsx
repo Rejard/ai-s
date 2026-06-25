@@ -47,7 +47,7 @@ function AdminMobileCouncil() {
     fetchCouncilStats();
     const refreshTimer = setInterval(() => {
       fetchCouncilStats();
-    }, 60000); // 60초 주기로 변경 (기존 5초)
+    }, 60000);
     return () => clearInterval(refreshTimer);
   }, []);
 
@@ -112,10 +112,10 @@ function AdminMobileCouncil() {
             <div style={{ display: 'flex', height: '22px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
               {councilStats.factionStats.map((f, idx) => {
                 let color = '#6B7280';
-                if (f.faction === 'TREND_FOLLOWER') color = '#2563EB'; // Blue (진보)
-                if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6'; // Purple (시스템 컬러)
-                if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626'; // Red (보수)
-                if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE'; // Neon Cyan/Mint (미지)
+                if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
+                if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
+                if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
+                if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE';
 
                 return (
                   <div

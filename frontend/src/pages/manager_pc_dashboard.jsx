@@ -432,7 +432,7 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
 
   useEffect(() => {
     fetchManagerData();
-    const interval = setInterval(fetchManagerData, 60000); // 60초 주기 (기존 5초)
+    const interval = setInterval(fetchManagerData, 60000);
     return () => clearInterval(interval);
   }, []);
 

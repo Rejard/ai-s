@@ -90,7 +90,7 @@ function UserMobileDashboard({ walletAddress, userData, onLogout }) {
       
       intervalId = setInterval(() => {
         fetchDashboardData();
-      }, 60000); // 60초 주기로 변경 (기존 12초)
+      }, 60000);
     };
 
     const stopPolling = () => {

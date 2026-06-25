@@ -649,11 +649,11 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   </h4>
                   <div style={{ display: 'flex', height: '24px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
                     {councilStats.factionStats.map((f, idx) => {
-                      let color = '#6B7280'; // Default
-                      if (f.faction === 'TREND_FOLLOWER') color = '#2563EB'; // Blue (진보)
-                      if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6'; // Purple (시스템 컬러)
-                      if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626'; // Red (보수)
-                      if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE'; // Neon Cyan/Mint (미지)
+                      let color = '#6B7280';
+                      if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
+                      if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
+                      if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
+                      if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE';
 
                       return (
                         <div
