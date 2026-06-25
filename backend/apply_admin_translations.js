@@ -7,7 +7,7 @@ const replacements = [
   { from: '👑 어드민 센터', to: '👑 최고 관리자(Admin) 제어 센터' },
   { from: 'Lee Myung-hak General Manager', to: '이명학 총괄 관리자 (Platform Owner)' },
   { from: 'Platform Owner', to: '이명학 총괄 관리자 (Platform Owner)' },
-  { from: '이명학 총괄 관리자 (이명학 총괄 관리자 (Platform Owner))', to: '이명학 총괄 관리자 (Platform Owner)' }, // just in case
+  { from: '이명학 총괄 관리자 (이명학 총괄 관리자 (Platform Owner))', to: '이명학 총괄 관리자 (Platform Owner)' },
   { from: 'Access Permission Security Restriction', to: '접근 권한 보안 제한 (보안 통제 구역)' }
 ];
 
