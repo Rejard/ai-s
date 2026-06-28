@@ -438,3 +438,34 @@ The latest admin surface now covers the full AIDL operating chain:
 - admin-only DNA context visibility for candidate/council operation
 
 In short, AIDL is now documented and operated as a five-context, admin-auditable DNA evolution system rather than only a four-state genome experiment.
+
+---
+
+## AIDL Integrity Diagnostics Extension & Testing Guard Integration
+
+To enhance system reliability, we have significantly expanded the platform's self-diagnostics pipeline and established a robust regression testing harness.
+
+### 1. Expansion of Self-Diagnostics Nodes (25 ➔ 35 Nodes)
+We extended the backend self-diagnostics engine (`performSystemDiagnostics`) from 25 to 35 unique nodes to detect infrastructure and data integrity anomalies proactively.
+- **Faction Assignment Integrity (NULL check)** (`councilNullFactionCheck`): Scans the active database to ensure no council member records are corrupted with missing (NULL) factions.
+- **DNA/Phenotype Integrity** (`councilDnaIntegrityCheck`): Ensures that every council member has valid non-empty `dna_json` and `phenotype_json` configurations, preventing calculation blockages during voting and breeding.
+- **Weights Vector Shape Verification** (`councilWeightsShapeCheck`): Strictly validates that the decision weights (`weights_json`) conform to a canonical 5D numerical array structure across `BUY`, `SELL`, and `HOLD` categories.
+- **Gemini API Key Settings Status** (`geminiApiKeyCheck`): Monitors whether the global API key required for LLM analysis is present and correctly populated.
+- **Engine-Promotion Consistency Check** (`enginePromoConsistencyCheck`): Detects and flags logical mismatches, such as having the `GEMINI` model active while automatic promotion is set to `ON`.
+- **PM2 Cumulative Restart Adjustment**: Adjusted the cumulative process restart threshold from 50 to 100 to align with realistic hosting conditions and decrease warning noise.
+
+### 2. Frontend Dashboard Synchronization
+- The PC and Mobile Admin Dashboards ([admin_pc_dashboard.jsx](file:///c:/home/ai-s/frontend/src/pages/admin_pc_dashboard.jsx) and [admin_mobile_dashboard.jsx](file:///c:/home/ai-s/frontend/src/pages/admin_mobile_dashboard.jsx)) are updated to synchronize with the new 35-node pipeline.
+- Range slicing is mapped accurately across all 5 dashboard categories (Algorithm: 9, Infrastructure: 5, Security: 5, Council: 11, Shadow Racing: 5) along with real-time category badge counts for active warnings and errors.
+
+### 3. Addition of 4 New Regression Test Suites
+We introduced 4 unit and integration test scripts under the backend suite:
+1. **aiControlRoutes.test.js** ([aiControlRoutes.test.js](file:///c:/home/ai-s/backend/aiControlRoutes.test.js))
+   - Tests AI config parameters, including timeout normalization, API key trimming, and AIDL policy parameter limits clamping.
+2. **buildDeterministicDna.test.js** ([buildDeterministicDna.test.js](file:///c:/home/ai-s/backend/buildDeterministicDna.test.js))
+   - Assures that identical feature weights generate deterministic DNA genome schemas, and validates that malformed or non-canonical weights prompt appropriate validation errors.
+3. **repairAiCouncilState.test.js** ([repairAiCouncilState.test.js](file:///c:/home/ai-s/backend/repairAiCouncilState.test.js))
+   - Tests the self-healing refill logic (keeping candidate pools up to 500 members) and verifies the demotion workflow for inactive initial council members (`total_count = 0`).
+4. **systemDiagnostics.test.js** ([systemDiagnostics.test.js](file:///c:/home/ai-s/backend/systemDiagnostics.test.js))
+   - Conducts full-suite evaluations of all 35 diagnostics nodes, asserting correct order, correct schema format, and verifying correct error/warning state transitions.
+

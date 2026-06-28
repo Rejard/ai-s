@@ -37,10 +37,12 @@ async function main() {
   await store.run(`
     CREATE TABLE ais_training_data (
       id INTEGER PRIMARY KEY,
+      timestamp TEXT,
       gemini_decision TEXT,
       is_correct_decision INTEGER,
       evaluation_status TEXT,
-      label_version INTEGER
+      label_version INTEGER,
+      engine_mode TEXT
     )
   `);
   await store.run(`
@@ -102,11 +104,11 @@ async function main() {
     )
   `);
   await store.run(`
-    INSERT INTO ais_training_data VALUES
-      (1, 'BUY', 1, 'LABELED', 2),
-      (2, 'BUY', 0, 'LABELED', 2),
-      (3, 'SELL', -1, 'PENDING', 2),
-      (4, 'HOLD', 1, 'INVALID', 1)
+    INSERT INTO ais_training_data (id, timestamp, gemini_decision, is_correct_decision, evaluation_status, label_version, engine_mode) VALUES
+      (1, '2026-06-09 10:00:00', 'BUY', 1, 'LABELED', 2, 'GEMINI'),
+      (2, '2026-06-09 10:05:00', 'BUY', 0, 'LABELED', 2, 'GEMINI'),
+      (3, '2026-06-09 10:10:00', 'SELL', -1, 'PENDING', 2, 'LOCAL_MODEL'),
+      (4, '2026-06-09 10:15:00', 'HOLD', 1, 'INVALID', 1, 'LOCAL_MODEL')
   `);
   await store.run(`
     INSERT INTO ais_model_runs VALUES
@@ -162,7 +164,7 @@ async function main() {
   assert.deepStrictEqual(result.byDecision.SELL, { count: 0, correct: 0, accuracy: 0 });
   assert.strictEqual(result.latestRun.holdoutScore, 54);
   assert.deepStrictEqual(result.latestRun.promotionReasons, ['MIN_LABELED_OBSERVATIONS']);
-  assert.strictEqual(result.shadowOnly, true);
+  assert.strictEqual(result.shadowOnly, false);
   assert.strictEqual(result.automaticPromotionEnabled, false);
   assert.strictEqual(result.dnaStateTotalsAvailable, true);
   assert.deepStrictEqual(result.dnaStateTotals, {

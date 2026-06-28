@@ -1143,7 +1143,12 @@ async function performSystemDiagnostics(runHeavyTests) {
     dbPerformanceCheck: { status: "OK", message: "진단 대기" },
     geneDiversityHhiCheck: { status: "OK", message: "진단 대기" },
     councilSchedulerCheck: { status: "OK", message: "진단 대기" },
-    sslCertificateCheck: { status: "OK", message: "진단 대기" }
+    sslCertificateCheck: { status: "OK", message: "진단 대기" },
+    councilNullFactionCheck: { status: "OK", message: "진단 대기" },
+    councilDnaIntegrityCheck: { status: "OK", message: "진단 대기" },
+    councilWeightsShapeCheck: { status: "OK", message: "진단 대기" },
+    geminiApiKeyCheck: { status: "OK", message: "진단 대기" },
+    enginePromoConsistencyCheck: { status: "OK", message: "진단 대기" }
   };
 
 
@@ -1707,10 +1712,10 @@ async function performSystemDiagnostics(runHeavyTests) {
         errors.push(`ai-s PM2 프로세스 비정상 상태: ${status}`);
       } else {
         pm2Msg = `정상 가동 중 (상태: online, 누적 재시작: ${restarts}회, Uptime: ${uptime}시간)`;
-        if (restarts > 50) {
+        if (restarts > 100) {
           pm2Status = "WARNING";
           pm2Msg += " - 누적 재시작 빈도 과다";
-          warnings.push("ai-s PM2 누적 재시작 횟수 50회 초과 경고");
+          warnings.push("ai-s PM2 누적 재시작 횟수 100회 초과 경고");
         }
       }
     } else {
@@ -2112,6 +2117,133 @@ async function performSystemDiagnostics(runHeavyTests) {
   details.councilCycleCheck = { status: cycleStatus, message: cycleMsg };
 
 
+  let nullFactionStatus = "OK";
+  let nullFactionMsg = "Faction 할당 무결성 정상";
+  try {
+    const nullFactionRow = await queries.get(
+      "SELECT COUNT(*) as cnt FROM ais_council_members WHERE faction IS NULL"
+    );
+    const nullCount = nullFactionRow ? nullFactionRow.cnt : 0;
+    if (nullCount > 0) {
+      nullFactionStatus = "ERROR";
+      nullFactionMsg = `Faction 미할당 의원 ${nullCount}명 감지 (데이터 오염)`;
+      errors.push(`AI 의회 Faction NULL 의원 ${nullCount}명 발견`);
+    } else {
+      nullFactionMsg = "전 의원 Faction 정상 할당 완료";
+    }
+  } catch (e) {
+    nullFactionStatus = "WARNING";
+    nullFactionMsg = `Faction 무결성 조회 에러: ${e.message}`;
+    warnings.push(`Faction NULL 검사 실패: ${e.message}`);
+  }
+  details.councilNullFactionCheck = { status: nullFactionStatus, message: nullFactionMsg };
+
+
+  let dnaIntegrityStatus = "OK";
+  let dnaIntegrityMsg = "DNA/Phenotype 무결성 정상";
+  try {
+    const nullDna = await queries.get(
+      "SELECT COUNT(*) as cnt FROM ais_council_members WHERE dna_json IS NULL OR dna_json = ''"
+    );
+    const nullPheno = await queries.get(
+      "SELECT COUNT(*) as cnt FROM ais_council_members WHERE phenotype_json IS NULL OR phenotype_json = ''"
+    );
+    const dnaCnt = nullDna ? nullDna.cnt : 0;
+    const phenoCnt = nullPheno ? nullPheno.cnt : 0;
+    if (dnaCnt > 0 || phenoCnt > 0) {
+      dnaIntegrityStatus = "ERROR";
+      dnaIntegrityMsg = `DNA 누락 ${dnaCnt}건, Phenotype 누락 ${phenoCnt}건 (투표 연산 불능 위험)`;
+      errors.push(`AI 의회 DNA/Phenotype NULL 발견 (DNA: ${dnaCnt}, Phenotype: ${phenoCnt})`);
+    } else {
+      dnaIntegrityMsg = "전 의원 DNA 및 표현형 데이터 정상";
+    }
+  } catch (e) {
+    dnaIntegrityStatus = "WARNING";
+    dnaIntegrityMsg = `DNA 무결성 조회 에러: ${e.message}`;
+    warnings.push(`DNA 무결성 검사 실패: ${e.message}`);
+  }
+  details.councilDnaIntegrityCheck = { status: dnaIntegrityStatus, message: dnaIntegrityMsg };
+
+
+  let weightsShapeStatus = "OK";
+  let weightsShapeMsg = "가중치 벡터 형태 정상";
+  try {
+    const allWeights = await queries.all(
+      "SELECT member_id, weights_json FROM ais_council_members WHERE weights_json IS NOT NULL LIMIT 500"
+    );
+    let malformed = 0;
+    const malformedIds = [];
+    for (const row of allWeights) {
+      try {
+        const w = JSON.parse(row.weights_json);
+        const validBuy = Array.isArray(w.BUY) && w.BUY.length === 5;
+        const validSell = Array.isArray(w.SELL) && w.SELL.length === 5;
+        const validHold = Array.isArray(w.HOLD) && w.HOLD.length === 5;
+        if (!validBuy || !validSell || !validHold) {
+          malformed++;
+          if (malformedIds.length < 3) malformedIds.push(row.member_id);
+        }
+      } catch (_) {
+        malformed++;
+        if (malformedIds.length < 3) malformedIds.push(row.member_id);
+      }
+    }
+    if (malformed > 0) {
+      weightsShapeStatus = "ERROR";
+      weightsShapeMsg = `비정상 가중치 ${malformed}건 (예: ${malformedIds.join(', ')})`;
+      errors.push(`AI 의회 weights_json 형태 오류 ${malformed}건`);
+    } else {
+      weightsShapeMsg = `전 의원 BUY/SELL/HOLD 5-vector 형태 정상 (${allWeights.length}명 검증)`;
+    }
+  } catch (e) {
+    weightsShapeStatus = "WARNING";
+    weightsShapeMsg = `가중치 형태 조회 에러: ${e.message}`;
+    warnings.push(`Weights 형태 검사 실패: ${e.message}`);
+  }
+  details.councilWeightsShapeCheck = { status: weightsShapeStatus, message: weightsShapeMsg };
+
+
+  let apiKeyCheckStatus = "OK";
+  let apiKeyCheckMsg = "Gemini API Key 정상 설정";
+  try {
+    const keyRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_gemini_api_key'");
+    if (!keyRow || !keyRow.value || keyRow.value.trim() === '') {
+      apiKeyCheckStatus = "ERROR";
+      apiKeyCheckMsg = "Gemini API Key 미설정 (AI 분석 전체 불능)";
+      errors.push("Gemini API Key 미설정 — AI 매매 분석 불가");
+    } else {
+      apiKeyCheckMsg = `API Key 설정 완료 (${keyRow.value.slice(0, 6)}...)`;
+    }
+  } catch (e) {
+    apiKeyCheckStatus = "WARNING";
+    apiKeyCheckMsg = `API Key 조회 에러: ${e.message}`;
+    warnings.push(`Gemini API Key 조회 실패: ${e.message}`);
+  }
+  details.geminiApiKeyCheck = { status: apiKeyCheckStatus, message: apiKeyCheckMsg };
+
+
+  let enginePromoStatus = "OK";
+  let enginePromoMsg = "엔진 모드 ↔ 자동 승격 정합성 정상";
+  try {
+    const engineRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_engine'");
+    const promoRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
+    const engine = engineRow ? engineRow.value : 'GEMINI';
+    const promo = promoRow ? promoRow.value : 'OFF';
+    if (engine === 'GEMINI' && promo === 'ON') {
+      enginePromoStatus = "WARNING";
+      enginePromoMsg = `GEMINI 모드인데 자동 승격 ON (논리적 불일치)`;
+      warnings.push("GEMINI 모드 + 자동승격 ON 데이터 불일치");
+    } else {
+      enginePromoMsg = `엔진: ${engine}, 자동승격: ${promo} (정합성 통과)`;
+    }
+  } catch (e) {
+    enginePromoStatus = "WARNING";
+    enginePromoMsg = `엔진/승격 정합성 조회 에러: ${e.message}`;
+    warnings.push(`엔진-승격 정합성 검사 실패: ${e.message}`);
+  }
+  details.enginePromoConsistencyCheck = { status: enginePromoStatus, message: enginePromoMsg };
+
+
   let labelStatus = "OK";
   let labelMsg = "라벨링 큐 정상";
   try {
@@ -2162,7 +2294,12 @@ async function performSystemDiagnostics(runHeavyTests) {
     poolStatus === "WARNING" ||
     quorumStatus === "WARNING" ||
     cycleStatus === "WARNING" ||
-    labelStatus === "WARNING"
+    labelStatus === "WARNING" ||
+    nullFactionStatus === "WARNING" ||
+    dnaIntegrityStatus === "WARNING" ||
+    weightsShapeStatus === "WARNING" ||
+    apiKeyCheckStatus === "WARNING" ||
+    enginePromoStatus === "WARNING"
   ) {
     overallStatus = "WARNING";
   }
@@ -2254,6 +2391,11 @@ async function performSystemDiagnostics(runHeavyTests) {
     { name: "500인 후보군 풀 정족수", status: poolStatus, percentage: poolStatus === "OK" ? 100 : (poolStatus === "WARNING" ? 50 : 0), details: poolMsg },
     { name: "11인 의원 정족수", status: quorumStatus, percentage: quorumStatus === "OK" ? 100 : (quorumStatus === "WARNING" ? 50 : 0), details: quorumMsg },
     { name: "도태·생성 사이클 건전성", status: cycleStatus, percentage: cycleStatus === "OK" ? 100 : (cycleStatus === "WARNING" ? 50 : 0), details: cycleMsg },
+    { name: "Faction 미할당(NULL) 오염", status: nullFactionStatus, percentage: nullFactionStatus === "OK" ? 100 : 0, details: nullFactionMsg },
+    { name: "DNA/Phenotype 누락 검사", status: dnaIntegrityStatus, percentage: dnaIntegrityStatus === "OK" ? 100 : 0, details: dnaIntegrityMsg },
+    { name: "가중치 벡터 형태 검증", status: weightsShapeStatus, percentage: weightsShapeStatus === "OK" ? 100 : 0, details: weightsShapeMsg },
+    { name: "Gemini API Key 설정 상태", status: apiKeyCheckStatus, percentage: apiKeyCheckStatus === "OK" ? 100 : 0, details: apiKeyCheckMsg },
+    { name: "엔진↔승격 정합성 검증", status: enginePromoStatus, percentage: enginePromoStatus === "OK" ? 100 : (enginePromoStatus === "WARNING" ? 50 : 0), details: enginePromoMsg },
     { name: "학습 데이터 라벨링 적체", status: labelStatus, percentage: labelStatus === "OK" ? 100 : (labelStatus === "WARNING" ? 50 : 0), details: labelMsg },
 
 

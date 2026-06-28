@@ -75,7 +75,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
   React.useEffect(() => {
     if (runningDiagnostics) {
       setTerminalLogs([
-        "> [SYSTEM] 25대 무결성 점검 체계 부트스트래핑 개시...",
+        "> [SYSTEM] 전체 진단 노드 무결성 점검 체계 부트스트래핑 개시...",
         "> [SYSTEM] 하드웨어 가용율 및 디스크 실시간 할당 대역 검사 중...",
         "> [SYSTEM] 외부 거래소 및 Web3 RPC 노드 벤치마크 테스트 소켓 개방...",
         "> [SYSTEM] SQLite3 I/O 스트레스 쓰기/읽기 벤치마킹 50회 개시...",
@@ -83,7 +83,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
       ]);
     } else if (diagnosticsData) {
       const logs = [
-        `> [SYSTEM] 25대 자가 진단 무결성 검증 완료 (${diagnosticsData.timestamp || new Date().toISOString()})`,
+        `> [SYSTEM] ${(diagnosticsData.diagnostics || []).length}대 자가 진단 무결성 검증 완료 (${diagnosticsData.timestamp || new Date().toISOString()})`,
         `> [SYSTEM] 전체 시스템 무결성 종합 판정: [ ${diagnosticsData.overallStatus || 'UNKNOWN'} ]`
       ];
       (diagnosticsData.diagnostics || []).forEach(d => {
@@ -1209,10 +1209,10 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 </div>
                 <div style={{ textAlign: 'left' }}>
                   <h3 style={{ fontSize: '15px', color: '#FFF', margin: 0, fontWeight: '800', letterSpacing: '0.5px' }}>⚡ Ais 시스템 무결성 자가 진단 장부</h3>
-                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0', textAlign: 'left' }}>실시간으로 25대 하드웨어, 인프라, 암호화 API 및 지표 연산 모듈 무결성 점검</p>
+                  <p style={{ fontSize: '10px', color: 'var(--text-muted)', margin: '2px 0 0 0', textAlign: 'left' }}>실시간으로 {(diagnosticsData?.diagnostics || []).length}대 하드웨어, 인프라, 암호화 API 및 지표 연산 모듈 무결성 점검</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '10px', color: '#10B981', fontWeight: 'bold' }}>
-                      25개 진단 노드 중 29개 무결성 테스트 통과 완료.
+                      {(diagnosticsData?.diagnostics || []).length}개 진단 노드 중 {(diagnosticsData?.diagnostics || []).filter(d => d.status === 'OK').length}개 무결성 테스트 통과 완료.
                     </span>
                     {diagnosticsData?.timestamp && (
                       <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
@@ -1298,11 +1298,11 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '8px' }}>
                   {[
-                    { id: 'algorithm', name: '핵심 알고리즘', count: 9, icon: '🧠' },
-                    { id: 'infrastructure', name: '외부 인프라 연동', count: 5, icon: '🌐' },
-                    { id: 'security', name: '보안 및 스트레스', count: 5, icon: '🛠️' },
-                    { id: 'council', name: '의회 하위 작업', count: 6, icon: '🏛️' },
-                    { id: 'shadow', name: 'Shadow Racing', count: 5, icon: '🏎️' }
+                    { id: 'algorithm', name: '핵심 알고리즘', count: 9, icon: '🧠', startIdx: 0, endIdx: 9 },
+                    { id: 'infrastructure', name: '외부 인프라 연동', count: 5, icon: '🌐', startIdx: 9, endIdx: 14 },
+                    { id: 'security', name: '보안 및 스트레스', count: 5, icon: '🛠️', startIdx: 14, endIdx: 19 },
+                    { id: 'council', name: '의회 하위 작업', count: 11, icon: '🏛️', startIdx: 19, endIdx: 30 },
+                    { id: 'shadow', name: 'Shadow Racing', count: 5, icon: '🏎️', startIdx: 30, endIdx: 35 }
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -1328,6 +1328,25 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span>{tab.icon}</span>
                         <span>{tab.name}</span>
+                        {(() => {
+                          const sItems = (diagnosticsData?.diagnostics || []).slice(tab.startIdx, tab.endIdx);
+                          const errC = sItems.filter(d => d.status === 'ERROR').length;
+                          const warnC = sItems.filter(d => d.status === 'WARNING').length;
+                          return (
+                            <>
+                              {errC > 0 && (
+                                <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#FFF', background: '#EF4444', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.4' }}>
+                                  ERROR {errC}
+                                </span>
+                              )}
+                              {warnC > 0 && (
+                                <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#000', background: '#FBBF24', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.4' }}>
+                                  WARN {warnC}
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </span>
                       <span style={{
                         fontSize: '9px',
@@ -1352,9 +1371,9 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                   } else if (activeDiagTab === 'security') {
                     filtered = items.slice(14, 19);
                   } else if (activeDiagTab === 'council') {
-                    filtered = items.slice(19, 25);
+                    filtered = items.slice(19, 30);
                   } else if (activeDiagTab === 'shadow') {
-                    filtered = items.slice(25, 30);
+                    filtered = items.slice(30, 35);
                   }
 
                   if (filtered.length === 0) {
@@ -1451,7 +1470,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
 
             <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
               <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444'), textShadow: diagnosticsData ? `0 0 8px ${diagnosticsData.overallStatus === 'EXCELLENT' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` : 'none' }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
-              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/25개 완료</span>
+              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/35개 완료</span>
               <span>최근 서빙 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</span>
             </div>
           </div>

@@ -76,7 +76,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
   React.useEffect(() => {
     if (runningDiagnostics) {
       setTerminalLogs([
-        "> [SYSTEM] 25대 무결성 검증 패킷 로딩...",
+        "> [SYSTEM] 전체 진단 노드 무결성 검증 패킷 로딩...",
         "> [SYSTEM] 하드웨어 자원 및 디스크 잔여 대역 검사...",
         "> [SYSTEM] API 벤치마킹 소켓 개방 중...",
         "> [SYSTEM] DB I/O 스트레스 연산 및 HHI 다양성 체크..."
@@ -947,7 +947,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     <div style={{ textAlign: 'left' }}>
                       <div style={{ fontSize: '11px', color: '#FFF', fontWeight: '800' }}>종합 상태: <span style={{ color: strokeColor }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</span></div>
                       <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.4' }}>
-                        25개 진단 노드 중 29개 무결성 테스트 통과 완료.
+                        {(diagnosticsData?.diagnostics || []).length}개 진단 노드 중 {(diagnosticsData?.diagnostics || []).filter(d => d.status === 'OK').length}개 무결성 테스트 통과 완료.
                         {diagnosticsData?.timestamp && (
                           <span style={{ display: 'block', color: '#10B981', marginTop: '2px', fontSize: '8px' }}>
                             (마지막 자가진단: {diagnosticsData.timestamp})
@@ -965,8 +965,8 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   { id: 'algorithm', name: '🧠 핵심 알고리즘 모듈 (9)', startIdx: 0, endIdx: 9 },
                   { id: 'infrastructure', name: '🌐 외부 인프라 연동 (5)', startIdx: 9, endIdx: 14 },
                   { id: 'security', name: '🛠️ 보안 및 벤치마크 (5)', startIdx: 14, endIdx: 19 },
-                  { id: 'council', name: '🏛️ 의회 하위 작업 (6)', startIdx: 19, endIdx: 25 },
-                  { id: 'shadow', name: '🏎️ Shadow Racing (5)', startIdx: 25, endIdx: 30 }
+                  { id: 'council', name: '🏛️ 의회 하위 작업 (11)', startIdx: 19, endIdx: 30 },
+                  { id: 'shadow', name: '🏎️ Shadow Racing (5)', startIdx: 30, endIdx: 35 }
                 ].map(section => {
                   const isOpen = expandedSection === section.id;
                   const sectionItems = (diagnosticsData?.diagnostics || []).slice(section.startIdx, section.endIdx);
@@ -991,7 +991,27 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                           cursor: 'pointer'
                         }}
                       >
-                        <span>{section.name}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {section.name}
+                          {(() => {
+                            const errCount = sectionItems.filter(d => d.status === 'ERROR').length;
+                            const warnCount = sectionItems.filter(d => d.status === 'WARNING').length;
+                            return (
+                              <>
+                                {errCount > 0 && (
+                                  <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#FFF', background: '#EF4444', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.4' }}>
+                                    ERROR {errCount}
+                                  </span>
+                                )}
+                                {warnCount > 0 && (
+                                  <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#000', background: '#FBBF24', padding: '1px 5px', borderRadius: '4px', lineHeight: '1.4' }}>
+                                    WARN {warnCount}
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </span>
                         <span style={{ fontSize: '8px' }}>{isOpen ? '▲' : '▼'}</span>
                       </button>
                       
@@ -1063,7 +1083,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
 
               <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-dark)' }}>
-                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/25개 완료</span>
+                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/35개 완료</span>
                 <span>최근 갱신: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp).split(' ')[1] : 'N/A'}</span>
               </div>
 
