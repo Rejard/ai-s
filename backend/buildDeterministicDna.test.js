@@ -21,9 +21,9 @@ async function main() {
   assert.ok(/^AISG-G3-[a-f0-9]{8}$/.test(dna.genome_id), 'T2: genome_id format AISG-G{gen}-{hash}');
 
   const dnaNullFaction = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_m', null, 1);
-  assert.strictEqual(dnaNullFaction.faction_hint, 'MUTANT_ROOKIE', 'T3: null faction defaults to MUTANT_ROOKIE');
+  assert.strictEqual(dnaNullFaction.faction_hint, 'UNCLASSIFIED', 'T3: null faction defaults to UNCLASSIFIED');
   const dnaUndefinedFaction = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_m', undefined, 1);
-  assert.strictEqual(dnaUndefinedFaction.faction_hint, 'MUTANT_ROOKIE', 'T3: undefined faction defaults');
+  assert.strictEqual(dnaUndefinedFaction.faction_hint, 'UNCLASSIFIED', 'T3: undefined faction defaults');
 
   const dnaGenNull = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_m', 'X', null);
   assert.strictEqual(dnaGenNull.generation, 1, 'T4: null generation normalizes to 1');

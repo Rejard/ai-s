@@ -41,7 +41,7 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
   const normalizedGeneration = normalizePositiveInteger(generation);
   const baseKey = JSON.stringify({
     memberId,
-    faction: faction || 'MUTANT_ROOKIE',
+    faction: faction || 'UNCLASSIFIED',
     generation: normalizedGeneration,
     weights,
   });
@@ -68,7 +68,7 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
   return {
     genome_id: `AISG-G${normalizedGeneration}-${genomeHash.slice(0, 8)}`,
     generation: normalizedGeneration,
-    faction_hint: faction || 'MUTANT_ROOKIE',
+    faction_hint: faction || 'UNCLASSIFIED',
     lineage: {
       parent_ids: [],
       ancestor_ids: [memberId],
@@ -122,7 +122,7 @@ function addAisCouncilDnaColumns(callback) {
 }
 
 function addAisCouncilCompatibilityColumns(callback) {
-  db.run("ALTER TABLE ais_council_members ADD COLUMN faction TEXT DEFAULT 'MUTANT_ROOKIE'", (factionErr) => {
+  db.run("ALTER TABLE ais_council_members ADD COLUMN faction TEXT DEFAULT 'UNCLASSIFIED'", (factionErr) => {
     if (factionErr && !factionErr.message.includes("duplicate column name")) {
       return callback(factionErr);
     }
@@ -130,7 +130,7 @@ function addAisCouncilCompatibilityColumns(callback) {
       db.run("UPDATE ais_council_members SET faction = 'TREND_FOLLOWER' WHERE member_id IN ('ais_member_01', 'ais_member_04', 'ais_member_08', 'ais_member_10')");
       db.run("UPDATE ais_council_members SET faction = 'VALUE_SEEKER' WHERE member_id IN ('ais_member_02', 'ais_member_07')");
       db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_03', 'ais_member_11')");
-      db.run("UPDATE ais_council_members SET faction = 'MUTANT_ROOKIE' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
+      db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
     }
     db.run("ALTER TABLE ais_council_members ADD COLUMN generation INTEGER DEFAULT 1", (generationErr) => {
       if (generationErr && !generationErr.message.includes("duplicate column name")) {
@@ -533,7 +533,7 @@ function initializeDatabase() {
           correct_count INTEGER DEFAULT 0,
           total_count INTEGER DEFAULT 0,
           status TEXT NOT NULL CHECK (status IN ('ACTIVE', 'CANDIDATE', 'RETIRED')) DEFAULT 'ACTIVE',
-          faction TEXT DEFAULT 'MUTANT_ROOKIE',
+          faction TEXT DEFAULT 'UNCLASSIFIED',
           generation INTEGER DEFAULT 1,
           joined_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -584,7 +584,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_05',
             name: 'Mutant Alpha (Genetics)',
-            faction: 'MUTANT_ROOKIE',
+            faction: 'CONSERVATIVE_WATCHER',
             weights: {
               BUY: [0.152, -0.8, 33.0, 0.150, 0.153],
               SELL: [0.162, 0.8, 67.0, 0.164, 0.161],
@@ -594,7 +594,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_06',
             name: 'Mutant Beta (Aggressive)',
-            faction: 'MUTANT_ROOKIE',
+            faction: 'CONSERVATIVE_WATCHER',
             weights: {
               BUY: [0.157, 1.2, 40.0, 0.158, 0.155],
               SELL: [0.160, 1.2, 75.0, 0.162, 0.159],
@@ -624,7 +624,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_09',
             name: 'Mutant Gamma (Volatility)',
-            faction: 'MUTANT_ROOKIE',
+            faction: 'CONSERVATIVE_WATCHER',
             weights: {
               BUY: [0.149, -1.0, 31.0, 0.147, 0.151],
               SELL: [0.166, 1.0, 69.0, 0.168, 0.164],
@@ -755,7 +755,7 @@ async function bootstrapLegacyCouncilDna() {
       const payload = bootstrapCouncilDnaPayload(
         weights,
         row.member_id,
-        row.faction || 'MUTANT_ROOKIE',
+        row.faction || 'UNCLASSIFIED',
         row.generation || 1
       );
       await queries.run(`
@@ -800,7 +800,7 @@ async function repairAiCouncilState() {
     const dnaPayload = bootstrapCouncilDnaPayload(
       weights,
       memberId,
-      seed.faction || 'MUTANT_ROOKIE',
+      seed.faction || 'UNCLASSIFIED',
       seed.generation || 1
     );
     await queries.run(`
@@ -813,7 +813,7 @@ async function repairAiCouncilState() {
       seed.weights_json,
       dnaPayload.dna_json,
       dnaPayload.phenotype_json,
-      seed.faction || 'MUTANT_ROOKIE',
+      seed.faction || 'UNCLASSIFIED',
       seed.generation || 1
     ]);
     total += 1;

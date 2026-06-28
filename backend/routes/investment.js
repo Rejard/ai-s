@@ -68,6 +68,48 @@ const requireAdminCouncilAccess = (req, res, next) => {
   next();
 };
 
+function parseCandidateDna(dnaJson) {
+  try {
+    return dnaJson ? JSON.parse(dnaJson) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function determineCandidateOrigin(row) {
+  const memberId = String(row?.member_id || '');
+  const dna = parseCandidateDna(row?.dna_json);
+  const lineage = dna && typeof dna.lineage === 'object' ? dna.lineage : {};
+  const parentIds = Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [];
+  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  const generation = Number(row?.generation || dna?.generation || 1);
+
+  if (memberId.startsWith('offspring_') || parentIds.length >= 2) return 'crossover_offspring';
+  if (mutationLog.length > 0 || parentIds.length === 1 || generation > 1) return 'mutated_lineage';
+  return 'seeded_random';
+}
+
+function summarizeOriginStats(rows, totalCount = null) {
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const counts = {
+    seeded_random: 0,
+    crossover_offspring: 0,
+    mutated_lineage: 0,
+  };
+  sourceRows.forEach((row) => {
+    counts[determineCandidateOrigin(row)] += 1;
+  });
+  const resolvedTotal = Number.isFinite(totalCount) && totalCount !== null ? totalCount : sourceRows.length;
+  return Object.entries(counts)
+    .map(([origin, count]) => ({
+      origin,
+      count,
+      percentage: resolvedTotal > 0 ? Number(((count / resolvedTotal) * 100).toFixed(1)) : 0,
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
 let cachedPrices = {
   sut: { usd: 1.0, usd_24h_change: 0.0, usd_24h_high: 1.0, usd_24h_low: 1.0 }
 };
@@ -337,13 +379,13 @@ const investmentBriefingRefreshCoordinator = createRefreshCoordinator();
 const INVESTMENT_BRIEFING_SCOPE = 'INVESTMENT';
 const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000;
 
-async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats) {
+async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats, originStats = []) {
   try {
     const apiKeyRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_gemini_api_key'");
     const modelRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_model'");
     
     if (!apiKeyRow || !apiKeyRow.value) {
-      return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+      return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
     }
     
     const apiKey = apiKeyRow.value;
@@ -376,6 +418,7 @@ Based on the current faction distribution, generation composition, and top leade
 
 Input data:
 - Faction Counts (500 candidates): ${factionInfo}
+- Origin Counts (500 candidates): ${originStats.map(o => `${o.origin}: ${o.count}? (${o.percentage}%)`).join(', ')}
 - Generation Distribution: ${generationInfo}
 - Top 3 Leaders in Office (Chairman, Vice Chairman, Committee Chair): ${leadersInfo}
 
@@ -384,13 +427,13 @@ Rules:
    - TREND_FOLLOWER: 추세추종파 (SMA/모멘텀)
    - VALUE_SEEKER: 기술반등파 (RSI/역추세)
    - CONSERVATIVE_WATCHER: 변동성방어파 (안정지향)
-   - MUTANT_ROOKIE: 돌연변이 혁신파 (진화/알고리즘)
 2. MUST explicitly mention the current generation landscape based on Generation Distribution (e.g. "현재 1세대가 500명을 100% 점유하고 있으며..." or "이번 진화를 통해 새로운 2세대가 O명으로 주류를 이루었고 살아남은 1세대는 O명뿐입니다...").
 3. Deeply analyze the REASONS behind the current distribution. Why are the dominant factions succeeding and multiplying in this generation? Why did the minority factions fail to secure seats or dwindle? Create a logical evolutionary narrative explaining these market-survival dynamics in detail.
 4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what kind of market crash or bull run birthed the Value Seekers or Mutant Rookies).
 5. Do NOT talk about real-time market trends or recent trades. Focus purely on their genetic character, dominant factions, and historical evolution traits.
 6. Keep the report within 600 Korean characters. Return ONLY the raw text response in Korean without any formatting or markdown.
 7. You MUST explicitly analyze the non-active candidates (non-elected candidates) who haven't entered the active top 11 but represent higher generations (e.g. 5th or 6th gen). Explain what their existence represents and how their trading philosophies are waiting in the candidate pool for the next evolutionary shift.
+8. Include one concise sentence explaining the current origin distribution of the 500 candidates, separating crossover offspring, seeded random diversity, and mutation-derived lineage.
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
@@ -408,56 +451,58 @@ Rules:
         retries--;
         console.error(`❌ Gemini Council Opinion Briefing Error. Retries left: ${retries}`, err.message);
         if (retries === 0) {
-          return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+          return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
         }
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
     
-    return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+    return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   } catch (err) {
     console.error("❌ Gemini Council Opinion Briefing Error:", err.message);
-    return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+    return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   }
 }
 
-function generateFallbackBriefing(factionStats, activeMembers, generationStats) {
+function generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats = []) {
   if (!factionStats || factionStats.length === 0) {
-    return "현재 AI 의회 데이터 집계 중입니다. 잠시 후 여론이 형성됩니다.";
+    return "?? AI ?? ???? ?? ????. ?? ? ?? ??? ???.";
   }
-  
+
   const sortedFactions = [...factionStats].sort((a, b) => b.count - a.count);
   const leadingFaction = sortedFactions[0];
-  
-  let factionName = '분파';
-  let opinionText = '신중한 시장 관망세를 유지하고 있습니다.';
-  
+
+  let factionName = '??';
+  let opinionText = '?? ?? ??? ???? ?? ?? ?? ??? ???? ????.';
+
   if (leadingFaction.faction === 'TREND_FOLLOWER') {
-    factionName = '추세추종파 (SMA/모멘텀)';
-    opinionText = '강력한 모멘텀을 타며 상승 추세에 올라타려는 적극적인 매수/매도 여론이 지배적입니다.';
+    factionName = '?????';
+    opinionText = '?? ??? ?? ?? ???? ? ???? ???? ??? ?? ??? ?? ?????.';
   } else if (leadingFaction.faction === 'VALUE_SEEKER') {
-    factionName = '기술반등파 (RSI/역추세)';
-    opinionText = '저점 과매도 구간을 호시탐탐 노리며, 반등 시점에 공격적으로 진입하자는 여론이 강세입니다.';
+    factionName = '?????';
+    opinionText = '??? ??? ??? ??? ???? ??? ?? ??? ?? ??? ?????.';
   } else if (leadingFaction.faction === 'CONSERVATIVE_WATCHER') {
-    factionName = '변동성방어파 (안정지향)';
-    opinionText = '시장의 급격한 변화를 경계하며 자산을 보수적으로 지키고 지켜보자는 신중한 심리가 팽배합니다.';
-  } else if (leadingFaction.faction === 'MUTANT_ROOKIE') {
-    factionName = '돌연변이 혁신파 (알고리즘)';
-    opinionText = '돌연변이 진화 모델이 활성화되며 기존 패러다임을 깨는 예측 불가능한 실험적인 매매 의견들이 늘고 있습니다.';
+    factionName = '??????';
+    opinionText = '??? ??? ?? ??? ???? ??? ??? ??? ??? ??????.';
   }
-  
+
   const chairman = activeMembers[0];
-  const chairmanText = chairman ? `현재 의장인 ${chairman.name}(${chairman.generation}세대, ${chairman.faction})을 중심으로` : "의회를 중심으로";
-  
-  return `현재 500인의 후보군 중 ${factionName}가 ${leadingFaction.percentage}%의 의석을 확보하여 다수당을 차지하고 있습니다. ${chairmanText} 시장의 움직임에 대응하여 ${opinionText}`;
+  const chairmanText = chairman
+    ? `?? ?? ${chairman.name}(${chairman.generation}??, ${chairman.faction})? ????`
+    : '?? ??? ????';
+  const originSummary = Array.isArray(originStats) && originStats.length
+    ? `?? ??? ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}? ?????.`
+    : '';
+
+  return `?? 500? ?????? ${factionName}? ${leadingFaction.percentage}% ???? ?? ? ?? ?????. ${chairmanText} ${opinionText} ${originSummary}`.trim();
 }
 
-router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
+router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
   try {
     const factionRows = await queries.all(`
-      SELECT COALESCE(faction, 'MUTANT_ROOKIE') as faction, COUNT(*) as count 
+      SELECT COALESCE(faction, 'UNCLASSIFIED') as faction, COUNT(*) as count 
       FROM ais_council_members 
-      GROUP BY COALESCE(faction, 'MUTANT_ROOKIE')
+      GROUP BY COALESCE(faction, 'UNCLASSIFIED')
     `);
 
     const totalRow = await queries.get("SELECT COUNT(*) as total FROM ais_council_members");
@@ -468,6 +513,12 @@ router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAcc
       count: r.count,
       percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
     }));
+
+    const originRows = await queries.all(`
+      SELECT member_id, dna_json, generation, status
+      FROM ais_council_members
+    `);
+    const originStats = summarizeOriginStats(originRows, totalCount);
 
     const activeMembers = await queries.all(`
       SELECT member_id, name, voting_power, correct_count, total_count, faction, generation, dna_json, phenotype_json
@@ -516,7 +567,7 @@ router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAcc
 
     const visibleBriefing = latestBriefing
       ? latestBriefing.briefingText
-      : generateFallbackBriefing(factionStats, activeMembers, generationStats);
+      : generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
 
     if (!latestBriefing || (now - lastBriefingUpdate > BRIEFING_CACHE_DURATION) || (lastBriefingUpdate < lastEvoTime)) {
       if (investmentBriefingRefreshCoordinator.start(INVESTMENT_BRIEFING_SCOPE)) {
@@ -527,7 +578,7 @@ router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAcc
           modelName: modelRow && modelRow.value ? modelRow.value : null
         });
 
-        generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats).then(async (result) => {
+        generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats, originStats).then(async (result) => {
           await finishBriefingRefreshSuccess(queries, refreshRow.id, {
             briefingText: result,
             generatedAt: new Date().toISOString()
@@ -545,6 +596,8 @@ router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAcc
       success: true,
       totalCount,
       factionStats,
+      originStats,
+      activeOriginStats,
       activeMembers,
       recentVotes,
       briefing: visibleBriefing,

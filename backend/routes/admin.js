@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const path = require('node:path');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
 const { queries } = require('../database');
 const axios = require('axios');
 const { ethers } = require('ethers');
@@ -19,6 +22,8 @@ const { buildCouncilHealthReport } = require('../councilHealthReport');
 const { requireAuthenticatedSession } = require('../authSession');
 const { getAisTrainingStats } = require('../aisAdminStats');
 const { zeroTrustMiddleware } = require('../zeroTrustFilter');
+
+const execFileAsync = promisify(execFile);
 
 const DEFAULT_GEMINI_TIMEOUT_MS = '30000';
 const MIN_GEMINI_TIMEOUT_MS = 5000;
@@ -72,6 +77,209 @@ function normalizeAidlPolicyConfig(policy = {}) {
       DEFAULT_AIDL_POLICY_CONFIG.weightNudgeSize
     ),
   };
+}
+
+async function runForceEvolution({
+  execFileAsync: execFileAsyncOverride = execFileAsync,
+  queries: queriesOverride = queries,
+  now = Date.now,
+} = {}) {
+  const scriptCwd = path.resolve(__dirname, '..');
+  const stats = await execFileAsyncOverride('py', ['-3', 'train_ais.py'], { cwd: scriptCwd });
+  await queriesOverride.run(
+    "INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('last_evolution_time', ?)",
+    [String(now())]
+  );
+  return {
+    success: true,
+    stats: {
+      stdout: stats.stdout || '',
+      stderr: stats.stderr || '',
+    },
+  };
+}
+
+function hasValidCentroidShape(payload) {
+  return Boolean(
+    payload &&
+    Array.isArray(payload.BUY) && payload.BUY.length === 5 &&
+    Array.isArray(payload.SELL) && payload.SELL.length === 5 &&
+    Array.isArray(payload.HOLD) && payload.HOLD.length === 5
+  );
+}
+
+function assessNarrativeDivergence(poolFactions, activeFactions) {
+  const poolLeader = Array.isArray(poolFactions) ? poolFactions[0] : null;
+  const activeLeader = Array.isArray(activeFactions) ? activeFactions[0] : null;
+  if (!poolLeader || !activeLeader) {
+    return {
+      status: "WARNING",
+      message: 'unable to compare pool and active-council faction leaders',
+      warning: 'pool vs active-council narrative comparison unavailable',
+    };
+  }
+  if (poolLeader.faction === activeLeader.faction) {
+    return {
+      status: "OK",
+      message: `pool and active-council leaders both favor ${poolLeader.faction}`,
+      warning: null,
+    };
+  }
+  const poolRunnerUp = Array.isArray(poolFactions) ? poolFactions[1] : null;
+  const totalPool = (Array.isArray(poolFactions) ? poolFactions : []).reduce((sum, item) => sum + Number(item.cnt || 0), 0);
+  const leaderGap = Number(poolLeader.cnt || 0) - Number(poolRunnerUp?.cnt || 0);
+  const nearTieThreshold = Math.max(5, Math.ceil(totalPool * 0.02));
+  if (poolRunnerUp && leaderGap < nearTieThreshold) {
+    return {
+      status: "OK",
+      message: `pool leadership is near-tied (${poolLeader.faction}:${poolLeader.cnt}, ${poolRunnerUp.faction}:${poolRunnerUp.cnt}) while active leader is ${activeLeader.faction}(${activeLeader.cnt})`,
+      warning: null,
+    };
+  }
+  return {
+    status: "WARNING",
+    message: `pool leader=${poolLeader.faction}(${poolLeader.cnt}) / active leader=${activeLeader.faction}(${activeLeader.cnt})`,
+    warning: `pool vs active-council narrative divergence (${poolLeader.faction} vs ${activeLeader.faction})`,
+  };
+}
+
+function assessOriginDiversity(originStats) {
+  const stats = Array.isArray(originStats) ? originStats : [];
+  if (!stats.length) {
+    return {
+      status: "WARNING",
+      message: '??? ?? ??? ??? ? ????',
+      warning: '??? ?? ??? ??? ??? ? ????',
+    };
+  }
+  const summary = stats.map((item) => `${item.origin}:${item.count}`).join(', ');
+  const dominant = stats[0];
+  const mutatedLineage = stats.find((item) => item.origin === 'mutated_lineage');
+  if (dominant && Number(dominant.percentage || 0) >= 95) {
+    return {
+      status: "WARNING",
+      message: `??? ??? ? ??? ???? ???? ???? (${summary})`,
+      warning: '??? ?? ???? ???? ???? ????',
+    };
+  }
+  if (!mutatedLineage || Number(mutatedLineage.count || 0) === 0) {
+    return {
+      status: "WARNING",
+      message: `?? ??? ????? ?????? (${summary})`,
+      warning: '?? ??? ????? ??????',
+    };
+  }
+  return {
+    status: "OK",
+    message: `??? ??? ?? ?? ???? (${summary})`,
+    warning: null,
+  };
+}
+
+function assessGateIoDiagnosticFallback({ hasEncryptedCredentials, errorMessage }) {
+  if (
+    hasEncryptedCredentials &&
+    typeof errorMessage === 'string' &&
+    errorMessage.includes('GATEIO_CREDENTIAL_ENCRYPTION_KEY or PRIVATE_KEY is required')
+  ) {
+    return {
+      status: "OK",
+      message: 'encrypted credentials stored; live decryption probe unavailable in current runtime',
+      warning: null,
+    };
+  }
+  return {
+    status: "WARNING",
+    message: `??? ?? API ?? ? ??: ${errorMessage}`,
+    warning: `Gate.io ???? ??? ?? ??: ${errorMessage}`,
+  };
+}
+
+function assessWeb3WalletHealth({ walletAddress, polBalance, blockNum, latency, connectedRpc }) {
+  const rpcHost = String(connectedRpc || '').replace(/^https?:\/\//, '').split('/')[0] || connectedRpc || 'unknown';
+  if (polBalance === 0) {
+    return {
+      status: "ERROR",
+      message: `?? ??: ${walletAddress} (POL ??? ?? ??: 0.0000 POL)`,
+      issue: "Web3 ???(POL) ?? ??",
+    };
+  }
+  if (polBalance < 0.5) {
+    return {
+      status: "WARNING",
+      message: `??? ?? ??: ${polBalance.toFixed(4)} POL (??: ${blockNum}, ??: ${latency}ms, ??: ${rpcHost}, ??: ${walletAddress})`,
+      issue: "POL ??? ?? ?? ?? (< 0.5 POL)",
+    };
+  }
+  return {
+    status: "OK",
+    message: `?? ?? (??: ${blockNum}, ??: ${latency}ms, ???: ${polBalance.toFixed(4)} POL, ??: ${rpcHost}, ??: ${walletAddress})`,
+    issue: null,
+  };
+}
+
+function determineFactionForDiagnostics(weights, nameOrId = '') {
+  try {
+    const buyRsi = weights.BUY[1];
+    const sellRsi = weights.SELL[1];
+    if (buyRsi < -0.75 || sellRsi > 0.75) return 'CONSERVATIVE_WATCHER';
+    if (buyRsi < -0.45 || sellRsi > 0.45) return 'VALUE_SEEKER';
+    const buyChange = weights.BUY[0];
+    const sellChange = weights.SELL[0];
+    if (Math.abs(buyChange) > 1.2 || Math.abs(sellChange) > 1.2) return 'TREND_FOLLOWER';
+    const changeSignal = Math.max(Math.abs(buyChange), Math.abs(sellChange));
+    const rsiSignal = Math.max(Math.abs(buyRsi), Math.abs(sellRsi));
+    if (changeSignal > rsiSignal) return 'TREND_FOLLOWER';
+    if (rsiSignal > changeSignal) return 'VALUE_SEEKER';
+  } catch (_) {}
+
+  const nameLower = String(nameOrId || '').toLowerCase();
+  if (nameLower.includes('conservative') || nameLower.includes('shield') || nameLower.includes('safety')) return 'CONSERVATIVE_WATCHER';
+  if (nameLower.includes('trend') || nameLower.includes('momentum') || nameLower.includes('cross') || nameLower.includes('specialist')) return 'TREND_FOLLOWER';
+  if (nameLower.includes('value') || nameLower.includes('contrarian')) return 'VALUE_SEEKER';
+  return null;
+}
+
+function parseCandidateDna(dnaJson) {
+  try {
+    return dnaJson ? JSON.parse(dnaJson) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function determineCandidateOrigin(row) {
+  const memberId = String(row?.member_id || '');
+  const dna = parseCandidateDna(row?.dna_json);
+  const lineage = dna && typeof dna.lineage === 'object' ? dna.lineage : {};
+  const parentIds = Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [];
+  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
+  const generation = Number(row?.generation || dna?.generation || 1);
+
+  if (memberId.startsWith('offspring_') || parentIds.length >= 2) return 'crossover_offspring';
+  if (mutationLog.length > 0 || parentIds.length === 1 || generation > 1) return 'mutated_lineage';
+  return 'seeded_random';
+}
+
+function summarizeOriginStats(rows, totalCount = null) {
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const counts = {
+    seeded_random: 0,
+    crossover_offspring: 0,
+    mutated_lineage: 0,
+  };
+  sourceRows.forEach((row) => {
+    counts[determineCandidateOrigin(row)] += 1;
+  });
+  const resolvedTotal = Number.isFinite(totalCount) && totalCount !== null ? totalCount : sourceRows.length;
+  return Object.entries(counts)
+    .map(([origin, count]) => ({
+      origin,
+      count,
+      percentage: resolvedTotal > 0 ? Number(((count / resolvedTotal) * 100).toFixed(1)) : 0,
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count);
 }
 
 function buildAidlPolicyConfig(settings = []) {
@@ -753,13 +961,13 @@ const adminBriefingRefreshCoordinator = createRefreshCoordinator();
 const ADMIN_BRIEFING_SCOPE = 'ADMIN';
 const BRIEFING_CACHE_DURATION = 12 * 60 * 60 * 1000;
 
-async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats) {
+async function generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats, originStats = []) {
   try {
     const apiKeyRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_gemini_api_key'");
     const modelRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_model'");
     
     if (!apiKeyRow || !apiKeyRow.value) {
-      return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+      return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
     }
     
     const apiKey = apiKeyRow.value;
@@ -792,6 +1000,7 @@ Based on the current faction distribution, generation composition, and top leade
 
 Input data:
 - Faction Counts (500 candidates): ${factionInfo}
+- Origin Counts (500 candidates): ${originStats.map(o => `${o.origin}: ${o.count}? (${o.percentage}%)`).join(', ')}
 - Generation Distribution: ${generationInfo}
 - Top 3 Leaders in Office (Chairman, Vice Chairman, Committee Chair): ${leadersInfo}
 
@@ -800,13 +1009,13 @@ Rules:
    - TREND_FOLLOWER: 추세추종파 (SMA/모멘텀)
    - VALUE_SEEKER: 기술반등파 (RSI/역추세)
    - CONSERVATIVE_WATCHER: 변동성방어파 (안정지향)
-   - MUTANT_ROOKIE: 돌연변이 혁신파 (진화/알고리즘)
 2. MUST explicitly mention the current generation landscape based on Generation Distribution (e.g. "현재 1세대가 500명을 100% 점유하고 있으며..." or "이번 진화를 통해 새로운 2세대가 O명으로 주류를 이루었고 살아남은 1세대는 O명뿐입니다...").
 3. Deeply analyze the REASONS behind the current distribution. Why are the dominant factions succeeding and multiplying in this generation? Why did the minority factions fail to secure seats or dwindle? Create a logical evolutionary narrative explaining these market-survival dynamics in detail.
 4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what kind of market crash or bull run birthed the Value Seekers or Mutant Rookies).
 5. Do NOT talk about real-time market trends or recent trades. Focus purely on their genetic character, dominant factions, and historical evolution traits.
 6. Keep the report within 600 Korean characters. Return ONLY the raw text response in Korean without any formatting or markdown.
 7. You MUST explicitly analyze the non-active candidates (non-elected candidates) who haven't entered the active top 11 but represent higher generations (e.g. 5th or 6th gen). Explain what their existence represents and how their trading philosophies are waiting in the candidate pool for the next evolutionary shift.
+8. Include one concise sentence explaining the current origin distribution of the 500 candidates, separating crossover offspring, seeded random diversity, and mutation-derived lineage.
 `;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
@@ -824,56 +1033,58 @@ Rules:
         retries--;
         console.error(`❌ Gemini Council Opinion Briefing Error. Retries left: ${retries}`, err.message);
         if (retries === 0) {
-          return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+          return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
         }
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
     
-    return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+    return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   } catch (err) {
     console.error("❌ Gemini Council Opinion Briefing Error:", err.message);
-    return generateFallbackBriefing(factionStats, activeMembers, generationStats);
+    return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   }
 }
 
-function generateFallbackBriefing(factionStats, activeMembers, generationStats) {
+function generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats = []) {
   if (!factionStats || factionStats.length === 0) {
-    return "현재 AI 의회 데이터 집계 중입니다. 잠시 후 여론이 형성됩니다.";
+    return "?? AI ?? ???? ?? ????. ?? ? ?? ??? ???.";
   }
-  
+
   const sortedFactions = [...factionStats].sort((a, b) => b.count - a.count);
   const leadingFaction = sortedFactions[0];
-  
-  let factionName = '분파';
-  let opinionText = '신중한 시장 관망세를 유지하고 있습니다.';
-  
+
+  let factionName = '??';
+  let opinionText = '?? ?? ??? ???? ?? ?? ?? ??? ???? ????.';
+
   if (leadingFaction.faction === 'TREND_FOLLOWER') {
-    factionName = '추세추종파 (SMA/모멘텀)';
-    opinionText = '강력한 모멘텀을 타며 상승 추세에 올라타려는 적극적인 매수/매도 여론이 지배적입니다.';
+    factionName = '?????';
+    opinionText = '?? ??? ?? ?? ???? ? ???? ???? ??? ?? ??? ?? ?????.';
   } else if (leadingFaction.faction === 'VALUE_SEEKER') {
-    factionName = '기술반등파 (RSI/역추세)';
-    opinionText = '저점 과매도 구간을 호시탐탐 노리며, 반등 시점에 공격적으로 진입하자는 여론이 강세입니다.';
+    factionName = '?????';
+    opinionText = '??? ??? ??? ??? ???? ??? ?? ??? ?? ??? ?????.';
   } else if (leadingFaction.faction === 'CONSERVATIVE_WATCHER') {
-    factionName = '변동성방어파 (안정지향)';
-    opinionText = '시장의 급격한 변화를 경계하며 자산을 보수적으로 지키고 지켜보자는 신중한 심리가 팽배합니다.';
-  } else if (leadingFaction.faction === 'MUTANT_ROOKIE') {
-    factionName = '돌연변이 혁신파 (알고리즘)';
-    opinionText = '돌연변이 진화 모델이 활성화되며 기존 패러다임을 깨는 예측 불가능한 실험적인 매매 의견들이 늘고 있습니다.';
+    factionName = '??????';
+    opinionText = '??? ??? ?? ??? ???? ??? ??? ??? ??? ??????.';
   }
-  
+
   const chairman = activeMembers[0];
-  const chairmanText = chairman ? `현재 의장인 ${chairman.name}(${chairman.generation}세대, ${chairman.faction})을 중심으로` : "의회를 중심으로";
-  
-  return `현재 500인의 후보군 중 ${factionName}가 ${leadingFaction.percentage}%의 의석을 확보하여 다수당을 차지하고 있습니다. ${chairmanText} 시장의 움직임에 대응하여 ${opinionText}`;
+  const chairmanText = chairman
+    ? `?? ?? ${chairman.name}(${chairman.generation}??, ${chairman.faction})? ????`
+    : '?? ??? ????';
+  const originSummary = Array.isArray(originStats) && originStats.length
+    ? `?? ??? ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}? ?????.`
+    : '';
+
+  return `?? 500? ?????? ${factionName}? ${leadingFaction.percentage}% ???? ?? ? ?? ?????. ${chairmanText} ${opinionText} ${originSummary}`.trim();
 }
 
-router.get('/council-stats', async (req, res) => {
+router.get('/council-stats' , async (req, res) => {
   try {
     const factionRows = await queries.all(`
-      SELECT COALESCE(faction, 'MUTANT_ROOKIE') as faction, COUNT(*) as count 
+      SELECT COALESCE(faction, 'UNCLASSIFIED') as faction, COUNT(*) as count 
       FROM ais_council_members 
-      GROUP BY COALESCE(faction, 'MUTANT_ROOKIE')
+      GROUP BY COALESCE(faction, 'UNCLASSIFIED')
     `);
 
     const totalRow = await queries.get("SELECT COUNT(*) as total FROM ais_council_members");
@@ -884,6 +1095,12 @@ router.get('/council-stats', async (req, res) => {
       count: r.count,
       percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
     }));
+
+    const originRows = await queries.all(`
+      SELECT member_id, dna_json, generation, status
+      FROM ais_council_members
+    `);
+    const originStats = summarizeOriginStats(originRows, totalCount);
 
     const activeMembers = await queries.all(`
       SELECT member_id, name, voting_power, correct_count, total_count, faction, generation, dna_json, phenotype_json
@@ -911,7 +1128,7 @@ router.get('/council-stats', async (req, res) => {
       count: r.count,
       percentage: totalCount > 0 ? parseFloat(((r.count / totalCount) * 100).toFixed(1)) : 0
     }));
-
+    const activeOriginStats = summarizeOriginStats(originRows.filter((row) => row.status === 'ACTIVE'), activeMembers.length);
 
     const allMembers = await queries.all("SELECT weights_json, phenotype_json FROM ais_council_members");
     let diversityScore = 100;
@@ -1031,7 +1248,7 @@ router.get('/council-stats', async (req, res) => {
           modelName: modelRow && modelRow.value ? modelRow.value : null
         });
 
-        generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats).then(async (result) => {
+        generateCouncilOpinionBriefing(factionStats, activeMembers, generationStats, originStats).then(async (result) => {
           await finishBriefingRefreshSuccess(queries, refreshRow.id, {
             briefingText: result,
             generatedAt: new Date().toISOString()
@@ -1047,12 +1264,14 @@ router.get('/council-stats', async (req, res) => {
 
     const visibleBriefing = latestBriefing
       ? latestBriefing.briefingText
-      : generateFallbackBriefing(factionStats, activeMembers, generationStats);
+      : generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
 
     res.json({
       success: true,
       totalCount,
       factionStats,
+      originStats,
+      activeOriginStats,
       activeMembers,
       recentVotes,
       briefing: visibleBriefing,
@@ -1069,12 +1288,8 @@ router.get('/council-stats', async (req, res) => {
 
 router.post('/force-evolution', async (req, res) => {
   try {
-    const { runDailyEvolution } = require('../evolution.js');
-    const stats = await runDailyEvolution();
-    
-    await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('last_evolution_time', ?)", [Date.now().toString()]);
-    
-    res.json({ success: true, stats, message: "강제 세대 진화 알고리즘이 완료되었습니다." });
+    const result = await runForceEvolution();
+    res.json({ ...result, message: "강제 세대 진화 알고리즘이 완료되었습니다." });
   } catch(err) {
     console.error("Force Evolution Error:", err);
     res.status(500).json({ error: "진화 알고리즘 실행 실패" });
@@ -1123,32 +1338,40 @@ async function performSystemDiagnostics(runHeavyTests) {
   const warnings = [];
   
   const details = {
-    envCheck: { status: "OK", message: "정상" },
-    dbCheck: { status: "OK", message: "정상" },
-    fileCheck: { status: "OK", message: "정상" },
-    modelCheck: { status: "OK", message: "정상" },
-    pythonCheck: { status: "OK", message: "정상" },
-    frontendCheck: { status: "OK", message: "정상" },
-    traderCheck: { status: "OK", message: "정상" },
-    councilCheck: { status: "OK", message: "정상" },
+    envCheck: { status: "OK", message: "??" },
+    dbCheck: { status: "OK", message: "??" },
+    fileCheck: { status: "OK", message: "??" },
+    modelCheck: { status: "OK", message: "??" },
+    pythonCheck: { status: "OK", message: "??" },
+    frontendCheck: { status: "OK", message: "??" },
+    traderCheck: { status: "OK", message: "??" },
+    councilCheck: { status: "OK", message: "??" },
 
-    gateioApiCheck: { status: "OK", message: "진단 대기" },
-    web3Check: { status: "OK", message: "진단 대기" },
-    systemResourceCheck: { status: "OK", message: "진단 대기" },
-    dataPipelineCheck: { status: "OK", message: "진단 대기" },
-    geminiCheck: { status: "OK", message: "진단 대기" },
+    gateioApiCheck: { status: "OK", message: "?? ??" },
+    web3Check: { status: "OK", message: "?? ??" },
+    systemResourceCheck: { status: "OK", message: "?? ??" },
+    dataPipelineCheck: { status: "OK", message: "?? ??" },
+    geminiCheck: { status: "OK", message: "?? ??" },
 
-    pm2Check: { status: "OK", message: "진단 대기" },
-    networkBenchmarkCheck: { status: "OK", message: "진단 대기" },
-    dbPerformanceCheck: { status: "OK", message: "진단 대기" },
-    geneDiversityHhiCheck: { status: "OK", message: "진단 대기" },
-    councilSchedulerCheck: { status: "OK", message: "진단 대기" },
-    sslCertificateCheck: { status: "OK", message: "진단 대기" },
-    councilNullFactionCheck: { status: "OK", message: "진단 대기" },
-    councilDnaIntegrityCheck: { status: "OK", message: "진단 대기" },
-    councilWeightsShapeCheck: { status: "OK", message: "진단 대기" },
-    geminiApiKeyCheck: { status: "OK", message: "진단 대기" },
-    enginePromoConsistencyCheck: { status: "OK", message: "진단 대기" }
+    pm2Check: { status: "OK", message: "?? ??" },
+    networkBenchmarkCheck: { status: "OK", message: "?? ??" },
+    dbPerformanceCheck: { status: "OK", message: "?? ??" },
+    geneDiversityHhiCheck: { status: "OK", message: "?? ??" },
+    councilSchedulerCheck: { status: "OK", message: "?? ??" },
+    sslCertificateCheck: { status: "OK", message: "?? ??" },
+    councilOriginDiversityCheck: { status: "OK", message: "?? ??" },
+    councilNullFactionCheck: { status: "OK", message: "?? ??" },
+    councilDnaIntegrityCheck: { status: "OK", message: "?? ??" },
+    councilWeightsShapeCheck: { status: "OK", message: "?? ??" },
+    councilPhenotypeShapeCheck: { status: "OK", message: "?? ??" },
+    factionClassificationIntegrityCheck: { status: "OK", message: "?? ??" },
+    evolutionTimestampConsistencyCheck: { status: "OK", message: "?? ??" },
+    briefingFreshnessCheck: { status: "OK", message: "?? ??" },
+    forceEvolutionExecutionCheck: { status: "OK", message: "?? ??" },
+    runtimeRepairTelemetryCheck: { status: "OK", message: "?? ??" },
+    councilNarrativeDivergenceCheck: { status: "OK", message: "?? ??" },
+    geminiApiKeyCheck: { status: "OK", message: "?? ??" },
+    enginePromoConsistencyCheck: { status: "OK", message: "?? ??" }
   };
 
 
@@ -1494,7 +1717,7 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
 
   let gateioApiStatus = "OK";
-  let gateioApiMsg = "Gate.io 거래소 API 키 로딩 전";
+  let gateioApiMsg = "Gate.io API probe pending";
   try {
     const cred = await queries.get(`
       SELECT encrypted_api_key, encrypted_api_secret 
@@ -1505,91 +1728,108 @@ async function performSystemDiagnostics(runHeavyTests) {
       const { decryptText } = require('../secureCredentials');
       const decryptedKey = decryptText(cred.encrypted_api_key);
       const decryptedSecret = decryptText(cred.encrypted_api_secret);
-      
+
       const start = Date.now();
       const { getGateIoBalances } = require('../gateioHelper');
       const apiRes = await getGateIoBalances(decryptedKey, decryptedSecret);
       const latency = Date.now() - start;
-      
+
       if (apiRes.success) {
-        gateioApiMsg = `연결 완료 (지연: ${latency}ms, SUT: ${apiRes.balances.SUT.toFixed(2)}, USDT: ${apiRes.balances.USDT.toFixed(2)})`;
+        gateioApiMsg = `??? ??? (???? ${latency}ms, SUT: ${apiRes.balances.SUT.toFixed(2)}, USDT: ${apiRes.balances.USDT.toFixed(2)})`;
       } else {
         gateioApiStatus = "WARNING";
-        gateioApiMsg = `거래소 통신 실패: ${apiRes.message}`;
-        warnings.push(`Gate.io API 실시간 호출 실패: ${apiRes.message}`);
+        gateioApiMsg = `???????? ???: ${apiRes.message}`;
+        warnings.push(`Gate.io API ???????? ???: ${apiRes.message}`);
       }
     } else {
       gateioApiStatus = "WARNING";
-      gateioApiMsg = "등록된 매니저 Gate.io API Credentials가 존재하지 않습니다 (모의 모드)";
+      gateioApiMsg = "?????????? Gate.io API Credentials?? ?????? ?????? (??? ???)";
     }
   } catch (e) {
-    gateioApiStatus = "WARNING";
-    gateioApiMsg = `복호화 또는 API 통신 중 실패: ${e.message}`;
-    warnings.push(`Gate.io 크레덴셜 연결성 진단 실패: ${e.message}`);
+    const fallback = assessGateIoDiagnosticFallback({
+      hasEncryptedCredentials: true,
+      errorMessage: e.message,
+    });
+    gateioApiStatus = fallback.status;
+    gateioApiMsg = fallback.message;
+    if (fallback.warning) {
+      warnings.push(fallback.warning);
+    }
   }
   details.gateioApiCheck = { status: gateioApiStatus, message: gateioApiMsg };
 
 
   let web3Status = "OK";
-  let web3Msg = "RPC 노드 연결 상태 대기 중";
+  let web3Msg = "RPC connectivity probe pending";
   try {
     const defaultRpc = process.env.RPC_URL || 'https://polygon-rpc.com';
     const privateKey = process.env.PRIVATE_KEY;
-    
+    const vaultAddress = process.env.VAULT_CONTRACT_ADDRESS;
+    const rpcUrls = [
+      defaultRpc,
+      'https://polygon-bor-rpc.publicnode.com',
+      'https://polygon.llamarpc.com'
+    ];
+
+    let provider = null;
+    let blockNum = 0;
+    let latency = 0;
+    let connectedRpc = "";
+
+    for (const url of rpcUrls) {
+      try {
+        const tempProvider = new ethers.JsonRpcProvider(url);
+        const start = Date.now();
+        blockNum = await tempProvider.getBlockNumber();
+        latency = Date.now() - start;
+        provider = tempProvider;
+        connectedRpc = url;
+        break;
+      } catch (err) {
+      }
+    }
+
+    if (!provider) {
+      throw new Error("??? Polygon RPC ??? ??? ???");
+    }
+
+    let walletAddress = '';
     if (privateKey) {
-      const { ethers } = require('ethers');
-      const rpcUrls = [
-        defaultRpc,
-        'https://polygon-bor-rpc.publicnode.com',
-        'https://polygon.llamarpc.com'
-      ];
-      
-      let provider = null;
-      let blockNum = 0;
-      let latency = 0;
-      let connectedRpc = "";
-      
-      for (const url of rpcUrls) {
-        try {
-          const tempProvider = new ethers.JsonRpcProvider(url);
-          const start = Date.now();
-          blockNum = await tempProvider.getBlockNumber();
-          latency = Date.now() - start;
-          provider = tempProvider;
-          connectedRpc = url;
-          break;
-        } catch (err) {
-        }
-      }
-      
-      if (!provider) {
-        throw new Error("모든 Polygon RPC 노드 응답 없음");
-      }
-      
       const wallet = new ethers.Wallet(privateKey, provider);
-      const balance = await provider.getBalance(wallet.address);
-      const polBalance = parseFloat(ethers.formatEther(balance));
-      
-      if (polBalance === 0) {
-        web3Status = "ERROR";
-        web3Msg = `지갑 주소: ${wallet.address} (POL 가스비 완전 고갈: 0.0 POL)`;
-        errors.push("Web3 가스비(POL) 고갈 에러");
-      } else if (polBalance < 0.5) {
-        web3Status = "WARNING";
-        web3Msg = `가스비 부족 주의: ${polBalance.toFixed(4)} POL (블록: ${blockNum}, 지연: ${latency}ms, 노드: ${connectedRpc.split('/')[2]})`;
-        warnings.push("POL 가스비 잔액 부족 경고 (< 0.5 POL)");
-      } else {
-        web3Msg = `연결 정상 (블록: ${blockNum}, 지연: ${latency}ms, 가스비: ${polBalance.toFixed(4)} POL, 노드: ${connectedRpc.split('/')[2]})`;
-      }
+      walletAddress = wallet.address;
+    } else if (vaultAddress) {
+      const vaultContract = new ethers.Contract(vaultAddress, ['function owner() view returns (address)'], provider);
+      walletAddress = await vaultContract.owner();
     } else {
       web3Status = "WARNING";
-      web3Msg = "개인키(PRIVATE_KEY) 설정 누락으로 트랜잭션 전송 불가능";
-      warnings.push("Web3 지갑 개인키(PRIVATE_KEY) 미설정");
+      web3Msg = "PRIVATE_KEY ?? VAULT_CONTRACT_ADDRESS ??? ?? ??? ??? ??? ?????";
+      warnings.push("Web3 ?? ?? ??(PRIVATE_KEY/VAULT_CONTRACT_ADDRESS) ???");
+    }
+
+    if (walletAddress) {
+      const balance = await provider.getBalance(walletAddress);
+      const polBalance = parseFloat(ethers.formatEther(balance));
+      const health = assessWeb3WalletHealth({
+        walletAddress,
+        polBalance,
+        blockNum,
+        latency,
+        connectedRpc,
+      });
+      web3Status = health.status;
+      web3Msg = health.message;
+      if (health.issue) {
+        if (health.status === "ERROR") {
+          errors.push(health.issue);
+        } else if (health.status === "WARNING") {
+          warnings.push(health.issue);
+        }
+      }
     }
   } catch (e) {
     web3Status = "WARNING";
-    web3Msg = `RPC 노드 통신 실패: ${e.message}`;
-    warnings.push(`Polygon RPC 노드 연결 실패: ${e.message}`);
+    web3Msg = `RPC ??? ??? ???: ${e.message}`;
+    warnings.push(`Polygon RPC ??? ??? ???: ${e.message}`);
   }
   details.web3Check = { status: web3Status, message: web3Msg };
 
@@ -1818,9 +2058,9 @@ async function performSystemDiagnostics(runHeavyTests) {
   let hhiMsg = "유전자 다양성 HHI 진단 대기 중";
   try {
     const factionCounts = await queries.all(`
-      SELECT COALESCE(faction, 'MUTANT_ROOKIE') as faction, COUNT(*) as cnt 
+      SELECT COALESCE(faction, 'UNCLASSIFIED') as faction, COUNT(*) as cnt 
       FROM ais_council_members 
-      GROUP BY COALESCE(faction, 'MUTANT_ROOKIE')
+      GROUP BY COALESCE(faction, 'UNCLASSIFIED')
     `);
     
     const totalMembers = factionCounts.reduce((acc, cur) => acc + cur.cnt, 0);
@@ -2202,6 +2442,194 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.councilWeightsShapeCheck = { status: weightsShapeStatus, message: weightsShapeMsg };
 
+  let phenotypeShapeStatus = "OK";
+  let phenotypeShapeMsg = "phenotype shape normal";
+  try {
+    const allPhenotypes = await queries.all("SELECT member_id, phenotype_json FROM ais_council_members WHERE phenotype_json IS NOT NULL AND phenotype_json != '' LIMIT 500");
+    let malformed = 0;
+    const malformedIds = [];
+    for (const row of allPhenotypes) {
+      try {
+        const phenotype = JSON.parse(row.phenotype_json);
+        if (!hasValidCentroidShape(phenotype)) {
+          malformed += 1;
+          if (malformedIds.length < 3) malformedIds.push(row.member_id);
+        }
+      } catch (_) {
+        malformed += 1;
+        if (malformedIds.length < 3) malformedIds.push(row.member_id);
+      }
+    }
+    if (malformed > 0) {
+      phenotypeShapeStatus = "ERROR";
+      phenotypeShapeMsg = `malformed phenotype ${malformed} rows (sample: ${malformedIds.join(', ')})`;
+      errors.push(`phenotype_json shape errors: ${malformed}`);
+    } else {
+      phenotypeShapeMsg = `all phenotype_json rows match BUY/SELL/HOLD 5-vector shape (${allPhenotypes.length} rows)`;
+    }
+  } catch (e) {
+    phenotypeShapeStatus = "WARNING";
+    phenotypeShapeMsg = `phenotype shape query error: ${e.message}`;
+    warnings.push(`phenotype shape check failed: ${e.message}`);
+  }
+  details.councilPhenotypeShapeCheck = { status: phenotypeShapeStatus, message: phenotypeShapeMsg };
+
+  let factionIntegrityStatus = "OK";
+  let factionIntegrityMsg = "stored faction values match recomputed faction";
+  try {
+    const allFactionRows = await queries.all("SELECT member_id, name, faction, phenotype_json, weights_json FROM ais_council_members");
+    let mismatched = 0;
+    let unresolved = 0;
+    const mismatchedIds = [];
+    for (const row of allFactionRows) {
+      let payload = null;
+      try {
+        payload = JSON.parse(row.phenotype_json || row.weights_json || 'null');
+      } catch (_) {}
+      const computed = determineFactionForDiagnostics(payload, row.name || row.member_id);
+      if (!computed) {
+        unresolved += 1;
+        if (mismatchedIds.length < 3) mismatchedIds.push(`${row.member_id}:UNRESOLVED`);
+        continue;
+      }
+      const stored = row.faction || 'UNCLASSIFIED';
+      if (stored !== computed) {
+        mismatched += 1;
+        if (mismatchedIds.length < 3) mismatchedIds.push(`${row.member_id}:${stored}->${computed}`);
+      }
+    }
+    if (mismatched > 0 || unresolved > 0) {
+      factionIntegrityStatus = mismatched >= 25 ? "ERROR" : "WARNING";
+      factionIntegrityMsg = `faction mismatches=${mismatched}, unresolved=${unresolved}` + (mismatchedIds.length ? ` (sample: ${mismatchedIds.join(', ')})` : '');
+      (factionIntegrityStatus === "ERROR" ? errors : warnings).push(`faction integrity mismatch: ${mismatched}, unresolved: ${unresolved}`);
+    } else {
+      factionIntegrityMsg = `all stored faction values match recomputed faction (${allFactionRows.length} rows)`;
+    }
+  } catch (e) {
+    factionIntegrityStatus = "WARNING";
+    factionIntegrityMsg = `faction integrity error: ${e.message}`;
+    warnings.push(`faction integrity check failed: ${e.message}`);
+  }
+  details.factionClassificationIntegrityCheck = { status: factionIntegrityStatus, message: factionIntegrityMsg };
+
+  let timestampConsistencyStatus = "OK";
+  let timestampConsistencyMsg = "evolution timestamps aligned";
+  let diagnosticsLastEvolutionTime = 0;
+  try {
+    const latestRun = await queries.get("SELECT run_key, completed_at FROM ais_model_runs ORDER BY completed_at DESC, id DESC LIMIT 1");
+    const lastEvolutionRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
+    diagnosticsLastEvolutionTime = lastEvolutionRow && lastEvolutionRow.value ? parseInt(lastEvolutionRow.value, 10) : 0;
+    const latestRunTime = latestRun && latestRun.completed_at ? new Date(latestRun.completed_at).getTime() : 0;
+    if (!latestRunTime || !diagnosticsLastEvolutionTime) {
+      timestampConsistencyStatus = "WARNING";
+      timestampConsistencyMsg = `missing comparison baseline (run=${latestRunTime ? 'OK' : 'NONE'}, last_evolution_time=${diagnosticsLastEvolutionTime ? 'OK' : 'NONE'})`;
+      warnings.push('evolution timestamp comparison baseline missing');
+    } else {
+      const driftMinutes = Math.round(Math.abs(diagnosticsLastEvolutionTime - latestRunTime) / 60000);
+      if (driftMinutes > 180) {
+        timestampConsistencyStatus = "ERROR";
+        timestampConsistencyMsg = `last_evolution_time drift is ${driftMinutes} minutes from latest completed run`;
+        errors.push(`evolution timestamp drift ${driftMinutes} minutes`);
+      } else if (driftMinutes > 15) {
+        timestampConsistencyStatus = "WARNING";
+        timestampConsistencyMsg = `last_evolution_time drift is ${driftMinutes} minutes from latest completed run`;
+        warnings.push(`evolution timestamp drift ${driftMinutes} minutes`);
+      } else {
+        timestampConsistencyMsg = `latest run and last_evolution_time aligned (drift ${driftMinutes} minutes)`;
+      }
+    }
+  } catch (e) {
+    timestampConsistencyStatus = "WARNING";
+    timestampConsistencyMsg = `evolution timestamp integrity error: ${e.message}`;
+    warnings.push(`evolution timestamp integrity check failed: ${e.message}`);
+  }
+  details.evolutionTimestampConsistencyCheck = { status: timestampConsistencyStatus, message: timestampConsistencyMsg };
+
+  let briefingFreshnessStatus = "OK";
+  let briefingFreshnessMsg = "council briefing freshness normal";
+  try {
+    const latestSuccess = await queries.get("SELECT generated_at FROM council_briefing_history WHERE scope = 'ADMIN' AND status = 'SUCCESS' ORDER BY datetime(generated_at) DESC, id DESC LIMIT 1");
+    const latestInProgress = await queries.get("SELECT started_at FROM council_briefing_history WHERE scope = 'ADMIN' AND status = 'IN_PROGRESS' ORDER BY datetime(started_at) DESC, id DESC LIMIT 1");
+    const refreshNeeded = shouldRefreshBriefing({ latestSuccess: latestSuccess ? { generatedAt: latestSuccess.generated_at } : null, now: Date.now(), lastEvolutionTime: diagnosticsLastEvolutionTime, cacheDurationMs: BRIEFING_CACHE_DURATION });
+    if (latestInProgress && latestInProgress.started_at) {
+      const inProgressMinutes = Math.round((Date.now() - new Date(latestInProgress.started_at).getTime()) / 60000);
+      if (inProgressMinutes > 30) {
+        briefingFreshnessStatus = "WARNING";
+        briefingFreshnessMsg = `briefing refresh has been IN_PROGRESS for ${inProgressMinutes} minutes`;
+        warnings.push(`briefing refresh delay: ${inProgressMinutes} minutes`);
+      }
+    }
+    if (refreshNeeded) {
+      if (briefingFreshnessStatus == "OK") briefingFreshnessStatus = "WARNING";
+      briefingFreshnessMsg = latestSuccess && latestSuccess.generated_at ? `latest ADMIN briefing is stale relative to evolution time (${latestSuccess.generated_at})` : 'no successful ADMIN briefing exists after the latest evolution';
+      warnings.push('council briefing freshness warning');
+    } else if (briefingFreshnessStatus == "OK") {
+      briefingFreshnessMsg = latestSuccess && latestSuccess.generated_at ? `latest ADMIN briefing is fresh (${latestSuccess.generated_at})` : 'ADMIN briefing freshness normal';
+    }
+  } catch (e) {
+    briefingFreshnessStatus = "WARNING";
+    briefingFreshnessMsg = `briefing freshness error: ${e.message}`;
+    warnings.push(`briefing freshness check failed: ${e.message}`);
+  }
+  details.briefingFreshnessCheck = { status: briefingFreshnessStatus, message: briefingFreshnessMsg };
+
+  let forceEvolutionExecutionStatus = "OK";
+  let forceEvolutionExecutionMsg = "force evolution execution path normal";
+  try {
+    await execPromise("py -3 -c \"import py_compile; py_compile.compile('train_ais.py', doraise=True); print('OK')\"", { cwd: path.join(__dirname, '..'), windowsHide: true });
+    forceEvolutionExecutionMsg = 'py launcher and train_ais.py execution path are valid';
+  } catch (e) {
+    forceEvolutionExecutionStatus = "ERROR";
+    forceEvolutionExecutionMsg = `force evolution execution path failed: ${e.message.split('\n')[0]}`;
+    errors.push(`force evolution execution path failed: ${e.message.split('\n')[0]}`);
+  }
+  details.forceEvolutionExecutionCheck = { status: forceEvolutionExecutionStatus, message: forceEvolutionExecutionMsg };
+
+  let runtimeRepairTelemetryStatus = "OK";
+  let runtimeRepairTelemetryMsg = "runtime DNA repair telemetry normal";
+  try {
+    const repairTelemetryRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'ais_runtime_repair_telemetry'");
+    if (!repairTelemetryRow || !repairTelemetryRow.value) {
+      runtimeRepairTelemetryStatus = "WARNING";
+      runtimeRepairTelemetryMsg = 'runtime DNA repair telemetry is missing';
+      warnings.push('runtime DNA repair telemetry missing');
+    } else {
+      const telemetry = JSON.parse(repairTelemetryRow.value);
+      const accession = Number(telemetry.accessionRepairCount || 0);
+      const contextMask = Number(telemetry.contextMaskRepairCount || 0);
+      const profile = Number(telemetry.profileRepairCount || 0);
+      if (telemetry.hadRepairs || accession > 0 || contextMask > 0 || profile > 0) {
+        runtimeRepairTelemetryStatus = "WARNING";
+        runtimeRepairTelemetryMsg = `runtime repairs detected (accession=${accession}, context=${contextMask}, profile=${profile})`;
+        warnings.push(`runtime DNA repairs detected (${accession}/${contextMask}/${profile})`);
+      } else {
+        runtimeRepairTelemetryMsg = `no runtime repairs detected (accession=${accession}, context=${contextMask}, profile=${profile})`;
+      }
+    }
+  } catch (e) {
+    runtimeRepairTelemetryStatus = "WARNING";
+    runtimeRepairTelemetryMsg = `runtime repair telemetry error: ${e.message}`;
+    warnings.push(`runtime repair telemetry check failed: ${e.message}`);
+  }
+  details.runtimeRepairTelemetryCheck = { status: runtimeRepairTelemetryStatus, message: runtimeRepairTelemetryMsg };
+
+  let narrativeDivergenceStatus = "OK";
+  let narrativeDivergenceMsg = "pool and active-council narrative aligned";
+  try {
+    const poolFactions = await queries.all("SELECT COALESCE(faction, 'UNCLASSIFIED') as faction, COUNT(*) as cnt FROM ais_council_members GROUP BY COALESCE(faction, 'UNCLASSIFIED') ORDER BY cnt DESC");
+    const activeFactions = await queries.all("SELECT COALESCE(faction, 'UNCLASSIFIED') as faction, COUNT(*) as cnt FROM ais_council_members WHERE status = 'ACTIVE' GROUP BY COALESCE(faction, 'UNCLASSIFIED') ORDER BY cnt DESC");
+    const narrativeAssessment = assessNarrativeDivergence(poolFactions, activeFactions);
+    narrativeDivergenceStatus = narrativeAssessment.status;
+    narrativeDivergenceMsg = narrativeAssessment.message;
+    if (narrativeAssessment.warning) {
+      warnings.push(narrativeAssessment.warning);
+    }
+  } catch (e) {
+    narrativeDivergenceStatus = "WARNING";
+    narrativeDivergenceMsg = `pool vs active-council narrative error: ${e.message}`;
+    warnings.push(`pool vs active-council narrative check failed: ${e.message}`);
+  }
+  details.councilNarrativeDivergenceCheck = { status: narrativeDivergenceStatus, message: narrativeDivergenceMsg };
 
   let apiKeyCheckStatus = "OK";
   let apiKeyCheckMsg = "Gemini API Key 정상 설정";
@@ -2298,6 +2726,13 @@ async function performSystemDiagnostics(runHeavyTests) {
     nullFactionStatus === "WARNING" ||
     dnaIntegrityStatus === "WARNING" ||
     weightsShapeStatus === "WARNING" ||
+    phenotypeShapeStatus === "WARNING" ||
+    factionIntegrityStatus === "WARNING" ||
+    timestampConsistencyStatus === "WARNING" ||
+    briefingFreshnessStatus === "WARNING" ||
+    forceEvolutionExecutionStatus === "WARNING" ||
+    runtimeRepairTelemetryStatus === "WARNING" ||
+    narrativeDivergenceStatus === "WARNING" ||
     apiKeyCheckStatus === "WARNING" ||
     enginePromoStatus === "WARNING"
   ) {
@@ -2394,6 +2829,14 @@ async function performSystemDiagnostics(runHeavyTests) {
     { name: "Faction 미할당(NULL) 오염", status: nullFactionStatus, percentage: nullFactionStatus === "OK" ? 100 : 0, details: nullFactionMsg },
     { name: "DNA/Phenotype 누락 검사", status: dnaIntegrityStatus, percentage: dnaIntegrityStatus === "OK" ? 100 : 0, details: dnaIntegrityMsg },
     { name: "가중치 벡터 형태 검증", status: weightsShapeStatus, percentage: weightsShapeStatus === "OK" ? 100 : 0, details: weightsShapeMsg },
+    { name: "Phenotype Vector Shape", status: phenotypeShapeStatus, percentage: phenotypeShapeStatus === "OK" ? 100 : (phenotypeShapeStatus === "WARNING" ? 50 : 0), details: phenotypeShapeMsg },
+    { name: "Faction Classification Integrity", status: factionIntegrityStatus, percentage: factionIntegrityStatus === "OK" ? 100 : (factionIntegrityStatus === "WARNING" ? 50 : 0), details: factionIntegrityMsg },
+    { name: "Evolution Timestamp Consistency", status: timestampConsistencyStatus, percentage: timestampConsistencyStatus === "OK" ? 100 : (timestampConsistencyStatus === "WARNING" ? 50 : 0), details: timestampConsistencyMsg },
+    { name: "Council Briefing Freshness", status: briefingFreshnessStatus, percentage: briefingFreshnessStatus === "OK" ? 100 : (briefingFreshnessStatus === "WARNING" ? 50 : 0), details: briefingFreshnessMsg },
+    { name: "Force Evolution Execution Path", status: forceEvolutionExecutionStatus, percentage: forceEvolutionExecutionStatus === "OK" ? 100 : (forceEvolutionExecutionStatus === "WARNING" ? 50 : 0), details: forceEvolutionExecutionMsg },
+    { name: "Runtime DNA Repair Telemetry", status: runtimeRepairTelemetryStatus, percentage: runtimeRepairTelemetryStatus === "OK" ? 100 : (runtimeRepairTelemetryStatus === "WARNING" ? 50 : 0), details: runtimeRepairTelemetryMsg },
+    { name: "Pool vs Active Narrative Divergence", status: narrativeDivergenceStatus, percentage: narrativeDivergenceStatus === "OK" ? 100 : (narrativeDivergenceStatus === "WARNING" ? 50 : 0), details: narrativeDivergenceMsg },
+    { name: "??? ?? ???", status: originDiversityStatus, percentage: originDiversityStatus === "OK" ? 100 : (originDiversityStatus === "WARNING" ? 50 : 0), details: originDiversityMsg },
     { name: "Gemini API Key 설정 상태", status: apiKeyCheckStatus, percentage: apiKeyCheckStatus === "OK" ? 100 : 0, details: apiKeyCheckMsg },
     { name: "엔진↔승격 정합성 검증", status: enginePromoStatus, percentage: enginePromoStatus === "OK" ? 100 : (enginePromoStatus === "WARNING" ? 50 : 0), details: enginePromoMsg },
     { name: "학습 데이터 라벨링 적체", status: labelStatus, percentage: labelStatus === "OK" ? 100 : (labelStatus === "WARNING" ? 50 : 0), details: labelMsg },
@@ -2453,4 +2896,11 @@ module.exports.__private__ = {
   applyAidlGeneStateOverride,
   applyAidlGeneContextOverride,
   performSystemDiagnostics,
+  runForceEvolution,
+  assessGateIoDiagnosticFallback,
+  assessWeb3WalletHealth,
+  assessNarrativeDivergence,
+  assessOriginDiversity,
+  determineCandidateOrigin,
+  summarizeOriginStats,
 };

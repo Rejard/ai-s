@@ -9,11 +9,16 @@ import { useAdminLogic } from '../hooks/useAdminLogic';
 import AisTrainingEvidence from '../components/AisTrainingEvidence';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
+import { ADMIN_DIAGNOSTIC_SECTIONS, TOTAL_DIAGNOSTIC_NODE_COUNT } from '../lib/adminDiagnosticsSections';
 
 function AdminMobileDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('home');
   const [historyFilter, setHistoryFilter] = useState('ALL');
+  const diagSections = ADMIN_DIAGNOSTIC_SECTIONS.map((section) => ({
+    ...section,
+    name: section.id === 'algorithm' ? `?? ?? ???? ?? (${section.count})` : section.id === 'infrastructure' ? `?? ?? ??? ?? (${section.count})` : section.id === 'security' ? `??? ?? ? ???? (${section.count})` : section.id === 'council' ? `??? ?? ?? ?? (${section.count})` : `??? Shadow Racing (${section.count})`
+  }));
 
   const {
     managers,
@@ -1083,7 +1088,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
 
               <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-dark)' }}>
-                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/35개 완료</span>
+                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/{TOTAL_DIAGNOSTIC_NODE_COUNT}개 완료</span>
                 <span>최근 갱신: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp).split(' ')[1] : 'N/A'}</span>
               </div>
 
@@ -1125,8 +1130,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                         if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
                         if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
                         if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
-                        if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE';
-
+                        
                         return (
                           <div
                             key={f.faction}

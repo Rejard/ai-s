@@ -187,6 +187,8 @@ export function useAdminLogic(managerEmail) {
         setCouncilStats({
           totalCount: res.data.totalCount || 0,
           factionStats: res.data.factionStats || [],
+          originStats: res.data.originStats || [],
+          activeOriginStats: res.data.activeOriginStats || [],
           activeMembers: res.data.activeMembers || [],
           recentVotes: res.data.recentVotes || [],
           briefing: res.data.briefing || '',

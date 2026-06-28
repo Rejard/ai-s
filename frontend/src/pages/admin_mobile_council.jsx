@@ -26,9 +26,11 @@ function AdminMobileCouncil() {
       const res = await axios.get(`${API_BASE}/admin/council-stats`, getAdminHeaders());
       if (res.data.success) {
         setCouncilStats({
-          factionStats: res.data.factionStats,
-          activeMembers: res.data.activeMembers,
-          recentVotes: res.data.recentVotes,
+          factionStats: res.data.factionStats || [],
+          originStats: res.data.originStats || [],
+          activeOriginStats: res.data.activeOriginStats || [],
+          activeMembers: res.data.activeMembers || [],
+          recentVotes: res.data.recentVotes || [],
           briefing: res.data.briefing || '',
           briefingGeneratedAt: res.data.briefingGeneratedAt || '',
           briefingStatus: res.data.briefingStatus || '',
@@ -113,8 +115,7 @@ function AdminMobileCouncil() {
                 if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
                 if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
                 if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
-                if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE';
-
+                
                 return (
                   <div
                     key={f.faction}
@@ -155,6 +156,67 @@ function AdminMobileCouncil() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: '20px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)' }}>
+            <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>???</span> 500?????????? ????? ???
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {(councilStats.originStats || []).map((item) => {
+                const label = item.origin === 'crossover_offspring'
+                  ? '??????'
+                  : item.origin === 'seeded_random'
+                    ? '????????'
+                    : '??? ???';
+                const color = item.origin === 'crossover_offspring'
+                  ? '#10B981'
+                  : item.origin === 'seeded_random'
+                    ? '#F59E0B'
+                    : '#38BDF8';
+                return (
+                  <div key={item.origin} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ minWidth: '76px', fontSize: '11px', color: '#E5E7EB', fontWeight: '700' }}>{label}</div>
+                    <div style={{ flex: 1, height: '10px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      <div style={{ width: `${item.percentage}%`, height: '100%', background: color, borderRadius: '999px' }} />
+                    </div>
+                    <div style={{ minWidth: '74px', textAlign: 'right', fontSize: '10px', color: 'var(--text-muted)' }}>{item.count}??({item.percentage}%)</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.5', textAlign: 'left' }}>
+              ????? ??? ???, ????? ???/??? ?????????? ????????
+            </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)' }}>
+            <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>??</span> 500? ??? ?? ??
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {(councilStats.originStats || []).map((item) => {
+                const label = item.origin === 'crossover_offspring' ? '?? ??' : item.origin === 'seeded_random' ? '??? ??' : '?? ??';
+                const color = item.origin === 'crossover_offspring' ? '#10B981' : item.origin === 'seeded_random' ? '#F59E0B' : '#38BDF8';
+                return (
+                  <div key={item.origin} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 70px', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ fontSize: '10px', color: '#E5E7EB', fontWeight: '700' }}>{label}</div>
+                    <div style={{ height: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      <div style={{ width: `${item.percentage}%`, height: '100%', background: color, borderRadius: '999px' }} />
+                    </div>
+                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', textAlign: 'right' }}>{item.count}?</div>
+                  </div>
+                );
+              })}
+            </div>
+            {!!(councilStats.activeOriginStats || []).length && (
+              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {(councilStats.activeOriginStats || []).map((item) => {
+                  const label = item.origin === 'crossover_offspring' ? 'ACTIVE ?? ??' : item.origin === 'seeded_random' ? 'ACTIVE ??? ??' : 'ACTIVE ?? ??';
+                  return <div key={`active-${item.origin}`} style={{ fontSize: '9px', color: 'var(--text-muted)' }}><b style={{ color: '#E5E7EB' }}>{label}</b> {item.count}? ({item.percentage}%)</div>;
+                })}
+              </div>
+            )}
           </div>
 
           {councilStats.briefing && (

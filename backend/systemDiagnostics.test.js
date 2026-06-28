@@ -15,7 +15,7 @@ async function main() {
     const q = database.queries;
 
     let passed = 0;
-    const EXPECTED_NODE_COUNT = 35;
+    const EXPECTED_NODE_COUNT = 43;
 
     {
       const result = await adminRouter.__private__.performSystemDiagnostics(false);
@@ -136,6 +136,13 @@ async function main() {
         'Faction 미할당(NULL) 오염',
         'DNA/Phenotype 누락 검사',
         '가중치 벡터 형태 검증',
+        'Phenotype Vector Shape',
+        'Faction Classification Integrity',
+        'Evolution Timestamp Consistency',
+        'Council Briefing Freshness',
+        'Force Evolution Execution Path',
+        'Runtime DNA Repair Telemetry',
+        'Pool vs Active Narrative Divergence',
         'Gemini API Key 설정 상태',
         '엔진↔승격 정합성 검증',
         '학습 데이터 라벨링 적체',
@@ -155,7 +162,7 @@ async function main() {
       }
       assert.equal(actualNames.length, expectedNames.length);
       passed++;
-      console.log('  [PASS] All 35 diagnostic nodes present in correct order');
+      console.log('  [PASS] All 42 diagnostic nodes present in correct order');
     }
 
     {
@@ -164,8 +171,8 @@ async function main() {
         algorithm: { start: 0, end: 9 },
         infrastructure: { start: 9, end: 14 },
         security: { start: 14, end: 19 },
-        council: { start: 19, end: 30 },
-        shadow: { start: 30, end: 35 }
+        council: { start: 19, end: 38 },
+        shadow: { start: 38, end: 43 }
       };
 
       for (const [name, range] of Object.entries(sections)) {
@@ -177,18 +184,21 @@ async function main() {
         }
       }
       passed++;
-      console.log('  [PASS] Section boundaries (algorithm:9, infra:5, security:5, council:11, shadow:5) correct');
+      console.log('  [PASS] Section boundaries (algorithm:9, infra:5, security:5, council:19, shadow:5) correct');
     }
 
     {
       const result = await adminRouter.__private__.performSystemDiagnostics(false);
       const detailKeys = Object.keys(result.details);
-      assert.ok(detailKeys.length >= 20, `Too few detail keys: ${detailKeys.length}`);
+      assert.ok(detailKeys.length >= 27, `Too few detail keys: ${detailKeys.length}`);
 
       const expectedDetailKeys = [
         'envCheck', 'dbCheck', 'fileCheck', 'traderCheck',
         'councilCheck', 'councilSchedulerCheck',
         'councilNullFactionCheck', 'councilDnaIntegrityCheck', 'councilWeightsShapeCheck',
+        'councilPhenotypeShapeCheck', 'factionClassificationIntegrityCheck', 'evolutionTimestampConsistencyCheck',
+        'briefingFreshnessCheck', 'forceEvolutionExecutionCheck', 'runtimeRepairTelemetryCheck',
+        'councilNarrativeDivergenceCheck',
         'geminiApiKeyCheck', 'enginePromoConsistencyCheck'
       ];
       for (const key of expectedDetailKeys) {
@@ -223,6 +233,110 @@ async function main() {
       assert.equal(result.diagnostics.length, EXPECTED_NODE_COUNT);
       passed++;
       console.log('  [PASS] Heavy test mode (runHeavyTests=true) runs without crash');
+    }
+
+    {
+      const storedEncrypted = adminRouter.__private__.assessGateIoDiagnosticFallback({
+        hasEncryptedCredentials: true,
+        errorMessage: 'GATEIO_CREDENTIAL_ENCRYPTION_KEY or PRIVATE_KEY is required to store Gate.io credentials.',
+      });
+      assert.equal(storedEncrypted.status, 'OK');
+      assert.ok(storedEncrypted.message.includes('encrypted credentials stored'));
+      passed++;
+      console.log('  [PASS] Gate.io diagnostic accepts encrypted-at-rest credentials without forcing env-key warning');
+    }
+
+    {
+      const ownerOnlyOk = adminRouter.__private__.assessWeb3WalletHealth({
+        walletAddress: '0x1111111111111111111111111111111111111111',
+        polBalance: 1.25,
+        blockNum: 123,
+        latency: 180,
+        connectedRpc: 'https://polygon-rpc.com',
+      });
+      assert.equal(ownerOnlyOk.status, 'OK');
+      assert.ok(ownerOnlyOk.message.includes('1.2500 POL'));
+      passed++;
+      console.log('  [PASS] Web3 diagnostic can report healthy owner-wallet gas balance without private key access');
+    }
+
+    {
+      const ownerOnlyWarn = adminRouter.__private__.assessWeb3WalletHealth({
+        walletAddress: '0x1111111111111111111111111111111111111111',
+        polBalance: 0.12,
+        blockNum: 456,
+        latency: 210,
+        connectedRpc: 'https://polygon-rpc.com',
+      });
+      assert.equal(ownerOnlyWarn.status, 'WARNING');
+      assert.ok(ownerOnlyWarn.message.includes('0.1200 POL'));
+      passed++;
+      console.log('  [PASS] Web3 diagnostic warns on low owner-wallet gas balance');
+    }
+
+    {
+      const tieResult = adminRouter.__private__.assessNarrativeDivergence(
+        [
+          { faction: 'VALUE_SEEKER', cnt: 234 },
+          { faction: 'CONSERVATIVE_WATCHER', cnt: 233 },
+          { faction: 'TREND_FOLLOWER', cnt: 33 },
+        ],
+        [
+          { faction: 'CONSERVATIVE_WATCHER', cnt: 5 },
+          { faction: 'TREND_FOLLOWER', cnt: 4 },
+          { faction: 'VALUE_SEEKER', cnt: 2 },
+        ]
+      );
+      assert.equal(tieResult.status, 'OK');
+      assert.ok(tieResult.message.includes('near-tied'));
+      passed++;
+      console.log('  [PASS] Narrative divergence stays OK when pool leadership is effectively tied');
+    }
+
+    {
+      const clearGapResult = adminRouter.__private__.assessNarrativeDivergence(
+        [
+          { faction: 'VALUE_SEEKER', cnt: 320 },
+          { faction: 'CONSERVATIVE_WATCHER', cnt: 120 },
+          { faction: 'TREND_FOLLOWER', cnt: 60 },
+        ],
+        [
+          { faction: 'CONSERVATIVE_WATCHER', cnt: 6 },
+          { faction: 'VALUE_SEEKER', cnt: 3 },
+          { faction: 'TREND_FOLLOWER', cnt: 2 },
+        ]
+      );
+      assert.equal(clearGapResult.status, 'WARNING');
+      assert.ok(clearGapResult.message.includes('pool leader=VALUE_SEEKER'));
+      passed++;
+      console.log('  [PASS] Narrative divergence warns when pool leadership has a clear gap');
+    }
+
+    {
+      const originStats = adminRouter.__private__.summarizeOriginStats([
+        { member_id: 'mutant_a', generation: 1, dna_json: JSON.stringify({ lineage: { parent_ids: [], ancestor_ids: ['mutant_a'] }, mutation_log: [] }) },
+        { member_id: 'offspring_b', generation: 3, dna_json: JSON.stringify({ lineage: { parent_ids: ['g1', 'g2'], ancestor_ids: ['a', 'b'] }, mutation_log: [{ event: 'weight_nudge' }] }) },
+        { member_id: 'ais_member_c', generation: 2, dna_json: JSON.stringify({ lineage: { parent_ids: ['g3'], ancestor_ids: ['seed', 'g3'] }, mutation_log: [{ event: 'state_mutation' }] }) },
+      ], 3);
+      assert.deepEqual(originStats, [
+        { origin: 'seeded_random', count: 1, percentage: 33.3 },
+        { origin: 'crossover_offspring', count: 1, percentage: 33.3 },
+        { origin: 'mutated_lineage', count: 1, percentage: 33.3 },
+      ]);
+      passed++;
+      console.log('  [PASS] Origin stats separate seeded, crossover, and mutated lineage paths');
+    }
+
+    {
+      const originAssessment = adminRouter.__private__.assessOriginDiversity([
+        { origin: 'crossover_offspring', count: 363, percentage: 72.6 },
+        { origin: 'seeded_random', count: 134, percentage: 26.8 },
+        { origin: 'mutated_lineage', count: 3, percentage: 0.6 },
+      ]);
+      assert.equal(originAssessment.status, 'OK');
+      assert.ok(originAssessment.message.includes('crossover_offspring'));
+      passed++;
+      console.log('  [PASS] Origin diversity stays OK when multiple evolutionary paths remain alive');
     }
 
     {

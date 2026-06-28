@@ -9,6 +9,7 @@ import { useAdminLogic } from '../hooks/useAdminLogic';
 import AisTrainingEvidence from '../components/AisTrainingEvidence';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
+import { ADMIN_DIAGNOSTIC_SECTIONS, TOTAL_DIAGNOSTIC_NODE_COUNT, sliceAdminDiagnosticItems } from '../lib/adminDiagnosticsSections';
 
 function AdminPcDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -71,6 +72,11 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
   
   const [activeDiagTab, setActiveDiagTab] = React.useState('algorithm');
   const [terminalLogs, setTerminalLogs] = React.useState([]);
+  const diagTabs = ADMIN_DIAGNOSTIC_SECTIONS.map((section) => ({
+    ...section,
+    name: section.id === 'algorithm' ? '?? ????' : section.id === 'infrastructure' ? '?? ??? ??' : section.id === 'security' ? '?? ? ????' : section.id === 'council' ? '?? ?? ??' : 'Shadow Racing',
+    icon: section.id === 'algorithm' ? '??' : section.id === 'infrastructure' ? '??' : section.id === 'security' ? '???' : section.id === 'council' ? '???' : '???'
+  }));
 
   React.useEffect(() => {
     if (runningDiagnostics) {
@@ -650,8 +656,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                       if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
                       if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
                       if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
-                      if (f.faction === 'MUTANT_ROOKIE') color = '#00F2FE';
-
+                      
                       return (
                         <div
                           key={f.faction}
@@ -689,6 +694,53 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ fontSize: '13px', color: '#E4E4E7', margin: 0, fontWeight: '800' }}>500? ??? ?? ??</h4>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>??? ?? ??</span>
+                  </div>
+                  {(councilStats.originStats || []).map((item) => {
+                    const label = item.origin === 'crossover_offspring'
+                      ? '?? ??'
+                      : item.origin === 'seeded_random'
+                        ? '??? ??'
+                        : '?? ??';
+                    const color = item.origin === 'crossover_offspring'
+                      ? '#10B981'
+                      : item.origin === 'seeded_random'
+                        ? '#F59E0B'
+                        : '#38BDF8';
+                    return (
+                      <div key={item.origin} style={{ display: 'grid', gridTemplateColumns: '88px 1fr 84px', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ fontSize: '11px', color: '#E5E7EB', fontWeight: '700' }}>{label}</div>
+                        <div style={{ height: '10px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                          <div style={{ width: `${item.percentage}%`, height: '100%', background: color, borderRadius: '999px' }} />
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'right' }}>{item.count}? ({item.percentage}%)</div>
+                      </div>
+                    );
+                  })}
+                  {!!(councilStats.activeOriginStats || []).length && (
+                    <div style={{ marginTop: '4px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: '10px 14px' }}>
+                      {(councilStats.activeOriginStats || []).map((item) => {
+                        const label = item.origin === 'crossover_offspring'
+                          ? 'ACTIVE ?? ??'
+                          : item.origin === 'seeded_random'
+                            ? 'ACTIVE ??? ??'
+                            : 'ACTIVE ?? ??';
+                        return (
+                          <div key={`active-${item.origin}`} style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                            <b style={{ color: '#E5E7EB' }}>{label}</b> {item.count}? ({item.percentage}%)
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                    ??? ?? ?? ???, ??? ?????? ????? ??? ????.
                   </div>
                 </div>
 
@@ -1363,18 +1415,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '260px' }}>
                 {(() => {
                   const items = diagnosticsData?.diagnostics || [];
-                  let filtered = [];
-                  if (activeDiagTab === 'algorithm') {
-                    filtered = items.slice(0, 9);
-                  } else if (activeDiagTab === 'infrastructure') {
-                    filtered = items.slice(9, 14);
-                  } else if (activeDiagTab === 'security') {
-                    filtered = items.slice(14, 19);
-                  } else if (activeDiagTab === 'council') {
-                    filtered = items.slice(19, 30);
-                  } else if (activeDiagTab === 'shadow') {
-                    filtered = items.slice(30, 35);
-                  }
+                  const filtered = sliceAdminDiagnosticItems(items, activeDiagTab);
 
                   if (filtered.length === 0) {
                     return (
@@ -1470,7 +1511,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
 
             <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-dark)' }}>
               <span>종합 진단 결과: <strong style={{ color: diagnosticsData?.overallStatus === 'EXCELLENT' ? '#10B981' : (diagnosticsData?.overallStatus === 'WARNING' ? '#FBBF24' : '#EF4444'), textShadow: diagnosticsData ? `0 0 8px ${diagnosticsData.overallStatus === 'EXCELLENT' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` : 'none' }}>{diagnosticsData?.overallStatus || 'UNKNOWN'}</strong></span>
-              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/35개 완료</span>
+              <span>진단 노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/{TOTAL_DIAGNOSTIC_NODE_COUNT}개 완료</span>
               <span>최근 서빙 갱신 시각: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp) : 'N/A'}</span>
             </div>
           </div>
