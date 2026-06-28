@@ -63,6 +63,10 @@ async function main() {
     VALUES ('ais_runtime_repair_telemetry', '{"accessionRepairCount":4,"contextMaskRepairCount":3,"profileRepairCount":2,"lastRepairedAt":"2026-06-22 11:00:00"}')
   `);
   await store.run(`
+    INSERT INTO platform_settings (key, value)
+    VALUES ('ais_growth_telemetry', '{"selectionScore":57.4,"selectionWeights":{"utility":0.85,"tradeParticipation":0.1,"actionEntropy":0.05},"candidateTradeParticipationAverage":0.34,"candidateActionEntropyAverage":0.71,"electedTradeParticipationAverage":0.46,"electedActionEntropyAverage":0.82,"holdoutTradeParticipationAverage":0.41,"holdoutActionEntropyAverage":0.78,"benchmarkMargin":4,"activeGenerationSpread":{"min":1,"max":4,"average":2.5},"electedOrigins":{"mutant":4,"offspring":7,"legacy":0,"other":0},"validationActionMix":{"BUY":22,"SELL":24,"HOLD":54},"holdoutActionMix":{"BUY":20,"SELL":23,"HOLD":57}}')
+  `);
+  await store.run(`
     CREATE TABLE ais_model_runs (
       id INTEGER PRIMARY KEY,
       run_key TEXT,
@@ -162,6 +166,9 @@ async function main() {
   assert.strictEqual(result.invalid, 1);
   assert.deepStrictEqual(result.byDecision.BUY, { count: 2, correct: 1, accuracy: 50 });
   assert.deepStrictEqual(result.byDecision.SELL, { count: 0, correct: 0, accuracy: 0 });
+  assert.deepStrictEqual(result.byModeTrade, {
+    GEMINI: { total: 2, correct: 1, accuracy: 50 },
+  });
   assert.strictEqual(result.latestRun.holdoutScore, 54);
   assert.deepStrictEqual(result.latestRun.promotionReasons, ['MIN_LABELED_OBSERVATIONS']);
   assert.strictEqual(result.shadowOnly, false);

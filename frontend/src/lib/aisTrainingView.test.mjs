@@ -22,6 +22,24 @@ assert.deepEqual(empty.dnaMutationTotals, {
 assert.deepEqual(empty.selectionTelemetry, { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 });
 assert.deepEqual(empty.dnaOperations, { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' });
 assert.deepEqual(empty.dnaRepairTelemetry, { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' });
+assert.deepEqual(empty.byModeTrade, {});
+assert.deepEqual(empty.growthTelemetry, {
+  selectionScore: 0,
+  selectionWeights: { utility: 0.85, tradeParticipation: 0.1, actionEntropy: 0.05 },
+  candidateTradeParticipationAverage: 0,
+  candidateActionEntropyAverage: 0,
+  electedTradeParticipationAverage: 0,
+  electedActionEntropyAverage: 0,
+  holdoutTradeParticipationAverage: 0,
+  holdoutActionEntropyAverage: 0,
+  benchmarkMargin: 0,
+  validationDelta: 0,
+  holdoutDelta: 0,
+  activeGenerationSpread: { min: 0, max: 0, average: 0 },
+  electedOrigins: { mutant: 0, offspring: 0, legacy: 0, other: 0 },
+  validationActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+  holdoutActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+});
 assert.deepEqual(empty.dnaContextSummary, { blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 });
 assert.deepEqual(empty.dnaContextPerformance, {
   blackSwanActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0, averageMutationEvents: 0 },
@@ -102,6 +120,20 @@ const populated = normalizeAisTrainingStats({
     holdoutScore: 54,
     benchmarkScore: 50,
     promotionReasons: ['MIN_LABELED_OBSERVATIONS'],
+  },
+  byModeTrade: {
+    AIS_ONLY: { total: 20, correct: 9, accuracy: 45 },
+  },
+  growthTelemetry: {
+    selectionScore: 57.4,
+    candidateTradeParticipationAverage: 0.34,
+    electedTradeParticipationAverage: 0.46,
+    holdoutTradeParticipationAverage: 0.41,
+    benchmarkMargin: 4,
+    validationDelta: 1.2,
+    holdoutDelta: 2.8,
+    electedOrigins: { mutant: 4, offspring: 7 },
+    validationActionMix: { BUY: 22, SELL: 24, HOLD: 54 },
   },
   dnaStateTotals: { active: 1, inactive: 2, deprecated: 3, lethal: 4 },
   dnaMutationTotals: {
@@ -212,6 +244,26 @@ assert.deepEqual(populated.dnaMutationTotals, {
 assert.deepEqual(populated.selectionTelemetry, { culledCount: 12, offspringCount: 6, mutantCount: 6, archiveCount: 12 });
 assert.deepEqual(populated.dnaOperations, { archiveCount: 2, averageFitnessHistoryDepth: 1.5, latestArchivedAt: '2026-06-22 10:00:00' });
 assert.deepEqual(populated.dnaRepairTelemetry, { accessionRepairCount: 4, contextMaskRepairCount: 3, profileRepairCount: 2, lastRepairedAt: '2026-06-22 11:00:00' });
+assert.deepEqual(populated.byModeTrade, {
+  AIS_ONLY: { total: 20, correct: 9, accuracy: 45 },
+});
+assert.deepEqual(populated.growthTelemetry, {
+  selectionScore: 57.4,
+  selectionWeights: { utility: 0.85, tradeParticipation: 0.1, actionEntropy: 0.05 },
+  candidateTradeParticipationAverage: 0.34,
+  candidateActionEntropyAverage: 0,
+  electedTradeParticipationAverage: 0.46,
+  electedActionEntropyAverage: 0,
+  holdoutTradeParticipationAverage: 0.41,
+  holdoutActionEntropyAverage: 0,
+  benchmarkMargin: 4,
+  validationDelta: 1.2,
+  holdoutDelta: 2.8,
+  activeGenerationSpread: { min: 0, max: 0, average: 0 },
+  electedOrigins: { mutant: 4, offspring: 7, legacy: 0, other: 0 },
+  validationActionMix: { BUY: 22, SELL: 24, HOLD: 54 },
+  holdoutActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+});
 assert.deepEqual(populated.dnaContextSummary, { blackSwanStrategyGenes: 1, blackSwanActiveGenomes: 2, blackSwanArchivedGenomes: 3 });
 assert.deepEqual(populated.dnaContextPerformance, {
   blackSwanActive: { genomeCount: 2, averageLatestValidationScore: 51.5, averageLatestHoldoutScore: 49.3, averageMutationEvents: 4 },

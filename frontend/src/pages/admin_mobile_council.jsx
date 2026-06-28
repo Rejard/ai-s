@@ -160,15 +160,15 @@ function AdminMobileCouncil() {
 
           <div className="glass-card" style={{ padding: '20px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 12px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>???</span> 500?????????? ????? ???
+              <span>🧬</span> 500 Candidate Origin Distribution
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {(councilStats.originStats || []).map((item) => {
                 const label = item.origin === 'crossover_offspring'
-                  ? '??????'
+                  ? 'Crossover Offspring'
                   : item.origin === 'seeded_random'
-                    ? '????????'
-                    : '??? ???';
+                    ? 'Seeded Random'
+                    : 'Mutated Lineage';
                 const color = item.origin === 'crossover_offspring'
                   ? '#10B981'
                   : item.origin === 'seeded_random'
@@ -186,17 +186,17 @@ function AdminMobileCouncil() {
               })}
             </div>
             <div style={{ marginTop: '10px', fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.5', textAlign: 'left' }}>
-              ????? ??? ???, ????? ???/??? ?????????? ????????
+              Origin diversity across crossover, mutation, and seeded-random pathways indicates evolutionary health.
             </div>
           </div>
 
           <div className="glass-card" style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '750', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>??</span> 500? ??? ?? ??
+              <span>🧬</span> 500 Candidate Origin Composition
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {(councilStats.originStats || []).map((item) => {
-                const label = item.origin === 'crossover_offspring' ? '?? ??' : item.origin === 'seeded_random' ? '??? ??' : '?? ??';
+                const label = item.origin === 'crossover_offspring' ? 'Crossover' : item.origin === 'seeded_random' ? 'Seeded Random' : 'Mutated';
                 const color = item.origin === 'crossover_offspring' ? '#10B981' : item.origin === 'seeded_random' ? '#F59E0B' : '#38BDF8';
                 return (
                   <div key={item.origin} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 70px', gap: '8px', alignItems: 'center' }}>
@@ -212,7 +212,7 @@ function AdminMobileCouncil() {
             {!!(councilStats.activeOriginStats || []).length && (
               <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {(councilStats.activeOriginStats || []).map((item) => {
-                  const label = item.origin === 'crossover_offspring' ? 'ACTIVE ?? ??' : item.origin === 'seeded_random' ? 'ACTIVE ??? ??' : 'ACTIVE ?? ??';
+                  const label = item.origin === 'crossover_offspring' ? 'ACTIVE Crossover' : item.origin === 'seeded_random' ? 'ACTIVE Seeded' : 'ACTIVE Mutated';
                   return <div key={`active-${item.origin}`} style={{ fontSize: '9px', color: 'var(--text-muted)' }}><b style={{ color: '#E5E7EB' }}>{label}</b> {item.count}? ({item.percentage}%)</div>;
                 })}
               </div>

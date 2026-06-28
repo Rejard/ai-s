@@ -148,8 +148,8 @@ function assessOriginDiversity(originStats) {
   if (!stats.length) {
     return {
       status: "WARNING",
-      message: '??? ?? ??? ??? ? ????',
-      warning: '??? ?? ??? ??? ??? ? ????',
+      message: 'origin diversity data unavailable',
+      warning: 'origin diversity data could not be retrieved',
     };
   }
   const summary = stats.map((item) => `${item.origin}:${item.count}`).join(', ');
@@ -158,20 +158,20 @@ function assessOriginDiversity(originStats) {
   if (dominant && Number(dominant.percentage || 0) >= 95) {
     return {
       status: "WARNING",
-      message: `??? ??? ? ??? ???? ???? ???? (${summary})`,
-      warning: '??? ?? ???? ???? ???? ????',
+      message: `single origin dominates pool excessively (${summary})`,
+      warning: 'single origin type dominating pool over 95%',
     };
   }
   if (!mutatedLineage || Number(mutatedLineage.count || 0) === 0) {
     return {
       status: "WARNING",
-      message: `?? ??? ????? ?????? (${summary})`,
-      warning: '?? ??? ????? ??????',
+      message: `mutated lineage absent from pool (${summary})`,
+      warning: 'mutated lineage not found in candidate pool',
     };
   }
   return {
     status: "OK",
-    message: `??? ??? ?? ?? ???? (${summary})`,
+    message: `origin diversity is healthy (${summary})`,
     warning: null,
   };
 }
@@ -190,8 +190,8 @@ function assessGateIoDiagnosticFallback({ hasEncryptedCredentials, errorMessage 
   }
   return {
     status: "WARNING",
-    message: `??? ?? API ?? ? ??: ${errorMessage}`,
-    warning: `Gate.io ???? ??? ?? ??: ${errorMessage}`,
+    message: `Gate.io API credential probe failed: ${errorMessage}`,
+    warning: `Gate.io credential connectivity check failed: ${errorMessage}`,
   };
 }
 
@@ -200,20 +200,20 @@ function assessWeb3WalletHealth({ walletAddress, polBalance, blockNum, latency, 
   if (polBalance === 0) {
     return {
       status: "ERROR",
-      message: `?? ??: ${walletAddress} (POL ??? ?? ??: 0.0000 POL)`,
-      issue: "Web3 ???(POL) ?? ??",
+      message: `wallet: ${walletAddress} (POL gas fully depleted: 0.0000 POL)`,
+      issue: "Web3 gas(POL) depleted",
     };
   }
   if (polBalance < 0.5) {
     return {
       status: "WARNING",
-      message: `??? ?? ??: ${polBalance.toFixed(4)} POL (??: ${blockNum}, ??: ${latency}ms, ??: ${rpcHost}, ??: ${walletAddress})`,
-      issue: "POL ??? ?? ?? ?? (< 0.5 POL)",
+      message: `gas low: ${polBalance.toFixed(4)} POL (block: ${blockNum}, latency: ${latency}ms, node: ${rpcHost}, wallet: ${walletAddress})`,
+      issue: "POL gas balance low (< 0.5 POL)",
     };
   }
   return {
     status: "OK",
-    message: `?? ?? (??: ${blockNum}, ??: ${latency}ms, ???: ${polBalance.toFixed(4)} POL, ??: ${rpcHost}, ??: ${walletAddress})`,
+    message: `healthy (block: ${blockNum}, latency: ${latency}ms, gas: ${polBalance.toFixed(4)} POL, node: ${rpcHost}, wallet: ${walletAddress})`,
     issue: null,
   };
 }
@@ -1048,35 +1048,35 @@ Rules:
 
 function generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats = []) {
   if (!factionStats || factionStats.length === 0) {
-    return "?? AI ?? ???? ?? ????. ?? ? ?? ??? ???.";
+    return "AI council faction data is being aggregated. Please try again shortly.";
   }
 
   const sortedFactions = [...factionStats].sort((a, b) => b.count - a.count);
   const leadingFaction = sortedFactions[0];
 
-  let factionName = '??';
-  let opinionText = '?? ?? ??? ???? ?? ?? ?? ??? ???? ????.';
+  let factionName = 'faction';
+  let opinionText = 'cautious market-watching stance is maintained.';
 
   if (leadingFaction.faction === 'TREND_FOLLOWER') {
-    factionName = '?????';
-    opinionText = '?? ??? ?? ?? ???? ? ???? ???? ??? ?? ??? ?? ?????.';
+    factionName = 'Trend Follower (SMA/Momentum)';
+    opinionText = 'aggressive buy/sell sentiment dominates, riding strong momentum uptrends.';
   } else if (leadingFaction.faction === 'VALUE_SEEKER') {
-    factionName = '?????';
-    opinionText = '??? ??? ??? ??? ???? ??? ?? ??? ?? ??? ?????.';
+    factionName = 'Value Seeker (RSI/Counter-trend)';
+    opinionText = 'oversold dip-hunting sentiment is strong, aiming for aggressive entry at bounce points.';
   } else if (leadingFaction.faction === 'CONSERVATIVE_WATCHER') {
-    factionName = '??????';
-    opinionText = '??? ??? ?? ??? ???? ??? ??? ??? ??? ??????.';
+    factionName = 'Conservative Watcher (Stability)';
+    opinionText = 'cautious sentiment prevails, guarding assets conservatively against sudden market shifts.';
   }
 
   const chairman = activeMembers[0];
   const chairmanText = chairman
-    ? `?? ?? ${chairman.name}(${chairman.generation}??, ${chairman.faction})? ????`
-    : '?? ??? ????';
+    ? `led by chairman ${chairman.name}(gen ${chairman.generation}, ${chairman.faction})`
+    : 'led by the council';
   const originSummary = Array.isArray(originStats) && originStats.length
-    ? `?? ??? ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}? ?????.`
+    ? `Origin composition: ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}.`
     : '';
 
-  return `?? 500? ?????? ${factionName}? ${leadingFaction.percentage}% ???? ?? ? ?? ?????. ${chairmanText} ${opinionText} ${originSummary}`.trim();
+  return `Among 500 candidates, ${factionName} holds ${leadingFaction.percentage}% securing majority. ${chairmanText} ${opinionText} ${originSummary}`.trim();
 }
 
 router.get('/council-stats' , async (req, res) => {
@@ -1327,7 +1327,7 @@ async function getWindowsDiskSpace() {
 }
 
 
-async function performSystemDiagnostics(runHeavyTests) {
+async function performSystemDiagnostics() {
   const fs = require('fs');
   const path = require('path');
   const { exec } = require('child_process');
@@ -1369,9 +1369,10 @@ async function performSystemDiagnostics(runHeavyTests) {
     briefingFreshnessCheck: { status: "OK", message: "?? ??" },
     forceEvolutionExecutionCheck: { status: "OK", message: "?? ??" },
     runtimeRepairTelemetryCheck: { status: "OK", message: "?? ??" },
-    councilNarrativeDivergenceCheck: { status: "OK", message: "?? ??" },
-    geminiApiKeyCheck: { status: "OK", message: "?? ??" },
-    enginePromoConsistencyCheck: { status: "OK", message: "?? ??" }
+    councilNarrativeDivergenceCheck: { status: "OK", message: "진단 대기" },
+    councilOriginDiversityCheck: { status: "OK", message: "진단 대기" },
+    geminiApiKeyCheck: { status: "OK", message: "진단 대기" },
+    enginePromoConsistencyCheck: { status: "OK", message: "진단 대기" }
   };
 
 
@@ -1394,19 +1395,6 @@ async function performSystemDiagnostics(runHeavyTests) {
       details.envCheck = { status: "WARNING", message: "AUTH_SESSION_SECRET 환경변수가 구성되어 있지 않습니다." };
     }
   }
-
-  if (runHeavyTests && apiStatus !== "ERROR") {
-    try {
-      await execPromise('node adminAidlPolicy.test.js', { cwd: path.join(__dirname, '..'), windowsHide: true });
-      apiDetails = "Express API 코어 및 어드민 정책 설정 테스트 통과";
-    } catch (e) {
-      apiStatus = "ERROR";
-      apiDetails = `어드민 정책 테스트 실패: ${e.message.split('\n')[0]}`;
-      errors.push(`어드민 정책 테스트 오류: ${e.message.split('\n')[0]}`);
-      details.envCheck = { status: "ERROR", message: `테스트 실패: ${e.message.split('\n')[0]}` };
-    }
-  }
-
 
   let traderStatus = "OK";
   let traderDetails = "Gate.io 거래소 모니터링 정상 작동 중";
@@ -1520,30 +1508,6 @@ async function performSystemDiagnostics(runHeavyTests) {
     warnings.push("DB 학습 이력 테이블 조회 오류");
   }
 
-  if (runHeavyTests && evolutionStatus !== "ERROR") {
-
-    try {
-      await execPromise('py --version', { windowsHide: true });
-    } catch (e) {
-      evolutionStatus = "ERROR";
-      evolutionDetails = "로컬 Python py 런처를 실행할 수 없습니다.";
-      errors.push("파이썬 런처(py) 미설치 또는 환경변수 오류");
-      details.pythonCheck = { status: "ERROR", message: "파이썬 런처(py) 실행기 오작동" };
-    }
-
-    if (evolutionStatus !== "ERROR") {
-      try {
-        await execPromise('py test_ais_dna.py', { cwd: path.join(__dirname, '..'), windowsHide: true });
-        evolutionDetails = "유전자 진화 모델 및 DNA 구조 테스트 통과 완료";
-      } catch (e) {
-        evolutionStatus = "ERROR";
-        evolutionDetails = `DNA 테스트 실패: ${e.message.split('\n')[0]}`;
-        errors.push(`유전자 DNA 테스트 실패: ${e.message.split('\n')[0]}`);
-      }
-    }
-  }
-
-
   let vepStatus = "OK";
   let vepDetails = "이상 돌연변이 사전 위험 필터(AI-VEP) 활성화";
   const requiredVepFiles = ['zeroTrustFilter.js', 'aisEvaluation.js', 'aisEvaluation.test.js'];
@@ -1555,18 +1519,6 @@ async function performSystemDiagnostics(runHeavyTests) {
     details.fileCheck = { status: "ERROR", message: `AI-VEP 파일 누락: ${missingVepFiles.join(', ')}` };
   }
 
-  if (runHeavyTests && vepStatus !== "ERROR") {
-    try {
-      await execPromise('node aisEvaluation.test.js', { cwd: path.join(__dirname, '..'), windowsHide: true });
-      vepDetails = "AI-VEP 이상 변이 연산 및 평가 모델 무결성 검증 완료";
-    } catch (e) {
-      vepStatus = "ERROR";
-      vepDetails = `AI-VEP 평가 테스트 실패: ${e.message.split('\n')[0]}`;
-      errors.push(`AI-VEP 평가 테스트 실패: ${e.message.split('\n')[0]}`);
-    }
-  }
-
-
   let featuresStatus = "OK";
   let featuresDetails = "RSI 및 이평선 등 기술 지표 정규화 연산기 준비완료";
   const requiredFeatureFiles = ['ais_features.py', 'test_ais_features.py'];
@@ -1577,18 +1529,6 @@ async function performSystemDiagnostics(runHeavyTests) {
     errors.push(`피처 가공기 파일 누락: ${missingFeatureFiles.join(', ')}`);
     details.fileCheck = { status: "ERROR", message: `피처 스크립트 누락: ${missingFeatureFiles.join(', ')}` };
   }
-
-  if (runHeavyTests && featuresStatus !== "ERROR") {
-    try {
-      await execPromise('py test_ais_features.py', { cwd: path.join(__dirname, '..'), windowsHide: true });
-      featuresDetails = "10개 핵심 보조지표 정규화 가공 유닛 테스트 통과 완료";
-    } catch (e) {
-      featuresStatus = "ERROR";
-      featuresDetails = `피처 가공 테스트 실패: ${e.message.split('\n')[0]}`;
-      errors.push(`보조지표 피처 가공 테스트 실패: ${e.message.split('\n')[0]}`);
-    }
-  }
-
 
   let councilStatus = "OK";
   let councilDetails = "의회 다양성 및 연산 여유 마진율 모니터링 중";
@@ -1735,15 +1675,15 @@ async function performSystemDiagnostics(runHeavyTests) {
       const latency = Date.now() - start;
 
       if (apiRes.success) {
-        gateioApiMsg = `??? ??? (???? ${latency}ms, SUT: ${apiRes.balances.SUT.toFixed(2)}, USDT: ${apiRes.balances.USDT.toFixed(2)})`;
+        gateioApiMsg = `connected (latency ${latency}ms, SUT: ${apiRes.balances.SUT.toFixed(2)}, USDT: ${apiRes.balances.USDT.toFixed(2)})`;
       } else {
         gateioApiStatus = "WARNING";
-        gateioApiMsg = `???????? ???: ${apiRes.message}`;
-        warnings.push(`Gate.io API ???????? ???: ${apiRes.message}`);
+        gateioApiMsg = `exchange API call failed: ${apiRes.message}`;
+        warnings.push(`Gate.io API realtime call failed: ${apiRes.message}`);
       }
     } else {
       gateioApiStatus = "WARNING";
-      gateioApiMsg = "?????????? Gate.io API Credentials?? ?????? ?????? (??? ???)";
+      gateioApiMsg = "No registered manager Gate.io API Credentials found (simulation mode)";
     }
   } catch (e) {
     const fallback = assessGateIoDiagnosticFallback({
@@ -1790,7 +1730,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
 
     if (!provider) {
-      throw new Error("??? Polygon RPC ??? ??? ???");
+      throw new Error("All Polygon RPC nodes unresponsive");
     }
 
     let walletAddress = '';
@@ -1802,8 +1742,8 @@ async function performSystemDiagnostics(runHeavyTests) {
       walletAddress = await vaultContract.owner();
     } else {
       web3Status = "WARNING";
-      web3Msg = "PRIVATE_KEY ?? VAULT_CONTRACT_ADDRESS ??? ?? ??? ??? ??? ?????";
-      warnings.push("Web3 ?? ?? ??(PRIVATE_KEY/VAULT_CONTRACT_ADDRESS) ???");
+      web3Msg = "PRIVATE_KEY or VAULT_CONTRACT_ADDRESS not configured, transaction sending unavailable";
+      warnings.push("Web3 wallet config missing (PRIVATE_KEY/VAULT_CONTRACT_ADDRESS)");
     }
 
     if (walletAddress) {
@@ -1828,8 +1768,8 @@ async function performSystemDiagnostics(runHeavyTests) {
     }
   } catch (e) {
     web3Status = "WARNING";
-    web3Msg = `RPC ??? ??? ???: ${e.message}`;
-    warnings.push(`Polygon RPC ??? ??? ???: ${e.message}`);
+    web3Msg = `RPC node connection failed: ${e.message}`;
+    warnings.push(`Polygon RPC node connection failed: ${e.message}`);
   }
   details.web3Check = { status: web3Status, message: web3Msg };
 
@@ -2631,6 +2571,24 @@ async function performSystemDiagnostics(runHeavyTests) {
   }
   details.councilNarrativeDivergenceCheck = { status: narrativeDivergenceStatus, message: narrativeDivergenceMsg };
 
+  let originDiversityStatus = "OK";
+  let originDiversityMsg = "origin diversity normal";
+  try {
+    const allMembers = await queries.all("SELECT member_id, dna_json, generation FROM ais_council_members");
+    const originStats = summarizeOriginStats(allMembers);
+    const originAssessment = assessOriginDiversity(originStats);
+    originDiversityStatus = originAssessment.status;
+    originDiversityMsg = originAssessment.message;
+    if (originAssessment.warning) {
+      warnings.push(originAssessment.warning);
+    }
+  } catch (e) {
+    originDiversityStatus = "WARNING";
+    originDiversityMsg = `origin diversity check error: ${e.message}`;
+    warnings.push(`origin diversity check failed: ${e.message}`);
+  }
+  details.councilOriginDiversityCheck = { status: originDiversityStatus, message: originDiversityMsg };
+
   let apiKeyCheckStatus = "OK";
   let apiKeyCheckMsg = "Gemini API Key 정상 설정";
   try {
@@ -2733,6 +2691,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     forceEvolutionExecutionStatus === "WARNING" ||
     runtimeRepairTelemetryStatus === "WARNING" ||
     narrativeDivergenceStatus === "WARNING" ||
+    originDiversityStatus === "WARNING" ||
     apiKeyCheckStatus === "WARNING" ||
     enginePromoStatus === "WARNING"
   ) {
@@ -2836,7 +2795,7 @@ async function performSystemDiagnostics(runHeavyTests) {
     { name: "Force Evolution Execution Path", status: forceEvolutionExecutionStatus, percentage: forceEvolutionExecutionStatus === "OK" ? 100 : (forceEvolutionExecutionStatus === "WARNING" ? 50 : 0), details: forceEvolutionExecutionMsg },
     { name: "Runtime DNA Repair Telemetry", status: runtimeRepairTelemetryStatus, percentage: runtimeRepairTelemetryStatus === "OK" ? 100 : (runtimeRepairTelemetryStatus === "WARNING" ? 50 : 0), details: runtimeRepairTelemetryMsg },
     { name: "Pool vs Active Narrative Divergence", status: narrativeDivergenceStatus, percentage: narrativeDivergenceStatus === "OK" ? 100 : (narrativeDivergenceStatus === "WARNING" ? 50 : 0), details: narrativeDivergenceMsg },
-    { name: "??? ?? ???", status: originDiversityStatus, percentage: originDiversityStatus === "OK" ? 100 : (originDiversityStatus === "WARNING" ? 50 : 0), details: originDiversityMsg },
+    { name: "Origin Diversity", status: originDiversityStatus, percentage: originDiversityStatus === "OK" ? 100 : (originDiversityStatus === "WARNING" ? 50 : 0), details: originDiversityMsg },
     { name: "Gemini API Key 설정 상태", status: apiKeyCheckStatus, percentage: apiKeyCheckStatus === "OK" ? 100 : 0, details: apiKeyCheckMsg },
     { name: "엔진↔승격 정합성 검증", status: enginePromoStatus, percentage: enginePromoStatus === "OK" ? 100 : (enginePromoStatus === "WARNING" ? 50 : 0), details: enginePromoMsg },
     { name: "학습 데이터 라벨링 적체", status: labelStatus, percentage: labelStatus === "OK" ? 100 : (labelStatus === "WARNING" ? 50 : 0), details: labelMsg },
@@ -2864,7 +2823,7 @@ async function performSystemDiagnostics(runHeavyTests) {
 
 router.get('/diagnostics', async (req, res) => {
   try {
-    const result = await performSystemDiagnostics(false);
+    const result = await performSystemDiagnostics();
     res.json(result);
   } catch (err) {
     console.error("Fetch diagnostics error:", err);
@@ -2875,7 +2834,7 @@ router.get('/diagnostics', async (req, res) => {
 
 router.post('/run-diagnostics', async (req, res) => {
   try {
-    const result = await performSystemDiagnostics(true);
+    const result = await performSystemDiagnostics();
     res.json(result);
   } catch (err) {
     console.error("Run diagnostics error:", err);

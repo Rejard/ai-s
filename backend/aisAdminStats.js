@@ -18,6 +18,26 @@ function emptyDnaRepairTelemetry() {
   };
 }
 
+function emptyGrowthTelemetry() {
+  return {
+    selectionScore: 0,
+    selectionWeights: { utility: 0.85, tradeParticipation: 0.1, actionEntropy: 0.05 },
+    candidateTradeParticipationAverage: 0,
+    candidateActionEntropyAverage: 0,
+    electedTradeParticipationAverage: 0,
+    electedActionEntropyAverage: 0,
+    holdoutTradeParticipationAverage: 0,
+    holdoutActionEntropyAverage: 0,
+    benchmarkMargin: 0,
+    validationDelta: 0,
+    holdoutDelta: 0,
+    activeGenerationSpread: { min: 0, max: 0, average: 0 },
+    electedOrigins: { mutant: 0, offspring: 0, legacy: 0, other: 0 },
+    validationActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+    holdoutActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+  };
+}
+
 function emptyDnaLineage() {
   return {
     activeGenomes: [],
@@ -106,6 +126,20 @@ function emptyOverrideCoverage() {
     snapshotComparableCount: 0,
     timelineComparableCount: 0,
   };
+}
+
+function computeActionEntropyFromModeDecision(decisions = {}) {
+  const totals = ['BUY', 'SELL', 'HOLD']
+    .map((decision) => Number(decisions?.[decision]?.total || 0))
+    .filter((value) => value > 0);
+  const total = totals.reduce((sum, value) => sum + value, 0);
+  if (!total) return 0;
+  const entropy = totals.reduce((sum, value) => {
+    const probability = value / total;
+    return sum - (probability * Math.log2(probability));
+  }, 0);
+  const maxEntropy = Math.log2(3);
+  return maxEntropy > 0 ? Number((entropy / maxEntropy).toFixed(4)) : 0;
 }
 
 function emptyDnaAdminOverrideCoverage() {
@@ -732,6 +766,15 @@ async function getAisTrainingStats(store) {
     GROUP BY engine_mode, gemini_decision
   `, [LABEL_VERSION]);
 
+  const modeTradeRows = await store.all(`
+    SELECT engine_mode,
+      COUNT(*) as total,
+      SUM(CASE WHEN is_correct_decision = 1 THEN 1 ELSE 0 END) as correct
+    FROM ais_training_data
+    WHERE evaluation_status = 'LABELED' AND label_version = ? AND gemini_decision IN ('BUY', 'SELL')
+    GROUP BY engine_mode
+  `, [LABEL_VERSION]);
+
   const byModeDecision = {};
   for (const row of modeDecisionRows) {
     if (!byModeDecision[row.engine_mode]) byModeDecision[row.engine_mode] = {};
@@ -739,6 +782,15 @@ async function getAisTrainingStats(store) {
       total: row.total,
       correct: row.correct,
       accuracy: row.total > 0 ? parseFloat(((row.correct / row.total) * 100).toFixed(2)) : 0
+    };
+  }
+
+  const byModeTrade = {};
+  for (const row of modeTradeRows) {
+    byModeTrade[row.engine_mode] = {
+      total: row.total,
+      correct: row.correct,
+      accuracy: row.total > 0 ? parseFloat(((row.correct / row.total) * 100).toFixed(2)) : 0,
     };
   }
 
@@ -752,6 +804,14 @@ async function getAisTrainingStats(store) {
   for (const row of modeLatestRows) {
     byModeLastUpdated[row.engine_mode] = row.latest_at;
   }
+
+  const previousCompletedRun = await store.get(`
+    SELECT validation_score, holdout_score
+    FROM ais_model_runs
+    WHERE completed_at IS NOT NULL
+    ORDER BY id DESC
+    LIMIT 1 OFFSET 1
+  `);
 
   let latestRun = null;
   if (latest) {
@@ -784,6 +844,7 @@ async function getAisTrainingStats(store) {
   const promoEnabledRow = await store.get("SELECT value FROM platform_settings WHERE key = 'automatic_promotion_enabled'");
   const selectionTelemetryRow = await store.get("SELECT value FROM platform_settings WHERE key = 'ais_selection_telemetry'");
   const repairTelemetryRow = await store.get("SELECT value FROM platform_settings WHERE key = 'ais_runtime_repair_telemetry'");
+  const growthTelemetryRow = await store.get("SELECT value FROM platform_settings WHERE key = 'ais_growth_telemetry'");
   const automaticPromotionEnabled = promoEnabledRow ? (promoEnabledRow.value === 'ON') : false;
   let selectionTelemetry = emptySelectionTelemetry();
   if (selectionTelemetryRow?.value) {
@@ -800,6 +861,27 @@ async function getAisTrainingStats(store) {
     } catch {
       dnaRepairTelemetry = emptyDnaRepairTelemetry();
     }
+  }
+  let growthTelemetry = emptyGrowthTelemetry();
+  if (growthTelemetryRow?.value) {
+    try {
+      const parsedGrowthTelemetry = JSON.parse(growthTelemetryRow.value);
+      growthTelemetry = {
+        ...growthTelemetry,
+        ...parsedGrowthTelemetry,
+        selectionWeights: { ...growthTelemetry.selectionWeights, ...(parsedGrowthTelemetry.selectionWeights || {}) },
+        activeGenerationSpread: { ...growthTelemetry.activeGenerationSpread, ...(parsedGrowthTelemetry.activeGenerationSpread || {}) },
+        electedOrigins: { ...growthTelemetry.electedOrigins, ...(parsedGrowthTelemetry.electedOrigins || {}) },
+        validationActionMix: { ...growthTelemetry.validationActionMix, ...(parsedGrowthTelemetry.validationActionMix || {}) },
+        holdoutActionMix: { ...growthTelemetry.holdoutActionMix, ...(parsedGrowthTelemetry.holdoutActionMix || {}) },
+      };
+    } catch {
+      growthTelemetry = emptyGrowthTelemetry();
+    }
+  }
+  if (latestRun && previousCompletedRun) {
+    growthTelemetry.validationDelta = Number((latestRun.validationScore - Number(previousCompletedRun.validation_score || 0)).toFixed(2));
+    growthTelemetry.holdoutDelta = Number((latestRun.holdoutScore - Number(previousCompletedRun.holdout_score || 0)).toFixed(2));
   }
   let dnaStateTotalsAvailable = true;
   const activeCouncil = await store.all(`
@@ -965,6 +1047,45 @@ async function getAisTrainingStats(store) {
     recentArchives: archiveLineageRows,
   };
 
+  if (!growthTelemetryRow?.value && latestRun) {
+    const aisOnlyTotals = byMode.AIS_ONLY || { total: 0 };
+    const aisOnlyTrade = byModeTrade.AIS_ONLY || { total: 0 };
+    const aisOnlyDecision = byModeDecision.AIS_ONLY || {};
+    const activeGenerationValues = activeCouncil.map((row) => Number(row.generation || 1)).filter((value) => Number.isFinite(value) && value > 0);
+    const liveOrigins = activeCouncil.reduce((totals, row) => {
+      const memberId = String(row.member_id || '');
+      if (memberId.startsWith('mutant_')) totals.mutant += 1;
+      else if (memberId.startsWith('offspring_')) totals.offspring += 1;
+      else if (memberId.startsWith('ais_member_')) totals.legacy += 1;
+      else totals.other += 1;
+      return totals;
+    }, { mutant: 0, offspring: 0, legacy: 0, other: 0 });
+    const tradeParticipation = aisOnlyTotals.total > 0
+      ? Number((aisOnlyTrade.total / aisOnlyTotals.total).toFixed(4))
+      : 0;
+    const actionEntropy = computeActionEntropyFromModeDecision(aisOnlyDecision);
+    growthTelemetry.selectionScore = Number((latestRun.validationScore || 0).toFixed(2));
+    growthTelemetry.candidateTradeParticipationAverage = tradeParticipation;
+    growthTelemetry.candidateActionEntropyAverage = actionEntropy;
+    growthTelemetry.electedTradeParticipationAverage = tradeParticipation;
+    growthTelemetry.electedActionEntropyAverage = actionEntropy;
+    growthTelemetry.holdoutTradeParticipationAverage = tradeParticipation;
+    growthTelemetry.holdoutActionEntropyAverage = actionEntropy;
+    growthTelemetry.benchmarkMargin = Number(((latestRun.holdoutScore || 0) - (latestRun.benchmarkScore || 0)).toFixed(2));
+    growthTelemetry.activeGenerationSpread = {
+      min: activeGenerationValues.length ? Math.min(...activeGenerationValues) : 0,
+      max: activeGenerationValues.length ? Math.max(...activeGenerationValues) : 0,
+      average: activeGenerationValues.length ? Number((activeGenerationValues.reduce((sum, value) => sum + value, 0) / activeGenerationValues.length).toFixed(2)) : 0,
+    };
+    growthTelemetry.electedOrigins = liveOrigins;
+    growthTelemetry.validationActionMix = {
+      BUY: Number(aisOnlyDecision.BUY?.total || 0),
+      SELL: Number(aisOnlyDecision.SELL?.total || 0),
+      HOLD: Number(aisOnlyDecision.HOLD?.total || 0),
+    };
+    growthTelemetry.holdoutActionMix = { ...growthTelemetry.validationActionMix };
+  }
+
   return {
     total: Number(totals?.total || 0),
     labeled: Number(totals?.labeled || 0),
@@ -973,6 +1094,7 @@ async function getAisTrainingStats(store) {
     byDecision,
     byMode,
     byModeDecision,
+    byModeTrade,
     byModeLastUpdated,
     latestRun,
     labelVersion: LABEL_VERSION,
@@ -981,6 +1103,7 @@ async function getAisTrainingStats(store) {
     selectionTelemetry,
     dnaOperations,
     dnaRepairTelemetry,
+    growthTelemetry,
     dnaLineage: { ...emptyDnaLineage(), ...dnaLineage },
     dnaContextSummary: { ...emptyDnaContextSummary(), ...dnaContextSummary },
     dnaContextPerformance: { ...emptyDnaContextPerformance(), ...dnaContextPerformance },

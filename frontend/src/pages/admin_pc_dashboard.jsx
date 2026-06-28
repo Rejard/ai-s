@@ -74,9 +74,25 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
   const [terminalLogs, setTerminalLogs] = React.useState([]);
   const diagTabs = ADMIN_DIAGNOSTIC_SECTIONS.map((section) => ({
     ...section,
-    name: section.id === 'algorithm' ? '?? ????' : section.id === 'infrastructure' ? '?? ??? ??' : section.id === 'security' ? '?? ? ????' : section.id === 'council' ? '?? ?? ??' : 'Shadow Racing',
-    icon: section.id === 'algorithm' ? '??' : section.id === 'infrastructure' ? '??' : section.id === 'security' ? '???' : section.id === 'council' ? '???' : '???'
+    name: section.id === 'algorithm' ? 'Core Algorithm' : section.id === 'infrastructure' ? 'External Infra' : section.id === 'security' ? 'Security & Stress' : section.id === 'council' ? 'Council Sub-tasks' : 'Shadow Racing',
+    icon: section.id === 'algorithm' ? '🧠' : section.id === 'infrastructure' ? '🌐' : section.id === 'security' ? '🛠️' : section.id === 'council' ? '🏛️' : '🏎️'
   }));
+
+  const getFilteredDiagnostics = (items) => {
+    let filtered = [];
+    if (activeDiagTab === 'algorithm') {
+      filtered = items.slice(0, 9);
+    } else if (activeDiagTab === 'infrastructure') {
+      filtered = items.slice(9, 14);
+    } else if (activeDiagTab === 'security') {
+      filtered = items.slice(14, 19);
+    } else if (activeDiagTab === 'council') {
+      filtered = items.slice(19, 38);
+    } else if (activeDiagTab === 'shadow') {
+      filtered = items.slice(38, 43);
+    }
+    return filtered;
+  };
 
   React.useEffect(() => {
     if (runningDiagnostics) {
@@ -690,7 +706,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                       return (
                         <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: item.color }} />
-                          <span><b>{item.label}:</b> {stat.count}석 ({stat.percentage}%)</span>
+                          <span><b>{item.label}:</b> {stat.count} seats ({stat.percentage}%)</span>
                         </div>
                       );
                     })}
@@ -699,15 +715,15 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
 
                 <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h4 style={{ fontSize: '13px', color: '#E4E4E7', margin: 0, fontWeight: '800' }}>500? ??? ?? ??</h4>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>??? ?? ??</span>
+                    <h4 style={{ fontSize: '13px', color: '#E4E4E7', margin: 0, fontWeight: '800' }}>500 Candidate Origin Distribution</h4>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Lineage Composition</span>
                   </div>
                   {(councilStats.originStats || []).map((item) => {
                     const label = item.origin === 'crossover_offspring'
-                      ? '?? ??'
+                      ? 'Crossover Offspring'
                       : item.origin === 'seeded_random'
-                        ? '??? ??'
-                        : '?? ??';
+                        ? 'Seeded Random'
+                        : 'Mutated Lineage';
                     const color = item.origin === 'crossover_offspring'
                       ? '#10B981'
                       : item.origin === 'seeded_random'
@@ -727,10 +743,10 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     <div style={{ marginTop: '4px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: '10px 14px' }}>
                       {(councilStats.activeOriginStats || []).map((item) => {
                         const label = item.origin === 'crossover_offspring'
-                          ? 'ACTIVE ?? ??'
+                          ? 'ACTIVE Crossover'
                           : item.origin === 'seeded_random'
-                            ? 'ACTIVE ??? ??'
-                            : 'ACTIVE ?? ??';
+                            ? 'ACTIVE Seeded'
+                            : 'ACTIVE Mutated';
                         return (
                           <div key={`active-${item.origin}`} style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
                             <b style={{ color: '#E5E7EB' }}>{label}</b> {item.count}? ({item.percentage}%)
@@ -740,7 +756,7 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     </div>
                   )}
                   <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                    ??? ?? ?? ???, ??? ?????? ????? ??? ????.
+                    Origin diversity across crossover, mutation, and seeded-random pathways indicates evolutionary health.
                   </div>
                 </div>
 
@@ -1353,8 +1369,8 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                     { id: 'algorithm', name: '핵심 알고리즘', count: 9, icon: '🧠', startIdx: 0, endIdx: 9 },
                     { id: 'infrastructure', name: '외부 인프라 연동', count: 5, icon: '🌐', startIdx: 9, endIdx: 14 },
                     { id: 'security', name: '보안 및 스트레스', count: 5, icon: '🛠️', startIdx: 14, endIdx: 19 },
-                    { id: 'council', name: '의회 하위 작업', count: 11, icon: '🏛️', startIdx: 19, endIdx: 30 },
-                    { id: 'shadow', name: 'Shadow Racing', count: 5, icon: '🏎️', startIdx: 30, endIdx: 35 }
+                    { id: 'council', name: '의회 하위 작업', count: 19, icon: '🏛️', startIdx: 19, endIdx: 38 },
+                    { id: 'shadow', name: 'Shadow Racing', count: 5, icon: '🏎️', startIdx: 38, endIdx: 43 }
                   ].map(tab => (
                     <button
                       key={tab.id}

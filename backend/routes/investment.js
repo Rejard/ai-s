@@ -466,35 +466,35 @@ Rules:
 
 function generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats = []) {
   if (!factionStats || factionStats.length === 0) {
-    return "?? AI ?? ???? ?? ????. ?? ? ?? ??? ???.";
+    return "AI council faction data is being aggregated. Please try again shortly.";
   }
 
   const sortedFactions = [...factionStats].sort((a, b) => b.count - a.count);
   const leadingFaction = sortedFactions[0];
 
-  let factionName = '??';
-  let opinionText = '?? ?? ??? ???? ?? ?? ?? ??? ???? ????.';
+  let factionName = 'faction';
+  let opinionText = 'cautious market-watching stance is maintained.';
 
   if (leadingFaction.faction === 'TREND_FOLLOWER') {
-    factionName = '?????';
-    opinionText = '?? ??? ?? ?? ???? ? ???? ???? ??? ?? ??? ?? ?????.';
+    factionName = 'Trend Follower (SMA/Momentum)';
+    opinionText = 'aggressive buy/sell sentiment dominates, riding strong momentum uptrends.';
   } else if (leadingFaction.faction === 'VALUE_SEEKER') {
-    factionName = '?????';
-    opinionText = '??? ??? ??? ??? ???? ??? ?? ??? ?? ??? ?????.';
+    factionName = 'Value Seeker (RSI/Counter-trend)';
+    opinionText = 'oversold dip-hunting sentiment is strong, aiming for aggressive entry at bounce points.';
   } else if (leadingFaction.faction === 'CONSERVATIVE_WATCHER') {
-    factionName = '??????';
-    opinionText = '??? ??? ?? ??? ???? ??? ??? ??? ??? ??????.';
+    factionName = 'Conservative Watcher (Stability)';
+    opinionText = 'cautious sentiment prevails, guarding assets conservatively against sudden market shifts.';
   }
 
   const chairman = activeMembers[0];
   const chairmanText = chairman
-    ? `?? ?? ${chairman.name}(${chairman.generation}??, ${chairman.faction})? ????`
-    : '?? ??? ????';
+    ? `led by chairman ${chairman.name}(gen ${chairman.generation}, ${chairman.faction})`
+    : 'led by the council';
   const originSummary = Array.isArray(originStats) && originStats.length
-    ? `?? ??? ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}? ?????.`
+    ? `Origin composition: ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}.`
     : '';
 
-  return `?? 500? ?????? ${factionName}? ${leadingFaction.percentage}% ???? ?? ? ?? ?????. ${chairmanText} ${opinionText} ${originSummary}`.trim();
+  return `Among 500 candidates, ${factionName} holds ${leadingFaction.percentage}% securing majority. ${chairmanText} ${opinionText} ${originSummary}`.trim();
 }
 
 router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {

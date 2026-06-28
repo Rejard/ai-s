@@ -17,7 +17,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
   const [historyFilter, setHistoryFilter] = useState('ALL');
   const diagSections = ADMIN_DIAGNOSTIC_SECTIONS.map((section) => ({
     ...section,
-    name: section.id === 'algorithm' ? `?? ?? ???? ?? (${section.count})` : section.id === 'infrastructure' ? `?? ?? ??? ?? (${section.count})` : section.id === 'security' ? `??? ?? ? ???? (${section.count})` : section.id === 'council' ? `??? ?? ?? ?? (${section.count})` : `??? Shadow Racing (${section.count})`
+    name: section.id === 'algorithm' ? `Core Algorithm Module (${section.count})` : section.id === 'infrastructure' ? `External Infra Integration (${section.count})` : section.id === 'security' ? `Security & Benchmark (${section.count})` : section.id === 'council' ? `Council Sub-tasks (${section.count})` : `Shadow Racing (${section.count})`
   }));
 
   const {
@@ -970,8 +970,8 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   { id: 'algorithm', name: '🧠 핵심 알고리즘 모듈 (9)', startIdx: 0, endIdx: 9 },
                   { id: 'infrastructure', name: '🌐 외부 인프라 연동 (5)', startIdx: 9, endIdx: 14 },
                   { id: 'security', name: '🛠️ 보안 및 벤치마크 (5)', startIdx: 14, endIdx: 19 },
-                  { id: 'council', name: '🏛️ 의회 하위 작업 (11)', startIdx: 19, endIdx: 30 },
-                  { id: 'shadow', name: '🏎️ Shadow Racing (5)', startIdx: 30, endIdx: 35 }
+                  { id: 'council', name: '🏛️ 의회 하위 작업 (19)', startIdx: 19, endIdx: 38 },
+                  { id: 'shadow', name: '🏎️ Shadow Racing (5)', startIdx: 38, endIdx: 43 }
                 ].map(section => {
                   const isOpen = expandedSection === section.id;
                   const sectionItems = (diagnosticsData?.diagnostics || []).slice(section.startIdx, section.endIdx);
@@ -1088,7 +1088,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
 
               <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-dark)' }}>
-                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/{TOTAL_DIAGNOSTIC_NODE_COUNT}개 완료</span>
+                <span>노드 스캔율: {(diagnosticsData?.diagnostics || []).length}/43개 완료</span>
                 <span>최근 갱신: {diagnosticsData ? formatKoreanDateTime(diagnosticsData.timestamp).split(' ')[1] : 'N/A'}</span>
               </div>
 

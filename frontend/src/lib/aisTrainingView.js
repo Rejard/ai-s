@@ -14,6 +14,23 @@ const emptyDnaMutationTotals = () => ({
 const emptySelectionTelemetry = () => ({ culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 });
 const emptyDnaOperations = () => ({ archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' });
 const emptyDnaRepairTelemetry = () => ({ accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' });
+const emptyGrowthTelemetry = () => ({
+  selectionScore: 0,
+  selectionWeights: { utility: 0.85, tradeParticipation: 0.1, actionEntropy: 0.05 },
+  candidateTradeParticipationAverage: 0,
+  candidateActionEntropyAverage: 0,
+  electedTradeParticipationAverage: 0,
+  electedActionEntropyAverage: 0,
+  holdoutTradeParticipationAverage: 0,
+  holdoutActionEntropyAverage: 0,
+  benchmarkMargin: 0,
+  validationDelta: 0,
+  holdoutDelta: 0,
+  activeGenerationSpread: { min: 0, max: 0, average: 0 },
+  electedOrigins: { mutant: 0, offspring: 0, legacy: 0, other: 0 },
+  validationActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+  holdoutActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+});
 const emptyDnaContextSummary = () => ({ blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 });
 const emptyDnaContextPerformance = () => ({
   blackSwanActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0, averageMutationEvents: 0 },
@@ -90,6 +107,7 @@ export function normalizeAisTrainingStats(data = {}) {
   const selectionTelemetry = data.selectionTelemetry || {};
   const dnaOperations = data.dnaOperations || {};
   const dnaRepairTelemetry = data.dnaRepairTelemetry || {};
+  const growthTelemetry = data.growthTelemetry || {};
   const dnaContextSummary = data.dnaContextSummary || {};
   const dnaContextPerformance = data.dnaContextPerformance || {};
   const dnaContextPathway = data.dnaContextPathway || {};
@@ -114,6 +132,7 @@ export function normalizeAisTrainingStats(data = {}) {
     },
     byMode: data.byMode || {},
     byModeDecision: data.byModeDecision || {},
+    byModeTrade: data.byModeTrade || {},
     byModeLastUpdated: data.byModeLastUpdated || {},
     latestRun: data.latestRun || null,
     shadowOnly: data.shadowOnly !== false,
@@ -138,6 +157,15 @@ export function normalizeAisTrainingStats(data = {}) {
     selectionTelemetry: { ...emptySelectionTelemetry(), ...selectionTelemetry },
     dnaOperations: { ...emptyDnaOperations(), ...dnaOperations },
     dnaRepairTelemetry: { ...emptyDnaRepairTelemetry(), ...dnaRepairTelemetry },
+    growthTelemetry: {
+      ...emptyGrowthTelemetry(),
+      ...growthTelemetry,
+      selectionWeights: { ...emptyGrowthTelemetry().selectionWeights, ...(growthTelemetry.selectionWeights || {}) },
+      activeGenerationSpread: { ...emptyGrowthTelemetry().activeGenerationSpread, ...(growthTelemetry.activeGenerationSpread || {}) },
+      electedOrigins: { ...emptyGrowthTelemetry().electedOrigins, ...(growthTelemetry.electedOrigins || {}) },
+      validationActionMix: { ...emptyGrowthTelemetry().validationActionMix, ...(growthTelemetry.validationActionMix || {}) },
+      holdoutActionMix: { ...emptyGrowthTelemetry().holdoutActionMix, ...(growthTelemetry.holdoutActionMix || {}) },
+    },
     dnaContextSummary: { ...emptyDnaContextSummary(), ...dnaContextSummary },
     dnaContextPerformance: {
       ...emptyDnaContextPerformance(),

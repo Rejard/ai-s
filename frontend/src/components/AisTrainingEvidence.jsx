@@ -75,6 +75,23 @@ export default function AisTrainingEvidence({
   const selectionTelemetry = stats?.selectionTelemetry || { culledCount: 0, offspringCount: 0, mutantCount: 0, archiveCount: 0 };
   const dnaOperations = stats?.dnaOperations || { archiveCount: 0, averageFitnessHistoryDepth: 0, latestArchivedAt: '' };
   const dnaRepairTelemetry = stats?.dnaRepairTelemetry || { accessionRepairCount: 0, contextMaskRepairCount: 0, profileRepairCount: 0, lastRepairedAt: '' };
+  const growthTelemetry = stats?.growthTelemetry || {
+    selectionScore: 0,
+    selectionWeights: { utility: 0.85, tradeParticipation: 0.1, actionEntropy: 0.05 },
+    candidateTradeParticipationAverage: 0,
+    candidateActionEntropyAverage: 0,
+    electedTradeParticipationAverage: 0,
+    electedActionEntropyAverage: 0,
+    holdoutTradeParticipationAverage: 0,
+    holdoutActionEntropyAverage: 0,
+    benchmarkMargin: 0,
+    validationDelta: 0,
+    holdoutDelta: 0,
+    activeGenerationSpread: { min: 0, max: 0, average: 0 },
+    electedOrigins: { mutant: 0, offspring: 0, legacy: 0, other: 0 },
+    validationActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+    holdoutActionMix: { BUY: 0, SELL: 0, HOLD: 0 },
+  };
   const dnaContextSummary = stats?.dnaContextSummary || { blackSwanStrategyGenes: 0, blackSwanActiveGenomes: 0, blackSwanArchivedGenomes: 0 };
   const dnaContextPerformance = stats?.dnaContextPerformance || {
     blackSwanActive: { genomeCount: 0, averageLatestValidationScore: 0, averageLatestHoldoutScore: 0, averageMutationEvents: 0 },
@@ -355,6 +372,31 @@ export default function AisTrainingEvidence({
         label="실시간 유전 변이 정책"
         value={`상황변이 ${runtimePolicy.contextMutationRate} / 노드변이 ${runtimePolicy.stateMutationRate} / 특성변이 ${runtimePolicy.profileMutationRate} / 복제변이 ${runtimePolicy.copyNumberMutationRate} / 가중미세조정 ${runtimePolicy.weightNudgeSize}`}
         color="#86EFAC"
+      />
+      <Metric
+        label="Growth Momentum"
+        value={`Sel ${growthTelemetry.selectionScore || 0} / dV ${growthTelemetry.validationDelta || 0} / dH ${growthTelemetry.holdoutDelta || 0} / Margin ${growthTelemetry.benchmarkMargin || 0}`}
+        color="#86EFAC"
+      />
+      <Metric
+        label="Trade Adaptation"
+        value={`Cand T ${(growthTelemetry.candidateTradeParticipationAverage || 0) * 100}% / Elected T ${(growthTelemetry.electedTradeParticipationAverage || 0) * 100}% / Holdout T ${(growthTelemetry.holdoutTradeParticipationAverage || 0) * 100}% / Ent ${(growthTelemetry.holdoutActionEntropyAverage || 0) * 100}%`}
+        color="#93C5FD"
+      />
+      <Metric
+        label="Evolution Lineage"
+        value={`G ${growthTelemetry.activeGenerationSpread?.min || 0}-${growthTelemetry.activeGenerationSpread?.max || 0} avg ${growthTelemetry.activeGenerationSpread?.average || 0} / Offspring ${growthTelemetry.electedOrigins?.offspring || 0} / Mutant ${growthTelemetry.electedOrigins?.mutant || 0} / Legacy ${growthTelemetry.electedOrigins?.legacy || 0}`}
+        color="#C4B5FD"
+      />
+      <Metric
+        label="Validation Action Mix"
+        value={`BUY ${growthTelemetry.validationActionMix?.BUY || 0} / SELL ${growthTelemetry.validationActionMix?.SELL || 0} / HOLD ${growthTelemetry.validationActionMix?.HOLD || 0}`}
+        color="#FDE68A"
+      />
+      <Metric
+        label="Holdout Action Mix"
+        value={`BUY ${growthTelemetry.holdoutActionMix?.BUY || 0} / SELL ${growthTelemetry.holdoutActionMix?.SELL || 0} / HOLD ${growthTelemetry.holdoutActionMix?.HOLD || 0}`}
+        color="#FCA5A5"
       />
       <Metric
         label="DNA 유전 라이브러리 운영"
