@@ -2113,7 +2113,7 @@ async function performSystemDiagnostics() {
   let sslMsg = "SSL 보안 진단 대기 중";
   try {
     const tls = require('tls');
-    const host = "edenai.alonics.com";
+    const host = "ais.alonics.com";
     
     const sslPromise = () => new Promise((resolve, reject) => {
       const socket = tls.connect({
