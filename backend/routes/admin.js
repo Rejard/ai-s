@@ -1370,7 +1370,7 @@ async function performSystemDiagnostics() {
     forceEvolutionExecutionCheck: { status: "OK", message: "진단 대기" },
     runtimeRepairTelemetryCheck: { status: "OK", message: "진단 대기" },
     councilNarrativeDivergenceCheck: { status: "OK", message: "진단 대기" },
-    councilOriginDiversityCheck: { status: "OK", message: "진단 대기" },
+
     geminiApiKeyCheck: { status: "OK", message: "진단 대기" },
     enginePromoConsistencyCheck: { status: "OK", message: "진단 대기" }
   };
@@ -1675,7 +1675,7 @@ async function performSystemDiagnostics() {
       const latency = Date.now() - start;
 
       if (apiRes.success) {
-        gateioApiMsg = `connected (latency ${latency}ms, SUT: ${apiRes.balances.SUT.toFixed(2)}, USDT: ${apiRes.balances.USDT.toFixed(2)})`;
+        gateioApiMsg = `connected (latency ${latency}ms, SUT: ${(apiRes.balances?.SUT ?? 0).toFixed(2)}, USDT: ${(apiRes.balances?.USDT ?? 0).toFixed(2)})`;
       } else {
         gateioApiStatus = "WARNING";
         gateioApiMsg = `exchange API call failed: ${apiRes.message}`;
@@ -2750,7 +2750,13 @@ async function performSystemDiagnostics() {
       srTrainStatus = 'WARNING'; srTrainMsg = '학습 이력 없음'; warnings.push(srTrainMsg);
     }
   } catch (srErr) {
-    console.error('Shadow Racing 진단 오류:', srErr.message);
+    console.error('Shadow Racing diagnostic error:', srErr.message);
+    srGeminiStatus = 'ERROR'; srGeminiMsg = `diagnostic failed: ${srErr.message}`;
+    srAisStatus = 'ERROR'; srAisMsg = `diagnostic failed: ${srErr.message}`;
+    srHybridStatus = 'ERROR'; srHybridMsg = `diagnostic failed: ${srErr.message}`;
+    srDataStatus = 'ERROR'; srDataMsg = `diagnostic failed: ${srErr.message}`;
+    srTrainStatus = 'ERROR'; srTrainMsg = `diagnostic failed: ${srErr.message}`;
+    errors.push(`Shadow Racing diagnostic failed: ${srErr.message}`);
   }
 
 

@@ -227,7 +227,7 @@ router.get('/portfolio/:walletAddress', requireAuthenticatedSession, verifyWalle
       SELECT SUM(amount) as total FROM payments
       WHERE LOWER(wallet_address) = ? AND type = 'AI_TRADING_PROFIT' AND status = 'SUCCESS'
     `, [walletAddress]);
-    const aiTradingProfitSut = aiProfits.total || 0;
+    const aiTradingProfitSut = aiProfits?.total || 0;
 
     const sutQuantity = totalInvested + aiTradingProfitSut;
 
@@ -526,6 +526,7 @@ router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAc
       WHERE status = 'ACTIVE' 
       ORDER BY voting_power DESC, member_id ASC
     `);
+    const activeOriginStats = summarizeOriginStats(originRows.filter((row) => row.status === 'ACTIVE'), activeMembers.length);
 
     const recentVotes = await queries.all(`
       SELECT h.id, h.timestamp, h.decision_vote, h.weight_at_vote, m.name, m.faction, m.generation 
