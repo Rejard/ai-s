@@ -22,6 +22,15 @@ const { buildCouncilHealthReport } = require('../councilHealthReport');
 const { requireAuthenticatedSession } = require('../authSession');
 const { getAisTrainingStats } = require('../aisAdminStats');
 const { zeroTrustMiddleware } = require('../zeroTrustFilter');
+const {
+  parseCandidateDna,
+  determineCandidateOrigin,
+  summarizeOriginStats,
+  generateFallbackBriefing,
+  resolveGeminiModelId,
+} = require('../councilShared');
+const { runMassEvolution, getSimulationStatus, cancelSimulation, SCALE_PRESETS } = require('../massEvolution');
+const { getCandleStats } = require('../historicalCandles');
 
 const execFileAsync = promisify(execFile);
 
@@ -153,15 +162,7 @@ function assessOriginDiversity(originStats) {
     };
   }
   const summary = stats.map((item) => `${item.origin}:${item.count}`).join(', ');
-  const dominant = stats[0];
   const mutatedLineage = stats.find((item) => item.origin === 'mutated_lineage');
-  if (dominant && Number(dominant.percentage || 0) >= 95) {
-    return {
-      status: "WARNING",
-      message: `single origin dominates pool excessively (${summary})`,
-      warning: 'single origin type dominating pool over 95%',
-    };
-  }
   if (!mutatedLineage || Number(mutatedLineage.count || 0) === 0) {
     return {
       status: "WARNING",
@@ -171,7 +172,7 @@ function assessOriginDiversity(originStats) {
   }
   return {
     status: "OK",
-    message: `origin diversity is healthy (${summary})`,
+    message: `origin diversity normal (${summary})`,
     warning: null,
   };
 }
@@ -220,67 +221,41 @@ function assessWeb3WalletHealth({ walletAddress, polBalance, blockNum, latency, 
 
 function determineFactionForDiagnostics(weights, nameOrId = '') {
   try {
-    const buyRsi = weights.BUY[1];
-    const sellRsi = weights.SELL[1];
-    if (buyRsi < -0.75 || sellRsi > 0.75) return 'CONSERVATIVE_WATCHER';
-    if (buyRsi < -0.45 || sellRsi > 0.45) return 'VALUE_SEEKER';
-    const buyChange = weights.BUY[0];
-    const sellChange = weights.SELL[0];
-    if (Math.abs(buyChange) > 1.2 || Math.abs(sellChange) > 1.2) return 'TREND_FOLLOWER';
-    const changeSignal = Math.max(Math.abs(buyChange), Math.abs(sellChange));
-    const rsiSignal = Math.max(Math.abs(buyRsi), Math.abs(sellRsi));
-    if (changeSignal > rsiSignal) return 'TREND_FOLLOWER';
-    if (rsiSignal > changeSignal) return 'VALUE_SEEKER';
+    if (weights && weights.regulatory_profile) {
+      const reg = weights.regulatory_profile;
+      const genes = Array.isArray(weights.strategy_genes) ? weights.strategy_genes : [];
+      const mutationLog = Array.isArray(weights.mutation_log) ? weights.mutation_log : [];
+
+      const blackSwanCount = genes.filter((g) =>
+        g && g.state === 'A' && Array.isArray(g.context_mask) && g.context_mask.includes('BLACK_SWAN')
+      ).length;
+
+      const activeCount = genes.filter((g) => g && g.state === 'A').length;
+      const expressionBudget = Number(reg.expression_budget || 12);
+      const decayResistance = Number(reg.decay_resistance || 0.3);
+      const reactivationBias = Number(reg.reactivation_bias || 0.1);
+
+      if (blackSwanCount >= 2 || (blackSwanCount >= 1 && genes.length <= 2)) return 'BLACK_SWAN_SENTINEL';
+      if (expressionBudget >= 14 && activeCount >= genes.length * 0.8) return 'EXPRESSION_DOMINANT';
+      if (decayResistance >= 0.5 && reactivationBias < 0.15) return 'DECAY_RESISTANT';
+      if (mutationLog.length >= 5 && reactivationBias >= 0.2) return 'MUTAGEN_ADAPTIVE';
+
+      if (expressionBudget >= 13) return 'EXPRESSION_DOMINANT';
+      if (decayResistance >= 0.4) return 'DECAY_RESISTANT';
+      if (mutationLog.length >= 3) return 'MUTAGEN_ADAPTIVE';
+
+      return 'EXPRESSION_DOMINANT';
+    }
+
+    if (weights && weights.BUY && weights.SELL) {
+      return 'EXPRESSION_DOMINANT';
+    }
   } catch (_) {}
 
-  const nameLower = String(nameOrId || '').toLowerCase();
-  if (nameLower.includes('conservative') || nameLower.includes('shield') || nameLower.includes('safety')) return 'CONSERVATIVE_WATCHER';
-  if (nameLower.includes('trend') || nameLower.includes('momentum') || nameLower.includes('cross') || nameLower.includes('specialist')) return 'TREND_FOLLOWER';
-  if (nameLower.includes('value') || nameLower.includes('contrarian')) return 'VALUE_SEEKER';
   return null;
 }
 
-function parseCandidateDna(dnaJson) {
-  try {
-    return dnaJson ? JSON.parse(dnaJson) : null;
-  } catch (_) {
-    return null;
-  }
-}
 
-function determineCandidateOrigin(row) {
-  const memberId = String(row?.member_id || '');
-  const dna = parseCandidateDna(row?.dna_json);
-  const lineage = dna && typeof dna.lineage === 'object' ? dna.lineage : {};
-  const parentIds = Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [];
-  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
-  const generation = Number(row?.generation || dna?.generation || 1);
-
-  if (memberId.startsWith('offspring_') || parentIds.length >= 2) return 'crossover_offspring';
-  if (mutationLog.length > 0 || parentIds.length === 1 || generation > 1) return 'mutated_lineage';
-  return 'seeded_random';
-}
-
-function summarizeOriginStats(rows, totalCount = null) {
-  const sourceRows = Array.isArray(rows) ? rows : [];
-  const counts = {
-    seeded_random: 0,
-    crossover_offspring: 0,
-    mutated_lineage: 0,
-  };
-  sourceRows.forEach((row) => {
-    counts[determineCandidateOrigin(row)] += 1;
-  });
-  const resolvedTotal = Number.isFinite(totalCount) && totalCount !== null ? totalCount : sourceRows.length;
-  return Object.entries(counts)
-    .map(([origin, count]) => ({
-      origin,
-      count,
-      percentage: resolvedTotal > 0 ? Number(((count / resolvedTotal) * 100).toFixed(1)) : 0,
-    }))
-    .filter((entry) => entry.count > 0)
-    .sort((a, b) => b.count - a.count);
-}
 
 function buildAidlPolicyConfig(settings = []) {
   const policy = { ...DEFAULT_AIDL_POLICY_CONFIG };
@@ -496,10 +471,10 @@ const sutInterface = new ethers.Interface([
 ]);
 
 const adminAuthMiddleware = (req, res, next) => {
-  if (req.authEmail !== 'lemaiiisk@gmail.com') {
+  if (req.authEmail !== (process.env.ADMIN_EMAIL || 'lemaiiisk@gmail.com')) {
     return res.status(403).json({
       success: false,
-      message: '보안 경보: 관리자 권한이 존재하지 않습니다. 어드민 이메일(lemaiiisk@gmail.com)로 연동해 주십시오.'
+      message: '보안 경보: 관리자 권한이 존재하지 않습니다.'
     });
   }
   next();
@@ -623,7 +598,7 @@ router.post('/promote-manager', async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ 매니저 승격 에러:", err);
+    console.error('[ADMIN] Manager promotion error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -973,17 +948,7 @@ async function generateCouncilOpinionBriefing(factionStats, activeMembers, gener
     const apiKey = apiKeyRow.value;
     const modelName = modelRow ? modelRow.value : 'Gemini 3.5 Flash';
     
-    let modelId = 'gemini-2.5-flash';
-    const lowerName = modelName.toLowerCase();
-    if (lowerName.includes('3.5')) {
-      modelId = 'gemini-3.5-flash';
-    } else if (lowerName.includes('2.5 pro') || lowerName.includes('pro')) {
-      modelId = 'gemini-2.5-pro';
-    } else if (lowerName.includes('2.5 flash')) {
-      modelId = 'gemini-2.5-flash';
-    } else if (lowerName.includes('3.1') || lowerName.includes('lite')) {
-      modelId = 'gemini-3.1-flash-lite';
-    }
+    const modelId = resolveGeminiModelId(modelName);
 
     const leadersInfo = activeMembers.slice(0, 3).map((m, idx) => {
       const title = idx === 0 ? '의장' : idx === 1 ? '부의장' : '상임위원장';
@@ -1031,7 +996,7 @@ Rules:
         return extractCompleteGeminiText(response.data);
       } catch (err) {
         retries--;
-        console.error(`❌ Gemini Council Opinion Briefing Error. Retries left: ${retries}`, err.message);
+        console.error(`[BRIEFING] Gemini council briefing error. Retries left: ${retries}`, err.message);
         if (retries === 0) {
           return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
         }
@@ -1041,43 +1006,12 @@ Rules:
     
     return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   } catch (err) {
-    console.error("❌ Gemini Council Opinion Briefing Error:", err.message);
+    console.error("[BRIEFING] Gemini council briefing error:", err.message);
     return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   }
 }
 
-function generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats = []) {
-  if (!factionStats || factionStats.length === 0) {
-    return "AI council faction data is being aggregated. Please try again shortly.";
-  }
 
-  const sortedFactions = [...factionStats].sort((a, b) => b.count - a.count);
-  const leadingFaction = sortedFactions[0];
-
-  let factionName = 'faction';
-  let opinionText = 'cautious market-watching stance is maintained.';
-
-  if (leadingFaction.faction === 'TREND_FOLLOWER') {
-    factionName = 'Trend Follower (SMA/Momentum)';
-    opinionText = 'aggressive buy/sell sentiment dominates, riding strong momentum uptrends.';
-  } else if (leadingFaction.faction === 'VALUE_SEEKER') {
-    factionName = 'Value Seeker (RSI/Counter-trend)';
-    opinionText = 'oversold dip-hunting sentiment is strong, aiming for aggressive entry at bounce points.';
-  } else if (leadingFaction.faction === 'CONSERVATIVE_WATCHER') {
-    factionName = 'Conservative Watcher (Stability)';
-    opinionText = 'cautious sentiment prevails, guarding assets conservatively against sudden market shifts.';
-  }
-
-  const chairman = activeMembers[0];
-  const chairmanText = chairman
-    ? `led by chairman ${chairman.name}(gen ${chairman.generation}, ${chairman.faction})`
-    : 'led by the council';
-  const originSummary = Array.isArray(originStats) && originStats.length
-    ? `Origin composition: ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}.`
-    : '';
-
-  return `Among 500 candidates, ${factionName} holds ${leadingFaction.percentage}% securing majority. ${chairmanText} ${opinionText} ${originSummary}`.trim();
-}
 
 router.get('/council-stats' , async (req, res) => {
   try {
@@ -1227,7 +1161,7 @@ router.get('/council-stats' , async (req, res) => {
     try {
       const evoRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
       if (evoRow && evoRow.value) lastEvoTime = parseInt(evoRow.value, 10);
-    } catch(e) {}
+    } catch(e) { console.error('[COUNCIL] Evolution time query failed:', e.message); }
 
     const latestBriefing = await getLatestSuccessfulBriefing(queries, ADMIN_BRIEFING_SCOPE);
     const lastBriefingUpdate = latestBriefing && latestBriefing.generatedAt
@@ -1254,8 +1188,12 @@ router.get('/council-stats' , async (req, res) => {
             generatedAt: new Date().toISOString()
           });
         }).catch(async (err) => {
-          console.error("Background briefing fetch failed:", err.message);
-          await finishBriefingRefreshFailure(queries, refreshRow.id, err.message);
+          console.error('[BRIEFING] Background admin briefing fetch failed:', err.message);
+          try {
+            await finishBriefingRefreshFailure(queries, refreshRow.id, err.message);
+          } catch (saveErr) {
+            console.error('[BRIEFING] Failed to record briefing failure:', saveErr.message);
+          }
         }).finally(() => {
           adminBriefingRefreshCoordinator.finish(ADMIN_BRIEFING_SCOPE);
         });
@@ -1281,7 +1219,7 @@ router.get('/council-stats' , async (req, res) => {
       healthReport
     });
   } catch (err) {
-    console.error("Admin /council-stats Error:", err);
+    console.error('[COUNCIL] Admin council-stats error:', err.message);
     res.status(500).json({ error: "Failed to fetch council stats" });
   }
 });
@@ -1291,16 +1229,57 @@ router.post('/force-evolution', async (req, res) => {
     const result = await runForceEvolution();
     res.json({ ...result, message: "강제 세대 진화 알고리즘이 완료되었습니다." });
   } catch(err) {
-    console.error("Force Evolution Error:", err);
+    console.error('[COUNCIL] Force evolution error:', err.message);
     res.status(500).json({ error: "진화 알고리즘 실행 실패" });
   }
 });
 
+router.post('/simulation/start', async (req, res) => {
+  try {
+    const currentStatus = getSimulationStatus();
+    console.log('[SIMULATION] Start requested, current status:', currentStatus.status);
+    if (currentStatus.status === 'EVOLVING' || currentStatus.status === 'COLLECTING_DATA' || currentStatus.status === 'LOADING_POPULATION' || currentStatus.status === 'SAVING') {
+      return res.status(409).json({ error: 'Simulation already running', status: currentStatus });
+    }
+    const scale = req.body.scale || 'small';
+    if (!SCALE_PRESETS[scale]) {
+      return res.status(400).json({ error: `Invalid scale. Use: ${Object.keys(SCALE_PRESETS).join(', ')}` });
+    }
+    console.log('[SIMULATION] Starting', scale, 'evolution...');
+    runMassEvolution({ scale }).catch((err) => {
+      console.error('[SIMULATION] Background evolution failed:', err.message, err.stack);
+    });
+    res.json({ success: true, message: `${SCALE_PRESETS[scale].label} simulation started`, scale });
+  } catch (err) {
+    console.error('[SIMULATION] Start failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/simulation/status', async (req, res) => {
+  try {
+    const status = getSimulationStatus();
+    const candleStats = await getCandleStats();
+    res.json({ ...status, candleData: candleStats });
+  } catch (err) {
+    console.error('[SIMULATION] Status check failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/simulation/cancel', async (req, res) => {
+  try {
+    const cancelled = cancelSimulation();
+    res.json({ success: cancelled, message: cancelled ? 'Simulation cancelled' : 'No active simulation to cancel' });
+  } catch (err) {
+    console.error('[SIMULATION] Cancel failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 async function getWindowsDiskSpace() {
-  const { exec } = require('child_process');
-  const util = require('util');
-  const execPromise = util.promisify(exec);
+  const { exec } = require('node:child_process');
+  const execPromise = promisify(exec);
   try {
     const { stdout } = await execPromise('wmic logicaldisk get caption,freeSpace,size', { windowsHide: true });
     const lines = stdout.trim().split('\n');
@@ -1848,7 +1827,8 @@ async function performSystemDiagnostics() {
     const apiKey = geminiKeySetting ? geminiKeySetting.value : (process.env.GEMINI_API_KEY || '');
     
     if (apiKey) {
-      const modelId = 'gemini-2.5-flash';
+      const geminiModelRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'global_ai_model'");
+      const modelId = resolveGeminiModelId(geminiModelRow?.value);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
       const start = Date.now();
       
@@ -1927,7 +1907,6 @@ async function performSystemDiagnostics() {
     for (const target of targets) {
       try {
         const start = Date.now();
-        const axios = require('axios');
         await axios.get(target.url, { timeout: 3000 });
         const latency = Date.now() - start;
         latencies[target.name] = latency;
@@ -2417,14 +2396,14 @@ async function performSystemDiagnostics() {
   let factionIntegrityStatus = "OK";
   let factionIntegrityMsg = "stored faction values match recomputed faction";
   try {
-    const allFactionRows = await queries.all("SELECT member_id, name, faction, phenotype_json, weights_json FROM ais_council_members");
+    const allFactionRows = await queries.all("SELECT member_id, name, faction, dna_json, phenotype_json, weights_json FROM ais_council_members");
     let mismatched = 0;
     let unresolved = 0;
     const mismatchedIds = [];
     for (const row of allFactionRows) {
       let payload = null;
       try {
-        payload = JSON.parse(row.phenotype_json || row.weights_json || 'null');
+        payload = JSON.parse(row.dna_json || row.phenotype_json || row.weights_json || 'null');
       } catch (_) {}
       const computed = determineFactionForDiagnostics(payload, row.name || row.member_id);
       if (!computed) {
@@ -2868,4 +2847,5 @@ module.exports.__private__ = {
   assessOriginDiversity,
   determineCandidateOrigin,
   summarizeOriginStats,
+  resolveGeminiModelId,
 };

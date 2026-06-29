@@ -15,6 +15,13 @@ const {
   finishBriefingRefreshFailure
 } = require('../councilBriefingHistory');
 const { requireAuthenticatedSession } = require('../authSession');
+const {
+  parseCandidateDna,
+  determineCandidateOrigin,
+  summarizeOriginStats,
+  generateFallbackBriefing,
+  resolveGeminiModelId,
+} = require('../councilShared');
 
 const verifyWalletOwnership = async (req, res, next) => {
   const targetWallet = (req.params.walletAddress || req.body.walletAddress || '').toLowerCase().trim();
@@ -23,7 +30,7 @@ const verifyWalletOwnership = async (req, res, next) => {
   }
 
   try {
-    if (req.authEmail === 'lemaiiisk@gmail.com') {
+    if (req.authEmail === (process.env.ADMIN_EMAIL || 'lemaiiisk@gmail.com')) {
       return next();
     }
 
@@ -58,7 +65,7 @@ const verifyWalletOwnership = async (req, res, next) => {
 };
 
 const requireAdminCouncilAccess = (req, res, next) => {
-  if (req.authEmail !== 'lemaiiisk@gmail.com') {
+  if (req.authEmail !== (process.env.ADMIN_EMAIL || 'lemaiiisk@gmail.com')) {
     return res.status(403).json({
       success: false,
       message: 'Council stats are restricted to the admin console.'
@@ -68,47 +75,7 @@ const requireAdminCouncilAccess = (req, res, next) => {
   next();
 };
 
-function parseCandidateDna(dnaJson) {
-  try {
-    return dnaJson ? JSON.parse(dnaJson) : null;
-  } catch (_) {
-    return null;
-  }
-}
 
-function determineCandidateOrigin(row) {
-  const memberId = String(row?.member_id || '');
-  const dna = parseCandidateDna(row?.dna_json);
-  const lineage = dna && typeof dna.lineage === 'object' ? dna.lineage : {};
-  const parentIds = Array.isArray(lineage.parent_ids) ? lineage.parent_ids : [];
-  const mutationLog = Array.isArray(dna?.mutation_log) ? dna.mutation_log : [];
-  const generation = Number(row?.generation || dna?.generation || 1);
-
-  if (memberId.startsWith('offspring_') || parentIds.length >= 2) return 'crossover_offspring';
-  if (mutationLog.length > 0 || parentIds.length === 1 || generation > 1) return 'mutated_lineage';
-  return 'seeded_random';
-}
-
-function summarizeOriginStats(rows, totalCount = null) {
-  const sourceRows = Array.isArray(rows) ? rows : [];
-  const counts = {
-    seeded_random: 0,
-    crossover_offspring: 0,
-    mutated_lineage: 0,
-  };
-  sourceRows.forEach((row) => {
-    counts[determineCandidateOrigin(row)] += 1;
-  });
-  const resolvedTotal = Number.isFinite(totalCount) && totalCount !== null ? totalCount : sourceRows.length;
-  return Object.entries(counts)
-    .map(([origin, count]) => ({
-      origin,
-      count,
-      percentage: resolvedTotal > 0 ? Number(((count / resolvedTotal) * 100).toFixed(1)) : 0,
-    }))
-    .filter((entry) => entry.count > 0)
-    .sort((a, b) => b.count - a.count);
-}
 
 let cachedPrices = {
   sut: { usd: 1.0, usd_24h_change: 0.0, usd_24h_high: 1.0, usd_24h_low: 1.0 }
@@ -236,7 +203,8 @@ router.get('/portfolio/:walletAddress', requireAuthenticatedSession, verifyWalle
 
     const totalValuation = sutQuantity * sutPrice;
 
-    const baseSutPrice = 0.20;
+    const baseSutPriceRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'base_sut_price'");
+    const baseSutPrice = baseSutPriceRow ? parseFloat(baseSutPriceRow.value) : 0.20;
     const originalUsdValue = totalInvested * baseSutPrice;
 
     const totalProfitUsd = totalValuation - originalUsdValue;
@@ -370,7 +338,7 @@ router.get('/history/:walletAddress', requireAuthenticatedSession, verifyWalletO
     );
     res.json({ success: true, history });
   } catch (err) {
-    console.error("히스토리 조회 오류:", err);
+    console.error('[INVESTMENT] History query error:', err.message);
     res.status(500).json({ success: false, error: err.message });
 }
 });
@@ -391,17 +359,7 @@ async function generateCouncilOpinionBriefing(factionStats, activeMembers, gener
     const apiKey = apiKeyRow.value;
     const modelName = modelRow ? modelRow.value : 'Gemini 3.5 Flash';
     
-    let modelId = 'gemini-2.5-flash';
-    const lowerName = modelName.toLowerCase();
-    if (lowerName.includes('3.5')) {
-      modelId = 'gemini-3.5-flash';
-    } else if (lowerName.includes('2.5 pro') || lowerName.includes('pro')) {
-      modelId = 'gemini-2.5-pro';
-    } else if (lowerName.includes('2.5 flash')) {
-      modelId = 'gemini-2.5-flash';
-    } else if (lowerName.includes('3.1') || lowerName.includes('lite')) {
-      modelId = 'gemini-3.1-flash-lite';
-    }
+    const modelId = resolveGeminiModelId(modelName);
 
     const leadersInfo = activeMembers.slice(0, 3).map((m, idx) => {
       const title = idx === 0 ? '의장' : idx === 1 ? '부의장' : '상임위원장';
@@ -449,7 +407,7 @@ Rules:
         return extractCompleteGeminiText(response.data);
       } catch (err) {
         retries--;
-        console.error(`❌ Gemini Council Opinion Briefing Error. Retries left: ${retries}`, err.message);
+        console.error(`[BRIEFING] Gemini council briefing error. Retries left: ${retries}`, err.message);
         if (retries === 0) {
           return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
         }
@@ -459,43 +417,12 @@ Rules:
     
     return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   } catch (err) {
-    console.error("❌ Gemini Council Opinion Briefing Error:", err.message);
+    console.error('[BRIEFING] Gemini council briefing error:', err.message);
     return generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats);
   }
 }
 
-function generateFallbackBriefing(factionStats, activeMembers, generationStats, originStats = []) {
-  if (!factionStats || factionStats.length === 0) {
-    return "AI council faction data is being aggregated. Please try again shortly.";
-  }
 
-  const sortedFactions = [...factionStats].sort((a, b) => b.count - a.count);
-  const leadingFaction = sortedFactions[0];
-
-  let factionName = 'faction';
-  let opinionText = 'cautious market-watching stance is maintained.';
-
-  if (leadingFaction.faction === 'TREND_FOLLOWER') {
-    factionName = 'Trend Follower (SMA/Momentum)';
-    opinionText = 'aggressive buy/sell sentiment dominates, riding strong momentum uptrends.';
-  } else if (leadingFaction.faction === 'VALUE_SEEKER') {
-    factionName = 'Value Seeker (RSI/Counter-trend)';
-    opinionText = 'oversold dip-hunting sentiment is strong, aiming for aggressive entry at bounce points.';
-  } else if (leadingFaction.faction === 'CONSERVATIVE_WATCHER') {
-    factionName = 'Conservative Watcher (Stability)';
-    opinionText = 'cautious sentiment prevails, guarding assets conservatively against sudden market shifts.';
-  }
-
-  const chairman = activeMembers[0];
-  const chairmanText = chairman
-    ? `led by chairman ${chairman.name}(gen ${chairman.generation}, ${chairman.faction})`
-    : 'led by the council';
-  const originSummary = Array.isArray(originStats) && originStats.length
-    ? `Origin composition: ${originStats.map((item) => `${item.origin} ${item.percentage}%`).join(', ')}.`
-    : '';
-
-  return `Among 500 candidates, ${factionName} holds ${leadingFaction.percentage}% securing majority. ${chairmanText} ${opinionText} ${originSummary}`.trim();
-}
 
 router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
   try {
@@ -553,7 +480,7 @@ router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAc
     try {
       const evoRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
       if (evoRow && evoRow.value) lastEvoTime = parseInt(evoRow.value, 10);
-    } catch(e) {}
+    } catch(e) { console.error('[COUNCIL] Evolution time query failed:', e.message); }
 
     const latestBriefing = await getLatestSuccessfulBriefing(queries, INVESTMENT_BRIEFING_SCOPE);
     const lastBriefingUpdate = latestBriefing && latestBriefing.generatedAt
@@ -585,8 +512,12 @@ router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAc
             generatedAt: new Date().toISOString()
           });
         }).catch(async (err) => {
-          console.error("Background briefing fetch failed:", err.message);
-          await finishBriefingRefreshFailure(queries, refreshRow.id, err.message);
+          console.error('[BRIEFING] Background investment briefing fetch failed:', err.message);
+          try {
+            await finishBriefingRefreshFailure(queries, refreshRow.id, err.message);
+          } catch (saveErr) {
+            console.error('[BRIEFING] Failed to record briefing failure:', saveErr.message);
+          }
         }).finally(() => {
           investmentBriefingRefreshCoordinator.finish(INVESTMENT_BRIEFING_SCOPE);
         });
@@ -607,7 +538,7 @@ router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAc
       briefingRefreshing: refreshNeeded || investmentBriefingRefreshCoordinator.isRefreshing(INVESTMENT_BRIEFING_SCOPE)
     });
   } catch (err) {
-    console.error("❌ investment council-stats API 에러:", err);
+    console.error('[COUNCIL] Investment council-stats error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });

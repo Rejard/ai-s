@@ -260,11 +260,8 @@ function countBlackSwanStrategyGenes(dna) {
 }
 
 function safeParseDna(value) {
-  try {
-    return JSON.parse(value || '{}');
-  } catch {
-    return {};
-  }
+  const { safeParseJson } = require('./councilShared');
+  return safeParseJson(value, {});
 }
 
 function summarizeLatestFitness(dna) {

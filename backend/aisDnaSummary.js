@@ -1,11 +1,4 @@
-function safeParseJson(value, fallback) {
-  try {
-    if (typeof value === 'string') return JSON.parse(value);
-    return value || fallback;
-  } catch {
-    return fallback;
-  }
-}
+const { safeParseJson } = require('./councilShared');
 
 function summarizeDnaStates(dnaInput) {
   const dna = safeParseJson(dnaInput, {});

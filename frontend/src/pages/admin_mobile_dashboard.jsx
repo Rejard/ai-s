@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
 import AisTrainingEvidence from '../components/AisTrainingEvidence';
+import SimulationPanel from '../components/SimulationPanel';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
 import { ADMIN_DIAGNOSTIC_SECTIONS, TOTAL_DIAGNOSTIC_NODE_COUNT } from '../lib/adminDiagnosticsSections';
@@ -564,6 +565,8 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                   submittingAidlGeneContext={submittingAidlGeneContext}
                   handleAidlGeneContextUpdate={handleAidlGeneContextUpdate}
                 />
+
+                <SimulationPanel managerEmail={managerEmail} />
 
                 <button
                   type="button"
@@ -1127,9 +1130,9 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
                     <div style={{ display: 'flex', height: '20px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
                       {councilStats.factionStats.map((f) => {
                         let color = '#6B7280';
-                        if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
-                        if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
-                        if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
+                        if (f.faction === 'EXPRESSION_DOMINANT') color = '#8B5CF6';
+                        if (f.faction === 'BLACK_SWAN_SENTINEL') color = '#EF4444';
+                        if (f.faction === 'DECAY_RESISTANT') color = '#10B981';
                         
                         return (
                           <div
@@ -1156,10 +1159,10 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
                       {[
-                        { key: 'TREND_FOLLOWER', label: '추세추종파 (SMA/모멘텀)', color: '#2563EB' },
-                        { key: 'VALUE_SEEKER', label: '기술반등파 (RSI/역추세)', color: '#8B5CF6' },
-                        { key: 'CONSERVATIVE_WATCHER', label: '변동성방어파 (안정지향)', color: '#DC2626' },
-                        { key: 'MUTANT_ROOKIE', label: '돌연변이 혁신파 (알고리즘)', color: '#00F2FE' }
+                        { key: 'EXPRESSION_DOMINANT', label: '유전자발현파 (Expression)', color: '#8B5CF6' },
+                        { key: 'BLACK_SWAN_SENTINEL', label: '위기감시파 (Black Swan)', color: '#EF4444' },
+                        { key: 'DECAY_RESISTANT', label: '잔존내성파 (Decay Resist)', color: '#10B981' },
+                        { key: 'MUTAGEN_ADAPTIVE', label: '변이적응파 (Mutagen)', color: '#F59E0B' }
                       ].map(item => {
                         const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
                         return (

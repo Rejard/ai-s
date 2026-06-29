@@ -112,9 +112,9 @@ function AdminMobileCouncil() {
             <div style={{ display: 'flex', height: '22px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
               {councilStats.factionStats.map((f, idx) => {
                 let color = '#6B7280';
-                if (f.faction === 'TREND_FOLLOWER') color = '#2563EB';
-                if (f.faction === 'VALUE_SEEKER') color = '#8B5CF6';
-                if (f.faction === 'CONSERVATIVE_WATCHER') color = '#DC2626';
+                if (f.faction === 'EXPRESSION_DOMINANT') color = '#8B5CF6';
+                if (f.faction === 'BLACK_SWAN_SENTINEL') color = '#EF4444';
+                if (f.faction === 'DECAY_RESISTANT') color = '#10B981';
                 
                 return (
                   <div
@@ -140,10 +140,10 @@ function AdminMobileCouncil() {
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px' }}>
               {[
-                { key: 'TREND_FOLLOWER', label: '추세추종 (SMA)', color: '#2563EB' },
-                { key: 'VALUE_SEEKER', label: '기술반등 (RSI)', color: '#8B5CF6' },
-                { key: 'CONSERVATIVE_WATCHER', label: '변동방어 (안정)', color: '#DC2626' },
-                { key: 'MUTANT_ROOKIE', label: '돌연변이 (진화)', color: '#00F2FE' }
+                { key: 'EXPRESSION_DOMINANT', label: '유전자발현파 (Expression)', color: '#8B5CF6' },
+                { key: 'BLACK_SWAN_SENTINEL', label: '위기감시파 (Black Swan)', color: '#EF4444' },
+                { key: 'DECAY_RESISTANT', label: '잔존내성파 (Decay Resist)', color: '#10B981' },
+                { key: 'MUTAGEN_ADAPTIVE', label: '변이적응파 (Mutagen)', color: '#F59E0B' }
               ].map(item => {
                 const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
                 return (
@@ -262,7 +262,7 @@ function AdminMobileCouncil() {
                     <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{v.timestamp.substring(11)}</span>
                     <span style={{ fontSize: '10px', color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600' }}>{v.name}</span>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                      <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>{v.faction === 'TREND_FOLLOWER' ? '추세' : v.faction === 'VALUE_SEEKER' ? '기술' : v.faction === 'CONSERVATIVE_WATCHER' ? '방어' : '변동'}</span>
+                      <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>{v.faction === 'EXPRESSION_DOMINANT' ? '발현' : v.faction === 'BLACK_SWAN_SENTINEL' ? '위기' : v.faction === 'DECAY_RESISTANT' ? '내성' : '적응'}</span>
                       <span style={{ fontSize: '9px', color: voteColor, background: voteBg, padding: '1px 4px', borderRadius: '4px', fontWeight: '800' }}>{v.decision_vote}</span>
                     </div>
                   </div>
@@ -282,26 +282,26 @@ function AdminMobileCouncil() {
                 let factionColor = '#6B7280';
                 let factionName = '무소속';
 
-                if (member.faction === 'TREND_FOLLOWER') {
-                  borderCol = 'rgba(37, 99, 235, 0.15)';
-                  badgeBg = 'rgba(37, 99, 235, 0.03)';
-                  factionColor = '#2563EB';
-                  factionName = '추세추종';
-                } else if (member.faction === 'VALUE_SEEKER') {
+                if (member.faction === 'EXPRESSION_DOMINANT') {
                   borderCol = 'rgba(139, 92, 246, 0.15)';
                   badgeBg = 'rgba(139, 92, 246, 0.03)';
                   factionColor = '#8B5CF6';
-                  factionName = '기술반등';
-                } else if (member.faction === 'CONSERVATIVE_WATCHER') {
-                  borderCol = 'rgba(220, 38, 38, 0.15)';
-                  badgeBg = 'rgba(220, 38, 38, 0.03)';
-                  factionColor = '#DC2626';
-                  factionName = '변동방어';
-                } else if (member.faction === 'MUTANT_ROOKIE') {
-                  borderCol = 'rgba(0, 242, 254, 0.15)';
-                  badgeBg = 'rgba(0, 242, 254, 0.03)';
-                  factionColor = '#00F2FE';
-                  factionName = '돌연변이';
+                  factionName = '유전자발현';
+                } else if (member.faction === 'BLACK_SWAN_SENTINEL') {
+                  borderCol = 'rgba(239, 68, 68, 0.15)';
+                  badgeBg = 'rgba(239, 68, 68, 0.03)';
+                  factionColor = '#EF4444';
+                  factionName = '위기감시';
+                } else if (member.faction === 'DECAY_RESISTANT') {
+                  borderCol = 'rgba(16, 185, 129, 0.15)';
+                  badgeBg = 'rgba(16, 185, 129, 0.03)';
+                  factionColor = '#10B981';
+                  factionName = '잔존내성';
+                } else if (member.faction === 'MUTAGEN_ADAPTIVE') {
+                  borderCol = 'rgba(245, 158, 11, 0.15)';
+                  badgeBg = 'rgba(245, 158, 11, 0.03)';
+                  factionColor = '#F59E0B';
+                  factionName = '변이적응';
                 }
 
 

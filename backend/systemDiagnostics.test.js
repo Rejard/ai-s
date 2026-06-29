@@ -143,6 +143,7 @@ async function main() {
         'Force Evolution Execution Path',
         'Runtime DNA Repair Telemetry',
         'Pool vs Active Narrative Divergence',
+        'Origin Diversity',
         'Gemini API Key 설정 상태',
         '엔진↔승격 정합성 검증',
         '학습 데이터 라벨링 적체',
@@ -162,7 +163,7 @@ async function main() {
       }
       assert.equal(actualNames.length, expectedNames.length);
       passed++;
-      console.log('  [PASS] All 42 diagnostic nodes present in correct order');
+      console.log('  [PASS] All 43 diagnostic nodes present in correct order');
     }
 
     {

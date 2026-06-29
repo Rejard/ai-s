@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
 import AisTrainingEvidence from '../components/AisTrainingEvidence';
+import SimulationPanel from '../components/SimulationPanel';
 import { formatKoreanDateTime } from '../lib/dateTime';
 import { downloadAuthenticatedFile } from '../lib/authSession';
 import { ADMIN_DIAGNOSTIC_SECTIONS, TOTAL_DIAGNOSTIC_NODE_COUNT, sliceAdminDiagnosticItems } from '../lib/adminDiagnosticsSections';
@@ -492,6 +493,8 @@ function AdminPcDashboard({ walletAddress, managerEmail }) {
                 submittingAidlGeneContext={submittingAidlGeneContext}
                 handleAidlGeneContextUpdate={handleAidlGeneContextUpdate}
               />
+
+              <SimulationPanel managerEmail={managerEmail} />
 
               <button
                 type="button"

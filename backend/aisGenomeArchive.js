@@ -1,3 +1,4 @@
+// @deprecated - test-only module, not used in production
 function appendFitnessHistory(dna, fitnessEntry) {
   const nextGenome = {
     ...dna,
