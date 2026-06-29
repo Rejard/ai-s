@@ -21,9 +21,10 @@ const strategyGene = dna.strategy_genes[0];
 assert.equal(dna.genome_id.startsWith('AISG-G2-'), true);
 assert.deepEqual(strategyGene.context_mask, [
   'BULL_EXPANSION',
-  'BULL_SQUEEZE',
-  'BEAR_EXPANSION',
   'BEAR_SQUEEZE',
+  'SIDEWAYS_DRIFT',
+  'BLACK_SWAN',
+  'LOW_VOLUME',
 ]);
 assert.deepEqual(phenotype, weights);
 assert.deepEqual(dna.mutation_log, []);

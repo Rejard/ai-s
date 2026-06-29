@@ -15,9 +15,14 @@ const db = new sqlite3.Database(dbPath);
 const AIDL_FEATURE_ORDER = [
   'price_change_pct',
   'rsi_scaled',
-  'sma5_distance_pct',
-  'sma20_distance_pct',
-  'sma5_to_sma20_spread_pct',
+  'sma20_deviation',
+  'volume_ratio',
+  'volatility',
+  'macd_histogram',
+  'bollinger_pct_b',
+  'atr_ratio',
+  'ema_crossover',
+  'obv_change',
 ];
 const AIDL_ACTIONS = ['BUY', 'SELL', 'HOLD'];
 
@@ -32,7 +37,7 @@ function isCanonicalCentroidShape(weights) {
   if (Object.keys(weights).some((key) => !AIDL_ACTIONS.includes(key))) return false;
   return AIDL_ACTIONS.every((action) => (
     Array.isArray(weights[action])
-    && weights[action].length === AIDL_FEATURE_ORDER.length
+    && weights[action].length >= 1
     && weights[action].every((value) => Number.isFinite(Number(value)))
   ));
 }
@@ -87,7 +92,7 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
         state: 'A',
         dominance: 1.0,
         copy_number: 1,
-        context_mask: ['BULL_EXPANSION', 'BULL_SQUEEZE', 'BEAR_EXPANSION', 'BEAR_SQUEEZE'],
+        context_mask: ['BULL_EXPANSION', 'BEAR_SQUEEZE', 'SIDEWAYS_DRIFT', 'BLACK_SWAN', 'LOW_VOLUME'],
         length: AIDL_FEATURE_ORDER.length,
         subgenes,
       },
@@ -98,9 +103,17 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
 
 function bootstrapCouncilDnaPayload(weights, memberId, faction, generation) {
   if (!isCanonicalCentroidShape(weights)) {
-    throw new Error('weights_json is not canonical BUY/SELL/HOLD 5-vector centroid shape');
+    throw new Error(`weights_json is not canonical BUY/SELL/HOLD centroid shape`);
   }
-  const dna = buildDeterministicCouncilDna(weights, memberId, faction, generation);
+  const targetLength = AIDL_FEATURE_ORDER.length;
+  const padded = {};
+  for (const action of AIDL_ACTIONS) {
+    const arr = weights[action];
+    padded[action] = arr.length >= targetLength
+      ? arr.slice(0, targetLength)
+      : [...arr, ...new Array(targetLength - arr.length).fill(0)];
+  }
+  const dna = buildDeterministicCouncilDna(padded, memberId, faction, generation);
   return {
     dna_json: JSON.stringify(dna),
     phenotype_json: JSON.stringify(weights),

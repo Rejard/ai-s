@@ -1,4 +1,5 @@
 const { safeParseJson } = require('./councilShared');
+const { DEFAULT_WEIGHTS } = require('./simulationEngine');
 
 function summarizeDnaStates(dnaInput) {
   const dna = safeParseJson(dnaInput, {});
@@ -94,9 +95,9 @@ function summarizeMutationLog(dnaInput) {
 
 function extractPhenotype(phenotypeInput) {
   const fallback = {
-    BUY: [0, 0, 0, 0, 0],
-    SELL: [0, 0, 0, 0, 0],
-    HOLD: [0, 0, 0, 0, 0],
+    BUY: DEFAULT_WEIGHTS(),
+    SELL: DEFAULT_WEIGHTS(),
+    HOLD: DEFAULT_WEIGHTS(),
   };
   const parsed = safeParseJson(phenotypeInput, fallback);
   return Object.fromEntries(

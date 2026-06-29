@@ -70,14 +70,14 @@ assert.deepStrictEqual(summarizeMutationLog({
 });
 
 assert.deepStrictEqual(
-  extractPhenotype('{"BUY":[1,0,0,0,0],"SELL":[0,1,0,0,0],"HOLD":[0,0,1,0,0]}').BUY,
-  [1, 0, 0, 0, 0]
+  extractPhenotype('{"BUY":[1,0,0,0,0,0,0,0,0,0],"SELL":[0,1,0,0,0,0,0,0,0,0],"HOLD":[0,0,1,0,0,0,0,0,0,0]}').BUY,
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 );
 
 assert.deepStrictEqual(extractPhenotype('{}'), {
-  BUY: [0, 0, 0, 0, 0],
-  SELL: [0, 0, 0, 0, 0],
-  HOLD: [0, 0, 0, 0, 0],
+  BUY: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  SELL: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  HOLD: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 });
 
 console.log('aisDnaSummary tests passed');

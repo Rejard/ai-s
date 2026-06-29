@@ -48,9 +48,14 @@ const DEFAULT_AIDL_POLICY_CONFIG = {
 const AIDL_FEATURE_ORDER = [
   'price_change_pct',
   'rsi_scaled',
-  'sma5_distance_pct',
-  'sma20_distance_pct',
-  'sma5_to_sma20_spread_pct',
+  'sma20_deviation',
+  'volume_ratio',
+  'volatility',
+  'macd_histogram',
+  'bollinger_pct_b',
+  'atr_ratio',
+  'ema_crossover',
+  'obv_change',
 ];
 const AIDL_ACTIONS = ['BUY', 'SELL', 'HOLD'];
 const AIDL_STATES = new Set(['A', 'I', 'D', 'L']);
@@ -109,11 +114,12 @@ async function runForceEvolution({
 }
 
 function hasValidCentroidShape(payload) {
+  const expectedLength = AIDL_FEATURE_ORDER.length;
   return Boolean(
     payload &&
-    Array.isArray(payload.BUY) && payload.BUY.length === 5 &&
-    Array.isArray(payload.SELL) && payload.SELL.length === 5 &&
-    Array.isArray(payload.HOLD) && payload.HOLD.length === 5
+    Array.isArray(payload.BUY) && payload.BUY.length === expectedLength &&
+    Array.isArray(payload.SELL) && payload.SELL.length === expectedLength &&
+    Array.isArray(payload.HOLD) && payload.HOLD.length === expectedLength
   );
 }
 

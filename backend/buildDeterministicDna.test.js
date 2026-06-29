@@ -2,9 +2,9 @@ const assert = require('assert');
 const { buildDeterministicCouncilDna, bootstrapCouncilDnaPayload } = require('./database');
 
 const VALID_WEIGHTS = {
-  BUY: [0.1, 0.2, 0.3, 0.4, 0.5],
-  SELL: [0.5, 0.4, 0.3, 0.2, 0.1],
-  HOLD: [0.3, 0.3, 0.3, 0.3, 0.3],
+  BUY: [0.1, 0.2, 0.3, 0.4, 0.5, 0, 0, 0, 0, 0],
+  SELL: [0.5, 0.4, 0.3, 0.2, 0.1, 0, 0, 0, 0, 0],
+  HOLD: [0.3, 0.3, 0.3, 0.3, 0.3, 0, 0, 0, 0, 0],
 };
 
 async function main() {
@@ -32,18 +32,18 @@ async function main() {
   const dnaGenNeg = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_m', 'X', -5);
   assert.strictEqual(dnaGenNeg.generation, 1, 'T4: negative generation normalizes to 1');
 
-  const expectedMask = ['BULL_EXPANSION', 'BULL_SQUEEZE', 'BEAR_EXPANSION', 'BEAR_SQUEEZE'];
-  assert.deepStrictEqual(dna.strategy_genes[0].context_mask, expectedMask, 'T5: context_mask has 4 market states');
+  const expectedMask = ['BULL_EXPANSION', 'BEAR_SQUEEZE', 'SIDEWAYS_DRIFT', 'BLACK_SWAN', 'LOW_VOLUME'];
+  assert.deepStrictEqual(dna.strategy_genes[0].context_mask, expectedMask, 'T5: context_mask has 5 market states');
 
   const subgenes = dna.strategy_genes[0].subgenes;
-  assert.strictEqual(subgenes.length, 15, 'T6: 15 subgenes (3 actions x 5 features)');
+  assert.strictEqual(subgenes.length, 30, 'T6: 30 subgenes (3 actions x 10 features)');
 
   const buySubgenes = subgenes.filter(s => s.action === 'BUY');
   const sellSubgenes = subgenes.filter(s => s.action === 'SELL');
   const holdSubgenes = subgenes.filter(s => s.action === 'HOLD');
-  assert.strictEqual(buySubgenes.length, 5, 'T7: 5 BUY subgenes');
-  assert.strictEqual(sellSubgenes.length, 5, 'T7: 5 SELL subgenes');
-  assert.strictEqual(holdSubgenes.length, 5, 'T7: 5 HOLD subgenes');
+  assert.strictEqual(buySubgenes.length, 10, 'T7: 10 BUY subgenes');
+  assert.strictEqual(sellSubgenes.length, 10, 'T7: 10 SELL subgenes');
+  assert.strictEqual(holdSubgenes.length, 10, 'T7: 10 HOLD subgenes');
   assert.strictEqual(buySubgenes[0].weight, 0.1, 'T7: BUY[0] weight correct');
   assert.strictEqual(sellSubgenes[4].weight, 0.1, 'T7: SELL[4] weight correct');
 
@@ -71,11 +71,9 @@ async function main() {
     'T14: throws on missing BUY key'
   );
 
-  assert.throws(
-    () => bootstrapCouncilDnaPayload({ BUY: [1,2,3], SELL: [1,2,3,4,5], HOLD: [1,2,3,4,5] }, 'm', 'X', 1),
-    /canonical/i,
-    'T15: throws on wrong array length'
-  );
+  const shortPayload = bootstrapCouncilDnaPayload({ BUY: [1,2,3], SELL: [1,2,3,4,5], HOLD: [1,2,3,4,5] }, 'm', 'X', 1);
+  const shortDna = JSON.parse(shortPayload.dna_json);
+  assert.ok(shortDna.genome_id, 'T15: shorter arrays are auto-padded and accepted');
 
   assert.throws(
     () => bootstrapCouncilDnaPayload({ BUY: ['a','b','c','d','e'], SELL: [1,2,3,4,5], HOLD: [1,2,3,4,5] }, 'm', 'X', 1),

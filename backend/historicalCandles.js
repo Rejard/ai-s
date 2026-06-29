@@ -82,7 +82,7 @@ async function saveCandlesToDb(store, pair, interval, candles) {
 async function collectHistoricalCandles({
   pair = 'SUT_USDT',
   interval = '1h',
-  days = 365,
+  days = 475,
   store = queries,
   onProgress = null,
 } = {}) {

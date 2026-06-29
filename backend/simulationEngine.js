@@ -1,20 +1,60 @@
 const INITIAL_CASH = 10000;
 const TRADE_FEE_RATE = 0.002;
 const INDICATOR_WINDOW = 20;
+const FEATURE_COUNT = 10;
+const DEFAULT_WEIGHTS = () => new Array(FEATURE_COUNT).fill(0);
+
+function computeEma(values, period) {
+  const ema = new Array(values.length).fill(0);
+  const k = 2 / (period + 1);
+  ema[0] = values[0];
+  for (let i = 1; i < values.length; i++) {
+    ema[i] = values[i] * k + ema[i - 1] * (1 - k);
+  }
+  return ema;
+}
 
 function precomputeIndicators(candles) {
   const results = new Array(candles.length);
+  const len = candles.length;
 
-  for (let i = INDICATOR_WINDOW; i < candles.length; i++) {
-    const current = candles[i].close;
-    const previous = candles[i - 1].close;
+  const closes = new Float64Array(len);
+  const volumes = new Float64Array(len);
+  for (let i = 0; i < len; i++) {
+    closes[i] = candles[i].close;
+    volumes[i] = candles[i].volume;
+  }
+
+  const ema9 = computeEma(closes, 9);
+  const ema12 = computeEma(closes, 12);
+  const ema21 = computeEma(closes, 21);
+  const ema26 = computeEma(closes, 26);
+
+  const macdLine = new Float64Array(len);
+  for (let i = 0; i < len; i++) {
+    macdLine[i] = ema12[i] - ema26[i];
+  }
+  const signalLine = computeEma(macdLine, 9);
+
+  let obv = 0;
+  const obvArr = new Float64Array(len);
+  obvArr[0] = 0;
+  for (let i = 1; i < len; i++) {
+    if (closes[i] > closes[i - 1]) obv += volumes[i];
+    else if (closes[i] < closes[i - 1]) obv -= volumes[i];
+    obvArr[i] = obv;
+  }
+
+  for (let i = INDICATOR_WINDOW; i < len; i++) {
+    const current = closes[i];
+    const previous = closes[i - 1];
     const priceChange = previous > 0 ? (current - previous) / previous : 0;
 
     let gains = 0;
     let losses = 0;
     const rsiPeriod = Math.min(14, i);
     for (let j = i - rsiPeriod + 1; j <= i; j++) {
-      const diff = candles[j].close - candles[j - 1].close;
+      const diff = closes[j] - closes[j - 1];
       if (diff > 0) gains += diff;
       else losses += Math.abs(diff);
     }
@@ -24,37 +64,69 @@ function precomputeIndicators(candles) {
     const rsi = (100 - (100 / (1 + rs))) / 50 - 1;
 
     let smaSum = 0;
-    for (let j = i - INDICATOR_WINDOW + 1; j <= i; j++) {
-      smaSum += candles[j].close;
+    const windowStart = i - INDICATOR_WINDOW + 1;
+    for (let j = windowStart; j <= i; j++) {
+      smaSum += closes[j];
     }
     const sma = smaSum / INDICATOR_WINDOW;
     const smaDeviation = sma > 0 ? (current - sma) / sma : 0;
 
     let volSum = 0;
-    const windowStart = i - INDICATOR_WINDOW + 1;
     for (let j = windowStart; j <= i; j++) {
-      volSum += candles[j].volume;
+      volSum += volumes[j];
     }
     const avgVolume = volSum / INDICATOR_WINDOW;
-    const volumeRatio = avgVolume > 0 ? (candles[i].volume / avgVolume) - 1 : 0;
+    const volumeRatio = avgVolume > 0 ? (volumes[i] / avgVolume) - 1 : 0;
 
     let closeSum = 0;
     for (let j = windowStart; j <= i; j++) {
-      closeSum += candles[j].close;
+      closeSum += closes[j];
     }
     const mean = closeSum / INDICATOR_WINDOW;
     let varianceSum = 0;
     for (let j = windowStart; j <= i; j++) {
-      varianceSum += (candles[j].close - mean) ** 2;
+      varianceSum += (closes[j] - mean) ** 2;
     }
-    const volatility = mean > 0 ? Math.sqrt(varianceSum / INDICATOR_WINDOW) / mean : 0;
+    const stdDev = Math.sqrt(varianceSum / INDICATOR_WINDOW);
+    const volatility = mean > 0 ? stdDev / mean : 0;
+
+    const macdHistogram = current > 0 ? (macdLine[i] - signalLine[i]) / current : 0;
+
+    const bollingerUpper = sma + 2 * stdDev;
+    const bollingerLower = sma - 2 * stdDev;
+    const bollingerRange = bollingerUpper - bollingerLower;
+    const bollingerPctB = bollingerRange > 0 ? (current - bollingerLower) / bollingerRange : 0.5;
+
+    let trSum = 0;
+    for (let j = i - 13; j <= i; j++) {
+      if (j < 1) continue;
+      const high = candles[j].high;
+      const low = candles[j].low;
+      const prevClose = closes[j - 1];
+      const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+      trSum += tr;
+    }
+    const atr = trSum / 14;
+    const atrRatio = current > 0 ? atr / current : 0;
+
+    const emaCrossover = current > 0 ? (ema9[i] - ema21[i]) / current : 0;
+
+    const prevObv = i >= 20 ? obvArr[i - 20] : obvArr[0];
+    const obvChange = Math.abs(prevObv) > 0 ? (obvArr[i] - prevObv) / Math.abs(prevObv) : 0;
+
+    const clamp = (v) => Math.max(-1, Math.min(1, v));
 
     results[i] = [
-      Math.max(-1, Math.min(1, priceChange * 10)),
-      Math.max(-1, Math.min(1, rsi)),
-      Math.max(-1, Math.min(1, smaDeviation * 5)),
-      Math.max(-1, Math.min(1, volumeRatio)),
-      Math.max(-1, Math.min(1, volatility * 5)),
+      clamp(priceChange * 10),
+      clamp(rsi),
+      clamp(smaDeviation * 5),
+      clamp(volumeRatio),
+      clamp(volatility * 5),
+      clamp(macdHistogram * 100),
+      clamp(bollingerPctB * 2 - 1),
+      clamp(atrRatio * 10),
+      clamp(emaCrossover * 100),
+      clamp(obvChange),
     ];
   }
 
@@ -66,15 +138,16 @@ function calculateIndicators(candles) {
 
   const closes = candles.map((c) => c.close);
   const volumes = candles.map((c) => c.volume);
-  const current = closes[closes.length - 1];
-  const previous = closes[closes.length - 2];
+  const len = closes.length;
+  const current = closes[len - 1];
+  const previous = closes[len - 2];
 
   const priceChange = previous > 0 ? (current - previous) / previous : 0;
 
   let gains = 0;
   let losses = 0;
-  const rsiPeriod = Math.min(14, closes.length - 1);
-  for (let i = closes.length - rsiPeriod; i < closes.length; i++) {
+  const rsiPeriod = Math.min(14, len - 1);
+  for (let i = len - rsiPeriod; i < len; i++) {
     const diff = closes[i] - closes[i - 1];
     if (diff > 0) gains += diff;
     else losses += Math.abs(diff);
@@ -89,25 +162,76 @@ function calculateIndicators(candles) {
   const smaDeviation = sma > 0 ? (current - sma) / sma : 0;
 
   const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
-  const volumeRatio = avgVolume > 0 ? (volumes[volumes.length - 1] / avgVolume) - 1 : 0;
+  const volumeRatio = avgVolume > 0 ? (volumes[len - 1] / avgVolume) - 1 : 0;
 
-  const mean = closes.reduce((a, b) => a + b, 0) / closes.length;
-  const variance = closes.reduce((sum, v) => sum + (v - mean) ** 2, 0) / closes.length;
-  const volatility = mean > 0 ? Math.sqrt(variance) / mean : 0;
+  const mean = closes.reduce((a, b) => a + b, 0) / len;
+  const variance = closes.reduce((sum, v) => sum + (v - mean) ** 2, 0) / len;
+  const stdDev = Math.sqrt(variance);
+  const volatility = mean > 0 ? stdDev / mean : 0;
+
+  const ema9 = computeEma(closes, 9);
+  const ema12 = computeEma(closes, 12);
+  const ema21 = computeEma(closes, 21);
+  const ema26 = computeEma(closes, 26);
+  const macdLine = ema12[len - 1] - ema26[len - 1];
+  const signalArr = computeEma(closes.map((_, idx) => ema12[idx] - ema26[idx]), 9);
+  const macdHistogram = current > 0 ? (macdLine - signalArr[len - 1]) / current : 0;
+
+  const bollingerUpper = sma + 2 * stdDev;
+  const bollingerLower = sma - 2 * stdDev;
+  const bollingerRange = bollingerUpper - bollingerLower;
+  const bollingerPctB = bollingerRange > 0 ? (current - bollingerLower) / bollingerRange : 0.5;
+
+  let trSum = 0;
+  const atrStart = Math.max(1, len - 14);
+  for (let i = atrStart; i < len; i++) {
+    const high = candles[i].high;
+    const low = candles[i].low;
+    const prevClose = closes[i - 1];
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+    trSum += tr;
+  }
+  const atr = trSum / Math.min(14, len - 1);
+  const atrRatio = current > 0 ? atr / current : 0;
+
+  const emaCrossover = current > 0 ? (ema9[len - 1] - ema21[len - 1]) / current : 0;
+
+  let obv = 0;
+  for (let i = 1; i < len; i++) {
+    if (closes[i] > closes[i - 1]) obv += volumes[i];
+    else if (closes[i] < closes[i - 1]) obv -= volumes[i];
+  }
+  let obvPrev = 0;
+  const obvLookback = Math.max(1, len - 20);
+  for (let i = 1; i < obvLookback; i++) {
+    if (closes[i] > closes[i - 1]) obvPrev += volumes[i];
+    else if (closes[i] < closes[i - 1]) obvPrev -= volumes[i];
+  }
+  const obvChange = Math.abs(obvPrev) > 0 ? (obv - obvPrev) / Math.abs(obvPrev) : 0;
+
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
 
   return [
-    Math.max(-1, Math.min(1, priceChange * 10)),
-    Math.max(-1, Math.min(1, rsi)),
-    Math.max(-1, Math.min(1, smaDeviation * 5)),
-    Math.max(-1, Math.min(1, volumeRatio)),
-    Math.max(-1, Math.min(1, volatility * 5)),
+    clamp(priceChange * 10),
+    clamp(rsi),
+    clamp(smaDeviation * 5),
+    clamp(volumeRatio),
+    clamp(volatility * 5),
+    clamp(macdHistogram * 100),
+    clamp(bollingerPctB * 2 - 1),
+    clamp(atrRatio * 10),
+    clamp(emaCrossover * 100),
+    clamp(obvChange),
   ];
 }
 
 function detectMarketCondition(indicators) {
   if (!indicators) return 'SIDEWAYS_DRIFT';
-  const [priceChange, , , , volatility] = indicators;
+  const priceChange = indicators[0];
+  const volatility = indicators[4];
+  const volumeRatio = indicators[3];
   if (Math.abs(volatility) > 0.7) return 'BLACK_SWAN';
+  if (volumeRatio < -0.6) return 'LOW_VOLUME';
   if (priceChange > 0.3) return 'BULL_EXPANSION';
   if (priceChange < -0.3) return 'BEAR_SQUEEZE';
   return 'SIDEWAYS_DRIFT';
@@ -136,7 +260,7 @@ function blendWeights(baseWeights, activeGenes, regulatoryProfile) {
   if (!activeGenes || activeGenes.length === 0) return baseWeights;
 
   const decayResistance = Number(regulatoryProfile?.decay_resistance || 0.3);
-  const blended = { BUY: [0, 0, 0, 0, 0], SELL: [0, 0, 0, 0, 0], HOLD: [0, 0, 0, 0, 0] };
+  const blended = { BUY: DEFAULT_WEIGHTS(), SELL: DEFAULT_WEIGHTS(), HOLD: DEFAULT_WEIGHTS() };
   let totalWeight = 0;
 
   for (const gene of activeGenes) {
@@ -147,7 +271,7 @@ function blendWeights(baseWeights, activeGenes, regulatoryProfile) {
       if (!sub || sub.state !== 'A') continue;
       const action = sub.action;
       const featureIdx = sub.feature_index;
-      if (['BUY', 'SELL', 'HOLD'].includes(action) && featureIdx >= 0 && featureIdx < 5) {
+      if (['BUY', 'SELL', 'HOLD'].includes(action) && featureIdx >= 0 && featureIdx < FEATURE_COUNT) {
         blended[action][featureIdx] += Number(sub.weight || 0) * copyNumber;
         totalWeight += copyNumber;
       }
@@ -157,9 +281,9 @@ function blendWeights(baseWeights, activeGenes, regulatoryProfile) {
   if (totalWeight === 0) return baseWeights;
 
   for (const action of ['BUY', 'SELL', 'HOLD']) {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < FEATURE_COUNT; i++) {
       blended[action][i] = (blended[action][i] / Math.max(1, totalWeight / 3)) * (1 - decayResistance)
-        + baseWeights[action][i] * decayResistance;
+        + (baseWeights[action][i] || 0) * decayResistance;
     }
   }
 
@@ -179,7 +303,7 @@ function simulateTrades(dna, candles, config = {}) {
   const feeRate = config.feeRate || TRADE_FEE_RATE;
   const precomputed = config._precomputedIndicators || null;
 
-  const weights = dna.weights || { BUY: [0, 0, 0, 0, 0], SELL: [0, 0, 0, 0, 0], HOLD: [0, 0, 0, 0, 0] };
+  const weights = dna.weights || { BUY: DEFAULT_WEIGHTS(), SELL: DEFAULT_WEIGHTS(), HOLD: DEFAULT_WEIGHTS() };
 
   let cash = initialCash;
   let position = 0;
@@ -293,4 +417,6 @@ module.exports = {
   calculateSimFitness,
   splitTimeSeries,
   INDICATOR_WINDOW,
+  FEATURE_COUNT,
+  DEFAULT_WEIGHTS,
 };

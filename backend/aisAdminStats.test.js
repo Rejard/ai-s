@@ -126,7 +126,7 @@ async function main() {
       'm1',
       'Active Alpha',
       '{"genome_id":"g1","strategy_genes":[{"gene_id":"sg1","state":"A","copy_number":3,"dominance":1.2,"context_mask":["BULL_EXPANSION","BLACK_SWAN"],"subgenes":[{"state":"A"},{"state":"I"},{"state":"D"},{"state":"L"}]}],"lineage":{"parent_ids":["g0"],"ancestor_ids":["seed"],"innovation_ids":[1]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"},{"event":"context_mask_mutation","context_key":"BLACK_SWAN","action":"added"},{"event":"context_mask_mutation","context_key":"BULL_EXPANSION","action":"removed"},{"event":"profile_mutation","profile_key":"decay_resistance","from_value":0.2,"to_value":0.3},{"event":"admin_state_override","gene_id":"sg1","from_state":"I","to_state":"A","pre_validation_score":46,"pre_holdout_score":44,"pre_run_key":"run-1"},{"event":"admin_context_override","gene_id":"sg1","context_key":"BLACK_SWAN","action":"added","from_mask":["BULL_EXPANSION"],"to_mask":["BULL_EXPANSION","BLACK_SWAN"],"pre_validation_score":47,"pre_holdout_score":45,"pre_run_key":"run-1"},{"event":"copy_number_mutation","from_value":2,"to_value":3}],"fitness_history":[{"validationScore":54.2,"holdoutScore":52.1,"runKey":"run-1"},{"validationScore":53.0,"holdoutScore":50.0,"runKey":"run-2"}],"generation":1}',
-      '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
+      '{"BUY":[0,0,0,0,0,0,0,0,0,0],"SELL":[0,0,0,0,0,0,0,0,0,0],"HOLD":[0,0,0,0,0,0,0,0,0,0]}',
       1,
       'ACTIVE'
     )
@@ -142,7 +142,7 @@ async function main() {
       'm2',
       'Candidate Beta',
       '{"genome_id":"g2","strategy_genes":[{"gene_id":"sg2","state":"A","subgenes":[{"state":"A"},{"state":"A"}]}],"generation":1}',
-      '{"BUY":[1,1,1,1,1],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
+      '{"BUY":[1,1,1,1,1,0,0,0,0,0],"SELL":[0,0,0,0,0,0,0,0,0,0],"HOLD":[0,0,0,0,0,0,0,0,0,0]}',
       1,
       'CANDIDATE'
     )
@@ -153,7 +153,7 @@ async function main() {
       'm3',
       'Inherited Gamma',
       '{"genome_id":"g3","strategy_genes":[{"gene_id":"sg3","state":"A","copy_number":1,"dominance":1.0,"context_mask":["BULL_EXPANSION"],"subgenes":[{"state":"A"}]}],"lineage":{"parent_ids":["g1"],"ancestor_ids":["seed","g1"],"innovation_ids":[1,2]},"regulatory_profile":{"expression_budget":12,"dominance_bias":1,"decay_resistance":0.3,"reactivation_bias":0.1},"mutation_log":[{"event":"state_mutation"}],"fitness_history":[{"validationScore":52.4,"holdoutScore":49.6,"runKey":"run-5"}],"generation":2}',
-      '{"BUY":[0,0,0,0,0],"SELL":[0,0,0,0,0],"HOLD":[0,0,0,0,0]}',
+      '{"BUY":[0,0,0,0,0,0,0,0,0,0],"SELL":[0,0,0,0,0,0,0,0,0,0],"HOLD":[0,0,0,0,0,0,0,0,0,0]}',
       2,
       'ACTIVE'
     )

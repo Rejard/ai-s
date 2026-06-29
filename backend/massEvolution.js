@@ -1,6 +1,7 @@
 const { queries } = require('./database');
 const { loadCandles, collectHistoricalCandles, getCandleStats } = require('./historicalCandles');
 const { safeParseJson } = require('./councilShared');
+const { DEFAULT_WEIGHTS } = require('./simulationEngine');
 const { Worker } = require('worker_threads');
 const path = require('path');
 
@@ -34,14 +35,14 @@ async function loadPopulation(store = queries) {
   return rows.map((row) => {
     const dna = safeParseJson(row.dna_json, {});
     if (!dna.weights && row.weights_json) {
-      dna.weights = safeParseJson(row.weights_json, { BUY: [0, 0, 0, 0, 0], SELL: [0, 0, 0, 0, 0], HOLD: [0, 0, 0, 0, 0] });
+      dna.weights = safeParseJson(row.weights_json, { BUY: DEFAULT_WEIGHTS(), SELL: DEFAULT_WEIGHTS(), HOLD: DEFAULT_WEIGHTS() });
     }
     if (!dna.regulatory_profile) {
       dna.regulatory_profile = { expression_budget: 12, dominance_bias: 1, decay_resistance: 0.3, reactivation_bias: 0.1 };
     }
     if (!dna.strategy_genes) dna.strategy_genes = [];
     if (!dna.mutation_log) dna.mutation_log = [];
-    if (!dna.weights) dna.weights = { BUY: [0, 0, 0, 0, 0], SELL: [0, 0, 0, 0, 0], HOLD: [0, 0, 0, 0, 0] };
+    if (!dna.weights) dna.weights = { BUY: DEFAULT_WEIGHTS(), SELL: DEFAULT_WEIGHTS(), HOLD: DEFAULT_WEIGHTS() };
 
     return {
       memberId: row.member_id,
@@ -94,7 +95,7 @@ async function runMassEvolution(userConfig = {}, store = queries) {
       await collectHistoricalCandles({
         pair: config.pair,
         interval: config.interval,
-        days: 365,
+        days: 475,
         store,
         onProgress: (p) => { activeSimulation.progress = Math.round(p.progress * 0.1); },
       });

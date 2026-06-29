@@ -1,5 +1,5 @@
 const { parentPort, workerData } = require('worker_threads');
-const { simulateTrades, splitTimeSeries, precomputeIndicators } = require('./simulationEngine');
+const { simulateTrades, splitTimeSeries, precomputeIndicators, FEATURE_COUNT, DEFAULT_WEIGHTS } = require('./simulationEngine');
 const crypto = require('crypto');
 
 function generateUUID() {
@@ -9,10 +9,10 @@ function generateUUID() {
 function crossoverWeights(parentA, parentB) {
   const child = {};
   for (const action of ['BUY', 'SELL', 'HOLD']) {
-    const a = parentA[action] || [0, 0, 0, 0, 0];
-    const b = parentB[action] || [0, 0, 0, 0, 0];
-    const crossPoint = Math.floor(Math.random() * 5);
-    child[action] = a.map((v, i) => i < crossPoint ? v : b[i]);
+    const a = parentA[action] || DEFAULT_WEIGHTS();
+    const b = parentB[action] || DEFAULT_WEIGHTS();
+    const crossPoint = Math.floor(Math.random() * a.length);
+    child[action] = a.map((v, i) => i < crossPoint ? v : (b[i] || 0));
   }
   return child;
 }
@@ -31,8 +31,8 @@ function mutateDna(dna, strength) {
 
   if (Math.random() < 0.6) {
     for (const action of ['BUY', 'SELL', 'HOLD']) {
-      if (!mutated.weights[action]) mutated.weights[action] = [0, 0, 0, 0, 0];
-      const idx = Math.floor(Math.random() * 5);
+      if (!mutated.weights[action]) mutated.weights[action] = DEFAULT_WEIGHTS();
+      const idx = Math.floor(Math.random() * FEATURE_COUNT);
       mutated.weights[action][idx] += (Math.random() * 2 - 1) * strength;
     }
     mutated.mutation_log.push({ event: 'weight_nudge', strength });
@@ -54,7 +54,7 @@ function mutateDna(dna, strength) {
     const genes = mutated.strategy_genes || [];
     if (genes.length > 0) {
       const gene = genes[Math.floor(Math.random() * genes.length)];
-      const contexts = ['BLACK_SWAN', 'BULL_EXPANSION', 'BEAR_SQUEEZE', 'SIDEWAYS_DRIFT'];
+      const contexts = ['BLACK_SWAN', 'BULL_EXPANSION', 'BEAR_SQUEEZE', 'SIDEWAYS_DRIFT', 'LOW_VOLUME'];
       const ctx = contexts[Math.floor(Math.random() * contexts.length)];
       const mask = Array.isArray(gene.context_mask) ? gene.context_mask : [];
       if (mask.includes(ctx)) {
