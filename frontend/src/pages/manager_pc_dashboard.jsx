@@ -31,6 +31,7 @@ import SutPriceChart from '../components/SutPriceChart';
 import SutPriceCard from '../components/SutPriceCard';
 import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
 import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
+import ManagerSelfDepositHistory from '../components/ManagerSelfDepositHistory';
 import EditUserModal from '../components/EditUserModal';
 import { saveIdCardLocally, getIdCardLocally, deleteIdCardLocally } from '../lib/idCardStorage';
 
@@ -41,6 +42,7 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
   const [allUsers, setAllUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]);
+  const [managerRecentPayments, setManagerRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
   const [syncing, setSyncing] = useState(false);
@@ -392,6 +394,7 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
       if (managerData.pendingUsers !== undefined) setPendingUsers(managerData.pendingUsers);
       if (managerData.stats !== undefined) setStats(managerData.stats);
       if (managerData.recentPayments !== undefined) setRecentPayments(managerData.recentPayments);
+      if (managerData.managerRecentPayments !== undefined) setManagerRecentPayments(managerData.managerRecentPayments);
       if (managerData.allUsers !== undefined) setAllUsers(managerData.allUsers);
       if (managerData.withdrawals !== undefined) setWithdrawals(managerData.withdrawals);
       if (managerData.gridSettings !== undefined) {
@@ -850,6 +853,16 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
                 <span style={{ fontSize: '10px', color: '#3B82F6', background: 'rgba(59,130,246,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>총 입금액</span>
               </div>
 
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.2)' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '11px', color: '#BFDBFE' }}>매니저 본인 입금 (일반페이지)</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#60A5FA', marginTop: '2px' }}>
+                    {stats ? Number(stats.managerSelfDeposited || 0).toFixed(2) : '0.00'} <span style={{ fontSize: '11px', fontWeight: 'normal' }}>SUT</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: '10px', color: '#60A5FA', background: 'rgba(59,130,246,0.16)', padding: '2px 6px', borderRadius: '6px', fontWeight: '700' }}>본인 입금</span>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료)</div>
@@ -874,6 +887,8 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
 
             </div>
           </div>
+
+          <ManagerSelfDepositHistory payments={managerRecentPayments} totalDeposited={stats?.managerSelfDeposited || 0} />
 
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>

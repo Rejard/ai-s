@@ -636,7 +636,8 @@ router.post('/delete-manager', async (req, res) => {
 
     console.log(`[Admin Account Cleanup] Migrated ${migrateRes.changes} users under ${cleanWallet} to Master Manager ${MASTER_MANAGER_WALLET}.`);
 
-    await queries.run("DELETE FROM payments WHERE wallet_address = ?", [cleanWallet]);
+    await queries.run("DELETE FROM ledger WHERE LOWER(wallet_address) = LOWER(?)", [cleanWallet]);
+    await queries.run("DELETE FROM withdrawal_requests WHERE LOWER(wallet_address) = LOWER(?)", [cleanWallet]);
 
     await queries.run("DELETE FROM users WHERE wallet_address = ?", [cleanWallet]);
 

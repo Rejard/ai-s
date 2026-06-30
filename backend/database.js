@@ -190,6 +190,54 @@ function initializeDatabase() {
         )
       `, (err) => { if (err) return reject(err); });
 
+      db.run(`ALTER TABLE payments RENAME TO payments_archive`, (err) => {
+      });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS ledger (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_address TEXT NOT NULL,
+          wallet_address TEXT NOT NULL,
+          type TEXT NOT NULL CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'AI_PROFIT', 'ADJUSTMENT')),
+          amount REAL NOT NULL,
+          tx_hash TEXT,
+          description TEXT,
+          verified INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (wallet_address) REFERENCES users (wallet_address)
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_ledger_tx_hash ON ledger(tx_hash) WHERE tx_hash IS NOT NULL`, (err) => {
+      });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS withdrawal_requests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          wallet_address TEXT NOT NULL,
+          manager_address TEXT NOT NULL,
+          amount REAL NOT NULL CHECK (amount > 0),
+          status TEXT NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+          ledger_id INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          processed_at DATETIME,
+          FOREIGN KEY (wallet_address) REFERENCES users (wallet_address),
+          FOREIGN KEY (ledger_id) REFERENCES ledger (id)
+        )
+      `, (err) => { if (err) return reject(err); });
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS audit_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          action TEXT NOT NULL,
+          table_name TEXT NOT NULL,
+          record_id INTEGER,
+          details TEXT,
+          performed_by TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => { if (err) return reject(err); });
+
       db.run(`
         CREATE TABLE IF NOT EXISTS platform_settings (
           key TEXT PRIMARY KEY,

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const { ethers } = require('ethers');
 const { queries } = require('../database');
+const { verifyTransactionOnChain, insertLedgerEntry, logAudit } = require('../integrityCheck');
 const {
   extractCompleteGeminiText,
   makeCouncilBriefingGenerationConfig
@@ -182,21 +184,21 @@ router.get('/portfolio/:walletAddress', requireAuthenticatedSession, verifyWalle
 
     const ratios = { SUT: 100 };
 
-    const deposits = await queries.get(`
-      SELECT SUM(amount) as total FROM payments
-      WHERE LOWER(wallet_address) = ? AND type = 'DEPOSIT' AND status = 'SUCCESS'
+    const balanceData = await queries.get(`
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END), 0) as totalDeposited,
+        COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0) as totalWithdrawn,
+        COALESCE(SUM(CASE WHEN type = 'AI_PROFIT' THEN amount ELSE 0 END), 0) as totalAiProfit,
+        COALESCE(SUM(CASE WHEN type = 'ADJUSTMENT' THEN amount ELSE 0 END), 0) as totalAdjustment
+      FROM ledger
+      WHERE LOWER(wallet_address) = ?
     `, [walletAddress]);
 
-    const addedDeposits = deposits.total || 0;
-    const totalInvested = addedDeposits;
-
-    const aiProfits = await queries.get(`
-      SELECT SUM(amount) as total FROM payments
-      WHERE LOWER(wallet_address) = ? AND type = 'AI_TRADING_PROFIT' AND status = 'SUCCESS'
-    `, [walletAddress]);
-    const aiTradingProfitSut = aiProfits?.total || 0;
-
-    const sutQuantity = totalInvested + aiTradingProfitSut;
+    const totalInvested = balanceData?.totalDeposited || 0;
+    const aiTradingProfitSut = balanceData?.totalAiProfit || 0;
+    const totalWithdrawn = balanceData?.totalWithdrawn || 0;
+    const totalAdjustment = balanceData?.totalAdjustment || 0;
+    const sutQuantity = totalInvested - totalWithdrawn + aiTradingProfitSut + totalAdjustment;
 
     const prices = await getLivePrices();
     const sutPrice = prices.sut.usd;
@@ -281,20 +283,54 @@ router.post('/update-ratio', requireAuthenticatedSession, verifyWalletOwnership,
 
 router.post('/deposit', requireAuthenticatedSession, verifyWalletOwnership, async (req, res) => {
   const { walletAddress, amount, txHash } = req.body;
-  if (!walletAddress || !amount) {
-    return res.status(400).json({ success: false, message: '필수 매개변수가 누락되었습니다.' });
+  if (!walletAddress || !amount || !txHash) {
+    return res.status(400).json({ success: false, message: '지갑주소, 금액, 트랜잭션 해시가 필요합니다.' });
   }
   const cleanWallet = walletAddress.toLowerCase().trim();
 
   try {
+    const rpcUrl = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
+    const provider = new ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
+    const sutAddress = process.env.SUT_CONTRACT_ADDRESS;
+    const vaultAddress = process.env.VAULT_CONTRACT_ADDRESS;
 
-    await queries.run(`
-      INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
-    `, [cleanWallet, amount, txHash || '0xSimulatedDepositTx']);
+    const verification = await verifyTransactionOnChain(
+      provider, sutAddress, txHash, cleanWallet, vaultAddress, parseFloat(amount)
+    );
 
-    res.json({ success: true, message: `가상 투자 풀에 ${amount} USDT가 추가 입금되었습니다.` });
+    if (!verification.valid) {
+      return res.status(400).json({
+        success: false,
+        message: `온체인 검증 실패: ${verification.reason}`
+      });
+    }
+
+    const user = await queries.get(
+      'SELECT manager_address FROM users WHERE LOWER(wallet_address) = ?',
+      [cleanWallet]
+    );
+    const managerAddress = user?.manager_address || 'none';
+
+    const result = await insertLedgerEntry(queries, {
+      managerAddress,
+      walletAddress: cleanWallet,
+      type: 'DEPOSIT',
+      amount: verification.amount,
+      txHash,
+      description: `Block ${verification.blockNumber}`,
+      verified: true
+    });
+
+    await logAudit(queries, 'DEPOSIT_RECORDED', 'ledger', result.id,
+      { amount: verification.amount, txHash, from: verification.from, to: verification.to },
+      cleanWallet
+    );
+
+    res.json({ success: true, message: `${verification.amount} SUT 입금이 검증 및 기록되었습니다.` });
   } catch (err) {
+    if (err.message === 'DUPLICATE_TX: Transaction already recorded') {
+      return res.status(409).json({ success: false, message: '이미 기록된 트랜잭션입니다.' });
+    }
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -308,17 +344,24 @@ router.post('/withdraw', requireAuthenticatedSession, verifyWalletOwnership, asy
 
   try {
     const existingRequest = await queries.get(
-      "SELECT id FROM payments WHERE LOWER(wallet_address) = LOWER(?) AND type = 'WITHDRAW_REQUEST' AND status = 'PENDING'",
+      "SELECT id FROM withdrawal_requests WHERE LOWER(wallet_address) = LOWER(?) AND status = 'PENDING'",
       [cleanWallet]
     );
     if (existingRequest) {
       return res.status(400).json({ success: false, message: '이미 대기 중인 지급 요청이 존재합니다. 이전 요청이 처리된 후 다시 신청해 주십시오.' });
     }
 
+    const user = await queries.get(
+      'SELECT manager_address FROM users WHERE LOWER(wallet_address) = ?',
+      [cleanWallet]
+    );
+    const managerAddress = user?.manager_address || 'none';
+
     await queries.run(`
-      INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'WITHDRAW_REQUEST', 'PENDING', '0xPendingManualPayout')
-    `, [cleanWallet, amount]);
+      INSERT INTO withdrawal_requests (wallet_address, manager_address, amount, status)
+      VALUES (?, ?, ?, 'PENDING')
+    `, [cleanWallet, managerAddress, amount]);
+
     res.json({ success: true, message: `📤 ${amount} SUT 지급 요청이 접수되었습니다. 매니저 심사 후 처리됩니다.` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -328,19 +371,33 @@ router.post('/withdraw', requireAuthenticatedSession, verifyWalletOwnership, asy
 router.get('/history/:walletAddress', requireAuthenticatedSession, verifyWalletOwnership, async (req, res) => {
   const cleanWallet = req.params.walletAddress.toLowerCase().trim();
   try {
-    const history = await queries.all(
-      `SELECT id, amount, type, status, created_at as createdAt
-       FROM payments
-       WHERE wallet_address = ?
+    const ledgerHistory = await queries.all(
+      `SELECT id, amount, type, tx_hash as txHash, verified, created_at as createdAt
+       FROM ledger
+       WHERE LOWER(wallet_address) = ?
        ORDER BY created_at DESC
        LIMIT 50`,
       [cleanWallet]
     );
+
+    const withdrawalHistory = await queries.all(
+      `SELECT id, amount, 'WITHDRAW_REQUEST' as type, status, created_at as createdAt
+       FROM withdrawal_requests
+       WHERE LOWER(wallet_address) = ?
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [cleanWallet]
+    );
+
+    const history = [...ledgerHistory, ...withdrawalHistory]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 50);
+
     res.json({ success: true, history });
   } catch (err) {
     console.error('[INVESTMENT] History query error:', err.message);
     res.status(500).json({ success: false, error: err.message });
-}
+  }
 });
 
 const investmentBriefingRefreshCoordinator = createRefreshCoordinator();

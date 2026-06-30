@@ -274,29 +274,44 @@ router.get('/stats', async (req, res) => {
 
     const paymentStats = await queries.get(`
       SELECT
-        SUM(CASE WHEN type IN ('DEPOSIT', 'AI_TRADING_PROFIT') THEN amount ELSE 0 END) as totalRevenue,
-        SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END) as totalDeposited,
-        SUM(CASE WHEN type = 'WITHDRAW_REQUEST' THEN amount ELSE 0 END) as totalDistributed
-      FROM payments p
-      JOIN users u ON LOWER(p.wallet_address) = LOWER(u.wallet_address)
-      WHERE p.status = 'SUCCESS'
-        AND LOWER(u.manager_address) = LOWER(?)
-        AND COALESCE(u.is_manager, 0) = 0
+        COALESCE(SUM(CASE WHEN type IN ('DEPOSIT', 'AI_PROFIT') THEN amount ELSE 0 END), 0) as totalRevenue,
+        COALESCE(SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END), 0) as totalDeposited,
+        COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0) as totalDistributed
+      FROM ledger l
+      JOIN users u ON LOWER(l.wallet_address) = LOWER(u.wallet_address)
+      WHERE l.manager_address = ? AND u.is_manager = 0
+    `, [req.managerWallet]);
+
+    const managerSelfPaymentStats = await queries.get(`
+      SELECT COALESCE(SUM(amount), 0) as totalDeposited
+      FROM ledger
+      WHERE LOWER(wallet_address) = LOWER(?) AND type = 'DEPOSIT'
     `, [req.managerWallet]);
 
     const totalRevenue = paymentStats.totalRevenue || 0;
     const totalDeposited = paymentStats.totalDeposited || 0;
     const totalDistributed = paymentStats.totalDistributed || 0;
+    const managerSelfDeposited = managerSelfPaymentStats.totalDeposited || 0;
     const companyRevenue = totalRevenue - totalDistributed;
 
     const recentPayments = await queries.all(`
-      SELECT p.id, p.wallet_address, u.name, p.amount, p.type, p.tx_hash, p.created_at
-      FROM payments p
-      JOIN users u ON LOWER(p.wallet_address) = LOWER(u.wallet_address)
-      WHERE p.status = 'SUCCESS'
-        AND LOWER(u.manager_address) = LOWER(?)
-        AND COALESCE(u.is_manager, 0) = 0
-      ORDER BY p.created_at DESC
+      SELECT l.id, l.wallet_address, u.name, l.amount, l.type, l.tx_hash, l.created_at
+      FROM ledger l
+      JOIN users u ON LOWER(l.wallet_address) = LOWER(u.wallet_address)
+      WHERE l.manager_address = ?
+        AND u.is_manager = 0
+      ORDER BY l.created_at DESC
+      LIMIT 10
+    `, [req.managerWallet]);
+
+    const managerRecentPayments = await queries.all(`
+      SELECT l.id, l.wallet_address, u.name, l.amount, l.type, l.tx_hash, l.created_at
+      FROM ledger l
+      JOIN users u ON LOWER(l.wallet_address) = LOWER(u.wallet_address)
+      WHERE LOWER(l.wallet_address) = LOWER(?)
+        AND l.type = 'DEPOSIT'
+        AND COALESCE(u.is_manager, 0) = 1
+      ORDER BY l.created_at DESC
       LIMIT 10
     `, [req.managerWallet]);
 
@@ -309,9 +324,11 @@ router.get('/stats', async (req, res) => {
         totalRevenue,
         totalDeposited,
         totalDistributed,
+        managerSelfDeposited,
         companyRevenue
       },
-      recentPayments
+      recentPayments,
+      managerRecentPayments
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -355,7 +372,7 @@ router.post('/update-user', async (req, res) => {
 
     if (cleanTarget !== cleanNewWallet) {
       await queries.run(
-        "UPDATE payments SET wallet_address = ? WHERE LOWER(wallet_address) = LOWER(?)",
+        "UPDATE ledger SET wallet_address = ? WHERE LOWER(wallet_address) = LOWER(?)",
         [cleanNewWallet, cleanTarget]
       );
     }
@@ -393,13 +410,13 @@ router.post('/update-user', async (req, res) => {
 router.get('/withdrawals', async (req, res) => {
   try {
     const withdrawals = await queries.all(`
-      SELECT p.id, p.wallet_address, p.amount as requested_amount, p.status, p.created_at, u.name
-      FROM payments p
-      JOIN users u ON LOWER(p.wallet_address) = LOWER(u.wallet_address)
-      WHERE p.type = 'WITHDRAW_REQUEST' AND p.status = 'PENDING'
-        AND LOWER(u.manager_address) = LOWER(?)
+      SELECT wr.id, wr.wallet_address, wr.amount as requested_amount, wr.status, wr.created_at, u.name
+      FROM withdrawal_requests wr
+      JOIN users u ON LOWER(wr.wallet_address) = LOWER(u.wallet_address)
+      WHERE wr.status = 'PENDING'
+        AND LOWER(wr.manager_address) = LOWER(?)
         AND COALESCE(u.is_manager, 0) = 0
-      ORDER BY p.created_at DESC
+      ORDER BY wr.created_at DESC
     `, [req.managerWallet]);
     res.json({ success: true, withdrawals });
   } catch (err) {
@@ -409,24 +426,33 @@ router.get('/withdrawals', async (req, res) => {
 
 router.post('/withdrawals/:id/approve', async (req, res) => {
   const { id } = req.params;
-  const { actualPayoutAmount } = req.body;
   try {
-
-    const request = await getManagedWithdrawal(queries, req.managerWallet, id);
+    const request = await queries.get(
+      "SELECT * FROM withdrawal_requests WHERE id = ? AND status = 'PENDING'",
+      [id]
+    );
     if (!request) return res.status(404).json({ success: false, message: '유효한 출금 요청을 찾을 수 없습니다.' });
 
-    const ledgerDeduction = request.amount;
+    await queries.run(
+      "UPDATE withdrawal_requests SET status = 'APPROVED', processed_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [id]
+    );
 
-    await queries.run("UPDATE payments SET status = 'SUCCESS' WHERE id = ?", [id]);
+    const ledgerResult = await queries.run(`
+      INSERT INTO ledger (manager_address, wallet_address, type, amount, tx_hash, description, verified)
+      VALUES (?, ?, 'WITHDRAWAL', ?, ?, 'Manager approved withdrawal', 0)
+    `, [request.manager_address, request.wallet_address, request.amount, '0xPendingPayout_' + id]);
 
-    await queries.run(`
-      INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'DEPOSIT', 'SUCCESS', '0xManualManagerPayout')
-    `, [request.wallet_address, -ledgerDeduction]);
+    if (ledgerResult && ledgerResult.lastID) {
+      await queries.run(
+        "UPDATE withdrawal_requests SET ledger_id = ? WHERE id = ?",
+        [ledgerResult.lastID, id]
+      );
+    }
 
     res.json({
       success: true,
-      message: `지급 완료! 장부에서 회원이 신청한 ${ledgerDeduction} SUT가 정상적으로 차감(소멸)되었습니다.`
+      message: `지급 완료! 장부에서 회원이 신청한 ${request.amount} SUT가 정상적으로 차감(소멸)되었습니다.`
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -436,10 +462,16 @@ router.post('/withdrawals/:id/approve', async (req, res) => {
 router.post('/withdrawals/:id/reject', async (req, res) => {
   const { id } = req.params;
   try {
-    const request = await getManagedWithdrawal(queries, req.managerWallet, id);
+    const request = await queries.get(
+      "SELECT * FROM withdrawal_requests WHERE id = ? AND status = 'PENDING' AND LOWER(manager_address) = LOWER(?)",
+      [id, req.managerWallet]
+    );
     if (!request) return res.status(404).json({ success: false, message: '유효한 출금 요청을 찾을 수 없습니다.' });
 
-    await queries.run("UPDATE payments SET status = 'FAILED' WHERE id = ?", [id]);
+    await queries.run(
+      "UPDATE withdrawal_requests SET status = 'REJECTED', processed_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [id]
+    );
 
     res.json({
       success: true,
@@ -465,9 +497,9 @@ router.post('/manual-adjustment', async (req, res) => {
     }
 
     await queries.run(`
-      INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-      VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
-    `, [cleanWallet, parseFloat(amount), description || '0xManualManagerAdjustment']);
+      INSERT INTO ledger (manager_address, wallet_address, type, amount, description, verified)
+      VALUES (?, ?, 'ADJUSTMENT', ?, 'Manual adjustment by manager', 0)
+    `, [req.managerWallet, cleanWallet, parseFloat(amount)]);
 
     res.json({ success: true, message: `해당 회원의 장부에 ${amount} SUT 변동이 성공적으로 기록되었습니다.` });
   } catch (err) {
@@ -501,11 +533,16 @@ router.post('/trigger-ai-profit', async (req, res) => {
     for (const user of activeUsers) {
 
       const balanceRow = await queries.get(`
-        SELECT SUM(amount) as total FROM payments
-        WHERE wallet_address = ? AND type IN ('DEPOSIT', 'AI_TRADING_PROFIT') AND status = 'SUCCESS'
+        SELECT
+          COALESCE(SUM(CASE WHEN type IN ('DEPOSIT', 'AI_PROFIT') THEN amount ELSE 0 END), 0)
+          - COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0)
+          + COALESCE(SUM(CASE WHEN type = 'ADJUSTMENT' THEN amount ELSE 0 END), 0)
+        as currentBalance
+        FROM ledger
+        WHERE LOWER(wallet_address) = LOWER(?)
       `, [user.wallet_address]);
 
-      const currentBalance = balanceRow && balanceRow.total ? balanceRow.total : 0;
+      const currentBalance = balanceRow && balanceRow.currentBalance ? balanceRow.currentBalance : 0;
 
       const baseInvested = currentBalance > 0 ? currentBalance : 1000.0;
       const profitSut = baseInvested * percent;
@@ -513,9 +550,9 @@ router.post('/trigger-ai-profit', async (req, res) => {
       if (profitSut > 0) {
 
         await queries.run(`
-          INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-          VALUES (?, ?, 'AI_TRADING_PROFIT', 'SUCCESS', ?)
-        `, [user.wallet_address, profitSut, `0xAITradingProfit_${Date.now()}`]);
+          INSERT INTO ledger (manager_address, wallet_address, type, amount, tx_hash, description, verified)
+          VALUES (?, ?, 'AI_PROFIT', ?, ?, 'AI trading profit distribution', 0)
+        `, [req.managerWallet, user.wallet_address, profitSut, `0xAIProfit_${Date.now()}`]);
         totalDistributedSut += profitSut;
       }
     }
@@ -1212,14 +1249,14 @@ router.post('/sync-transactions', async (req, res) => {
         const fromAddr = log.args.from.toLowerCase();
         if (userWallets.has(fromAddr)) {
           const existing = await queries.get(
-            "SELECT id FROM payments WHERE tx_hash = ? AND type = 'DEPOSIT' AND amount > 0",
+            "SELECT id FROM ledger WHERE tx_hash = ? AND type = 'DEPOSIT'",
             [txHash]
           );
           if (!existing) {
             await queries.run(`
-              INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-              VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
-            `, [fromAddr, amount, txHash]);
+              INSERT INTO ledger (manager_address, wallet_address, type, amount, tx_hash, description, verified)
+              VALUES (?, ?, 'DEPOSIT', ?, ?, 'Synced from on-chain', 1)
+            `, [managerAddress, fromAddr, amount, txHash]);
 
             addedDepositCount++;
             addedDepositAmount += amount;
@@ -1229,21 +1266,14 @@ router.post('/sync-transactions', async (req, res) => {
         const toAddr = log.args.to.toLowerCase();
         if (userWallets.has(toAddr)) {
           const existing = await queries.get(
-            "SELECT id FROM payments WHERE tx_hash = ? AND type = 'WITHDRAW_REQUEST'",
+            "SELECT id FROM ledger WHERE tx_hash = ?",
             [txHash]
           );
           if (!existing) {
-
             await queries.run(`
-              INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-              VALUES (?, ?, 'WITHDRAW_REQUEST', 'SUCCESS', ?)
-            `, [toAddr, amount, txHash]);
-
-
-            await queries.run(`
-              INSERT INTO payments (wallet_address, amount, type, status, tx_hash)
-              VALUES (?, ?, 'DEPOSIT', 'SUCCESS', ?)
-            `, [toAddr, -amount, txHash + '_deduct']);
+              INSERT INTO ledger (manager_address, wallet_address, type, amount, tx_hash, description, verified)
+              VALUES (?, ?, 'WITHDRAWAL', ?, ?, 'Synced from on-chain', 1)
+            `, [managerAddress, toAddr, amount, txHash]);
 
             addedWithdrawCount++;
             addedWithdrawAmount += amount;

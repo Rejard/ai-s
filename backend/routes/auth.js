@@ -342,10 +342,18 @@ router.get('/payments/:walletAddress', requireAuthenticatedSession, async (req, 
       return res.status(403).json({ success: false, message: '권한 경보: 본인 혹은 소속 하위 회원의 이력만 조회 가능합니다.' });
     }
 
-    const payments = await queries.all(`
-      SELECT amount, type, status, tx_hash, created_at FROM payments
-      WHERE wallet_address = ? ORDER BY created_at DESC
+    const ledgerEntries = await queries.all(`
+      SELECT amount, type, tx_hash, created_at FROM ledger
+      WHERE LOWER(wallet_address) = LOWER(?) ORDER BY created_at DESC
     `, [walletAddress]);
+
+    const withdrawals = await queries.all(`
+      SELECT amount, 'WITHDRAW_REQUEST' as type, status, created_at FROM withdrawal_requests
+      WHERE LOWER(wallet_address) = LOWER(?) ORDER BY created_at DESC
+    `, [walletAddress]);
+
+    const payments = [...ledgerEntries, ...withdrawals]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     res.json({
       success: true,

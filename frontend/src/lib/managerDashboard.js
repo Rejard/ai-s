@@ -86,6 +86,7 @@ export async function loadManagerDashboardData({
     allUsers: undefined,
     stats: undefined,
     recentPayments: undefined,
+    managerRecentPayments: undefined,
     withdrawals: undefined,
     gridSettings: undefined,
     portfolio: undefined,
@@ -113,6 +114,7 @@ export async function loadManagerDashboardData({
   if (statsRes.data.success) {
     data.stats = statsRes.data.stats;
     data.recentPayments = statsRes.data.recentPayments;
+    data.managerRecentPayments = statsRes.data.managerRecentPayments;
   }
 
   const allUsersRes = await axiosClient.get(`${apiBase}/manager/users`, headers);

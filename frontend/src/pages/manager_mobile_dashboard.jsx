@@ -29,6 +29,7 @@ import {
 } from '../lib/userDashboard';
 import ManagerAiDecisionHistory from '../components/ManagerAiDecisionHistory';
 import ManagerTradeExecutions from '../components/ManagerTradeExecutions';
+import ManagerSelfDepositHistory from '../components/ManagerSelfDepositHistory';
 import EditUserModal from '../components/EditUserModal';
 import ManagerManagementSection from '../components/ManagerManagementSection';
 import ManagerAiConfigSection from '../components/ManagerAiConfigSection';
@@ -41,6 +42,7 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
   const [allUsers, setAllUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]);
+  const [managerRecentPayments, setManagerRecentPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
@@ -395,6 +397,7 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
       if (managerData.pendingUsers !== undefined) setPendingUsers(managerData.pendingUsers);
       if (managerData.stats !== undefined) setStats(managerData.stats);
       if (managerData.recentPayments !== undefined) setRecentPayments(managerData.recentPayments);
+      if (managerData.managerRecentPayments !== undefined) setManagerRecentPayments(managerData.managerRecentPayments);
       if (managerData.allUsers !== undefined) setAllUsers(managerData.allUsers);
       if (managerData.withdrawals !== undefined) setWithdrawals(managerData.withdrawals);
       if (managerData.gridSettings !== undefined) {
@@ -1238,6 +1241,8 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
           </div>
         )}
       </div>
+
+      <ManagerSelfDepositHistory payments={managerRecentPayments} totalDeposited={stats?.managerSelfDeposited || 0} isMobile />
 
       <div className="glass-card">
         <h3 style={{ fontSize: '15px', color: '#F3F4F6', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}>

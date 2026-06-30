@@ -255,6 +255,11 @@ function ManagerAiConfigSection({
             <span style={{ color: '#3B82F6', fontWeight: '700' }}>{stats ? stats.totalDeposited.toFixed(2) : '0.00'} SUT</span>
           </div>
 
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.08)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.18)' }}>
+            <span style={{ color: '#BFDBFE' }}>매니저 본인 입금:</span>
+            <span style={{ color: '#60A5FA', fontWeight: '700' }}>{stats ? Number(stats.managerSelfDeposited || 0).toFixed(2) : '0.00'} SUT</span>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
             <span style={{ color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료):</span>
             <span style={{ color: '#F59E0B', fontWeight: '700' }}>{stats ? stats.totalDistributed.toFixed(2) : '0.00'} SUT</span>
