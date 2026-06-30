@@ -162,7 +162,7 @@ const fakeAxios = {
     const cleanUrl = url.split('?')[0];
     const responses = {
       'https://api.test/manager/pending-users': { success: true, users: [{ id: 1 }] },
-      'https://api.test/manager/stats': { success: true, stats: { users: 1 }, recentPayments: [{ id: 2 }] },
+      'https://api.test/manager/stats': { success: true, stats: { users: 1, managerSelfDeposited: 7 }, recentPayments: [{ id: 2 }], managerRecentPayments: [{ id: 9 }] },
       'https://api.test/manager/users': { success: true, users: [{ id: 3 }] },
       'https://api.test/manager/withdrawals': { success: true, withdrawals: [{ id: 4 }] },
       'https://api.test/manager/ai-settings': {
@@ -225,8 +225,9 @@ const managerData = await loadManagerDashboardData({
 });
 
 assert.deepEqual(managerData.pendingUsers, [{ id: 1 }]);
-assert.deepEqual(managerData.stats, { users: 1 });
+assert.deepEqual(managerData.stats, { users: 1, managerSelfDeposited: 7 });
 assert.deepEqual(managerData.recentPayments, [{ id: 2 }]);
+assert.deepEqual(managerData.managerRecentPayments, [{ id: 9 }]);
 assert.deepEqual(managerData.allUsers, [{ id: 3 }]);
 assert.deepEqual(managerData.withdrawals, [{ id: 4 }]);
 assert.deepEqual(managerData.gridSettings, {

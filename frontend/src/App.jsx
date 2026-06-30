@@ -17,7 +17,6 @@ import UserPcConsent from './pages/user_pc_consent';
 import UserPcRegister from './pages/user_pc_register';
 import UserPcWaiting from './pages/user_pc_waiting';
 import UserPcDashboard from './pages/user_pc_dashboard';
-import ManagerPcDashboard from './pages/manager_pc_dashboard';
 import AdminPcDashboard from './pages/admin_pc_dashboard';
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
@@ -703,11 +702,7 @@ function AppContent() {
           <Routes>
             <Route path="/manager" element={
               isManagerViewer ? (
-                isPcView ? (
-                  <ManagerPcDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
-                ) : (
-                  <ManagerMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
-                )
+                <ManagerMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
               ) : (
                 <Navigate to="/" replace />
               )

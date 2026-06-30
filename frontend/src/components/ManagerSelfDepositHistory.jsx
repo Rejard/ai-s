@@ -16,7 +16,7 @@ function ManagerSelfDepositHistory({ payments = [], totalDeposited = 0, isMobile
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', gap: '12px' }}>
         <h3 style={{ margin: 0, color: '#F9FAFB', fontSize: isMobile ? '15px' : '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Receipt size={isMobile ? 16 : 18} color="var(--accent-color)" />
-          Manager self deposit history
+          매니저 본인 예치 내역
         </h3>
         <span style={{ color: '#3B82F6', fontSize: isMobile ? '12px' : '13px', fontWeight: '800', whiteSpace: 'nowrap' }}>
           {Number(totalDeposited || 0).toFixed(2)} SUT
@@ -25,7 +25,7 @@ function ManagerSelfDepositHistory({ payments = [], totalDeposited = 0, isMobile
 
       {payments.length === 0 ? (
         <p style={{ color: 'var(--text-dark)', fontSize: isMobile ? '12px' : '13px', textAlign: 'center', padding: isMobile ? '18px 0' : '26px 0', margin: 0 }}>
-          No manager self deposits from the user page yet.
+          매니저 본인이 직접 예치한 내역이 아직 없습니다.
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: isMobile ? '220px' : '200px', overflowY: 'auto', scrollbarWidth: 'none' }}>
@@ -45,7 +45,7 @@ function ManagerSelfDepositHistory({ payments = [], totalDeposited = 0, isMobile
             >
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: '700', color: '#FFF' }}>
-                  {pay.name || 'Manager self'}
+                  {pay.name || '매니저 본인'}
                 </div>
                 {pay.tx_hash && pay.tx_hash.length === 66 && pay.tx_hash.startsWith('0x') ? (
                   <a
@@ -58,7 +58,7 @@ function ManagerSelfDepositHistory({ payments = [], totalDeposited = 0, isMobile
                   </a>
                 ) : (
                   <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                    Internal or pending TX record
+                    내부 수동 처리 또는 대기 중
                   </span>
                 )}
               </div>

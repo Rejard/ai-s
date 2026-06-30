@@ -6,6 +6,7 @@ const path = require('path');
 const { queries } = require('../database');
 const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades, getGateIoOpenOrders, cancelGateIoOrder, getGateIoDeposits, getGateIoWithdrawals } = require('../gateioHelper');
 const { decryptText, encryptText } = require('../secureCredentials');
+const { generateLedgerPdf } = require('../pdfGenerator');
 const { requireAuthenticatedSession } = require('../authSession');
 const { tempUploadDir } = require('../idCardHelper');
 const {
@@ -1304,9 +1305,233 @@ router.post('/sync-transactions', async (req, res) => {
   }
 });
 
+router.get('/:managerAddress/ledger', async (req, res) => {
+  const managerAddress = req.params.managerAddress.toLowerCase().trim();
+  try {
+    const summary = await queries.get(`
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END), 0) as totalDeposited,
+        COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0) as totalWithdrawn,
+        COALESCE(SUM(CASE WHEN type = 'AI_PROFIT' THEN amount ELSE 0 END), 0) as totalAiProfit,
+        COALESCE(SUM(CASE WHEN type = 'ADJUSTMENT' THEN amount ELSE 0 END), 0) as totalAdjustment,
+        COUNT(*) as totalEntries
+      FROM ledger
+      WHERE LOWER(manager_address) = LOWER(?)
+    `, [managerAddress]);
+
+    const balance = (summary.totalDeposited || 0) - (summary.totalWithdrawn || 0)
+                  + (summary.totalAiProfit || 0) + (summary.totalAdjustment || 0);
+
+    const memberSummaries = await queries.all(`
+      SELECT
+        u.wallet_address as walletAddress,
+        u.name as memberName,
+        COALESCE(SUM(CASE WHEN l.type = 'DEPOSIT' THEN l.amount ELSE 0 END), 0) as deposited,
+        COALESCE(SUM(CASE WHEN l.type = 'WITHDRAWAL' THEN l.amount ELSE 0 END), 0) as withdrawn,
+        COALESCE(SUM(CASE WHEN l.type = 'AI_PROFIT' THEN l.amount ELSE 0 END), 0) as aiProfit,
+        COALESCE(SUM(CASE WHEN l.type = 'ADJUSTMENT' THEN l.amount ELSE 0 END), 0) as adjustment,
+        MAX(l.created_at) as lastActivity
+      FROM users u
+      LEFT JOIN ledger l ON LOWER(l.wallet_address) = LOWER(u.wallet_address)
+        AND LOWER(l.manager_address) = LOWER(?)
+      WHERE u.status = 'APPROVED'
+        AND LOWER(u.manager_address) = LOWER(?)
+      GROUP BY u.wallet_address
+      ORDER BY lastActivity DESC, u.name ASC
+    `, [managerAddress, managerAddress]);
+
+    res.json({
+      success: true,
+      summary: { ...summary, balance },
+      members: memberSummaries.map(m => ({
+        ...m,
+        balance: (m.deposited || 0) - (m.withdrawn || 0) + (m.aiProfit || 0) + (m.adjustment || 0)
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/:managerAddress/ledger/:memberWallet', async (req, res) => {
+  const managerAddress = req.params.managerAddress.toLowerCase().trim();
+  const memberWallet = req.params.memberWallet.toLowerCase().trim();
+  const { startDate, endDate } = req.query;
+
+  try {
+    const memberCheck = await queries.get(
+      'SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?)',
+      [memberWallet, managerAddress]
+    );
+    if (!memberCheck) {
+      return res.status(403).json({ success: false, error: 'Access denied: not your member' });
+    }
+
+    let dateFilter = '';
+    const params = [managerAddress, memberWallet];
+
+    if (startDate) {
+      dateFilter += ' AND l.created_at >= ?';
+      params.push(startDate);
+    }
+    if (endDate) {
+      dateFilter += ' AND l.created_at <= ?';
+      params.push(endDate + ' 23:59:59');
+    }
+
+    const entries = await queries.all(`
+      SELECT l.*, u.name as memberName
+      FROM ledger l
+      LEFT JOIN users u ON LOWER(l.wallet_address) = LOWER(u.wallet_address)
+      WHERE LOWER(l.manager_address) = LOWER(?)
+        AND LOWER(l.wallet_address) = LOWER(?)
+        ${dateFilter}
+      ORDER BY l.created_at DESC
+    `, params);
+
+    const summary = await queries.get(`
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END), 0) as totalDeposited,
+        COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0) as totalWithdrawn,
+        COALESCE(SUM(CASE WHEN type = 'AI_PROFIT' THEN amount ELSE 0 END), 0) as totalAiProfit,
+        COALESCE(SUM(CASE WHEN type = 'ADJUSTMENT' THEN amount ELSE 0 END), 0) as totalAdjustment
+      FROM ledger
+      WHERE LOWER(manager_address) = LOWER(?)
+        AND LOWER(wallet_address) = LOWER(?)
+    `, [managerAddress, memberWallet]);
+
+    const balance = (summary.totalDeposited || 0) - (summary.totalWithdrawn || 0)
+                  + (summary.totalAiProfit || 0) + (summary.totalAdjustment || 0);
+
+    res.json({
+      success: true,
+      entries,
+      summary: { ...summary, balance },
+      memberName: entries.length > 0 ? entries[0].memberName : ''
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/:managerAddress/ledger/:memberWallet/csv', async (req, res) => {
+  const managerAddress = req.params.managerAddress.toLowerCase().trim();
+  const memberWallet = req.params.memberWallet.toLowerCase().trim();
+
+  try {
+    const memberCheck = await queries.get(
+      'SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?)',
+      [memberWallet, managerAddress]
+    );
+    if (!memberCheck) {
+      return res.status(403).json({ success: false, error: 'Access denied: not your member' });
+    }
+
+    const entries = await queries.all(`
+      SELECT l.created_at, l.type, l.amount, l.tx_hash, l.verified, l.description
+      FROM ledger l
+      WHERE LOWER(l.manager_address) = LOWER(?)
+        AND LOWER(l.wallet_address) = LOWER(?)
+      ORDER BY l.created_at DESC
+    `, [managerAddress, memberWallet]);
+
+    const member = await queries.get('SELECT name FROM users WHERE LOWER(wallet_address) = LOWER(?)', [memberWallet]);
+    const csvName = encodeURIComponent(member?.name || memberWallet.slice(0, 8));
+    const today = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${csvName}_${today}.csv`);
+
+    const BOM = '\uFEFF';
+    let csv = BOM + '\uC77C\uC2DC,\uAD6C\uBD84,\uAE08\uC561(SUT),TX Hash,\uAC80\uC99D,\uC124\uBA85\n';
+
+    const typeLabels = { DEPOSIT: '\uC785\uAE08', WITHDRAWAL: '\uCD9C\uAE08', AI_PROFIT: 'AI\uC218\uC775', ADJUSTMENT: '\uC870\uC815' };
+
+    for (const e of entries) {
+      const type = typeLabels[e.type] || e.type;
+      const amount = e.type === 'WITHDRAWAL' ? `-${e.amount}` : `+${e.amount}`;
+      const txHash = e.tx_hash || '-';
+      const verified = e.verified ? 'Y' : 'N';
+      const desc = (e.description || '').replace(/,/g, ' ');
+      csv += `${e.created_at},${type},${amount},${txHash},${verified},${desc}\n`;
+    }
+
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/:managerAddress/ledger/:memberWallet/pdf', async (req, res) => {
+  const managerAddress = req.params.managerAddress.toLowerCase().trim();
+  const memberWallet = req.params.memberWallet.toLowerCase().trim();
+  const { startDate, endDate } = req.query;
+
+  try {
+    const memberCheck = await queries.get(
+      'SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?)',
+      [memberWallet, managerAddress]
+    );
+    if (!memberCheck) {
+      return res.status(403).json({ success: false, error: 'Access denied: not your member' });
+    }
+
+    const manager = await queries.get(
+      'SELECT name, email, phone FROM users WHERE LOWER(wallet_address) = LOWER(?)',
+      [managerAddress]
+    );
+
+    let dateFilter = '';
+    const params = [managerAddress, memberWallet];
+    if (startDate) { dateFilter += ' AND created_at >= ?'; params.push(startDate); }
+    if (endDate) { dateFilter += ' AND created_at <= ?'; params.push(endDate + ' 23:59:59'); }
+
+    const entries = await queries.all(`
+      SELECT * FROM ledger
+      WHERE LOWER(manager_address) = LOWER(?)
+        AND LOWER(wallet_address) = LOWER(?)
+        ${dateFilter}
+      ORDER BY created_at ASC
+    `, params);
+
+    const member = await queries.get(
+      'SELECT name FROM users WHERE LOWER(wallet_address) = LOWER(?)',
+      [memberWallet]
+    );
+
+    const summary = await queries.get(`
+      SELECT
+        COALESCE(SUM(CASE WHEN type = 'DEPOSIT' THEN amount ELSE 0 END), 0) as totalDeposited,
+        COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0) as totalWithdrawn,
+        COALESCE(SUM(CASE WHEN type = 'AI_PROFIT' THEN amount ELSE 0 END), 0) as totalAiProfit,
+        COALESCE(SUM(CASE WHEN type = 'ADJUSTMENT' THEN amount ELSE 0 END), 0) as totalAdjustment
+      FROM ledger
+      WHERE LOWER(manager_address) = LOWER(?)
+        AND LOWER(wallet_address) = LOWER(?)
+    `, [managerAddress, memberWallet]);
+
+    const balance = (summary.totalDeposited || 0) - (summary.totalWithdrawn || 0)
+                  + (summary.totalAiProfit || 0) + (summary.totalAdjustment || 0);
+
+    generateLedgerPdf(res, {
+      managerName: manager?.name || 'Manager',
+      managerEmail: manager?.email || '',
+      managerPhone: manager?.phone || '',
+      memberName: member?.name || memberWallet.slice(0, 10),
+      memberWallet,
+      periodStart: startDate || 'All',
+      periodEnd: endDate || new Date().toISOString().split('T')[0],
+      entries,
+      summary: { ...summary, balance }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.__private = {
   isMaskedCredential,
   resolveGateIoCredentials
 };
 
 module.exports = router;
+

@@ -55,6 +55,9 @@ function getRequestAuthToken(req) {
   if (authorization.startsWith('Bearer ')) {
     return authorization.slice(7).trim();
   }
+  if (req.query && req.query.token) {
+    return String(req.query.token).trim();
+  }
   return '';
 }
 
