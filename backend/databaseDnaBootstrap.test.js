@@ -26,7 +26,12 @@ assert.deepEqual(strategyGene.context_mask, [
   'BLACK_SWAN',
   'LOW_VOLUME',
 ]);
-assert.deepEqual(phenotype, weights);
+const expectedPadded = {
+  BUY: [-0.5, -0.4, 0.1, 0.0, 0.05, 0, 0, 0, 0, 0],
+  SELL: [0.4, 0.3, -0.1, -0.05, 0.02, 0, 0, 0, 0, 0],
+  HOLD: [0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0],
+};
+assert.deepEqual(phenotype, expectedPadded);
 assert.deepEqual(dna.mutation_log, []);
 
 console.log('database DNA bootstrap tests passed');

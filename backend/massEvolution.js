@@ -1,7 +1,7 @@
 const { queries } = require('./database');
 const { loadCandles, collectHistoricalCandles, getCandleStats } = require('./historicalCandles');
 const { safeParseJson } = require('./councilShared');
-const { DEFAULT_WEIGHTS } = require('./simulationEngine');
+const { DEFAULT_WEIGHTS, FEATURE_COUNT } = require('./simulationEngine');
 const { Worker } = require('worker_threads');
 const path = require('path');
 
@@ -25,6 +25,19 @@ const DEFAULT_CONFIG = {
 
 let activeSimulation = null;
 
+function padWeights(weights) {
+  const padded = {};
+  for (const action of ['BUY', 'SELL', 'HOLD']) {
+    const arr = Array.isArray(weights[action]) ? weights[action] : DEFAULT_WEIGHTS();
+    if (arr.length >= FEATURE_COUNT) {
+      padded[action] = arr.slice(0, FEATURE_COUNT);
+    } else {
+      padded[action] = [...arr, ...new Array(FEATURE_COUNT - arr.length).fill(0)];
+    }
+  }
+  return padded;
+}
+
 async function loadPopulation(store = queries) {
   const rows = await store.all(`
     SELECT member_id, name, faction, generation, dna_json, weights_json, status
@@ -43,6 +56,7 @@ async function loadPopulation(store = queries) {
     if (!dna.strategy_genes) dna.strategy_genes = [];
     if (!dna.mutation_log) dna.mutation_log = [];
     if (!dna.weights) dna.weights = { BUY: DEFAULT_WEIGHTS(), SELL: DEFAULT_WEIGHTS(), HOLD: DEFAULT_WEIGHTS() };
+    dna.weights = padWeights(dna.weights);
 
     return {
       memberId: row.member_id,
