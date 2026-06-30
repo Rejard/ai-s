@@ -33,6 +33,7 @@ const {
 } = require('../councilShared');
 const { runMassEvolution, getSimulationStatus, cancelSimulation, SCALE_PRESETS } = require('../massEvolution');
 const { getCandleStats } = require('../historicalCandles');
+const { parseDbTimestamp } = require('../timeUtil');
 
 const execFileAsync = promisify(execFile);
 
@@ -1115,8 +1116,8 @@ router.get('/council-stats' , async (req, res) => {
     let elapsedSeconds = 30.0;
     
     if (latestRun && latestRun.created_at && latestRun.completed_at) {
-      const createdTime = new Date(latestRun.created_at).getTime();
-      const completedTime = new Date(latestRun.completed_at).getTime();
+      const createdTime = parseDbTimestamp(latestRun.created_at);
+      const completedTime = parseDbTimestamp(latestRun.completed_at);
       if (!isNaN(createdTime) && !isNaN(completedTime)) {
         elapsedSeconds = Math.max(1, (completedTime - createdTime) / 1000);
         computationMargin = Math.max(0, parseFloat(((300 - elapsedSeconds) / 300 * 100).toFixed(1)));
@@ -1153,7 +1154,7 @@ router.get('/council-stats' , async (req, res) => {
 
     const latestBriefing = await getLatestSuccessfulBriefing(queries, ADMIN_BRIEFING_SCOPE);
     const lastBriefingUpdate = latestBriefing && latestBriefing.generatedAt
-      ? new Date(latestBriefing.generatedAt).getTime()
+      ? parseDbTimestamp(latestBriefing.generatedAt)
       : 0;
     const refreshNeeded = shouldRefreshBriefing({
       latestSuccess: latestBriefing,
@@ -1415,9 +1416,10 @@ async function performSystemDiagnostics() {
     } else {
       try {
         const weights = JSON.parse(fs.readFileSync(weightsPath, 'utf8'));
-        const hasBuy = Array.isArray(weights.BUY) && weights.BUY.length === 10;
-        const hasSell = Array.isArray(weights.SELL) && weights.SELL.length === 10;
-        const hasHold = Array.isArray(weights.HOLD) && weights.HOLD.length === 10;
+        const expectedLen = AIDL_FEATURE_ORDER.length;
+        const hasBuy = Array.isArray(weights.BUY) && weights.BUY.length === expectedLen;
+        const hasSell = Array.isArray(weights.SELL) && weights.SELL.length === expectedLen;
+        const hasHold = Array.isArray(weights.HOLD) && weights.HOLD.length === expectedLen;
         if (!hasBuy || !hasSell || !hasHold) {
           evolutionStatus = "WARNING";
           evolutionDetails = "AI 가중치 파일 스키마 형식 오류 (BUY/SELL/HOLD 키 또는 피처 배열 규격 미달)";
@@ -1449,7 +1451,7 @@ async function performSystemDiagnostics() {
         }
         warnings.push(`최근 자동 학습 에러: ${latestRun.error_message}`);
       } else if (latestRun.completed_at) {
-        const lastCompleted = new Date(latestRun.completed_at).getTime();
+        const lastCompleted = parseDbTimestamp(latestRun.completed_at);
         const elapsed = Date.now() - lastCompleted;
         if (elapsed > 24 * 60 * 60 * 1000) {
           if (evolutionStatus !== "ERROR") {
@@ -1781,7 +1783,7 @@ async function performSystemDiagnostics() {
       pipelineMsg = "수집된 학습 데이터셋이 존재하지 않습니다.";
       warnings.push("학습 데이터셋이 완전히 비어있음");
     } else {
-      const lastInserted = new Date(latestData.timestamp).getTime();
+      const lastInserted = parseDbTimestamp(latestData.timestamp);
       const elapsedHours = (Date.now() - lastInserted) / (1000 * 60 * 60);
       
       if (elapsedHours > 24) {
@@ -2027,12 +2029,12 @@ async function performSystemDiagnostics() {
 
     let modelRunTime = 0;
     if (latestRun) {
-      modelRunTime = new Date(latestRun.completed_at || latestRun.created_at).getTime();
+      modelRunTime = parseDbTimestamp(latestRun.completed_at || latestRun.created_at);
     }
 
     let trainingTime = 0;
     if (latestTraining && latestTraining.timestamp) {
-      trainingTime = new Date(latestTraining.timestamp).getTime();
+      trainingTime = parseDbTimestamp(latestTraining.timestamp);
     }
 
     const lastActivityTime = Math.max(modelRunTime, trainingTime);
@@ -2139,7 +2141,7 @@ async function performSystemDiagnostics() {
         votingMsg = `투표 모드 활성(${mode})이나 투표 기록 없음`;
         warnings.push(`AI 의회 투표 기록 없음 (모드: ${mode})`);
       } else {
-        const agoMin = Math.round((Date.now() - new Date(latestVote.timestamp).getTime()) / 60000);
+        const agoMin = Math.round((Date.now() - parseDbTimestamp(latestVote.timestamp)) / 60000);
         if (agoMin > 120) {
           votingStatus = "WARNING";
           votingMsg = `투표 지연: 최근 ${agoMin}분 전 (모드: ${mode}, 총 ${total}건)`;
@@ -2167,7 +2169,7 @@ async function performSystemDiagnostics() {
       electionMsg = "AiS 총선 기록 없음 (ais_model_runs 비어있음)";
       warnings.push("AiS 총선 기록 없음");
     } else {
-      const agoHrs = Math.round((Date.now() - new Date(latestRun.completed_at).getTime()) / (1000 * 60 * 60));
+      const agoHrs = Math.round((Date.now() - parseDbTimestamp(latestRun.completed_at)) / (1000 * 60 * 60));
       if (agoHrs > 48) {
         electionStatus = "ERROR";
         electionMsg = `총선 장기 미실행: ${agoHrs}시간 전 (${latestRun.status})`;
@@ -2245,7 +2247,7 @@ async function performSystemDiagnostics() {
       cycleMsg = "도태 기록 없음 (진화 사이클 미작동 가능성)";
       warnings.push("게놈 아카이브 0건 - 도태 사이클 미작동");
     } else {
-      const agoHrs = latestArchive ? Math.round((Date.now() - new Date(latestArchive.archived_at).getTime()) / (1000*60*60)) : 9999;
+      const agoHrs = latestArchive ? Math.round((Date.now() - parseDbTimestamp(latestArchive.archived_at)) / (1000*60*60)) : 9999;
       if (agoHrs > 48) {
         cycleStatus = "WARNING";
         cycleMsg = `도태 지연: 최근 ${agoHrs}시간 전 (총 ${totalArchives}건, 사유: ${latestArchive.archive_reason})`;
@@ -2424,7 +2426,9 @@ async function performSystemDiagnostics() {
     const latestRun = await queries.get("SELECT run_key, completed_at FROM ais_model_runs ORDER BY completed_at DESC, id DESC LIMIT 1");
     const lastEvolutionRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'last_evolution_time'");
     diagnosticsLastEvolutionTime = lastEvolutionRow && lastEvolutionRow.value ? parseInt(lastEvolutionRow.value, 10) : 0;
-    const latestRunTime = latestRun && latestRun.completed_at ? new Date(latestRun.completed_at).getTime() : 0;
+    const latestRunTime = latestRun && latestRun.completed_at
+      ? parseDbTimestamp(latestRun.completed_at)
+      : 0;
     if (!latestRunTime || !diagnosticsLastEvolutionTime) {
       timestampConsistencyStatus = "WARNING";
       timestampConsistencyMsg = `missing comparison baseline (run=${latestRunTime ? 'OK' : 'NONE'}, last_evolution_time=${diagnosticsLastEvolutionTime ? 'OK' : 'NONE'})`;
@@ -2457,7 +2461,7 @@ async function performSystemDiagnostics() {
     const latestInProgress = await queries.get("SELECT started_at FROM council_briefing_history WHERE scope = 'ADMIN' AND status = 'IN_PROGRESS' ORDER BY datetime(started_at) DESC, id DESC LIMIT 1");
     const refreshNeeded = shouldRefreshBriefing({ latestSuccess: latestSuccess ? { generatedAt: latestSuccess.generated_at } : null, now: Date.now(), lastEvolutionTime: diagnosticsLastEvolutionTime, cacheDurationMs: BRIEFING_CACHE_DURATION });
     if (latestInProgress && latestInProgress.started_at) {
-      const inProgressMinutes = Math.round((Date.now() - new Date(latestInProgress.started_at).getTime()) / 60000);
+      const inProgressMinutes = Math.round((Date.now() - parseDbTimestamp(latestInProgress.started_at)) / 60000);
       if (inProgressMinutes > 30) {
         briefingFreshnessStatus = "WARNING";
         briefingFreshnessMsg = `briefing refresh has been IN_PROGRESS for ${inProgressMinutes} minutes`;
@@ -2681,7 +2685,7 @@ async function performSystemDiagnostics() {
       if (!latest) {
         st = 'WARNING'; msg = `${modeKey} 데이터 없음 (Shadow Racing 미시작)`;
       } else {
-        const agoMin = Math.round((Date.now() - new Date(latest.timestamp).getTime()) / 60000);
+        const agoMin = Math.round((Date.now() - parseDbTimestamp(latest.timestamp)) / 60000);
         if (agoMin > 360) { st = 'ERROR'; msg = `${modeKey} 최종 기록 ${agoMin}분 전 (6시간+ 중단)`; errors.push(msg); }
         else if (agoMin > 120) { st = 'WARNING'; msg = `${modeKey} 최종 기록 ${agoMin}분 전 (2시간+ 지연)`; warnings.push(msg); }
         else { msg = `${modeKey} 최종 기록 ${agoMin}분 전`; }
@@ -2707,7 +2711,7 @@ async function performSystemDiagnostics() {
 
     const lastTrain = await queries.get("SELECT value FROM platform_settings WHERE key = 'ais_last_trained_at'");
     if (lastTrain && lastTrain.value) {
-      const hoursAgo = (Date.now() - new Date(lastTrain.value).getTime()) / (1000 * 60 * 60);
+      const hoursAgo = (Date.now() - parseDbTimestamp(lastTrain.value)) / (1000 * 60 * 60);
       if (hoursAgo > 48) { srTrainStatus = 'ERROR'; srTrainMsg = `마지막 학습 ${Math.round(hoursAgo)}시간 전 (48시간+ 중단)`; errors.push(srTrainMsg); }
       else if (hoursAgo > 36) { srTrainStatus = 'WARNING'; srTrainMsg = `마지막 학습 ${Math.round(hoursAgo)}시간 전 (36시간+ 지연)`; warnings.push(srTrainMsg); }
       else { srTrainMsg = `마지막 학습 ${Math.round(hoursAgo)}시간 전`; }
@@ -2819,6 +2823,9 @@ router.post('/run-diagnostics', async (req, res) => {
     res.status(500).json({ error: "Failed to run system diagnostics" });
   }
 });
+
+const schedulerHealthRouter = require('./schedulerHealth');
+router.use(schedulerHealthRouter);
 
 module.exports = router;
 module.exports.__private__ = {

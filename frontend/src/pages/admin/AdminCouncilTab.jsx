@@ -81,6 +81,81 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
             </div>
 
 
+            {!!(councilStats?.originStats || []).length && (
+              <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)', borderRadius: '12px', textAlign: 'left' }}>
+                <h4 style={{ fontSize: '12px', color: '#E4E4E7', margin: '0 0 10px 0', fontWeight: '800' }}>🧬 500인 후보군 탄생 경로 분포</h4>
+                {(councilStats.originStats || []).map((item) => {
+                  const label = item.origin === 'crossover_offspring'
+                    ? '교차 생산'
+                    : item.origin === 'seeded_random'
+                      ? '초기 시드'
+                      : '돌연변이 계보';
+                  const desc = item.origin === 'crossover_offspring'
+                    ? '우수 부모 DNA 교차로 탄생한 진화의 핵심'
+                    : item.origin === 'seeded_random'
+                      ? '초기화 시 무작위 생성된 1세대 원종'
+                      : 'DNA 복제 중 돌연변이로 탄생한 다양성 원천';
+                  const color = item.origin === 'crossover_offspring'
+                    ? '#10B981'
+                    : item.origin === 'seeded_random'
+                      ? '#F59E0B'
+                      : '#38BDF8';
+                  return (
+                    <div key={item.origin} style={{ marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ fontSize: '10px', color: '#E5E7EB', fontWeight: '700', width: '80px', flexShrink: 0 }}>{label}</div>
+                        <div style={{ flex: 1, height: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                          <div style={{ width: `${item.percentage}%`, height: '100%', background: color, borderRadius: '999px' }} />
+                        </div>
+                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', width: '60px', textAlign: 'right', flexShrink: 0 }}>{item.count} ({item.percentage}%)</div>
+                      </div>
+                      <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '2px', paddingLeft: '88px' }}>— {desc}</div>
+                    </div>
+                  );
+                })}
+                {!!(councilStats.activeOriginStats || []).length && (() => {
+                  const active = councilStats.activeOriginStats || [];
+                  const crossover = active.find(a => a.origin === 'crossover_offspring');
+                  const seeded = active.find(a => a.origin === 'seeded_random');
+                  const mutated = active.find(a => a.origin === 'mutation_derived');
+                  const crossPct = crossover ? crossover.percentage : 0;
+                  const seedPct = seeded ? seeded.percentage : 0;
+                  const mutPct = mutated ? mutated.percentage : 0;
+
+                  let comment = '';
+                  let commentColor = '#10B981';
+                  if (crossPct >= 80) {
+                    comment = `현역 의원 ${crossPct}%가 교차 생산 출신입니다. 진화적 자연선택이 정상 작동 중이며, 우수 유전자 조합이 상위권을 점령하고 있습니다.`;
+                  } else if (seedPct >= 50) {
+                    comment = `현역 의원 중 초기 시드가 ${seedPct}%로 다수입니다. 아직 진화 초기 단계이며, 세대가 진행될수록 교차 생산으로 대체될 것입니다.`;
+                    commentColor = '#F59E0B';
+                  } else if (mutPct >= 30) {
+                    comment = `돌연변이 출신이 ${mutPct}%로 높습니다. 실험적 전략이 상위권에 진입해 있으며, 유전적 다양성이 활발합니다.`;
+                  } else {
+                    comment = `교차 ${crossPct}%, 시드 ${seedPct}%, 변이 ${mutPct}% — 다양한 경로의 AI가 균형 있게 경쟁 중입니다.`;
+                  }
+
+                  return (
+                    <div style={{ marginTop: '6px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
+                        {active.map((item) => {
+                          const label = item.origin === 'crossover_offspring' ? '현역 교차생산' : item.origin === 'seeded_random' ? '현역 초기시드' : '현역 돌연변이';
+                          return (
+                            <div key={`active-${item.origin}`} style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
+                              <b style={{ color: '#E5E7EB' }}>{label}</b> {item.count} ({item.percentage}%)
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ fontSize: '10px', color: commentColor, lineHeight: '1.5', padding: '6px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', borderLeft: `3px solid ${commentColor}` }}>
+                        {comment}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {councilStats.healthReport && (
               <div style={{
                 background: 'rgba(0,0,0,0.3)',
@@ -332,44 +407,7 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
         )}
       </div>
 
-      {!!(councilStats?.originStats || []).length && (
-        <div className="glass-card" style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)', textAlign: 'left' }}>
-          <h4 style={{ fontSize: '12px', color: '#E4E4E7', margin: '0 0 10px 0', fontWeight: '800' }}>🧬 500인 후보군 탄생 경로 분포</h4>
-          {(councilStats.originStats || []).map((item) => {
-            const label = item.origin === 'crossover_offspring'
-              ? '교차 생산'
-              : item.origin === 'seeded_random'
-                ? '초기 시드'
-                : '돌연변이 계보';
-            const color = item.origin === 'crossover_offspring'
-              ? '#10B981'
-              : item.origin === 'seeded_random'
-                ? '#F59E0B'
-                : '#38BDF8';
-            return (
-              <div key={item.origin} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ fontSize: '10px', color: '#E5E7EB', fontWeight: '700', width: '80px', flexShrink: 0 }}>{label}</div>
-                <div style={{ flex: 1, height: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                  <div style={{ width: `${item.percentage}%`, height: '100%', background: color, borderRadius: '999px' }} />
-                </div>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)', width: '60px', textAlign: 'right', flexShrink: 0 }}>{item.count} ({item.percentage}%)</div>
-              </div>
-            );
-          })}
-          {!!(councilStats.activeOriginStats || []).length && (
-            <div style={{ marginTop: '6px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {(councilStats.activeOriginStats || []).map((item) => {
-                const label = item.origin === 'crossover_offspring' ? '현역 교차생산' : item.origin === 'seeded_random' ? '현역 초기시드' : '현역 돌연변이';
-                return (
-                  <div key={`active-${item.origin}`} style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
-                    <b style={{ color: '#E5E7EB' }}>{label}</b> {item.count} ({item.percentage}%)
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+
 
     </div>
   );

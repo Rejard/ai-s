@@ -26,6 +26,7 @@ import SutPriceCard from '../components/SutPriceCard';
 import SutPriceChart from '../components/SutPriceChart';
 import { isAdminGoogleAccount, isManagerAccount } from '../lib/accountIdentity';
 import { showFriendlyError } from '../lib/errorHandler';
+import { formatKoreanDateTime } from '../lib/dateTime';
 
 function UserPcDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
@@ -579,7 +580,7 @@ function UserPcDashboard({ walletAddress, userData, onLogout }) {
                           {isDeposit ? `📥 ${DASHBOARD_COPY.depositCompleted}` : `📤 ${DASHBOARD_COPY.withdrawalPending}`}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {new Date(tx.createdAt).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
+                          {formatKoreanDateTime(tx.createdAt)}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>

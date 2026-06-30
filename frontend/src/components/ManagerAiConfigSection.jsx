@@ -241,7 +241,7 @@ function ManagerAiConfigSection({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
           <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 12px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: 'var(--text-muted)' }}>매니저 SUT 총 보유 (지갑 + 거래소):</span>
+              <span style={{ color: 'var(--text-muted)' }}>👤 매니저 SUT 총 보유 (지갑 + 거래소):</span>
               <span style={{ color: '#60A5FA', fontWeight: '700' }}>{(walletSutBalance + (gateioBalance ? parseFloat(gateioBalance.SUT || 0) : 0)).toFixed(2)} SUT</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '8px', borderLeft: '2px solid rgba(96, 165, 250, 0.3)', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -250,23 +250,23 @@ function ManagerAiConfigSection({
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>회원 누적 예치금 (누적 입금액):</span>
-            <span style={{ color: '#3B82F6', fontWeight: '700' }}>{stats ? stats.totalDeposited.toFixed(2) : '0.00'} SUT</span>
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59,130,246,0.08)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.18)' }}>
-            <span style={{ color: '#BFDBFE' }}>매니저 본인 입금:</span>
+            <span style={{ color: '#BFDBFE' }}>👤 매니저 본인 입금:</span>
             <span style={{ color: '#60A5FA', fontWeight: '700' }}>{stats ? Number(stats.managerSelfDeposited || 0).toFixed(2) : '0.00'} SUT</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>회원 누적 배분액 (출금 완료):</span>
+            <span style={{ color: 'var(--text-muted)' }}>👥 회원 누적 예치금 (누적 입금액):</span>
+            <span style={{ color: '#3B82F6', fontWeight: '700' }}>{stats ? stats.totalDeposited.toFixed(2) : '0.00'} SUT</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>👥 회원 누적 배분액 (출금 완료):</span>
             <span style={{ color: '#F59E0B', fontWeight: '700' }}>{stats ? stats.totalDistributed.toFixed(2) : '0.00'} SUT</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>회원 총 운용 자산 (볼트 잔고):</span>
+            <span style={{ color: 'var(--text-muted)' }}>👥 회원 총 운용 자산 (볼트 잔고):</span>
             <span style={{ color: '#A78BFA', fontWeight: '700' }}>{vaultSutBalance.toFixed(2)} SUT</span>
           </div>
         </div>

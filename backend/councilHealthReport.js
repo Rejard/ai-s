@@ -3,20 +3,21 @@ function parseRunKeyTimestamp(runKey) {
   if (!match) return null;
 
   const [, year, month, day, hour, minute, second] = match;
-  return new Date(
+  return new Date(Date.UTC(
     Number(year),
     Number(month) - 1,
     Number(day),
     Number(hour),
     Number(minute),
     Number(second)
-  );
+  ));
 }
 
 function parseTimestamp(value) {
   if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const { parseDbTimestamp } = require('./timeUtil');
+  const ms = parseDbTimestamp(value);
+  return ms ? new Date(ms) : null;
 }
 
 function computeDiversity(allMembers) {

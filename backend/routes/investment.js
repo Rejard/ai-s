@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const { ethers } = require('ethers');
 const { queries } = require('../database');
+const { parseDbTimestamp } = require('../timeUtil');
 const { verifyTransactionOnChain, insertLedgerEntry, logAudit } = require('../integrityCheck');
 const {
   extractCompleteGeminiText,
@@ -541,7 +542,7 @@ router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAc
 
     const latestBriefing = await getLatestSuccessfulBriefing(queries, INVESTMENT_BRIEFING_SCOPE);
     const lastBriefingUpdate = latestBriefing && latestBriefing.generatedAt
-      ? new Date(latestBriefing.generatedAt).getTime()
+      ? parseDbTimestamp(latestBriefing.generatedAt)
       : 0;
     const refreshNeeded = shouldRefreshBriefing({
       latestSuccess: latestBriefing,

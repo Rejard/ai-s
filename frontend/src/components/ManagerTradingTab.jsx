@@ -15,7 +15,8 @@ function ManagerTradingTab({
   handleOrderAmountChange, handleOrderPriceChange, handleOrderTotalChange,
   handleGateIoOrderClick, confirmMode, submittingOrder,
   handleCancelOrder, sutPrice,
-  ManagerAiConfigSection
+  ManagerAiConfigSection,
+  handleApproveOperator, approvingOperator
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -42,6 +43,8 @@ function ManagerTradingTab({
         isSavingCredentials={isSavingCredentials}
         handleClearApiKeys={handleClearApiKeys}
         setShowSendSutModal={setShowSendSutModal}
+        handleApproveOperator={handleApproveOperator}
+        approvingOperator={approvingOperator}
       />
 
       <ManagerAiDecisionHistory logs={aiLogs} isMobile />

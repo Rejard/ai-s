@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
+const { toKstDateString } = require('./timeUtil');
 
 const FONT_REGULAR = path.join(__dirname, 'fonts', 'NotoSansKR-Regular.otf');
 const FONT_BOLD = path.join(__dirname, 'fonts', 'NotoSansKR-Bold.otf');
@@ -26,7 +27,7 @@ function generateLedgerPdf(res, { managerName, managerEmail, managerPhone, membe
   const LEFT = 50;
   const RIGHT = 545;
   const W = RIGHT - LEFT;
-  const today = new Date().toISOString().split('T')[0];
+  const today = toKstDateString();
 
   font(true);
   doc.fontSize(18).fillColor('#000000').text('AiS 거래 명세서', LEFT, doc.y, { align: 'center', width: W });

@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { safeExecSync } = require('../safeExec');
 const { queries } = require('../database');
+const { parseDbTimestamp } = require('../timeUtil');
 
 function pct(status) {
   if (status === 'OK') return 100;
@@ -358,7 +359,7 @@ async function runExtendedDiagnostics() {
     ).catch(() => []);
     if (stuckRuns.length > 0) {
       const oldest = stuckRuns[0];
-      const age = Date.now() - new Date(oldest.created_at).getTime();
+      const age = Date.now() - parseDbTimestamp(oldest.created_at);
       if (age > 30 * 60 * 1000) {
         stuckStatus = 'WARNING';
         stuckMsg = `${stuckRuns.length} training run(s) stuck in RUNNING state for ${Math.round(age / 60000)}min`;
@@ -678,7 +679,7 @@ async function runExtendedDiagnostics() {
     ).catch(() => []);
     if (stuckBriefings.length > 0) {
       const oldest = stuckBriefings[0];
-      const age = Date.now() - new Date(oldest.created_at).getTime();
+      const age = Date.now() - parseDbTimestamp(oldest.created_at);
       if (age > 60 * 60 * 1000) {
         bipStatus = 'WARNING';
         bipMsg = `${stuckBriefings.length} briefing(s) stuck IN_PROGRESS for ${Math.round(age / 60000)}min — process may have restarted mid-briefing`;
@@ -781,7 +782,7 @@ async function runExtendedDiagnostics() {
       ORDER BY evaluation_due_at ASC LIMIT 1
     `).catch(() => null);
     if (oldest && oldest.evaluation_due_at) {
-      const age = Date.now() - new Date(oldest.evaluation_due_at).getTime();
+      const age = Date.now() - parseDbTimestamp(oldest.evaluation_due_at);
       const ageMin = Math.round(age / 60000);
       if (age > 6 * 3600000) {
         pendStatus = 'WARNING';

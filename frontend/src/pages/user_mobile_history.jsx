@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { API_BASE } from '../App';
+import { formatKoreanDateTime } from '../lib/dateTime';
 
 function UserMobileHistory({ walletAddress }) {
   const navigate = useNavigate();
@@ -27,13 +28,7 @@ function UserMobileHistory({ walletAddress }) {
     }
   }, [walletAddress]);
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleString('ko-KR', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-    });
-  };
+  const formatDate = (dateStr) => formatKoreanDateTime(dateStr);
 
   const getStatusBadge = (status) => {
     switch (status) {

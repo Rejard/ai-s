@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users, Receipt, ExternalLink } from 'lucide-react';
+import { formatKoreanDateTime } from '../lib/dateTime';
 import ManagerManagementSection from '../components/ManagerManagementSection';
 import ManagerSelfDepositHistory from '../components/ManagerSelfDepositHistory';
 
@@ -199,7 +200,7 @@ function ManagerMembersTab({
                         </span>
                       </td>
                       <td style={{ padding: '12px 8px', color: 'var(--text-dark)', fontSize: '9px' }}>
-                        {new Date(user.joined_at).toLocaleDateString()}
+                        {formatKoreanDateTime(user.joined_at)}
                       </td>
                     </tr>
                   );

@@ -7,11 +7,12 @@ function ManagerAssetTab({
   gateioBalance, yieldHistory, vaultSutBalance, walletSutBalance, stats
 }) {
   const statCards = [
-    { label: '회원 총 예치', value: `${stats?.totalDeposited || 0} SUT`, color: '#3B82F6' },
-    { label: '총 지급액', value: `${stats?.totalDistributed || 0} SUT`, color: '#F59E0B' },
-    { label: 'Gate.io SUT', value: `${gateioBalance ? parseFloat(gateioBalance.SUT || 0).toFixed(2) : '0'} SUT`, color: '#60A5FA' },
-    { label: '지갑 SUT', value: `${walletSutBalance?.toFixed ? walletSutBalance.toFixed(2) : '0'} SUT`, color: '#A78BFA' },
-    { label: '위탁 SUT', value: `${vaultSutBalance?.toFixed ? vaultSutBalance.toFixed(2) : '0'} SUT`, color: '#8B5CF6' },
+    { label: '👥 회원 총 예치', value: `${stats?.totalDeposited || 0} SUT`, color: '#3B82F6' },
+    { label: '👥 회원 총 지급액', value: `${stats?.totalDistributed || 0} SUT`, color: '#F59E0B' },
+    { label: '👥 회원 위탁 SUT', value: `${vaultSutBalance?.toFixed ? vaultSutBalance.toFixed(2) : '0'} SUT`, color: '#8B5CF6' },
+    { label: '👤 매니저 본인 입금', value: `${Number(stats?.managerSelfDeposited || 0).toFixed(2)} SUT`, color: '#60A5FA' },
+    { label: '👤 Gate.io SUT', value: `${gateioBalance ? parseFloat(gateioBalance.SUT || 0).toFixed(2) : '0'} SUT`, color: '#60A5FA' },
+    { label: '👤 월렛지갑 SUT', value: `${walletSutBalance?.toFixed ? walletSutBalance.toFixed(2) : '0'} SUT`, color: '#A78BFA' },
   ];
 
   return (

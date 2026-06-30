@@ -52,6 +52,9 @@ export function useAdminLogic(managerEmail) {
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
   const [runningDiagnostics, setRunningDiagnostics] = useState(false);
 
+  const [schedulerData, setSchedulerData] = useState(null);
+  const [loadingScheduler, setLoadingScheduler] = useState(false);
+
   const ADMIN_EMAIL = 'lemaiiisk@gmail.com'.toLowerCase();
   const isAdmin = managerEmail && managerEmail.toLowerCase().trim() === ADMIN_EMAIL;
 
@@ -220,6 +223,21 @@ export function useAdminLogic(managerEmail) {
     }
   };
 
+  const fetchSchedulerHealth = async () => {
+    if (!isAdmin) return;
+    setLoadingScheduler(true);
+    try {
+      const res = await axios.get(`${API_BASE}/admin/scheduler-health`, getAdminHeaders());
+      if (res.data.success) {
+        setSchedulerData(res.data);
+      }
+    } catch (err) {
+      console.error('스케줄러 상태 로드 실패:', err);
+    } finally {
+      setLoadingScheduler(false);
+    }
+  };
+
   const runDiagnostics = async () => {
     if (!isAdmin) return;
     setRunningDiagnostics(true);
@@ -371,6 +389,7 @@ export function useAdminLogic(managerEmail) {
     fetchTrainingStats();
     fetchCouncilStats();
     fetchDiagnostics();
+    fetchSchedulerHealth();
 
     const interval = setInterval(() => {
       fetchManagers();
@@ -380,6 +399,7 @@ export function useAdminLogic(managerEmail) {
       fetchTrainingStats();
       fetchCouncilStats();
       fetchDiagnostics();
+      fetchSchedulerHealth();
     }, 60000);
     return () => clearInterval(interval);
   }, [managerEmail]);
@@ -499,7 +519,10 @@ export function useAdminLogic(managerEmail) {
     loadingDiagnostics,
     runningDiagnostics,
     fetchDiagnostics,
-    runDiagnostics
+    runDiagnostics,
+    schedulerData,
+    loadingScheduler,
+    fetchSchedulerHealth
   };
 
 }

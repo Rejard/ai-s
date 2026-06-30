@@ -142,6 +142,7 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
   const [showSendSutModal, setShowSendSutModal] = useState(false);
   const [sendSutAmount, setSendSutAmount] = useState('');
   const [sendingSut, setSendingSut] = useState(false);
+  const [approvingOperator, setApprovingOperator] = useState(false);
 
   const [selectedIdCard, setSelectedIdCard] = useState(null);
   const [editingUserWallet, setEditingUserWallet] = useState(null);
@@ -332,6 +333,49 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
       alert(`❌ 전송 실패: ${err.message || err}`);
     } finally {
       setSendingSut(false);
+    }
+  };
+
+  const handleApproveOperator = async () => {
+    if (!window.ethereum) {
+      alert('MetaMask 또는 Trust Wallet 브라우저 확장이 필요합니다.');
+      return;
+    }
+    setApprovingOperator(true);
+    try {
+      const headers = getManagerHeaders();
+      const opRes = await axios.get(`${API_BASE}/manager/operator-address`, headers);
+      const operatorAddress = opRes.data?.operatorAddress;
+      if (!operatorAddress) {
+        alert('서버에서 Operator 지갑 주소를 가져올 수 없습니다.');
+        return;
+      }
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== '0x89') {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
+      }
+      const signer = await browserProvider.getSigner();
+      const sutContract = new ethers.Contract(
+        '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55',
+        ['function approve(address spender, uint256 value) public returns (bool)'],
+        signer
+      );
+      const approvalAmount = ethers.parseUnits('1000000', 18);
+      const tx = await sutContract.approve(operatorAddress, approvalAmount);
+      alert('승인 트랜잭션을 전송했습니다. 블록 확인을 기다립니다...');
+      await tx.wait(1);
+      alert('✅ Operator 지갑 SUT 승인 완료! 이제 모바일에서 서버 대행 송금이 가능합니다.');
+    } catch (err) {
+      console.error(err);
+      if (err?.code === 'ACTION_REJECTED' || err?.message?.includes('rejected')) {
+        alert('지갑에서 승인 서명이 취소되었습니다.');
+      } else {
+        alert(`❌ 승인 실패: ${err.message || err}`);
+      }
+    } finally {
+      setApprovingOperator(false);
     }
   };
 
@@ -1424,6 +1468,15 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
                   style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                 >
                   <ArrowUpDown size={12} /> 내 지갑에서 Gate.io로 SUT 송금
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleApproveOperator}
+                  disabled={approvingOperator}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}
+                >
+                  <ShieldCheck size={12} /> {approvingOperator ? '승인 처리중...' : '📱 모바일 서버 대행 송금 활성화 (1회)'}
                 </button>
               </div>
             </div>

@@ -134,15 +134,45 @@ async function triggerOnChainDistribution(userWallet, referrer1, referrer2, amou
   }
 }
 
-function updateEnvFile(usdtAddr, vaultAddr) {
-  const envPath = path.resolve(__dirname, '.env');
-  if (!fs.existsSync(envPath)) return;
+const SUT_CONTRACT_ADDRESS = process.env.SUT_CONTRACT_ADDRESS || '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
 
-  let envContent = fs.readFileSync(envPath, 'utf8');
-  envContent = envContent.replace(/USDT_CONTRACT_ADDRESS=.*/, `USDT_CONTRACT_ADDRESS=${usdtAddr}`);
-  envContent = envContent.replace(/VAULT_CONTRACT_ADDRESS=.*/, `VAULT_CONTRACT_ADDRESS=${vaultAddr}`);
+async function serverTransferSutFrom(fromAddress, toAddress, amountStr) {
+  if (isSimulationMode) {
+    throw new Error('서버가 시뮬레이션 모드입니다. 온체인 전송을 수행할 수 없습니다.');
+  }
 
-  fs.writeFileSync(envPath, envContent, 'utf8');
+  const sutAbi = [
+    "function transferFrom(address, address, uint256) returns (bool)",
+    "function allowance(address, address) view returns (uint256)"
+  ];
+  const sutContract = new ethers.Contract(SUT_CONTRACT_ADDRESS, sutAbi, wallet);
+  const amount = ethers.parseUnits(String(amountStr), 18);
+
+  const allowance = await sutContract.allowance(fromAddress, wallet.address);
+  if (allowance < amount) {
+    const error = new Error('INSUFFICIENT_ALLOWANCE');
+    error.code = 'INSUFFICIENT_ALLOWANCE';
+    error.currentAllowance = ethers.formatUnits(allowance, 18);
+    error.requiredAmount = amountStr;
+    throw error;
+  }
+
+  const gasEstimate = await sutContract.transferFrom.estimateGas(fromAddress, toAddress, amount);
+  const gasLimit = gasEstimate + (gasEstimate * 20n / 100n);
+
+  const tx = await sutContract.transferFrom(fromAddress, toAddress, amount, { gasLimit });
+  const receipt = await tx.wait(1);
+
+  if (!receipt || (receipt.status !== undefined && Number(receipt.status) !== 1)) {
+    throw new Error('transferFrom 트랜잭션이 체인에서 실패했습니다.');
+  }
+
+  return { txHash: tx.hash, receipt };
+}
+
+function getOperatorAddress() {
+  if (isSimulationMode || !wallet) return null;
+  return wallet.address;
 }
 
 module.exports = {
@@ -150,6 +180,8 @@ module.exports = {
   triggerOnChainDistribution,
   isSimulationMode: () => isSimulationMode,
   getAddresses: () => ({ usdtAddress, vaultAddress }),
+  getOperatorAddress,
+  serverTransferSutFrom,
   MockUSDT_ABI,
   PlatformVault_ABI
 };

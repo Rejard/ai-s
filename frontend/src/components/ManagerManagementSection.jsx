@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldAlert, Receipt, Eye, Check, X, Users } from 'lucide-react';
+import { formatKoreanDateTime } from '../lib/dateTime';
 
 function ManagerManagementSection({
   pendingUsers,
@@ -73,7 +74,7 @@ function ManagerManagementSection({
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>구글인증: {user.email}</span>
                   </div>
                   <span style={{ fontSize: '9px', color: 'var(--text-dark)' }}>
-                    {new Date(user.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatKoreanDateTime(user.joined_at)}
                   </span>
                 </div>
 
@@ -81,7 +82,7 @@ function ManagerManagementSection({
                   <div style={{ wordBreak: 'break-all' }}>지갑: <b>{user.wallet_address}</b></div>
                   <div>전화번호: {user.phone}</div>
                   {(() => {
-                    const diffHours = 24 - (Date.now() - new Date(user.joined_at).getTime()) / (1000 * 60 * 60);
+                    const diffHours = 24 - (Date.now() - new Date(user.joined_at + 'Z').getTime()) / (1000 * 60 * 60);
                     const remainingHours = Math.max(0, Math.floor(diffHours));
                     const remainingMins = Math.max(0, Math.floor((diffHours - remainingHours) * 60));
                     const isExpired = diffHours <= 0;
@@ -145,7 +146,7 @@ function ManagerManagementSection({
               <div key={req.id} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#F3F4F6' }}>{req.name} 회원의 지급 요청</div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>{new Date(req.created_at).toLocaleString()}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-dark)' }}>{formatKoreanDateTime(req.created_at)}</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>

@@ -11,7 +11,7 @@ const {
 
 assert.strictEqual(
   toKstSqliteTimestamp(new Date('2026-06-09T03:00:00.000Z')),
-  '2026-06-09 12:00:00'
+  '2026-06-09 03:00:00'
 );
 assert.strictEqual(
   addMinutesToSqliteTimestamp('2026-06-09 12:00:00', 5),

@@ -1,3 +1,5 @@
+const { parseDbTimestamp } = require('./timeUtil');
+
 async function ensureCouncilBriefingHistorySchema(store) {
   await store.run(`
     CREATE TABLE IF NOT EXISTS council_briefing_history (
@@ -101,7 +103,7 @@ function shouldRefreshBriefing({ latestSuccess, now, lastEvolutionTime, cacheDur
   if (!latestSuccess) return true;
 
   const generatedAtMs = latestSuccess.generatedAt
-    ? new Date(latestSuccess.generatedAt).getTime()
+    ? parseDbTimestamp(latestSuccess.generatedAt)
     : 0;
 
   if (!generatedAtMs) return true;

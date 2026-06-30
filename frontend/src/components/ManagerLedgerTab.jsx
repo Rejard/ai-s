@@ -10,7 +10,7 @@ function ManagerLedgerTab({ walletAddress, managerEmail }) {
   const [memberSummary, setMemberSummary] = useState(null);
   const [memberName, setMemberName] = useState('');
   const [startDate, setStartDate] = useState('2026-07-01');
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 9 * 3600000).toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
   const [loadingMember, setLoadingMember] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -276,8 +276,8 @@ function ManagerLedgerTab({ walletAddress, managerEmail }) {
                 const end = new Date();
                 const start = new Date();
                 start.setDate(start.getDate() - days);
-                const startStr = start.toISOString().split('T')[0];
-                const endStr = end.toISOString().split('T')[0];
+                const startStr = new Date(start.getTime() + 9 * 3600000).toISOString().split('T')[0];
+                const endStr = new Date(end.getTime() + 9 * 3600000).toISOString().split('T')[0];
                 const isActive = startDate === startStr && endDate === endStr;
                 return (
                   <button

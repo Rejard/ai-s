@@ -12,15 +12,12 @@ const normalizeSqliteTimestamp = (value) => String(value || '')
   .replace(/Z$/, '')
   .slice(0, 19);
 
-function toKstSqliteTimestamp(date = new Date()) {
+function toUtcSqliteTimestamp(date = new Date()) {
   const instant = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(instant.getTime())) {
     throw new Error('A valid date is required.');
   }
-  return new Date(instant.getTime() + 9 * 60 * 60 * 1000)
-    .toISOString()
-    .replace('T', ' ')
-    .slice(0, 19);
+  return instant.toISOString().replace('T', ' ').slice(0, 19);
 }
 
 function addMinutesToSqliteTimestamp(timestamp, minutes) {
@@ -249,7 +246,8 @@ module.exports = {
   MIN_BENCHMARK_MARGIN,
   MIN_CLASS_OBSERVATIONS,
   normalizeSqliteTimestamp,
-  toKstSqliteTimestamp,
+  toUtcSqliteTimestamp,
+  toKstSqliteTimestamp: toUtcSqliteTimestamp,
   addMinutesToSqliteTimestamp,
   isEvaluationDue,
   evaluateDecision,

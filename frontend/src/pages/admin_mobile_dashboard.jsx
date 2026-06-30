@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldAlert, ShieldCheck,
-  ArrowLeft, BarChart3, Home, Settings, Users, Activity
+  ArrowLeft, BarChart3, Home, Settings, Users, Activity, Timer
 } from 'lucide-react';
 import { useAdminLogic } from '../hooks/useAdminLogic';
 import { ADMIN_DIAGNOSTIC_SECTIONS } from '../lib/adminDiagnosticsSections';
@@ -12,6 +12,7 @@ import AdminSettingsTab from './admin/AdminSettingsTab';
 import AdminEvaluationTab from './admin/AdminEvaluationTab';
 import AdminDiagnosticsTab from './admin/AdminDiagnosticsTab';
 import AdminCouncilTab from './admin/AdminCouncilTab';
+import AdminSchedulerTab from './admin/AdminSchedulerTab';
 
 function AdminMobileDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
@@ -73,7 +74,10 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
     diagnosticsData,
     loadingDiagnostics,
     runningDiagnostics,
-    runDiagnostics
+    runDiagnostics,
+    schedulerData,
+    loadingScheduler,
+    fetchSchedulerHealth
   } = useAdminLogic(managerEmail);
 
   if (!isAdmin) {
@@ -205,6 +209,14 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
           />
         )}
 
+        {activeTab === 'scheduler' && (
+          <AdminSchedulerTab
+            schedulerData={schedulerData}
+            loadingScheduler={loadingScheduler}
+            fetchSchedulerHealth={fetchSchedulerHealth}
+          />
+        )}
+
       </main>
 
       <div style={{
@@ -224,40 +236,48 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
           onClick={() => setActiveTab('home')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'home' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          <Home size={22} />
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>자산관제</span>
+          <Home size={20} />
+          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>자산관제</span>
         </button>
 
         <button
           onClick={() => setActiveTab('council')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'council' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          <Users size={22} />
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 의회</span>
+          <Users size={20} />
+          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>AI 의회</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'settings' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          <Settings size={22} />
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 제어</span>
+          <Settings size={20} />
+          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>AI 제어</span>
         </button>
 
         <button
           onClick={() => setActiveTab('evaluation')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'evaluation' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          <BarChart3 size={22} />
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>AI 평가</span>
+          <BarChart3 size={20} />
+          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>AI 평가</span>
         </button>
 
         <button
           onClick={() => setActiveTab('diagnostics')}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'diagnostics' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
-          <Activity size={22} />
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>자가 진단</span>
+          <Activity size={20} />
+          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>자가 진단</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('scheduler')}
+          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: activeTab === 'scheduler' ? '#8B5CF6' : 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <Timer size={20} />
+          <span style={{ fontSize: '9px', fontWeight: 'bold' }}>스케줄러</span>
         </button>
       </div>
     </div>

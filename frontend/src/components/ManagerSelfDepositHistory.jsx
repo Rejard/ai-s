@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExternalLink, Receipt } from 'lucide-react';
+import { formatKoreanDateTime } from '../lib/dateTime';
 
 function ManagerSelfDepositHistory({ payments = [], totalDeposited = 0, isMobile = false }) {
   return (
@@ -67,7 +68,7 @@ function ManagerSelfDepositHistory({ payments = [], totalDeposited = 0, isMobile
                   +{Number(pay.amount || 0).toFixed(2)} SUT
                 </div>
                 <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                  {pay.created_at ? new Date(pay.created_at).toLocaleString() : ''}
+                  {pay.created_at ? formatKoreanDateTime(pay.created_at) : ''}
                 </div>
               </div>
             </div>

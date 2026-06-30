@@ -123,6 +123,7 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
   const [showSendSutModal, setShowSendSutModal] = useState(false);
   const [sendSutAmount, setSendSutAmount] = useState('');
   const [sendingSut, setSendingSut] = useState(false);
+  const [approvingOperator, setApprovingOperator] = useState(false);
 
   const getManagerHeaders = () => buildManagerHeaders({ managerEmail, getStorageItem: (key) => localStorage.getItem(key) });
 
@@ -173,10 +174,53 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
     if (!depositAddr) { alert('Gate.io SUT 입금 주소를 로컬 설정에서 먼저 입력하고 저장해 주세요.'); return; }
     if (!/^0x[a-fA-F0-9]{40}$/.test(depositAddr.trim())) { alert('올바른 폴리곤 지갑 주소 형식이 아닙니다.'); return; }
     if (!sendSutAmount || parseFloat(sendSutAmount) <= 0) { alert('유효한 수량을 입력해 주세요.'); return; }
-    if (!window.ethereum) { alert('설치된 메타마스크 혹은 트러스트월렛 브라우저 지갑을 찾을 수 없습니다.'); return; }
+    if (!window.ethereum) {
+      setSendingSut(true);
+      try {
+        const headers = buildManagerHeaders({ managerEmail, getStorageItem: (key) => localStorage.getItem(key) });
+        const res = await axios.post(`${API_BASE}/manager/server-transfer-sut`, { amount: sendSutAmount }, headers);
+        if (res.data.success) { alert(`✅ SUT 서버 대행 전송 완료.\nTxHash: ${res.data.txHash}`); setShowSendSutModal(false); setSendSutAmount(''); }
+        else { alert(`❌ 전송 실패: ${res.data.message}`); }
+      } catch (err) { alert(`❌ 서버 전송 실패: ${err.response?.data?.message || err.message}`); }
+      finally { setSendingSut(false); }
+      return;
+    }
     setSendingSut(true);
     try { const transferTx = await sendSutToGateIoDepositAddress({ ethereum: window.ethereum, ethersLib: ethers, depositAddress: depositAddr, amount: sendSutAmount }); alert(`SUT transfer completed to Gate.io deposit address.\nTxHash: ${transferTx.hash}`); setShowSendSutModal(false); setSendSutAmount(''); }
     catch (err) { alert(`❌ 전송 실패: ${err.message || err}`); } finally { setSendingSut(false); }
+  };
+
+  const handleApproveOperator = async () => {
+    if (!window.ethereum) {
+      alert('PC 브라우저의 MetaMask 확장이 필요합니다. PC에서 진행해 주세요.');
+      return;
+    }
+    setApprovingOperator(true);
+    try {
+      const headers = getManagerHeaders();
+      const opRes = await axios.get(`${API_BASE}/manager/operator-address`, headers);
+      const operatorAddress = opRes.data?.operatorAddress;
+      if (!operatorAddress) { alert('서버에서 Operator 지갑 주소를 가져올 수 없습니다.'); return; }
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== '0x89') {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
+      }
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await browserProvider.getSigner();
+      const sutContract = new ethers.Contract(
+        '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55',
+        ['function approve(address spender, uint256 value) public returns (bool)'],
+        signer
+      );
+      const tx = await sutContract.approve(operatorAddress, ethers.parseUnits('1000000', 18));
+      alert('승인 트랜잭션 전송 완료. 블록 확인 대기중...');
+      await tx.wait(1);
+      alert('✅ Operator 지갑 SUT 승인 완료! 이제 모바일에서 서버 대행 송금이 가능합니다.');
+    } catch (err) {
+      if (err?.code === 'ACTION_REJECTED' || err?.message?.includes('rejected')) { alert('지갑에서 승인 서명이 취소되었습니다.'); }
+      else { alert(`❌ 승인 실패: ${err.message || err}`); }
+    } finally { setApprovingOperator(false); }
   };
 
   const handleSyncTransactions = async () => {
@@ -397,6 +441,8 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
           confirmMode={confirmMode} submittingOrder={submittingOrder}
           handleCancelOrder={handleCancelOrder} sutPrice={sutPrice}
           ManagerAiConfigSection={ManagerAiConfigSection}
+          handleApproveOperator={handleApproveOperator}
+          approvingOperator={approvingOperator}
         />
       )}
 

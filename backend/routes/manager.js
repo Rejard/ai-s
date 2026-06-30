@@ -4,6 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { queries } = require('../database');
+const { toKstDateString } = require('../timeUtil');
 const { getGateIoBalances, createGateIoOrder, getGateIoMyTrades, getGateIoOpenOrders, cancelGateIoOrder, getGateIoDeposits, getGateIoWithdrawals } = require('../gateioHelper');
 const { decryptText, encryptText } = require('../secureCredentials');
 const { generateLedgerPdf } = require('../pdfGenerator');
@@ -222,7 +223,7 @@ router.post('/approve-user', async (req, res) => {
     await queries.run(`
       UPDATE users
       SET status = 'APPROVED',
-          approved_at = datetime('now', 'localtime')
+          approved_at = datetime('now')
       WHERE LOWER(wallet_address) = LOWER(?)
         AND LOWER(manager_address) = LOWER(?)
         AND COALESCE(is_manager, 0) = 0
@@ -719,6 +720,55 @@ router.post('/clear-gateio-keys', async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+router.post('/server-transfer-sut', async (req, res) => {
+  const { amount } = req.body;
+  const managerEmail = req.managerEmail;
+  const managerWallet = req.managerWallet;
+
+  const parsedAmount = parseFloat(amount);
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ success: false, message: '유효한 송금 수량을 입력해 주세요.' });
+  }
+
+  if (!managerWallet || !/^0x[a-fA-F0-9]{40}$/.test(managerWallet)) {
+    return res.status(400).json({ success: false, message: '매니저 지갑 주소를 찾을 수 없습니다.' });
+  }
+
+  try {
+    const credRow = await queries.get(
+      "SELECT deposit_address FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)",
+      [managerEmail]
+    );
+    const depositAddress = credRow?.deposit_address?.trim() || '';
+    if (!depositAddress || !/^0x[a-fA-F0-9]{40}$/.test(depositAddress)) {
+      return res.status(400).json({ success: false, message: 'Gate.io SUT 입금 주소가 서버에 저장되어 있지 않습니다. PC에서 먼저 설정해 주세요.' });
+    }
+
+    const { serverTransferSutFrom } = require('../contractHelper');
+    const result = await serverTransferSutFrom(managerWallet, depositAddress, String(parsedAmount));
+
+    console.log(`[SERVER TRANSFER] ${managerEmail}: ${parsedAmount} SUT -> Gate.io (${depositAddress}), TxHash: ${result.txHash}`);
+    res.json({ success: true, txHash: result.txHash, message: `${parsedAmount} SUT가 Gate.io로 전송되었습니다.` });
+  } catch (err) {
+    console.error(`[SERVER TRANSFER ERROR] ${managerEmail}:`, err.message);
+
+    if (err.code === 'INSUFFICIENT_ALLOWANCE') {
+      return res.status(400).json({
+        success: false,
+        message: `Operator 지갑에 대한 SUT 승인(approve)이 부족합니다. PC에서 "서버 대행 송금 활성화" 버튼을 먼저 눌러 주세요. (현재 승인량: ${err.currentAllowance} SUT)`
+      });
+    }
+
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.get('/operator-address', async (req, res) => {
+  const { getOperatorAddress } = require('../contractHelper');
+  const address = getOperatorAddress();
+  res.json({ success: true, operatorAddress: address || '' });
 });
 
 router.post('/gateio-order', async (req, res) => {
@@ -1437,7 +1487,7 @@ router.get('/:managerAddress/ledger/:memberWallet/csv', async (req, res) => {
 
     const member = await queries.get('SELECT name FROM users WHERE LOWER(wallet_address) = LOWER(?)', [memberWallet]);
     const csvName = encodeURIComponent(member?.name || memberWallet.slice(0, 8));
-    const today = new Date().toISOString().split('T')[0];
+    const today = toKstDateString();
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${csvName}_${today}.csv`);
 
@@ -1519,7 +1569,7 @@ router.get('/:managerAddress/ledger/:memberWallet/pdf', async (req, res) => {
       memberName: member?.name || memberWallet.slice(0, 10),
       memberWallet,
       periodStart: startDate || 'All',
-      periodEnd: endDate || new Date().toISOString().split('T')[0],
+      periodEnd: endDate || toKstDateString(),
       entries,
       summary: { ...summary, balance }
     });

@@ -16,13 +16,12 @@ async function cleanExpiredPendingKycUsers() {
       SELECT id, wallet_address, id_card_path, joined_at
       FROM users
       WHERE status = 'PENDING_KYC'
-        AND (
-          joined_at < datetime('now', '-24 hours')
-          OR joined_at < datetime('now', 'localtime', '-24 hours')
-        )
+        AND joined_at < datetime('now', '-24 hours')
     `);
 
     if (expiredUsers.length === 0) {
+      await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_run', ?)", [Date.now().toString()]);
+      await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_deleted', '0')");
       return;
     }
 
@@ -53,6 +52,8 @@ async function cleanExpiredPendingKycUsers() {
         console.error(`[KYC AUTO-CLEANUP] Audit log failed:`, auditErr.message);
       }
     }
+    await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_run', ?)", [Date.now().toString()]);
+    await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_deleted', ?)", [expiredUsers.length.toString()]);
   } catch (err) {
     console.error('❌ [KYC AUTO-CLEANUP ERROR]:', err.message);
   }
