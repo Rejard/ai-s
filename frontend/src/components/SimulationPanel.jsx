@@ -3,9 +3,9 @@ import { API_BASE } from '../App';
 import { buildAuthHeaders } from '../lib/authSession';
 
 const SCALE_OPTIONS = [
-  { value: 'small', label: 'Small (1\ub9cc \uc138\ub300)', description: '~2\ubd84 \uc18c\uc694', color: '#4ade80' },
-  { value: 'medium', label: 'Medium (10\ub9cc \uc138\ub300)', description: '~17\ubd84 \uc18c\uc694', color: '#facc15' },
-  { value: 'large', label: 'Large (100\ub9cc \uc138\ub300)', description: '~3\uc2dc\uac04 \uc18c\uc694', color: '#f87171' },
+  { value: 'small', label: 'Small (1만 세대)', description: '~3분 소요', color: '#4ade80' },
+  { value: 'medium', label: 'Medium (10만 세대)', description: '~30분 소요', color: '#facc15' },
+  { value: 'large', label: 'Large (100만 세대)', description: '~5시간 소요', color: '#f87171' },
 ];
 
 const STATUS_LABELS = {
