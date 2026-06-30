@@ -37,6 +37,7 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
                   if (f.faction === 'EXPRESSION_DOMINANT') color = '#8B5CF6';
                   if (f.faction === 'BLACK_SWAN_SENTINEL') color = '#EF4444';
                   if (f.faction === 'DECAY_RESISTANT') color = '#10B981';
+                  if (f.faction === 'MUTAGEN_ADAPTIVE') color = '#F59E0B';
 
                   return (
                     <div
@@ -63,16 +64,16 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
                 {[
-                  { key: 'EXPRESSION_DOMINANT', label: '유전자발현파 (Expression)', color: '#8B5CF6' },
-                  { key: 'BLACK_SWAN_SENTINEL', label: '위기감시파 (Black Swan)', color: '#EF4444' },
-                  { key: 'DECAY_RESISTANT', label: '잔존내성파 (Decay Resist)', color: '#10B981' },
-                  { key: 'MUTAGEN_ADAPTIVE', label: '변이적응파 (Mutagen)', color: '#F59E0B' }
+                  { key: 'EXPRESSION_DOMINANT', label: '유전자발현파', desc: '모든 지표를 종합해 확신 시 적극 진입하는 공격형', color: '#8B5CF6' },
+                  { key: 'BLACK_SWAN_SENTINEL', label: '위기감시파', desc: '블랙스완 감지 시 즉각 방어하는 위기대응형', color: '#EF4444' },
+                  { key: 'DECAY_RESISTANT', label: '잔존내성파', desc: '전략 변경 없이 일관된 패턴을 고수하는 존버형', color: '#10B981' },
+                  { key: 'MUTAGEN_ADAPTIVE', label: '변이적응파', desc: '시장 변화에 맞춰 전략을 빠르게 전환하는 적응형', color: '#F59E0B' }
                 ].map(item => {
                   const stat = councilStats.factionStats.find(s => s.faction === item.key) || { count: 0, percentage: 0 };
                   return (
-                    <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', color: 'var(--text-muted)' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: item.color }} />
-                      <span><b>{item.label}:</b> {stat.count}석 ({stat.percentage}%)</span>
+                    <div key={item.key} style={{ display: 'flex', alignItems: 'baseline', gap: '6px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: item.color, flexShrink: 0, alignSelf: 'center' }} />
+                      <span><b>{item.label}:</b> {stat.count}석 ({stat.percentage}%) <span style={{ color: 'var(--text-dark)', fontSize: '9px' }}>— {item.desc}</span></span>
                     </div>
                   );
                 })}
@@ -215,26 +216,26 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
                   let factionColor = '#6B7280';
                   let factionName = '무소속';
 
-                  if (member.faction === 'TREND_FOLLOWER') {
-                    borderCol = 'rgba(37, 99, 235, 0.2)';
-                    badgeBg = 'rgba(37, 99, 235, 0.05)';
-                    factionColor = '#2563EB';
-                    factionName = '추세추종';
-                  } else if (member.faction === 'VALUE_SEEKER') {
+                  if (member.faction === 'EXPRESSION_DOMINANT') {
                     borderCol = 'rgba(139, 92, 246, 0.2)';
                     badgeBg = 'rgba(139, 92, 246, 0.05)';
                     factionColor = '#8B5CF6';
-                    factionName = '기술반등';
-                  } else if (member.faction === 'CONSERVATIVE_WATCHER') {
-                    borderCol = 'rgba(220, 38, 38, 0.2)';
-                    badgeBg = 'rgba(220, 38, 38, 0.05)';
-                    factionColor = '#DC2626';
-                    factionName = '변동방어';
-                  } else if (member.faction === 'MUTANT_ROOKIE') {
-                    borderCol = 'rgba(0, 242, 254, 0.2)';
-                    badgeBg = 'rgba(0, 242, 254, 0.05)';
-                    factionColor = '#00F2FE';
-                    factionName = '돌연변이';
+                    factionName = '유전자발현';
+                  } else if (member.faction === 'BLACK_SWAN_SENTINEL') {
+                    borderCol = 'rgba(239, 68, 68, 0.2)';
+                    badgeBg = 'rgba(239, 68, 68, 0.05)';
+                    factionColor = '#EF4444';
+                    factionName = '위기감시';
+                  } else if (member.faction === 'DECAY_RESISTANT') {
+                    borderCol = 'rgba(16, 185, 129, 0.2)';
+                    badgeBg = 'rgba(16, 185, 129, 0.05)';
+                    factionColor = '#10B981';
+                    factionName = '잔존내성';
+                  } else if (member.faction === 'MUTAGEN_ADAPTIVE') {
+                    borderCol = 'rgba(245, 158, 11, 0.2)';
+                    badgeBg = 'rgba(245, 158, 11, 0.05)';
+                    factionColor = '#F59E0B';
+                    factionName = '변이적응';
                   }
 
                   let titleLabel = '🏛️ 의원';
@@ -264,7 +265,7 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
                           {titleLabel}
                         </span>
                         <span style={{ fontSize: '8px', background: 'rgba(255,255,255,0.06)', color: '#A78BFA', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>
-                          🧬 {member.generation || 1}대
+                          🧬 {member.generation || 1}세대
                         </span>
                       </div>
 
@@ -280,7 +281,7 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
                       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>
                           <span>의결권:</span>
-                          <span style={{ color: '#FFF', fontWeight: 'bold' }}>{member.voting_power.toFixed(1)}표</span>
+                          <span style={{ color: '#FFF', fontWeight: 'bold' }}>{member.voting_power.toFixed(2)}표</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: 'var(--text-muted)' }}>
                           <span>정확도:</span>
@@ -318,7 +319,7 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
                       <span style={{ fontSize: '8px', color: 'var(--text-muted)' }}>{v.timestamp.substring(11)}</span>
                       <span style={{ fontSize: '10px', color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.name}</span>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
-                        <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>{v.faction === 'TREND_FOLLOWER' ? '추세' : v.faction === 'VALUE_SEEKER' ? '기술' : v.faction === 'CONSERVATIVE_WATCHER' ? '방어' : '변동'}</span>
+                        <span style={{ fontSize: '8px', color: 'var(--text-dark)' }}>{v.faction === 'EXPRESSION_DOMINANT' ? '발현' : v.faction === 'BLACK_SWAN_SENTINEL' ? '위기' : v.faction === 'DECAY_RESISTANT' ? '내성' : '적응'}</span>
                         <span style={{ fontSize: '9px', color: voteColor, background: voteBg, padding: '1px 4px', borderRadius: '4px', fontWeight: '800' }}>{v.decision_vote}</span>
                       </div>
                     </div>
@@ -333,13 +334,13 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
 
       {!!(councilStats?.originStats || []).length && (
         <div className="glass-card" style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.18)', textAlign: 'left' }}>
-          <h4 style={{ fontSize: '12px', color: '#E4E4E7', margin: '0 0 10px 0', fontWeight: '800' }}>500 Candidate Origin Distribution</h4>
+          <h4 style={{ fontSize: '12px', color: '#E4E4E7', margin: '0 0 10px 0', fontWeight: '800' }}>🧬 500인 후보군 탄생 경로 분포</h4>
           {(councilStats.originStats || []).map((item) => {
             const label = item.origin === 'crossover_offspring'
-              ? 'Crossover Offspring'
+              ? '교차 생산'
               : item.origin === 'seeded_random'
-                ? 'Seeded Random'
-                : 'Mutated Lineage';
+                ? '초기 시드'
+                : '돌연변이 계보';
             const color = item.origin === 'crossover_offspring'
               ? '#10B981'
               : item.origin === 'seeded_random'
@@ -358,7 +359,7 @@ function AdminCouncilTab({ councilStats, loadingCouncilStats }) {
           {!!(councilStats.activeOriginStats || []).length && (
             <div style={{ marginTop: '6px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {(councilStats.activeOriginStats || []).map((item) => {
-                const label = item.origin === 'crossover_offspring' ? 'ACTIVE Crossover' : item.origin === 'seeded_random' ? 'ACTIVE Seeded' : 'ACTIVE Mutated';
+                const label = item.origin === 'crossover_offspring' ? '현역 교차생산' : item.origin === 'seeded_random' ? '현역 초기시드' : '현역 돌연변이';
                 return (
                   <div key={`active-${item.origin}`} style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
                     <b style={{ color: '#E5E7EB' }}>{label}</b> {item.count} ({item.percentage}%)

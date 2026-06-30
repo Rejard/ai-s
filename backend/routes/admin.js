@@ -948,22 +948,23 @@ async function generateCouncilOpinionBriefing(factionStats, activeMembers, gener
 
     const promptText = `
 You are an expert system analyst observing the "AiS Virtual Council" (an AI assembly of 500 neural net trading bots evolving via genetic algorithms).
-Based on the current faction distribution, generation composition, and top leaders of the 500-member AI candidate pool, analyze the overall genetic and philosophical characteristics of these 500 AI candidates. Write a concise executive briefing in Korean within 600 Korean characters. (Output example: "이번 세대 교체를 통해 2세대 AI가 N명으로 새롭게 등장했으며... 특히 기술반등파가 다수를 차지하게 된 배경에는... 반면 추세추종파가 소수로 전락한 이유는...")
+Based on the current faction distribution, generation composition, and top leaders of the 500-member AI candidate pool, analyze the overall genetic and philosophical characteristics of these 500 AI candidates. Write a concise executive briefing in Korean within 600 Korean characters. (Output example: "이번 세대 교체를 통해 2세대 AI가 N명으로 새롭게 등장했으며... 특히 유전자발현파가 다수를 차지하게 된 배경에는... 반면 위기감시파가 소수로 전락한 이유는...")
 
 Input data:
 - Faction Counts (500 candidates): ${factionInfo}
-- Origin Counts (500 candidates): ${originStats.map(o => `${o.origin}: ${o.count}? (${o.percentage}%)`).join(', ')}
+- Origin Counts (500 candidates): ${originStats.map(o => `${o.origin}: ${o.count} (${o.percentage}%)`).join(', ')}
 - Generation Distribution: ${generationInfo}
 - Top 3 Leaders in Office (Chairman, Vice Chairman, Committee Chair): ${leadersInfo}
 
 Rules:
 1. Speak of them as distinct virtual factions with conflicting trading philosophies:
-   - TREND_FOLLOWER: 추세추종파 (SMA/모멘텀)
-   - VALUE_SEEKER: 기술반등파 (RSI/역추세)
-   - CONSERVATIVE_WATCHER: 변동성방어파 (안정지향)
+   - EXPRESSION_DOMINANT: 유전자발현파 (Active gene expression / Strategy utilization maximization)
+   - BLACK_SWAN_SENTINEL: 위기감시파 (Black swan crisis detection / Tail risk hedging)
+   - DECAY_RESISTANT: 잔존내성파 (Decay resistance / Stability-first persistence)
+   - MUTAGEN_ADAPTIVE: 변이적응파 (Adaptive mutation / Rapid evolutionary reactivation)
 2. MUST explicitly mention the current generation landscape based on Generation Distribution (e.g. "현재 1세대가 500명을 100% 점유하고 있으며..." or "이번 진화를 통해 새로운 2세대가 O명으로 주류를 이루었고 살아남은 1세대는 O명뿐입니다...").
 3. Deeply analyze the REASONS behind the current distribution. Why are the dominant factions succeeding and multiplying in this generation? Why did the minority factions fail to secure seats or dwindle? Create a logical evolutionary narrative explaining these market-survival dynamics in detail.
-4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what kind of market crash or bull run birthed the Value Seekers or Mutant Rookies).
+4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what DNA regulatory profile traits caused Expression Dominants to thrive or Black Swan Sentinels to emerge).
 5. Do NOT talk about real-time market trends or recent trades. Focus purely on their genetic character, dominant factions, and historical evolution traits.
 6. Keep the report within 600 Korean characters. Return ONLY the raw text response in Korean without any formatting or markdown.
 7. You MUST explicitly analyze the non-active candidates (non-elected candidates) who haven't entered the active top 11 but represent higher generations (e.g. 5th or 6th gen). Explain what their existence represents and how their trading philosophies are waiting in the candidate pool for the next evolutionary shift.
@@ -1414,9 +1415,9 @@ async function performSystemDiagnostics() {
     } else {
       try {
         const weights = JSON.parse(fs.readFileSync(weightsPath, 'utf8'));
-        const hasBuy = Array.isArray(weights.BUY) && weights.BUY.length === 5;
-        const hasSell = Array.isArray(weights.SELL) && weights.SELL.length === 5;
-        const hasHold = Array.isArray(weights.HOLD) && weights.HOLD.length === 5;
+        const hasBuy = Array.isArray(weights.BUY) && weights.BUY.length === 10;
+        const hasSell = Array.isArray(weights.SELL) && weights.SELL.length === 10;
+        const hasHold = Array.isArray(weights.HOLD) && weights.HOLD.length === 10;
         if (!hasBuy || !hasSell || !hasHold) {
           evolutionStatus = "WARNING";
           evolutionDetails = "AI 가중치 파일 스키마 형식 오류 (BUY/SELL/HOLD 키 또는 피처 배열 규격 미달)";
@@ -2319,9 +2320,10 @@ async function performSystemDiagnostics() {
     for (const row of allWeights) {
       try {
         const w = JSON.parse(row.weights_json);
-        const validBuy = Array.isArray(w.BUY) && w.BUY.length === 5;
-        const validSell = Array.isArray(w.SELL) && w.SELL.length === 5;
-        const validHold = Array.isArray(w.HOLD) && w.HOLD.length === 5;
+        const expectedLen = AIDL_FEATURE_ORDER.length;
+        const validBuy = Array.isArray(w.BUY) && w.BUY.length === expectedLen;
+        const validSell = Array.isArray(w.SELL) && w.SELL.length === expectedLen;
+        const validHold = Array.isArray(w.HOLD) && w.HOLD.length === expectedLen;
         if (!validBuy || !validSell || !validHold) {
           malformed++;
           if (malformedIds.length < 3) malformedIds.push(row.member_id);
@@ -2336,7 +2338,7 @@ async function performSystemDiagnostics() {
       weightsShapeMsg = `비정상 가중치 ${malformed}건 (예: ${malformedIds.join(', ')})`;
       errors.push(`AI 의회 weights_json 형태 오류 ${malformed}건`);
     } else {
-      weightsShapeMsg = `전 의원 BUY/SELL/HOLD 5-vector 형태 정상 (${allWeights.length}명 검증)`;
+      weightsShapeMsg = `전 의원 BUY/SELL/HOLD ${AIDL_FEATURE_ORDER.length}-vector 형태 정상 (${allWeights.length}명 검증)`;
     }
   } catch (e) {
     weightsShapeStatus = "WARNING";
@@ -2368,7 +2370,7 @@ async function performSystemDiagnostics() {
       phenotypeShapeMsg = `malformed phenotype ${malformed} rows (sample: ${malformedIds.join(', ')})`;
       errors.push(`phenotype_json shape errors: ${malformed}`);
     } else {
-      phenotypeShapeMsg = `all phenotype_json rows match BUY/SELL/HOLD 5-vector shape (${allPhenotypes.length} rows)`;
+      phenotypeShapeMsg = `all phenotype_json rows match BUY/SELL/HOLD ${AIDL_FEATURE_ORDER.length}-vector shape (${allPhenotypes.length} rows)`;
     }
   } catch (e) {
     phenotypeShapeStatus = "WARNING";
