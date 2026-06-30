@@ -26,19 +26,23 @@ function crossoverProfile(profA, profB) {
   };
 }
 
-function mutateDna(dna, strength) {
+function mutateDna(dna, strength, aidlPolicy) {
   const mutated = JSON.parse(JSON.stringify(dna));
+  const p = aidlPolicy || {};
 
-  if (Math.random() < 0.6) {
+  const weightNudgeRate = p.weightNudgeRate ?? 0.60;
+  const nudgeSize = p.weightNudgeSize ?? strength;
+  if (Math.random() < weightNudgeRate) {
     for (const action of ['BUY', 'SELL', 'HOLD']) {
       if (!mutated.weights[action]) mutated.weights[action] = DEFAULT_WEIGHTS();
       const idx = Math.floor(Math.random() * FEATURE_COUNT);
-      mutated.weights[action][idx] += (Math.random() * 2 - 1) * strength;
+      mutated.weights[action][idx] += (Math.random() * 2 - 1) * nudgeSize;
     }
-    mutated.mutation_log.push({ event: 'weight_nudge', strength });
+    mutated.mutation_log.push({ event: 'weight_nudge', strength: nudgeSize });
   }
 
-  if (Math.random() < 0.3) {
+  const profileRate = p.profileMutationRate ?? 0.25;
+  if (Math.random() < profileRate) {
     const profile = mutated.regulatory_profile;
     const keys = ['expression_budget', 'dominance_bias', 'decay_resistance', 'reactivation_bias'];
     const key = keys[Math.floor(Math.random() * keys.length)];
@@ -50,7 +54,8 @@ function mutateDna(dna, strength) {
     mutated.mutation_log.push({ event: 'profile_mutation', profile_key: key });
   }
 
-  if (Math.random() < 0.2) {
+  const contextRate = p.contextMutationRate ?? 0.20;
+  if (Math.random() < contextRate) {
     const genes = mutated.strategy_genes || [];
     if (genes.length > 0) {
       const gene = genes[Math.floor(Math.random() * genes.length)];
@@ -65,12 +70,32 @@ function mutateDna(dna, strength) {
     }
   }
 
-  if (Math.random() < 0.15) {
+  const stateRate = p.stateMutationRate ?? 0.15;
+  if (Math.random() < stateRate) {
     const genes = mutated.strategy_genes || [];
     if (genes.length > 0) {
       const gene = genes[Math.floor(Math.random() * genes.length)];
       gene.state = ['A', 'I'][Math.floor(Math.random() * 2)];
     }
+  }
+
+  const copyRate = p.copyNumberMutationRate ?? 0.05;
+  if (Math.random() < copyRate) {
+    const genes = mutated.strategy_genes || [];
+    if (genes.length > 0) {
+      if (Math.random() < 0.5 && genes.length < 8) {
+        const sourceGene = genes[Math.floor(Math.random() * genes.length)];
+        const duplicated = JSON.parse(JSON.stringify(sourceGene));
+        duplicated.gene_id = `SG-DUP-${crypto.randomUUID().slice(0, 8)}`;
+        genes.push(duplicated);
+        mutated.mutation_log.push({ event: 'gene_duplication', source: sourceGene.gene_id });
+      } else if (genes.length > 1) {
+        const delIdx = Math.floor(Math.random() * genes.length);
+        const removed = genes.splice(delIdx, 1)[0];
+        mutated.mutation_log.push({ event: 'gene_deletion', deleted: removed.gene_id });
+      }
+    }
+    mutated.strategy_genes = genes;
   }
 
   mutated.generation = (mutated.generation || 1) + 1;
@@ -113,6 +138,7 @@ const mutationStrength = config.mutationStrength || 0.5;
 const eliteRatio = config.eliteRatio || 0.15;
 const cullRatio = config.cullRatio || 0.20;
 const checkpointInterval = config.checkpointInterval || 1000;
+const aidlPolicy = config.aidlPolicy || {};
 
 const [trainCandles, testCandles] = splitTimeSeries(candles, trainRatio);
 const trainIndicators = precomputeIndicators(trainCandles);
@@ -149,7 +175,7 @@ for (let gen = 1; gen <= totalGenerations; gen++) {
     };
 
     if (Math.random() < mutationRate) {
-      childDna = mutateDna(childDna, mutationStrength);
+      childDna = mutateDna(childDna, mutationStrength, aidlPolicy);
     }
 
     population[cullIdx].dna = childDna;

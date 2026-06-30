@@ -5,6 +5,39 @@ const { DEFAULT_WEIGHTS, FEATURE_COUNT } = require('./simulationEngine');
 const { Worker } = require('worker_threads');
 const path = require('path');
 
+const DEFAULT_AIDL_POLICY = {
+  contextMutationRate: 0.20,
+  stateMutationRate: 0.15,
+  profileMutationRate: 0.25,
+  copyNumberMutationRate: 0.05,
+  weightNudgeRate: 0.60,
+  weightNudgeSize: 0.15,
+};
+
+async function loadAidlPolicy(store = queries) {
+  const policy = { ...DEFAULT_AIDL_POLICY };
+  try {
+    const rows = await store.all(
+      `SELECT key, value FROM platform_settings WHERE key IN (
+        'aidl_context_mutation_rate', 'aidl_state_mutation_rate',
+        'aidl_profile_mutation_rate', 'aidl_copy_number_mutation_rate',
+        'aidl_weight_nudge_size'
+      )`
+    );
+    for (const row of rows) {
+      const val = parseFloat(row.value);
+      if (!Number.isFinite(val)) continue;
+      const clamped = Math.max(0, Math.min(1, val));
+      if (row.key === 'aidl_context_mutation_rate') policy.contextMutationRate = clamped;
+      if (row.key === 'aidl_state_mutation_rate') policy.stateMutationRate = clamped;
+      if (row.key === 'aidl_profile_mutation_rate') policy.profileMutationRate = clamped;
+      if (row.key === 'aidl_copy_number_mutation_rate') policy.copyNumberMutationRate = clamped;
+      if (row.key === 'aidl_weight_nudge_size') policy.weightNudgeSize = clamped;
+    }
+  } catch (_) {}
+  return policy;
+}
+
 const SCALE_PRESETS = {
   small: { generations: 10000, label: 'Small (10K generations)' },
   medium: { generations: 100000, label: 'Medium (100K generations)' },
@@ -127,7 +160,9 @@ async function runMassEvolution(userConfig = {}, store = queries) {
     }
 
     activeSimulation.status = 'EVOLVING';
+    const aidlPolicy = await loadAidlPolicy(store);
     console.log(`[EVOLUTION] Worker thread starting: ${totalGenerations} generations, ${population.length} members, ${candles.length} candles`);
+    console.log(`[EVOLUTION] AIDL policy:`, JSON.stringify(aidlPolicy));
 
     const workerResult = await new Promise((resolve, reject) => {
       const worker = new Worker(path.join(__dirname, 'evolutionWorker.js'), {
@@ -142,6 +177,7 @@ async function runMassEvolution(userConfig = {}, store = queries) {
             eliteRatio: config.eliteRatio,
             cullRatio: config.cullRatio,
             checkpointInterval: config.checkpointInterval,
+            aidlPolicy,
           },
         },
       });

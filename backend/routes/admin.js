@@ -6,6 +6,8 @@ const { promisify } = require('node:util');
 const { queries } = require('../database');
 const axios = require('axios');
 const { ethers } = require('ethers');
+const { runExtendedDiagnostics } = require('./extendedDiagnostics');
+const { classifyFactionByDna } = require('../factionClassifier');
 const {
   extractCompleteGeminiText,
   makeCouncilBriefingGenerationConfig
@@ -39,11 +41,11 @@ const MIN_GEMINI_TIMEOUT_MS = 5000;
 const MAX_GEMINI_TIMEOUT_MS = 120000;
 
 const DEFAULT_AIDL_POLICY_CONFIG = {
-  contextMutationRate: '0.10',
-  stateMutationRate: '0.10',
-  profileMutationRate: '0.08',
-  copyNumberMutationRate: '0.06',
-  weightNudgeSize: '0.02',
+  contextMutationRate: '0.20',
+  stateMutationRate: '0.15',
+  profileMutationRate: '0.25',
+  copyNumberMutationRate: '0.05',
+  weightNudgeSize: '0.15',
 };
 const AIDL_FEATURE_ORDER = [
   'price_change_pct',
@@ -228,29 +230,7 @@ function assessWeb3WalletHealth({ walletAddress, polBalance, blockNum, latency, 
 function determineFactionForDiagnostics(weights, nameOrId = '') {
   try {
     if (weights && weights.regulatory_profile) {
-      const reg = weights.regulatory_profile;
-      const genes = Array.isArray(weights.strategy_genes) ? weights.strategy_genes : [];
-      const mutationLog = Array.isArray(weights.mutation_log) ? weights.mutation_log : [];
-
-      const blackSwanCount = genes.filter((g) =>
-        g && g.state === 'A' && Array.isArray(g.context_mask) && g.context_mask.includes('BLACK_SWAN')
-      ).length;
-
-      const activeCount = genes.filter((g) => g && g.state === 'A').length;
-      const expressionBudget = Number(reg.expression_budget || 12);
-      const decayResistance = Number(reg.decay_resistance || 0.3);
-      const reactivationBias = Number(reg.reactivation_bias || 0.1);
-
-      if (blackSwanCount >= 2 || (blackSwanCount >= 1 && genes.length <= 2)) return 'BLACK_SWAN_SENTINEL';
-      if (expressionBudget >= 14 && activeCount >= genes.length * 0.8) return 'EXPRESSION_DOMINANT';
-      if (decayResistance >= 0.5 && reactivationBias < 0.15) return 'DECAY_RESISTANT';
-      if (mutationLog.length >= 5 && reactivationBias >= 0.2) return 'MUTAGEN_ADAPTIVE';
-
-      if (expressionBudget >= 13) return 'EXPRESSION_DOMINANT';
-      if (decayResistance >= 0.4) return 'DECAY_RESISTANT';
-      if (mutationLog.length >= 3) return 'MUTAGEN_ADAPTIVE';
-
-      return 'EXPRESSION_DOMINANT';
+      return classifyFactionByDna(weights, nameOrId);
     }
 
     if (weights && weights.BUY && weights.SELL) {
@@ -1285,10 +1265,9 @@ router.post('/simulation/cancel', async (req, res) => {
 });
 
 async function getWindowsDiskSpace() {
-  const { exec } = require('node:child_process');
-  const execPromise = promisify(exec);
+  const { safeExec } = require('../safeExec');
   try {
-    const { stdout } = await execPromise('wmic logicaldisk get caption,freeSpace,size', { windowsHide: true });
+    const { stdout } = await safeExec('wmic logicaldisk get caption,freeSpace,size');
     const lines = stdout.trim().split('\n');
     for (const line of lines) {
       if (line.includes('C:')) {
@@ -1316,9 +1295,7 @@ async function getWindowsDiskSpace() {
 async function performSystemDiagnostics() {
   const fs = require('fs');
   const path = require('path');
-  const { exec } = require('child_process');
-  const util = require('util');
-  const execPromise = util.promisify(exec);
+  const { safeExec } = require('../safeExec');
 
   const errors = [];
   const warnings = [];
@@ -1866,7 +1843,7 @@ async function performSystemDiagnostics() {
   let pm2Status = "OK";
   let pm2Msg = "PM2 환경 정상 작동 중";
   try {
-    const { stdout } = await execPromise('pm2 jlist', { windowsHide: true });
+    const { stdout } = await safeExec('pm2 jlist');
     const apps = JSON.parse(stdout);
     const aisApp = apps.find(app => app.name === 'ai-s');
     if (aisApp) {
@@ -2502,7 +2479,7 @@ async function performSystemDiagnostics() {
   let forceEvolutionExecutionStatus = "OK";
   let forceEvolutionExecutionMsg = "force evolution execution path normal";
   try {
-    await execPromise("py -3 -c \"import py_compile; py_compile.compile('train_ais.py', doraise=True); print('OK')\"", { cwd: path.join(__dirname, '..'), windowsHide: true });
+    await safeExec("py -3 -c \"import py_compile; py_compile.compile('train_ais.py', doraise=True); print('OK')\"", { cwd: path.join(__dirname, '..') });
     forceEvolutionExecutionMsg = 'py launcher and train_ais.py execution path are valid';
   } catch (e) {
     forceEvolutionExecutionStatus = "ERROR";
@@ -2746,6 +2723,16 @@ async function performSystemDiagnostics() {
   }
 
 
+  let extendedResults = [];
+  try {
+    const extended = await runExtendedDiagnostics();
+    extendedResults = extended.results || [];
+    errors.push(...(extended.errors || []));
+    warnings.push(...(extended.warnings || []));
+  } catch (extErr) {
+    warnings.push(`Extended diagnostics failed: ${extErr.message}`);
+  }
+
   const diagnostics = [
     { name: "API 관문 및 어드민 코어", status: apiStatus, percentage: apiStatus === "OK" ? 100 : (apiStatus === "WARNING" ? 50 : 0), details: apiDetails },
     { name: "AI 실거래 매매 집행기", status: traderStatus, percentage: traderStatus === "OK" ? 100 : (traderStatus === "WARNING" ? 50 : 0), details: traderDetails },
@@ -2756,21 +2743,18 @@ async function performSystemDiagnostics() {
     { name: "프론트엔드 UI 대시보드", status: frontendStatus, percentage: frontendStatus === "OK" ? 100 : (frontendStatus === "WARNING" ? 50 : 0), details: frontendDetails },
     { name: "영구 데이터베이스", status: dbStatus, percentage: dbStatus === "OK" ? 100 : 0, details: dbDetails },
     { name: "의회 스케줄러 동작 무결성", status: schedulerStatus, percentage: schedulerStatus === "OK" ? 100 : (schedulerStatus === "WARNING" ? 50 : 0), details: schedulerMsg },
-    
 
     { name: "Gate.io API 실시간 잔고", status: gateioApiStatus, percentage: gateioApiStatus === "OK" ? 100 : (gateioApiStatus === "WARNING" ? 50 : 0), details: gateioApiMsg },
     { name: "Web3 가스비 잔액 (POL)", status: web3Status, percentage: web3Status === "OK" ? 100 : (web3Status === "WARNING" ? 50 : 0), details: web3Msg },
     { name: "서버 물리 자원 & 디스크", status: systemStatus, percentage: systemStatus === "OK" ? 100 : (systemStatus === "WARNING" ? 50 : 0), details: systemMsg },
     { name: "학습 데이터 유입 속도", status: pipelineStatus, percentage: pipelineStatus === "OK" ? 100 : (pipelineStatus === "WARNING" ? 50 : 0), details: pipelineMsg },
     { name: "Gemini API 호출 속도", status: geminiStatus, percentage: geminiStatus === "OK" ? 100 : (geminiStatus === "WARNING" ? 50 : 0), details: geminiMsg },
-    
 
     { name: "PM2 프로세스 생존성", status: pm2Status, percentage: pm2Status === "OK" ? 100 : (pm2Status === "WARNING" ? 50 : 0), details: pm2Msg },
     { name: "외부 망 레이턴시 벤치마크", status: networkStatus, percentage: networkStatus === "OK" ? 100 : (networkStatus === "WARNING" ? 50 : 0), details: networkMsg },
     { name: "SQLite3 DB I/O 속도", status: dbPerfStatus, percentage: dbPerfStatus === "OK" ? 100 : (dbPerfStatus === "WARNING" ? 50 : 0), details: dbPerfMsg },
     { name: "의회 Faction 쏠림 (HHI)", status: hhiStatus, percentage: hhiStatus === "OK" ? 100 : (hhiStatus === "WARNING" ? 50 : 0), details: hhiMsg },
     { name: "SSL 인증서 보안 검증", status: sslStatus, percentage: sslStatus === "OK" ? 100 : (sslStatus === "WARNING" ? 50 : 0), details: sslMsg },
-    
 
     { name: "AI 의회 투표 활성도", status: votingStatus, percentage: votingStatus === "OK" ? 100 : (votingStatus === "WARNING" ? 50 : 0), details: votingMsg },
     { name: "AiS 총선 정기 실행", status: electionStatus, percentage: electionStatus === "OK" ? 100 : (electionStatus === "WARNING" ? 50 : 0), details: electionMsg },
@@ -2792,12 +2776,12 @@ async function performSystemDiagnostics() {
     { name: "엔진↔승격 정합성 검증", status: enginePromoStatus, percentage: enginePromoStatus === "OK" ? 100 : (enginePromoStatus === "WARNING" ? 50 : 0), details: enginePromoMsg },
     { name: "학습 데이터 라벨링 적체", status: labelStatus, percentage: labelStatus === "OK" ? 100 : (labelStatus === "WARNING" ? 50 : 0), details: labelMsg },
 
-
     { name: "Gemini 매매 분석 정상 가동", status: srGeminiStatus, percentage: srGeminiStatus === "OK" ? 100 : (srGeminiStatus === "WARNING" ? 50 : 0), details: srGeminiMsg },
     { name: "AiS 의회 매매 분석 정상 가동", status: srAisStatus, percentage: srAisStatus === "OK" ? 100 : (srAisStatus === "WARNING" ? 50 : 0), details: srAisMsg },
     { name: "Hybrid 합의 분석 정상 가동", status: srHybridStatus, percentage: srHybridStatus === "OK" ? 100 : (srHybridStatus === "WARNING" ? 50 : 0), details: srHybridMsg },
     { name: "모드별 적중률 데이터 충분성", status: srDataStatus, percentage: srDataStatus === "OK" ? 100 : (srDataStatus === "WARNING" ? 50 : 0), details: srDataMsg },
-    { name: "AiS 진화 학습 정기 실행", status: srTrainStatus, percentage: srTrainStatus === "OK" ? 100 : (srTrainStatus === "WARNING" ? 50 : 0), details: srTrainMsg }
+    { name: "AiS 진화 학습 정기 실행", status: srTrainStatus, percentage: srTrainStatus === "OK" ? 100 : (srTrainStatus === "WARNING" ? 50 : 0), details: srTrainMsg },
+    ...extendedResults
   ];
 
   return {

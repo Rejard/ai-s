@@ -30,11 +30,11 @@ async function main() {
     const policy = adminRouter.__private__.buildAidlPolicyConfig(settings);
 
     assert.deepEqual(policy, {
-      contextMutationRate: '0.10',
-      stateMutationRate: '0.10',
-      profileMutationRate: '0.08',
-      copyNumberMutationRate: '0.06',
-      weightNudgeSize: '0.02',
+      contextMutationRate: '0.20',
+      stateMutationRate: '0.15',
+      profileMutationRate: '0.25',
+      copyNumberMutationRate: '0.05',
+      weightNudgeSize: '0.15',
     });
     assert.deepEqual(
       adminRouter.__private__.normalizeAidlPolicyConfig({
@@ -47,7 +47,7 @@ async function main() {
       {
         contextMutationRate: '1.00',
         stateMutationRate: '0.00',
-        profileMutationRate: '0.08',
+        profileMutationRate: '0.25',
         copyNumberMutationRate: '0.33',
         weightNudgeSize: '1.00',
       }
