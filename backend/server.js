@@ -12,8 +12,22 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const CORS_WHITELIST = [
+  `http://localhost:${PORT}`,
+  `http://127.0.0.1:${PORT}`,
+];
+if (process.env.NODE_ENV === 'development') {
+  CORS_WHITELIST.push('http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173');
+}
+if (process.env.CORS_ORIGINS) {
+  CORS_WHITELIST.push(...process.env.CORS_ORIGINS.split(',').map((o) => o.trim()));
+}
+
 app.use(cors({
-  origin: '*',
+  origin(origin, cb) {
+    if (!origin || CORS_WHITELIST.includes(origin)) return cb(null, true);
+    cb(null, false);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-manager-email', 'x-admin-email', 'x-gateio-api-key', 'x-gateio-api-secret']
 }));

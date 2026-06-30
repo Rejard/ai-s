@@ -103,31 +103,7 @@ function mutateDna(dna, strength, aidlPolicy) {
   return mutated;
 }
 
-function classifyFactionByDna(dna) {
-  const reg = dna.regulatory_profile || {};
-  const genes = Array.isArray(dna.strategy_genes) ? dna.strategy_genes : [];
-  const mutationLog = Array.isArray(dna.mutation_log) ? dna.mutation_log : [];
-
-  const blackSwanCount = genes.filter((g) =>
-    g && g.state === 'A' && Array.isArray(g.context_mask) && g.context_mask.includes('BLACK_SWAN')
-  ).length;
-
-  const activeCount = genes.filter((g) => g && g.state === 'A').length;
-  const expressionBudget = Number(reg.expression_budget || 12);
-  const decayResistance = Number(reg.decay_resistance || 0.3);
-  const reactivationBias = Number(reg.reactivation_bias || 0.1);
-
-  if (blackSwanCount >= 2 || (blackSwanCount >= 1 && genes.length <= 2)) return 'BLACK_SWAN_SENTINEL';
-  if (expressionBudget >= 14 && activeCount >= genes.length * 0.8) return 'EXPRESSION_DOMINANT';
-  if (decayResistance >= 0.5 && reactivationBias < 0.15) return 'DECAY_RESISTANT';
-  if (mutationLog.length >= 5 && reactivationBias >= 0.2) return 'MUTAGEN_ADAPTIVE';
-
-  if (expressionBudget >= 13) return 'EXPRESSION_DOMINANT';
-  if (decayResistance >= 0.4) return 'DECAY_RESISTANT';
-  if (mutationLog.length >= 3) return 'MUTAGEN_ADAPTIVE';
-
-  return 'EXPRESSION_DOMINANT';
-}
+const { classifyFactionByDna } = require('./factionClassifier');
 
 const { population, candles, config } = workerData;
 
@@ -180,7 +156,7 @@ for (let gen = 1; gen <= totalGenerations; gen++) {
 
     population[cullIdx].dna = childDna;
     population[cullIdx].fitness = 0;
-    population[cullIdx].faction = classifyFactionByDna(childDna);
+    population[cullIdx].faction = classifyFactionByDna(childDna, population[cullIdx].name || population[cullIdx].memberId);
   }
 
   if (gen % checkpointInterval === 0 || gen === totalGenerations) {
@@ -213,7 +189,7 @@ for (let gen = 1; gen <= totalGenerations; gen++) {
 }
 
 for (const member of population) {
-  member.faction = classifyFactionByDna(member.dna);
+  member.faction = classifyFactionByDna(member.dna, member.name || member.memberId);
 }
 
 parentPort.postMessage({

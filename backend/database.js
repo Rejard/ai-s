@@ -11,6 +11,7 @@ const dbPath = process.env.AIS_DB_PATH
   ? path.resolve(process.env.AIS_DB_PATH)
   : path.resolve(__dirname, defaultDbName);
 const db = new sqlite3.Database(dbPath);
+db.run('PRAGMA foreign_keys = ON');
 
 const AIDL_FEATURE_ORDER = [
   'price_change_pct',
@@ -116,7 +117,7 @@ function bootstrapCouncilDnaPayload(weights, memberId, faction, generation) {
   const dna = buildDeterministicCouncilDna(padded, memberId, faction, generation);
   return {
     dna_json: JSON.stringify(dna),
-    phenotype_json: JSON.stringify(weights),
+    phenotype_json: JSON.stringify(padded),
   };
 }
 

@@ -5,7 +5,7 @@ const appSource = await readFile(new URL('../App.jsx', import.meta.url), 'utf8')
 const mobileDashboardSource = await readFile(new URL('../pages/user_mobile_dashboard.jsx', import.meta.url), 'utf8');
 const pcDashboardSource = await readFile(new URL('../pages/user_pc_dashboard.jsx', import.meta.url), 'utf8');
 const managerDashboardSource = await readFile(new URL('../pages/manager_mobile_dashboard.jsx', import.meta.url), 'utf8');
-const adminMobileCouncilSource = await readFile(new URL('../pages/admin_mobile_council.jsx', import.meta.url), 'utf8');
+const adminCouncilTabSource = await readFile(new URL('../pages/admin/AdminCouncilTab.jsx', import.meta.url), 'utf8');
 const authRouteSource = await readFile(new URL('../../../backend/routes/auth.js', import.meta.url), 'utf8');
 const investmentRouteSource = await readFile(new URL('../../../backend/routes/investment.js', import.meta.url), 'utf8');
 
@@ -40,14 +40,9 @@ assert.equal(
   'general member routes must not expose the council page'
 );
 assert.equal(
-  adminMobileCouncilSource.includes('/investment/council-stats'),
+  adminCouncilTabSource.includes('/investment/council-stats'),
   false,
-  'admin council helper page must not call the investment council endpoint'
-);
-assert.equal(
-  adminMobileCouncilSource.includes('/admin/council-stats'),
-  true,
-  'admin council helper page must use the admin council endpoint'
+  'admin council tab must not call the investment council endpoint'
 );
 assert.match(
   investmentRouteSource,

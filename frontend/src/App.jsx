@@ -17,7 +17,6 @@ import UserPcConsent from './pages/user_pc_consent';
 import UserPcRegister from './pages/user_pc_register';
 import UserPcWaiting from './pages/user_pc_waiting';
 import UserPcDashboard from './pages/user_pc_dashboard';
-import AdminPcDashboard from './pages/admin_pc_dashboard';
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
@@ -710,11 +709,7 @@ function AppContent() {
 
             <Route path="/admin" element={
               isAdminViewer ? (
-                isPcView ? (
-                  <AdminPcDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
-                ) : (
-                  <AdminMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
-                )
+                <AdminMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
               ) : (
                 <Navigate to="/" replace />
               )
