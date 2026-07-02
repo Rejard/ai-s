@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ArrowLeft } from 'lucide-react';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
+import { checkOperatorAllowance, approveOperator } from '../lib/operatorApproval';
 import {
   approveManagerUser,
   approveManagerWithdrawal,
@@ -124,6 +125,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [sendSutAmount, setSendSutAmount] = useState('');
   const [sendingSut, setSendingSut] = useState(false);
   const [approvingOperator, setApprovingOperator] = useState(false);
+  const [operatorApproved, setOperatorApproved] = useState(null);
 
   const getManagerHeaders = () => buildManagerHeaders({ managerEmail, getStorageItem: (key) => localStorage.getItem(key) });
 
@@ -191,32 +193,11 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleApproveOperator = async () => {
-    if (!window.ethereum) {
-      alert('PC 브라우저의 MetaMask 확장이 필요합니다. PC에서 진행해 주세요.');
-      return;
-    }
     setApprovingOperator(true);
     try {
-      const headers = getManagerHeaders();
-      const opRes = await axios.get(`${API_BASE}/manager/operator-address`, headers);
-      const operatorAddress = opRes.data?.operatorAddress;
-      if (!operatorAddress) { alert('서버에서 Operator 지갑 주소를 가져올 수 없습니다.'); return; }
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      if (chainId !== '0x89') {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-      }
-      const browserProvider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await browserProvider.getSigner();
-      const sutContract = new ethers.Contract(
-        '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55',
-        ['function approve(address spender, uint256 value) public returns (bool)'],
-        signer
-      );
-      const tx = await sutContract.approve(operatorAddress, ethers.parseUnits('1000000', 18));
-      alert('승인 트랜잭션 전송 완료. 블록 확인 대기중...');
-      await tx.wait(1);
-      alert('✅ Operator 지갑 SUT 승인 완료! 이제 모바일에서 서버 대행 송금이 가능합니다.');
+      await approveOperator({ ethersLib: ethers });
+      setOperatorApproved(true);
+      alert('✅ 서버 대행 출금 승인 완료!');
     } catch (err) {
       if (err?.code === 'ACTION_REJECTED' || err?.message?.includes('rejected')) { alert('지갑에서 승인 서명이 취소되었습니다.'); }
       else { alert(`❌ 승인 실패: ${err.message || err}`); }
@@ -266,6 +247,12 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       if (managerData.credentialUpdates.clearApiSecret) setLocalApiSecret('');
       if (managerData.credentialUpdates.depositAddress) setLocalDepositAddress(managerData.credentialUpdates.depositAddress);
     } catch (err) { console.error('Manager data load failed:', err); } finally { setLoading(false); }
+    try {
+      if (walletAddress) {
+        const approved = await checkOperatorAllowance({ walletAddress, ethersLib: ethers });
+        setOperatorApproved(approved);
+      }
+    } catch (e) { console.error('Allowance check failed:', e); }
   };
 
   useEffect(() => { fetchManagerData(); }, []);
@@ -443,6 +430,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
           ManagerAiConfigSection={ManagerAiConfigSection}
           handleApproveOperator={handleApproveOperator}
           approvingOperator={approvingOperator}
+          operatorApproved={operatorApproved}
         />
       )}
 

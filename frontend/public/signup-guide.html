@@ -1042,7 +1042,7 @@
             지갑 주소 로그인
           </h3>
           <p class="step-desc">
-            본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet이나 Metamask 등의 브라우저를 사용하여 안전하게 주소를 연결합니다.
+            본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet 브라우저 또는 앱을 사용하여 안전하게 주소를 연결합니다.
           </p>
           <div class="step-info-box">
             <i data-lucide="info" style="width: 14px; height: 14px;"></i>
@@ -1057,7 +1057,8 @@
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  모바일 기기에 트러스트 월렛(Trust Wallet) 또는 메타마스크(MetaMask) 앱이 정상적으로 설치 및 로그인되어 있는지 확인해 주세요.<br><br>
+                  모바일 기기에 트러스트 월렛(Trust Wallet) 앱이 정상적으로 설치 및 로그인되어 있는지 확인해 주세요.<br><br>
+                  AI-S 플랫폼은 보안 및 안정성을 위해 <strong>트러스트 월렛(Trust Wallet)을 공식 지갑으로 사용</strong>합니다. 메타마스크 등 다른 지갑은 지원되지 않을 수 있습니다.<br><br>
                   <strong>삼성 인터넷 브라우저</strong>를 사용 중이시라면, 구글 로그인을 먼저 완료한 후 "트러스트 월렛 연결" 버튼을 누르시면 자동으로 Trust Wallet 앱으로 전환됩니다. 삼성 인터넷에서 직접 지갑 연결이 되지 않는 것은 정상이며, Trust Wallet 앱에서 이어서 진행하시면 됩니다.
                 </div>
               </div>
@@ -1112,7 +1113,7 @@
             회원정보 입력 및 KYC 서류 제출
           </h3>
           <p class="step-desc">
-            1단계에서 연동한 구글 정보에 덧붙여 전화번호, 국가를 입력하고, 매니저 지갑 검증, 신분증(주민등록증/여권 등) 사진을 첨부합니다. 마지막으로 Trust Wallet에서 SUT 자동 인출 권한(Approve) 스마트 서명을 완료합니다.
+            1단계에서 연동한 구글 정보에 덧붙여 전화번호, 국가를 입력하고, 매니저 지갑 검증, 신분증(주민등록증/여권 등) 사진을 첨부합니다. 가입 완료 후 PC에서 사용자 대시보드의 "위임 승인(1회)" 버튼을 통해 SUT 거래 권한을 활성화합니다.
           </p>
           <div class="step-info-box">
             <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
@@ -1133,12 +1134,12 @@
             </div>
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
-                <span class="faq-question">💡 Q. 1,000,000 SUT 승인은 코인이 출금된 건가요?</span>
+                <span class="faq-question">💡 Q. 가입 시 Approve(승인) 절차가 없나요?</span>
                 <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  아닙니다! 100만 SUT는 AI 자동 매매 정산을 가능케 하는 <strong>'최대 승인 거래 한도(Approve Limit)'</strong>를 설정하는 블록체인 표준 규약이며, 실제 지갑에서 즉시 코인이 빠져나가는 거래가 아니므로 안심하세요.
+                  네, 가입 과정이 간소화되었습니다. 가입 완료 후 PC에서 사용자 대시보드의 <strong>"위임 승인(1회)"</strong> 버튼을 통해 별도로 진행합니다.
                 </div>
               </div>
             </div>
@@ -1264,7 +1265,7 @@
 
             <div class="glass-card glow-active" style="display: flex; flex-direction: column; gap: 14px; margin-top: 30px;">
               <h4 style="font-size: 13px; color: white; font-weight: 700;">Polygon(SUT) 지갑 연결</h4>
-              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">회원가입 및 세션 연동을 위해 Trust Wallet 또는 Metamask를 연결하십시오.</p>
+              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">회원가입 및 세션 연동을 위해 Trust Wallet을 연결하십시오.</p>
               
               <div class="form-group">
                 <span class="form-label">나의 폴리곤 지갑 주소</span>
@@ -1460,22 +1461,19 @@
                 </div>
               </div>
 
-              <div class="glass-card highlight-pulse" id="card-sut" style="padding: 12px; border: 1px solid rgba(139,92,246,0.15); display: flex; flex-direction: column; gap: 8px;">
+              <div class="glass-card" style="padding: 12px; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 6px; align-items: flex-start;">
-                  <i data-lucide="key" style="width: 16px; height: 16px; color: #8b5cf6; flex-shrink: 0; margin-top: 1px;"></i>
+                  <i data-lucide="key" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0; margin-top: 1px;"></i>
                   <div>
-                    <h5 style="font-size: 11px; color: white; font-weight: 700;">SUT 자동 인출 권한(Approve) 승인</h5>
+                    <h5 style="font-size: 11px; color: white; font-weight: 700;">SUT 위임 승인 안내</h5>
                     <p style="font-size: 9px; color: var(--text-muted); line-height: 1.3; margin-top: 1px;">
-                      가입 접수 전 Trust Wallet 내 SUT 유동성 연동 권한 승인이 반드시 필요합니다.
+                      가입 완료 후 PC에서 사용자 페이지에 접속하여 <strong style="color: #8b5cf6;">"위임 승인(1회)"</strong> 버튼을 눌러주세요.
                     </p>
-                    <p style="font-size: 8px; color: #fbbf24; line-height: 1.3; margin-top: 4px; font-weight: 500;">
-                      ※ 주의: 지갑 승인 시 표시되는 <strong>'1,000,000 SUT'</strong>는 실제 출금 금액이 아닌 <strong>자동 거래 한도 설정 권한</strong>입니다. 실제 코인이 즉시 이체되거나 거래되는 것이 아닙니다.
+                    <p style="font-size: 8px; color: var(--success-color); line-height: 1.3; margin-top: 4px; font-weight: 500;">
+                      승인 완료 후 SUT 입금/출금이 활성화됩니다.
                     </p>
                   </div>
                 </div>
-                <button type="button" class="btn-primary" id="btn-wallet-approve" style="height: 36px; font-size: 11px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);" onclick="openWalletPopup()">
-                  폴리곤 SUT 인출 승인 위임하기
-                </button>
               </div>
 
             </div>
@@ -1491,7 +1489,7 @@
 
             <div class="tutorial-tooltip" id="tooltip-step4">
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
-              <span>전화번호 기입, 매니저 검증, 신분증 클릭, 지갑 승인을 모두 거치세요!</span>
+              <span>전화번호 기입, 매니저 검증, 신분증 클릭을 모두 거치세요!</span>
             </div>
           </div>
 
@@ -1738,7 +1736,7 @@
       } else {
         if (step1Desc) step1Desc.innerHTML = 'AI-S 플랫폼 가입의 첫 단계는 구글 계정 연동입니다. 구글 인증을 통하여 이메일 및 실명 정보를 안전하게 연동 및 검증합니다.';
         if (step2Title) step2Title.innerHTML = '<i data-lucide="wallet" style="width: 18px; height: 18px;"></i>지갑 주소 로그인';
-        if (step2Desc) step2Desc.innerHTML = '본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet이나 Metamask 등의 브라우저를 사용하여 안전하게 주소를 연결합니다.';
+        if (step2Desc) step2Desc.innerHTML = '본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet 브라우저를 사용하여 안전하게 주소를 연결합니다.';
       }
       lucide.createIcons();
     }
@@ -1967,7 +1965,7 @@
       else document.getElementById('group-phone').classList.add('highlight-pulse');
 
       const btnSubmit = document.getElementById('btn-submit-form');
-      if (phoneInputFilled && managerVerified && idCardUploaded && walletApproved) {
+      if (phoneInputFilled && managerVerified && idCardUploaded) {
         btnSubmit.removeAttribute('disabled');
         btnSubmit.style.opacity = "1";
         

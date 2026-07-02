@@ -3,10 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Mail, Phone, Globe, Image, UserCheck, Key, ShieldAlert } from 'lucide-react';
 import { API_BASE } from '../App';
-import {
-  executeSutApprovalFlow,
-  hasApprovalRecoveryResumeFlag,
-} from '../lib/sutApprovalFlow';
 import { translateError } from '../lib/errorHandler';
 
 const DEFAULT_MANAGER_ADDRESS = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
@@ -21,14 +17,11 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
 
-  const [managerAddress, setManagerAddress] = useState(DEFAULT_MANAGER_ADDRESS);
+  const [managerAddress, setManagerAddress] = useState('');
   const [managerVerified, setManagerVerified] = useState(false);
   const [managerName, setManagerName] = useState('');
 
-  const [isApproved, setIsApproved] = useState(false);
-  const [approving, setApproving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [autoRecoveryAttempted, setAutoRecoveryAttempted] = useState(false);
 
   const verifyManager = async () => {
     if (!managerAddress) {
@@ -64,43 +57,9 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
-  const handleSUTApprove = async () => {
-    setApproving(true);
-    try {
-      await executeSutApprovalFlow({
-        ethereum: window.ethereum,
-        currentUrl: window.location.href,
-        userAgent: navigator.userAgent,
-        expectedWalletAddress: walletAddress,
-        alertFn: window.alert,
-        confirmFn: window.confirm,
-        setLocationHref: (url) => {
-          window.location.href = url;
-        },
-        onApproved: () => {
-          setIsApproved(true);
-        },
-      });
-    } finally {
-      setApproving(false);
-    }
-  };
 
-  useEffect(() => {
-    if (autoRecoveryAttempted || !hasApprovalRecoveryResumeFlag(window.location.href)) {
-      return;
-    }
 
-    setAutoRecoveryAttempted(true);
-
-    const resumeUrl = new URL(window.location.href);
-    resumeUrl.searchParams.delete('recover_sut_approval');
-    window.history.replaceState(null, '', `${resumeUrl.pathname}${resumeUrl.search}${resumeUrl.hash}`);
-
-    handleSUTApprove();
-  }, [autoRecoveryAttempted]);
-
-  const isFormComplete = phone.trim() !== '' && idCardFile !== null && isApproved && managerVerified;
+  const isFormComplete = phone.trim() !== '' && idCardFile !== null && managerVerified;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,10 +81,7 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
       return;
     }
 
-    if (!isApproved) {
-      alert('🔑 [승인 필요] 가입비 자동 수납 및 시스템 활성화를 위해 [SUT 자동 인출 권한(Approve) 승인]을 완료해 주십시오.');
-      return;
-    }
+
 
     setSubmitting(true);
     const formData = new FormData();
@@ -330,22 +286,9 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
                 style={{
                   paddingLeft: '45px',
                   borderColor: managerVerified ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.1)',
-                  color: !managerVerified && managerAddress === DEFAULT_MANAGER_ADDRESS
-                    ? '#4B5563'
-                    : undefined
                 }}
-                placeholder="0x..."
+                placeholder="매니저 지갑 주소를 입력하세요 (0x...)"
                 value={managerAddress}
-                onFocus={() => {
-                  if (!managerVerified && managerAddress === DEFAULT_MANAGER_ADDRESS) {
-                    setManagerAddress('');
-                  }
-                }}
-                onBlur={() => {
-                  if (!managerVerified && (!managerAddress || !managerAddress.trim())) {
-                    setManagerAddress(DEFAULT_MANAGER_ADDRESS);
-                  }
-                }}
                 onChange={(e) => {
                   setManagerAddress(e.target.value);
                   setManagerVerified(false);
@@ -369,7 +312,7 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
                 style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto', background: 'rgba(239, 68, 68, 0.2)', color: '#FCA5A5' }}
                 onClick={() => {
                   setManagerVerified(false);
-                  setManagerAddress(DEFAULT_MANAGER_ADDRESS);
+                  setManagerAddress('');
                   setManagerName('');
                 }}
               >
@@ -380,6 +323,19 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
           <span style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', display: 'block', paddingLeft: '4px' }}>
             * 본인을 초대한 매니저의 지갑 주소를 입력하고 반드시 검증을 완료해 주십시오. (소속 코드가 기록됩니다)
           </span>
+          <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.15)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+            <div style={{ overflow: 'hidden' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>대표 매니저 주소</span>
+              <span style={{ fontSize: '11px', color: '#A78BFA', fontFamily: 'monospace', wordBreak: 'break-all' }}>{DEFAULT_MANAGER_ADDRESS}</span>
+            </div>
+            <button
+              type="button"
+              style={{ flexShrink: 0, padding: '4px 10px', fontSize: '10px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '6px', color: '#A78BFA', cursor: 'pointer', fontWeight: '700' }}
+              onClick={() => { navigator.clipboard.writeText(DEFAULT_MANAGER_ADDRESS); alert('주소가 복사되었습니다.'); }}
+            >
+              복사
+            </button>
+          </div>
         </div>
 
         <div className="form-group" style={{ marginBottom: 0 }}>
@@ -418,41 +374,17 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
         </div>
 
 
-        <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(139,92,246,0.2)' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'flex-start' }}>
-            <Key size={20} color="#8B5CF6" style={{ marginTop: '2px', flexShrink: 0 }} />
+        <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <Key size={20} color="#10B981" style={{ marginTop: '2px', flexShrink: 0 }} />
             <div>
-              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT 자동 인출 권한(Approve) 승인</h4>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.4' }}>
-                가입 접수 전 Trust Wallet에서 SUT 거래 권한 승인이 반드시 필요합니다.
+              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT 위임 승인 안내</h4>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.5' }}>
+                가입 완료 후 PC에서 사용자 페이지에 접속하여 <strong style={{ color: '#8B5CF6' }}>"위임 승인(1회)"</strong> 버튼을 눌러주세요.<br/>
+                승인 완료 후 SUT 입금/출금이 활성화됩니다.
               </p>
             </div>
           </div>
-
-          {!isApproved ? (
-            <button
-              type="button"
-              className="btn-primary"
-              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', boxShadow: 'none' }}
-              onClick={handleSUTApprove}
-              disabled={approving}
-            >
-              {approving ? '지갑 트랜잭션 승인 대기 중...' : '폴리곤 SUT 인출 승인 위임하기'}
-            </button>
-          ) : (
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.08)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              padding: '10px',
-              borderRadius: '10px',
-              color: 'var(--success-color)',
-              fontSize: '12px',
-              fontWeight: '700',
-              textAlign: 'center'
-            }}>
-              SUT 자동 결제 승인 완료
-            </div>
-          )}
         </div>
 
 

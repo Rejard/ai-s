@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
+import { checkVaultAllowance, approveVault } from '../lib/vaultApproval';
 import {
   FINALIZE_SUT_DEPOSIT_PARAM,
   FINALIZE_SUT_TX_HASH_PARAM,
@@ -52,6 +53,8 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [autoDepositFinalizeAttempted, setAutoDepositFinalizeAttempted] = useState(false);
 
   const [txHistory, setTxHistory] = useState([]);
+  const [vaultApproved, setVaultApproved] = useState(null);
+  const [approvingVault, setApprovingVault] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -71,6 +74,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     } catch (err) {
       console.error('Dashboard data load failed:', err);
     }
+    try {
+      const approved = await checkVaultAllowance({ walletAddress, ethersLib: ethers });
+      setVaultApproved(approved);
+    } catch (e) { console.error('Vault allowance check failed:', e); }
   };
 
   const fetchTxHistory = async () => {
@@ -88,6 +95,18 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       fetchTxHistory();
     }
   }, [walletAddress]);
+
+  const handleApproveVault = async () => {
+    setApprovingVault(true);
+    try {
+      await approveVault({ ethersLib: ethers });
+      setVaultApproved(true);
+      alert('✅ 위임 승인 완료!');
+    } catch (err) {
+      if (err?.code === 'ACTION_REJECTED' || err?.message?.includes('rejected')) { alert('지갑에서 승인 서명이 취소되었습니다.'); }
+      else { alert(`❌ 위임 승인 실패: ${err.message || err}`); }
+    } finally { setApprovingVault(false); }
+  };
 
   const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -353,21 +372,6 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
             <Wallet size={18} color="#8B5CF6" />
             {DASHBOARD_COPY.assetOverview}
           </h3>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={handleApprovalRecovery}
-            disabled={recoveringApproval}
-            style={{
-              width: 'auto',
-              padding: '6px 10px',
-              fontSize: '11px',
-              borderRadius: '999px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {recoveringApproval ? '복구 중...' : '위임 복구'}
-          </button>
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -414,8 +418,26 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
             <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>{DASHBOARD_COPY.withdrawAction}</button>
           </div>
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '12px 2px 0' }}>
-            Trust Wallet에서 기존 Polygon SUT 위임을 삭제하거나 수량을 바꾼 뒤 거래가 막히면 위임 복구로 1,000,000 SUT 위임을 다시 등록해 주세요.
+            PC에서 1회 위임 승인을 하면 모바일에서 SUT 입금/출금이 가능합니다.
           </p>
+          {vaultApproved === true ? (
+            <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
+              <ShieldCheck size={12} /> ✅ 위임 승인 완료
+            </div>
+          ) : vaultApproved === false ? (
+            <button
+              type="button"
+              onClick={handleApproveVault}
+              disabled={approvingVault}
+              style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}
+            >
+              <ShieldCheck size={12} /> {approvingVault ? '승인 처리 중...' : '🔐 위임 승인(1회)'}
+            </button>
+          ) : (
+            <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
+              <ShieldCheck size={12} /> 위임 승인 확인 중...
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, ShieldAlert, ArrowUpDown, Settings } from 'lucide-react';
+import { BarChart3, ShieldAlert, ShieldCheck, ArrowUpDown, Settings } from 'lucide-react';
 
 function ManagerAiConfigSection({
   gridSettings,
@@ -22,7 +22,10 @@ function ManagerAiConfigSection({
   handleSaveApiKeys,
   isSavingCredentials,
   handleClearApiKeys,
-  setShowSendSutModal
+  setShowSendSutModal,
+  handleApproveOperator,
+  approvingOperator,
+  operatorApproved
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -230,6 +233,21 @@ function ManagerAiConfigSection({
           >
             <ArrowUpDown size={12} /> 내 지갑에서 Gate.io로 SUT 송금
           </button>
+          {operatorApproved ? (
+            <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
+              <ShieldCheck size={12} /> ✅ 서버 대행 출금 승인 완료
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleApproveOperator}
+              disabled={approvingOperator}
+              style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}
+            >
+              <ShieldCheck size={12} /> {approvingOperator ? '승인 처리 중...' : '🔐 서버 대행 출금 승인(1회)'}
+            </button>
+          )}
         </div>
       </div>
 

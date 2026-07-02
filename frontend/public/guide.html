@@ -357,6 +357,12 @@
     <div class="hero-section">
       <h1 class="hero-title">자주 묻는 질문 (FAQ)</h1>
       <p class="hero-desc">AI-S 회원가입 및 KYC 서류 제출 절차 중 궁금한 내용에 대한 답변입니다.</p>
+      <div style="margin: 12px auto 0; max-width: 600px; padding: 12px 16px; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 12px; text-align: left;">
+        <p style="font-size: 12px; color: var(--text-main); line-height: 1.6; margin: 0;">
+          💻 <strong>회원가입 및 위임 승인은 PC 환경을 권장합니다.</strong><br>
+          <span style="font-size: 11px; color: var(--text-muted);">모바일은 갤럭시 크롬 브라우저에서 정상 동작하며, 그 외 환경에서는 제한이 있을 수 있습니다. 향후 Google Play 전용 앱이 출시되면 모바일 환경이 개선될 예정입니다.</span>
+        </p>
+      </div>
       
       <div class="search-wrapper">
         <i data-lucide="search" class="search-icon" style="width: 18px; height: 18px;"></i>
@@ -371,6 +377,7 @@
       <button class="tab-btn" onclick="filterCategory('step3', this)">약관 동의</button>
       <button class="tab-btn" onclick="filterCategory('step4', this)">정보입력 & KYC</button>
       <button class="tab-btn" onclick="filterCategory('step5', this)">심사 대기</button>
+      <button class="tab-btn" onclick="filterCategory('step6', this)">위임 승인</button>
     </div>
 
     <div class="faq-list" id="faq-list-container">
@@ -389,6 +396,25 @@
             <strong>해결 방법:</strong><br>
             1. 사용 중인 웹 브라우저의 <strong>시크릿 창 (InPrivate 모드)</strong>을 실행하여 다시 사이트에 접속한 뒤 구글 로그인을 진행해 보세요.<br>
             2. 혹은 기본 웹 브라우저를 크롬(Google Chrome) 최신 버전으로 변경해 시도하시는 것을 적극 권장합니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item" data-category="step1">
+        <div class="faq-trigger" onclick="toggleFaq(this)">
+          <div>
+            <span class="faq-badge">Step 1. Google Auth</span>
+            <span class="faq-question">Q. 모바일에서 가입해도 되나요?</span>
+          </div>
+          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
+        </div>
+        <div class="faq-content">
+          <div class="faq-answer">
+            <strong>PC 환경을 권장합니다.</strong> 현재 AI-S는 PWA(웹 앱) 방식으로 운영되며, 모바일 브라우저 환경에 따라 제한이 있을 수 있습니다.<br>
+            • <strong>갤럭시 크롬 브라우저</strong>: 정상 동작 확인됨<br>
+            • <strong>그 외 모바일 브라우저</strong>: 구글 로그인, 지갑 연동 등에서 오류가 발생할 수 있음<br>
+            • <strong>PC 크롬 + Trust Wallet 확장</strong>: 가장 안정적인 환경<br><br>
+            향후 Google Play 전용 앱(APK)이 출시되면 모바일 환경이 크게 개선될 예정입니다.
           </div>
         </div>
       </div>
@@ -418,7 +444,8 @@
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            모바일 기기를 이용하는 경우 <strong>트러스트 월렛(Trust Wallet)</strong> 또는 <strong>메타마스크(MetaMask)</strong> 앱이 스마트폰에 설치되어 있으며, 백그라운드에서 지갑 잠금이 해제된 상태여야 정상 작동합니다. PC를 사용할 경우 크롬 브라우저의 지갑 확장 프로그램(Extension)을 사전에 설치 및 활성화해 주셔야 연동 팝업이 호출됩니다.
+            모바일 기기를 이용하는 경우 <strong>트러스트 월렛(Trust Wallet)</strong> 앱이 스마트폰에 설치되어 있으며, 백그라운드에서 지갑 잠금이 해제된 상태여야 정상 작동합니다. PC를 사용할 경우 크롬 브라우저의 Trust Wallet 확장 프로그램(Extension)을 사전에 설치 및 활성화해 주셔야 연동 팝업이 호출됩니다.<br>
+            <strong>※ AI-S 플랫폼은 Trust Wallet만 지원합니다. 메타마스크 등 다른 지갑은 사용할 수 없습니다.</strong>
           </div>
         </div>
       </div>
@@ -478,7 +505,8 @@
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            담당 매니저 지갑 주소는 회원님의 투자 자금 유동성을 연동하고 사후 관리를 수행해 줄 <strong>전담 매니저의 지갑 식별 고유 코드</strong>입니다. 본 주소는 플랫폼에서 무작위로 임의 배정하지 않으므로, <strong>반드시 본인의 추천 매니저(또는 상위 위탁자)에게 직접 연락하여 지갑 주소를 전달받아 기입하셔야 합니다.</strong> 오기입하거나 검증을 거치지 않으면 가입 심사가 즉각 거절 및 반려됩니다.
+            담당 매니저 지갑 주소는 회원님의 투자 자금 유동성을 연동하고 사후 관리를 수행해 줄 <strong>전담 매니저의 지갑 식별 고유 코드</strong>입니다. 본 주소는 플랫폼에서 무작위로 임의 배정하지 않으므로, <strong>반드시 본인의 추천 매니저(또는 상위 위탁자)에게 직접 연락하여 지갑 주소를 전달받아 기입하셔야 합니다.</strong><br>
+            가입 화면 하단에 대표 매니저 주소가 참고용으로 표시되어 있으며, [복사] 버튼으로 복사하실 수 있습니다. 오기입하거나 검증을 거치지 않으면 가입 심사가 즉각 거절 및 반려됩니다.
           </div>
         </div>
       </div>
@@ -487,14 +515,14 @@
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
             <span class="faq-badge">Step 4. KYC Form</span>
-            <span class="faq-question">Q. 지갑 서명 요청 시 '1,000,000 SUT' 인출 권한(Approve) 승인이 뜨는데 출금된 건가요?</span>
+            <span class="faq-question">Q. 가입 시 '1,000,000 SUT 인출 승인(Approve)' 절차가 없어졌나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            <strong>절대 아닙니다!</strong> 지갑에 명시되는 1,000,000 SUT(100만 코인) 승인 요청은 실제 코인이 타인에게 전송되거나 즉시 거래되는 금액이 아닙니다.<br>
-            이는 AI 시스템 자동 매매 연동을 지원하기 위해 계약이 향후 정산 거래할 수 있는 <strong>'거래 허용 최대 한계치(Approve Limit)'</strong>를 최초 1회 승인해 두는 전형적인 스마트 컨트랙트 규격입니다. 회원님이 예치한 자산 한도 내에서만 투자가 집행되며, 코인이 바로 인출되거나 증발하지 않으니 절대 혼동하지 마시기 바랍니다.
+            네, 가입 과정이 간소화되었습니다. 이전에는 가입 시 Trust Wallet에서 온체인 승인 트랜잭션을 진행해야 했으나, 현재는 <strong>가입 완료 후 PC에서 사용자 대시보드에 접속하여 "위임 승인(1회)" 버튼</strong>을 통해 별도로 진행합니다.<br>
+            가입 화면에 안내 문구가 표시되어 있으니 참고해 주세요.
           </div>
         </div>
       </div>
@@ -541,6 +569,58 @@
           <div class="faq-answer">
             가입 신청 후 24시간 이내에 최종 심사 완료가 승인되지 않으면, 보안상 서버의 신분증 정보가 파기되면서 신청서 자체가 자동 반려 및 전면 무효화 처리됩니다.<br>
             이 경우, 불편하시더라도 가이드 및 튜토리얼을 참고하여 1단계 구글 로그인부터 전체 과정을 <strong>처음부터 다시 정밀 기입하셔서 신규 제출(재신청)</strong>을 진행하셔야 합니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item" data-category="step6">
+        <div class="faq-trigger" onclick="toggleFaq(this)">
+          <div>
+            <span class="faq-badge">Step 6. Approval</span>
+            <span class="faq-question">Q. "위임 승인(1회)"은 무엇이며, 어디서 진행하나요?</span>
+          </div>
+          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
+        </div>
+        <div class="faq-content">
+          <div class="faq-answer">
+            위임 승인은 AI-S 플랫폼의 Vault 컨트랙트가 회원님의 지갑에서 SUT를 입금/출금할 수 있도록 허용하는 1회성 온체인 승인입니다.<br>
+            <strong>가입 완료 후 PC에서 사용자 대시보드에 접속</strong>하면 "내 자산 현황" 블록 하단에 <strong>"🔐 위임 승인(1회)"</strong> 버튼이 표시됩니다. 이 버튼을 누르면 Trust Wallet에서 서명 요청이 뜨고, 승인하면 "✅ 위임 승인 완료"로 변경됩니다.<br>
+            <strong>※ 이 승인은 코인을 보내는 것이 아니라, 향후 거래 시 최대 한도(1,000,000 SUT)를 설정하는 것입니다. 코인은 회원님 지갑에 그대로 보관됩니다.</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item" data-category="step6">
+        <div class="faq-trigger" onclick="toggleFaq(this)">
+          <div>
+            <span class="faq-badge">Step 6. Approval</span>
+            <span class="faq-question">Q. 위임 승인을 모바일에서 할 수 없나요?</span>
+          </div>
+          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
+        </div>
+        <div class="faq-content">
+          <div class="faq-answer">
+            위임 승인은 <strong>PC에서 진행하시는 것을 권장합니다.</strong> 모바일 Trust Wallet 내장 브라우저에서는 RPC 연결이 불안정하여 트랜잭션이 실패할 수 있습니다.<br>
+            PC 크롬 브라우저에 Trust Wallet 확장 프로그램을 설치하고, 사용자 대시보드에서 "위임 승인(1회)" 버튼을 눌러주세요. 한 번만 승인하면 이후 모바일에서도 정상적으로 SUT 입금/출금이 가능합니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="faq-item" data-category="step6">
+        <div class="faq-trigger" onclick="toggleFaq(this)">
+          <div>
+            <span class="faq-badge">Step 6. Approval</span>
+            <span class="faq-question">Q. 위임 승인 후에도 입금/출금이 안 됩니다.</span>
+          </div>
+          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
+        </div>
+        <div class="faq-content">
+          <div class="faq-answer">
+            사용자 대시보드에서 "✅ 위임 승인 완료" 상태가 표시되는지 확인해 주세요. 표시되지 않는다면 승인 트랜잭션이 정상 처리되지 않은 것입니다.<br>
+            <strong>해결 방법:</strong><br>
+            1. PC 크롬 브라우저에서 사용자 대시보드에 다시 접속합니다.<br>
+            2. "위임 승인(1회)" 버튼이 다시 표시되면 클릭하여 재승인합니다.<br>
+            3. Trust Wallet 확장 프로그램에서 Polygon 네트워크가 선택되어 있는지, POL(가스비) 잔액이 충분한지 확인합니다.
           </div>
         </div>
       </div>
