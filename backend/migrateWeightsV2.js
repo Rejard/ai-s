@@ -1,6 +1,23 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const { FEATURE_COUNT } = require('./simulationEngine');
+const fs = require('fs');
+
+const AIDL_FEATURE_ORDER = [
+  'price_change_pct',
+  'rsi_scaled',
+  'sma20_deviation',
+  'volume_ratio',
+  'volatility',
+  'macd_histogram',
+  'bollinger_pct_b',
+  'atr_ratio',
+  'ema_crossover',
+  'obv_change',
+];
+const AIDL_ACTIONS = ['BUY', 'SELL', 'HOLD'];
+const TARGET_LENGTH = AIDL_FEATURE_ORDER.length;
+
+const PRESERVED_FEATURES = ['price_change_pct', 'rsi_scaled'];
 
 const defaultDbName = process.env.NODE_ENV === 'development' ? 'platform_dev.db' : 'platform.db';
 const dbPath = process.env.AIS_DB_PATH
@@ -25,111 +42,255 @@ function dbRun(db, sql, params = []) {
   });
 }
 
-function padWeights(weights, targetLength) {
-  if (!weights || typeof weights !== 'object') return null;
-  const padded = {};
-  for (const action of ['BUY', 'SELL', 'HOLD']) {
-    const arr = Array.isArray(weights[action]) ? weights[action] : [];
-    if (arr.length >= targetLength) {
-      padded[action] = arr.slice(0, targetLength);
-    } else {
-      padded[action] = [...arr, ...new Array(targetLength - arr.length).fill(0)];
-    }
-  }
-  return padded;
+function dbExec(db, sql) {
+  return new Promise((resolve, reject) => {
+    db.exec(sql, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
 }
 
-function padDnaWeights(dna, targetLength) {
-  if (!dna || typeof dna !== 'object') return dna;
-  if (dna.weights) {
-    dna.weights = padWeights(dna.weights, targetLength);
+function remapWeightVector(oldWeights, oldFeatures) {
+  const remapped = {};
+  const oldFeatureMap = {};
+  for (let i = 0; i < oldFeatures.length; i++) {
+    oldFeatureMap[oldFeatures[i]] = i;
   }
-  if (Array.isArray(dna.strategy_genes)) {
-    for (const gene of dna.strategy_genes) {
-      if (!Array.isArray(gene.subgenes)) continue;
-      for (const sub of gene.subgenes) {
-        if (sub && typeof sub.feature_index === 'number' && sub.feature_index < targetLength) {
-          continue;
+
+  for (const action of AIDL_ACTIONS) {
+    const oldArr = Array.isArray(oldWeights[action]) ? oldWeights[action] : [];
+    const newArr = new Array(TARGET_LENGTH).fill(0);
+
+    for (let i = 0; i < AIDL_FEATURE_ORDER.length; i++) {
+      const feature = AIDL_FEATURE_ORDER[i];
+      if (PRESERVED_FEATURES.includes(feature) && oldFeatureMap[feature] !== undefined) {
+        const oldIdx = oldFeatureMap[feature];
+        if (oldIdx < oldArr.length) {
+          newArr[i] = oldArr[oldIdx];
         }
       }
     }
+
+    remapped[action] = newArr;
   }
-  return dna;
+  return remapped;
+}
+
+function detectOldFeatures(dna) {
+  if (!dna || !Array.isArray(dna.strategy_genes) || !dna.strategy_genes[0]) {
+    return null;
+  }
+  const subgenes = dna.strategy_genes[0].subgenes;
+  if (!Array.isArray(subgenes) || subgenes.length === 0) return null;
+
+  const features = [];
+  for (const sub of subgenes) {
+    if (sub.action === 'BUY' && sub.feature) {
+      features.push(sub.feature);
+    }
+  }
+  return features;
+}
+
+function remapDna(dna, memberId) {
+  const remapped = JSON.parse(JSON.stringify(dna));
+
+  if (!Array.isArray(remapped.strategy_genes) || !remapped.strategy_genes[0]) {
+    return remapped;
+  }
+
+  const gene = remapped.strategy_genes[0];
+  const oldSubgenes = gene.subgenes || [];
+
+  const oldSubgeneMap = {};
+  for (const sub of oldSubgenes) {
+    const key = sub.action + '::' + sub.feature;
+    oldSubgeneMap[key] = sub;
+  }
+
+  const newSubgenes = [];
+  let innovationId = 2;
+
+  for (const action of AIDL_ACTIONS) {
+    for (let i = 0; i < AIDL_FEATURE_ORDER.length; i++) {
+      const feature = AIDL_FEATURE_ORDER[i];
+      const key = action + '::' + feature;
+      const existing = oldSubgeneMap[key];
+
+      if (existing && PRESERVED_FEATURES.includes(feature)) {
+        newSubgenes.push({
+          gene_id: memberId + '_' + action + '_' + feature,
+          innovation_id: innovationId,
+          state: existing.state || 'A',
+          feature: feature,
+          action: action,
+          weight: existing.weight,
+          threshold: existing.threshold || 0,
+          priority: existing.priority || 1,
+        });
+      } else {
+        newSubgenes.push({
+          gene_id: memberId + '_' + action + '_' + feature,
+          innovation_id: innovationId,
+          state: 'A',
+          feature: feature,
+          action: action,
+          weight: 0,
+          threshold: 0,
+          priority: 1,
+        });
+      }
+      innovationId++;
+    }
+  }
+
+  gene.subgenes = newSubgenes;
+  gene.length = TARGET_LENGTH;
+
+  remapped.lineage = remapped.lineage || {};
+  remapped.lineage.innovation_ids = Array.from(
+    { length: innovationId - 1 },
+    (_, idx) => idx + 1
+  );
+
+  return remapped;
 }
 
 async function migrate() {
-  console.log(`[MIGRATION] Opening database: ${dbPath}`);
-  console.log(`[MIGRATION] Target feature count: ${FEATURE_COUNT}`);
+  console.log('[MIGRATION] Target: ' + dbPath);
+  console.log('[MIGRATION] Feature count: ' + TARGET_LENGTH);
+  console.log('[MIGRATION] Features: ' + AIDL_FEATURE_ORDER.join(', '));
+
+  if (!fs.existsSync(dbPath)) {
+    console.error('[MIGRATION] Database file not found: ' + dbPath);
+    process.exit(1);
+  }
+
+  const backupPath = dbPath.replace(/\.db$/, '.db.before-vector-repair-v2');
+  if (!fs.existsSync(backupPath)) {
+    console.log('[MIGRATION] Creating backup: ' + backupPath);
+    fs.copyFileSync(dbPath, backupPath);
+  } else {
+    console.log('[MIGRATION] Backup already exists: ' + backupPath);
+  }
 
   const db = new sqlite3.Database(dbPath);
 
   try {
-    const rows = await dbAll(db, `
-      SELECT member_id, weights_json, dna_json
-      FROM ais_council_members
-    `);
+    await dbExec(db, 'BEGIN TRANSACTION');
 
-    console.log(`[MIGRATION] Found ${rows.length} council members`);
+    const rows = await dbAll(db,
+      'SELECT member_id, weights_json, phenotype_json, dna_json FROM ais_council_members'
+    );
+    console.log('[MIGRATION] Found ' + rows.length + ' council members');
 
     let migratedWeights = 0;
+    let migratedPhenotype = 0;
     let migratedDna = 0;
-    let alreadyCorrect = 0;
+    let skipped = 0;
+    let errors = 0;
 
     for (const row of rows) {
-      let weightsUpdated = false;
-      let dnaUpdated = false;
+      try {
+        const weights = row.weights_json ? JSON.parse(row.weights_json) : null;
+        const phenotype = row.phenotype_json ? JSON.parse(row.phenotype_json) : null;
+        const dna = row.dna_json ? JSON.parse(row.dna_json) : null;
 
-      if (row.weights_json) {
-        try {
-          const weights = JSON.parse(row.weights_json);
-          const needsPadding = ['BUY', 'SELL', 'HOLD'].some(
-            (action) => Array.isArray(weights[action]) && weights[action].length < FEATURE_COUNT
-          );
-
-          if (needsPadding) {
-            const padded = padWeights(weights, FEATURE_COUNT);
-            await dbRun(db,
-              `UPDATE ais_council_members SET weights_json = ? WHERE member_id = ?`,
-              [JSON.stringify(padded), row.member_id]
-            );
-            migratedWeights++;
-            weightsUpdated = true;
-          }
-        } catch (e) {
-          console.error(`[MIGRATION] Failed to parse weights for member ${row.member_id}:`, e.message);
+        if (!weights || !weights.BUY) {
+          skipped++;
+          continue;
         }
-      }
 
-      if (row.dna_json) {
-        try {
-          const dna = JSON.parse(row.dna_json);
-          const needsPadding = dna.weights && ['BUY', 'SELL', 'HOLD'].some(
-            (action) => Array.isArray(dna.weights[action]) && dna.weights[action].length < FEATURE_COUNT
-          );
-
-          if (needsPadding) {
-            const paddedDna = padDnaWeights(dna, FEATURE_COUNT);
-            await dbRun(db,
-              `UPDATE ais_council_members SET dna_json = ? WHERE member_id = ?`,
-              [JSON.stringify(paddedDna), row.member_id]
-            );
-            migratedDna++;
-            dnaUpdated = true;
-          }
-        } catch (e) {
-          console.error(`[MIGRATION] Failed to parse DNA for member ${row.member_id}:`, e.message);
+        const alreadyMigrated = weights.BUY.length === TARGET_LENGTH;
+        if (alreadyMigrated) {
+          skipped++;
+          continue;
         }
-      }
 
-      if (!weightsUpdated && !dnaUpdated) {
-        alreadyCorrect++;
+        const oldFeatures = detectOldFeatures(dna) || [
+          'price_change_pct', 'rsi_scaled',
+          'sma5_distance_pct', 'sma20_distance_pct', 'sma5_to_sma20_spread_pct'
+        ];
+
+        const newWeights = remapWeightVector(weights, oldFeatures);
+        const newPhenotype = phenotype
+          ? remapWeightVector(phenotype, oldFeatures)
+          : newWeights;
+        const newDna = dna
+          ? remapDna(dna, row.member_id)
+          : null;
+
+        await dbRun(db,
+          'UPDATE ais_council_members SET weights_json = ?, phenotype_json = ?, dna_json = ? WHERE member_id = ?',
+          [
+            JSON.stringify(newWeights),
+            JSON.stringify(newPhenotype),
+            newDna ? JSON.stringify(newDna) : row.dna_json,
+            row.member_id,
+          ]
+        );
+
+        migratedWeights++;
+        migratedPhenotype++;
+        if (newDna) migratedDna++;
+      } catch (e) {
+        console.error('[MIGRATION] Error for ' + row.member_id + ': ' + e.message);
+        errors++;
       }
     }
 
-    console.log(`[MIGRATION] Complete!`);
-    console.log(`  weights_json padded: ${migratedWeights}`);
-    console.log(`  dna_json padded:     ${migratedDna}`);
-    console.log(`  already correct:     ${alreadyCorrect}`);
+    if (errors > 0) {
+      await dbExec(db, 'ROLLBACK');
+      console.error('[MIGRATION] ROLLED BACK due to ' + errors + ' errors');
+      process.exit(1);
+    }
+
+    await dbExec(db, 'COMMIT');
+
+    console.log('[MIGRATION] Complete!');
+    console.log('  weights_json migrated:   ' + migratedWeights);
+    console.log('  phenotype_json migrated: ' + migratedPhenotype);
+    console.log('  dna_json migrated:       ' + migratedDna);
+    console.log('  skipped (already ok):    ' + skipped);
+
+    console.log('\n[VERIFICATION] Scanning all rows...');
+    const verify = await dbAll(db,
+      'SELECT member_id, weights_json, phenotype_json, dna_json FROM ais_council_members'
+    );
+    let ok = 0;
+    let bad = 0;
+    for (const v of verify) {
+      try {
+        const w = JSON.parse(v.weights_json);
+        const p = JSON.parse(v.phenotype_json);
+        const d = v.dna_json ? JSON.parse(v.dna_json) : null;
+
+        let rowOk = true;
+        for (const action of AIDL_ACTIONS) {
+          if (!w[action] || w[action].length !== TARGET_LENGTH) rowOk = false;
+          if (!p[action] || p[action].length !== TARGET_LENGTH) rowOk = false;
+        }
+        if (d && d.strategy_genes && d.strategy_genes[0]) {
+          if (d.strategy_genes[0].length !== TARGET_LENGTH) rowOk = false;
+          if (d.strategy_genes[0].subgenes.length !== AIDL_ACTIONS.length * TARGET_LENGTH) rowOk = false;
+        }
+
+        if (rowOk) ok++;
+        else {
+          bad++;
+          console.error('[VERIFY] BAD: ' + v.member_id);
+        }
+      } catch (e) {
+        bad++;
+        console.error('[VERIFY] PARSE ERROR: ' + v.member_id + ' - ' + e.message);
+      }
+    }
+    console.log('[VERIFICATION] OK=' + ok + '  BAD=' + bad + '  TOTAL=' + verify.length);
+    if (bad > 0) {
+      console.error('[VERIFICATION] WARNING: Some rows failed verification!');
+      process.exit(1);
+    }
   } finally {
     db.close();
   }

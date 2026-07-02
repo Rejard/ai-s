@@ -464,6 +464,12 @@ function initializeDatabase() {
         }
       });
 
+      db.run("ALTER TABLE manager_gateio_transfers ADD COLUMN price_at_time REAL DEFAULT NULL", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ manager_gateio_transfers price_at_time 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
       db.run("UPDATE platform_settings SET value = 'GEMINI' WHERE key = 'global_ai_engine' AND value IN ('GEMINI_ONLY', 'GEMINI_AIS_SHADOW')", (err) => {
         if (err) console.error("❌ platform_settings 엔진 모드 통합 마이그레이션 실패:", err.message);
       });

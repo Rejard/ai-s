@@ -837,6 +837,13 @@ async function syncGateIoTradesToDb(managerEmail, apiKey, apiSecret) {
 
 async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
   try {
+    let sutPriceAtSync = 0;
+    try {
+      const tickerRes = await axios.get('https://api.gateio.ws/api/v4/spot/tickers?currency_pair=SUT_USDT', { timeout: 3000 });
+      if (tickerRes.data && tickerRes.data.length > 0) {
+        sutPriceAtSync = parseFloat(tickerRes.data[0].last);
+      }
+    } catch (e) {}
 
     const depositsRes = await getGateIoDeposits(apiKey, apiSecret);
     if (depositsRes.success && Array.isArray(depositsRes.data)) {
@@ -846,8 +853,8 @@ async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
         
         await queries.run(`
           INSERT OR IGNORE INTO manager_gateio_transfers
-            (manager_email, transfer_id, type, currency, amount, txid, status, create_time)
-          VALUES (?, ?, 'DEPOSIT', ?, ?, ?, ?, ?)
+            (manager_email, transfer_id, type, currency, amount, txid, status, create_time, price_at_time)
+          VALUES (?, ?, 'DEPOSIT', ?, ?, ?, ?, ?, ?)
         `, [
           managerEmail,
           transferId,
@@ -855,7 +862,8 @@ async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
           parseFloat(d.amount || 0),
           d.txid || '',
           d.status || '',
-          String(d.create_time || d.timestamp || '')
+          String(d.create_time || d.timestamp || ''),
+          (d.currency || 'USDT') === 'SUT' ? sutPriceAtSync : null
         ]);
       }
     }
@@ -869,8 +877,8 @@ async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
 
         await queries.run(`
           INSERT OR IGNORE INTO manager_gateio_transfers
-            (manager_email, transfer_id, type, currency, amount, txid, status, create_time)
-          VALUES (?, ?, 'WITHDRAW', ?, ?, ?, ?, ?)
+            (manager_email, transfer_id, type, currency, amount, txid, status, create_time, price_at_time)
+          VALUES (?, ?, 'WITHDRAW', ?, ?, ?, ?, ?, ?)
         `, [
           managerEmail,
           transferId,
@@ -878,12 +886,52 @@ async function syncGateIoTransfersToDb(managerEmail, apiKey, apiSecret) {
           parseFloat(w.amount || 0),
           w.txid || '',
           w.status || '',
-          String(w.create_time || '')
+          String(w.create_time || ''),
+          (w.currency || 'USDT') === 'SUT' ? sutPriceAtSync : null
         ]);
       }
     }
+
+    await backfillPriceAtTime(managerEmail);
   } catch (err) {
     console.error("❌ [Gate.io Transfers Sync Error]:", err.message);
+  }
+}
+
+async function backfillPriceAtTime(managerEmail) {
+  try {
+    const nullRows = await queries.all(`
+      SELECT id, create_time FROM manager_gateio_transfers
+      WHERE LOWER(manager_email) = LOWER(?)
+        AND currency = 'SUT'
+        AND price_at_time IS NULL
+    `, [managerEmail]);
+
+    if (!nullRows || nullRows.length === 0) return;
+
+    for (const row of nullRows) {
+      try {
+        const ts = parseInt(row.create_time);
+        if (!ts || isNaN(ts)) continue;
+
+        const from = ts - 1800;
+        const to = ts + 1800;
+        const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=SUT_USDT&interval=1h&from=${from}&to=${to}&limit=1`;
+        const candleRes = await axios.get(url, { timeout: 5000 });
+
+        if (Array.isArray(candleRes.data) && candleRes.data.length > 0) {
+          const closePrice = parseFloat(candleRes.data[0][2]);
+          if (closePrice > 0) {
+            await queries.run(
+              `UPDATE manager_gateio_transfers SET price_at_time = ? WHERE id = ?`,
+              [closePrice, row.id]
+            );
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.error("❌ [Backfill price_at_time Error]:", err.message);
   }
 }
 
@@ -976,7 +1024,8 @@ router.get('/gateio-performance', async (req, res) => {
       if (tr.currency === 'USDT') {
         val = amt;
       } else if (tr.currency === 'SUT') {
-        val = amt * sutPrice;
+        const priceToUse = (tr.price_at_time && tr.price_at_time > 0) ? tr.price_at_time : sutPrice;
+        val = amt * priceToUse;
       } else {
         val = 0;
       }

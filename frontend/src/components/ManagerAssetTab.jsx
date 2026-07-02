@@ -46,6 +46,9 @@ function ManagerAssetTab({
                 </span>
               )}
             </div>
+            <div style={{ fontSize: '9px', color: 'var(--text-dark)', marginTop: '2px' }}>
+              ※ 원금은 Gate.io에 SUT 입금 시점의 시세를 기준으로 산정됩니다
+            </div>
           </div>
           <div style={{ flexShrink: 0 }}>
             <span className="glow-active" style={{ fontSize: '9px', color: performance ? 'var(--success-color)' : 'var(--text-dark)', background: performance ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '8px', fontWeight: '700', whiteSpace: 'nowrap' }}>

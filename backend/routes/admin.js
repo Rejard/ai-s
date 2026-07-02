@@ -230,6 +230,10 @@ function assessWeb3WalletHealth({ walletAddress, polBalance, blockNum, latency, 
 
 function determineFactionForDiagnostics(weights, nameOrId = '') {
   try {
+    if (weights && typeof weights.faction_hint === 'string' && weights.faction_hint.trim()) {
+      return weights.faction_hint.trim();
+    }
+
     if (weights && weights.regulatory_profile) {
       return classifyFactionByDna(weights, nameOrId);
     }
@@ -241,8 +245,6 @@ function determineFactionForDiagnostics(weights, nameOrId = '') {
 
   return null;
 }
-
-
 
 function buildAidlPolicyConfig(settings = []) {
   const policy = { ...DEFAULT_AIDL_POLICY_CONFIG };
@@ -2836,6 +2838,8 @@ module.exports.__private__ = {
   normalizeGeminiTimeoutMs,
   buildAidlPolicyConfig,
   buildGeminiTimeoutConfig,
+  hasValidCentroidShape,
+  determineFactionForDiagnostics,
   buildPhenotypeFromDnaForAdmin,
   applyAidlGeneStateOverride,
   applyAidlGeneContextOverride,
