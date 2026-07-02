@@ -6,8 +6,10 @@ const { initializeDatabase, repairAiCouncilState } = require('./database');
 const { autoDeployContracts } = require('./contractHelper');
 const { initGridBotScheduler } = require('./gridBot');
 const { initIdCardCleanupScheduler } = require('./idCardHelper');
+const { attachStdioErrorGuard } = require('./stdioErrorGuard');
 
 dotenv.config();
+attachStdioErrorGuard();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
