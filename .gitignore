@@ -39,6 +39,9 @@ env/
 
 # Database Files
 backend/platform.db
+backend/platform.db-shm
+backend/platform.db-wal
+backend/platform.db-journal
 backend/database.sqlite
 
 # User Uploaded Documents
