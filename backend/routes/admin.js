@@ -229,8 +229,9 @@ function assessWeb3WalletHealth({ walletAddress, polBalance, blockNum, latency, 
 }
 
 function determineFactionForDiagnostics(weights, nameOrId = '') {
+  const VALID_FACTIONS = new Set(['BLACK_SWAN_SENTINEL', 'EXPRESSION_DOMINANT', 'DECAY_RESISTANT', 'MUTAGEN_ADAPTIVE']);
   try {
-    if (weights && typeof weights.faction_hint === 'string' && weights.faction_hint.trim()) {
+    if (weights && typeof weights.faction_hint === 'string' && VALID_FACTIONS.has(weights.faction_hint.trim())) {
       return weights.faction_hint.trim();
     }
 

@@ -229,6 +229,35 @@ function AdminDiagnosticsTab({
             <span style={{ fontSize: '9px', color: '#8B5CF6', fontWeight: '800', letterSpacing: '0.5px' }}>
               REALTIME CONSOLE STREAM
             </span>
+            <button
+              onClick={() => {
+                const text = terminalLogs.join('\n');
+                navigator.clipboard.writeText(text).then(() => {
+                  const btn = document.getElementById('console-copy-btn');
+                  if (btn) {
+                    btn.textContent = '✓ COPIED';
+                    setTimeout(() => { btn.textContent = '⧉ COPY'; }, 1500);
+                  }
+                });
+              }}
+              id="console-copy-btn"
+              style={{
+                fontSize: '8px',
+                color: '#8B5CF6',
+                background: 'rgba(139, 92, 246, 0.08)',
+                border: '1px solid rgba(139, 92, 246, 0.2)',
+                borderRadius: '4px',
+                padding: '2px 8px',
+                cursor: 'pointer',
+                fontWeight: '700',
+                letterSpacing: '0.5px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => { e.target.style.background = 'rgba(139, 92, 246, 0.18)'; e.target.style.borderColor = 'rgba(139, 92, 246, 0.4)'; }}
+              onMouseLeave={e => { e.target.style.background = 'rgba(139, 92, 246, 0.08)'; e.target.style.borderColor = 'rgba(139, 92, 246, 0.2)'; }}
+            >
+              ⧉ COPY
+            </button>
           </div>
           <div
             style={{
@@ -239,7 +268,7 @@ function AdminDiagnosticsTab({
               fontFamily: 'Consolas, monospace',
               fontSize: '8px',
               color: '#A78BFA',
-              maxHeight: '90px',
+              maxHeight: '270px',
               overflowY: 'auto',
               lineHeight: '1.5',
               textAlign: 'left'

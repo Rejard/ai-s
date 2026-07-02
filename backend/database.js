@@ -11,6 +11,8 @@ const dbPath = process.env.AIS_DB_PATH
   ? path.resolve(process.env.AIS_DB_PATH)
   : path.resolve(__dirname, defaultDbName);
 const db = new sqlite3.Database(dbPath);
+db.run('PRAGMA journal_mode = WAL');
+db.run('PRAGMA busy_timeout = 10000');
 db.run('PRAGMA foreign_keys = ON');
 
 const AIDL_FEATURE_ORDER = [
@@ -74,7 +76,7 @@ function buildDeterministicCouncilDna(weights, memberId, faction, generation) {
   return {
     genome_id: `AISG-G${normalizedGeneration}-${genomeHash.slice(0, 8)}`,
     generation: normalizedGeneration,
-    faction_hint: faction || 'UNCLASSIFIED',
+    faction_hint: (['BLACK_SWAN_SENTINEL', 'EXPRESSION_DOMINANT', 'DECAY_RESISTANT', 'MUTAGEN_ADAPTIVE'].includes(faction)) ? faction : 'UNCLASSIFIED',
     lineage: {
       parent_ids: [],
       ancestor_ids: [memberId],
@@ -141,10 +143,10 @@ function addAisCouncilCompatibilityColumns(callback) {
       return callback(factionErr);
     }
     if (!factionErr) {
-      db.run("UPDATE ais_council_members SET faction = 'TREND_FOLLOWER' WHERE member_id IN ('ais_member_01', 'ais_member_04', 'ais_member_08', 'ais_member_10')");
-      db.run("UPDATE ais_council_members SET faction = 'VALUE_SEEKER' WHERE member_id IN ('ais_member_02', 'ais_member_07')");
-      db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_03', 'ais_member_11')");
-      db.run("UPDATE ais_council_members SET faction = 'CONSERVATIVE_WATCHER' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
+      db.run("UPDATE ais_council_members SET faction = 'EXPRESSION_DOMINANT' WHERE member_id IN ('ais_member_01', 'ais_member_04', 'ais_member_08', 'ais_member_10')");
+      db.run("UPDATE ais_council_members SET faction = 'DECAY_RESISTANT' WHERE member_id IN ('ais_member_02', 'ais_member_07')");
+      db.run("UPDATE ais_council_members SET faction = 'MUTAGEN_ADAPTIVE' WHERE member_id IN ('ais_member_03', 'ais_member_11')");
+      db.run("UPDATE ais_council_members SET faction = 'MUTAGEN_ADAPTIVE' WHERE member_id IN ('ais_member_05', 'ais_member_06', 'ais_member_09')");
     }
     db.run("ALTER TABLE ais_council_members ADD COLUMN generation INTEGER DEFAULT 1", (generationErr) => {
       if (generationErr && !generationErr.message.includes("duplicate column name")) {
@@ -612,7 +614,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_01',
             name: 'Trend Follower (SMA)',
-            faction: 'TREND_FOLLOWER',
+            faction: 'EXPRESSION_DOMINANT',
             weights: {
               BUY: [0.155, 0.2, 50.0, 0.156, 0.154],
               SELL: [0.155, -0.2, 50.0, 0.154, 0.156],
@@ -622,7 +624,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_02',
             name: 'Value Seeker (RSI)',
-            faction: 'VALUE_SEEKER',
+            faction: 'DECAY_RESISTANT',
             weights: {
               BUY: [0.150, 0.0, 28.0, 0.150, 0.150],
               SELL: [0.165, 0.0, 72.0, 0.165, 0.165],
@@ -632,7 +634,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_03',
             name: 'Conservative Watcher (Safety)',
-            faction: 'CONSERVATIVE_WATCHER',
+            faction: 'MUTAGEN_ADAPTIVE',
             weights: {
               BUY: [0.140, -1.5, 20.0, 0.138, 0.142],
               SELL: [0.180, 1.5, 80.0, 0.182, 0.178],
@@ -642,7 +644,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_04',
             name: 'Short Specialist (Bear)',
-            faction: 'TREND_FOLLOWER',
+            faction: 'EXPRESSION_DOMINANT',
             weights: {
               BUY: [0.145, 0.0, 25.0, 0.145, 0.145],
               SELL: [0.155, -0.1, 60.0, 0.154, 0.156],
@@ -652,7 +654,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_05',
             name: 'Mutant Alpha (Genetics)',
-            faction: 'CONSERVATIVE_WATCHER',
+            faction: 'MUTAGEN_ADAPTIVE',
             weights: {
               BUY: [0.152, -0.8, 33.0, 0.150, 0.153],
               SELL: [0.162, 0.8, 67.0, 0.164, 0.161],
@@ -662,7 +664,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_06',
             name: 'Mutant Beta (Aggressive)',
-            faction: 'CONSERVATIVE_WATCHER',
+            faction: 'MUTAGEN_ADAPTIVE',
             weights: {
               BUY: [0.157, 1.2, 40.0, 0.158, 0.155],
               SELL: [0.160, 1.2, 75.0, 0.162, 0.159],
@@ -672,7 +674,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_07',
             name: 'RSI Contrarian (Reversal)',
-            faction: 'VALUE_SEEKER',
+            faction: 'DECAY_RESISTANT',
             weights: {
               BUY: [0.160, 0.5, 22.0, 0.158, 0.159],
               SELL: [0.148, -0.5, 78.0, 0.150, 0.149],
@@ -682,7 +684,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_08',
             name: 'SMA Slow Cross (Long-term)',
-            faction: 'TREND_FOLLOWER',
+            faction: 'EXPRESSION_DOMINANT',
             weights: {
               BUY: [0.158, 0.1, 52.0, 0.162, 0.154],
               SELL: [0.152, -0.1, 48.0, 0.148, 0.156],
@@ -692,7 +694,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_09',
             name: 'Mutant Gamma (Volatility)',
-            faction: 'CONSERVATIVE_WATCHER',
+            faction: 'MUTAGEN_ADAPTIVE',
             weights: {
               BUY: [0.149, -1.0, 31.0, 0.147, 0.151],
               SELL: [0.166, 1.0, 69.0, 0.168, 0.164],
@@ -702,7 +704,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_10',
             name: 'Price Momentum Seeker',
-            faction: 'TREND_FOLLOWER',
+            faction: 'EXPRESSION_DOMINANT',
             weights: {
               BUY: [0.159, 1.5, 55.0, 0.160, 0.157],
               SELL: [0.151, -1.5, 45.0, 0.150, 0.153],
@@ -712,7 +714,7 @@ function initializeDatabase() {
           {
             id: 'ais_member_11',
             name: 'Volatility Shield (Safety)',
-            faction: 'CONSERVATIVE_WATCHER',
+            faction: 'MUTAGEN_ADAPTIVE',
             weights: {
               BUY: [0.135, -2.0, 18.0, 0.133, 0.137],
               SELL: [0.185, 2.0, 82.0, 0.187, 0.183],

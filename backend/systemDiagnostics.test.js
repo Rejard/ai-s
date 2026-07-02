@@ -278,14 +278,14 @@ async function main() {
     {
       const tieResult = adminRouter.__private__.assessNarrativeDivergence(
         [
-          { faction: 'VALUE_SEEKER', cnt: 234 },
-          { faction: 'CONSERVATIVE_WATCHER', cnt: 233 },
-          { faction: 'TREND_FOLLOWER', cnt: 33 },
+          { faction: 'DECAY_RESISTANT', cnt: 234 },
+          { faction: 'MUTAGEN_ADAPTIVE', cnt: 233 },
+          { faction: 'EXPRESSION_DOMINANT', cnt: 33 },
         ],
         [
-          { faction: 'CONSERVATIVE_WATCHER', cnt: 5 },
-          { faction: 'TREND_FOLLOWER', cnt: 4 },
-          { faction: 'VALUE_SEEKER', cnt: 2 },
+          { faction: 'MUTAGEN_ADAPTIVE', cnt: 5 },
+          { faction: 'EXPRESSION_DOMINANT', cnt: 4 },
+          { faction: 'DECAY_RESISTANT', cnt: 2 },
         ]
       );
       assert.equal(tieResult.status, 'OK');
@@ -297,18 +297,18 @@ async function main() {
     {
       const clearGapResult = adminRouter.__private__.assessNarrativeDivergence(
         [
-          { faction: 'VALUE_SEEKER', cnt: 320 },
-          { faction: 'CONSERVATIVE_WATCHER', cnt: 120 },
-          { faction: 'TREND_FOLLOWER', cnt: 60 },
+          { faction: 'DECAY_RESISTANT', cnt: 320 },
+          { faction: 'MUTAGEN_ADAPTIVE', cnt: 120 },
+          { faction: 'EXPRESSION_DOMINANT', cnt: 60 },
         ],
         [
-          { faction: 'CONSERVATIVE_WATCHER', cnt: 6 },
-          { faction: 'VALUE_SEEKER', cnt: 3 },
-          { faction: 'TREND_FOLLOWER', cnt: 2 },
+          { faction: 'MUTAGEN_ADAPTIVE', cnt: 6 },
+          { faction: 'DECAY_RESISTANT', cnt: 3 },
+          { faction: 'EXPRESSION_DOMINANT', cnt: 2 },
         ]
       );
       assert.equal(clearGapResult.status, 'WARNING');
-      assert.ok(clearGapResult.message.includes('pool leader=VALUE_SEEKER'));
+      assert.ok(clearGapResult.message.includes('pool leader=DECAY_RESISTANT'));
       passed++;
       console.log('  [PASS] Narrative divergence warns when pool leadership has a clear gap');
     }

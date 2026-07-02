@@ -440,9 +440,10 @@ Input data:
 
 Rules:
 1. Speak of them as distinct virtual factions with conflicting trading philosophies:
-   - TREND_FOLLOWER: 추세추종파 (SMA/모멘텀)
-   - VALUE_SEEKER: 기술반등파 (RSI/역추세)
-   - CONSERVATIVE_WATCHER: 변동성방어파 (안정지향)
+   - EXPRESSION_DOMINANT: 유전자변현파 (DNA expression budget driven)
+   - DECAY_RESISTANT: 잔존내성파 (Stability-first persistence)
+   - MUTAGEN_ADAPTIVE: 언어적응파 (Mutation-adaptive rapid evolution)
+   - BLACK_SWAN_SENTINEL: 위기감시파 (Black swan crisis detection)
 2. MUST explicitly mention the current generation landscape based on Generation Distribution (e.g. "현재 1세대가 500명을 100% 점유하고 있으며..." or "이번 진화를 통해 새로운 2세대가 O명으로 주류를 이루었고 살아남은 1세대는 O명뿐입니다...").
 3. Deeply analyze the REASONS behind the current distribution. Why are the dominant factions succeeding and multiplying in this generation? Why did the minority factions fail to secure seats or dwindle? Create a logical evolutionary narrative explaining these market-survival dynamics in detail.
 4. MUST explain the "birth background (탄생 배경)" of each major faction in the context of the AI's evolutionary history (e.g., what kind of market crash or bull run birthed the Value Seekers or Mutant Rookies).

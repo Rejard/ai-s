@@ -10,7 +10,7 @@ const weights = {
 const payload = bootstrapCouncilDnaPayload(
   weights,
   'legacy_member_01',
-  'VALUE_SEEKER',
+  'DECAY_RESISTANT',
   2
 );
 

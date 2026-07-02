@@ -25,7 +25,7 @@ assert.equal(hasValidCentroidShape(centroids5), false);
 const dnaWithStoredHint = {
   genome_id: 'AISG-G3-test',
   generation: 3,
-  faction_hint: 'TREND_FOLLOWER',
+  faction_hint: 'EXPRESSION_DOMINANT',
   regulatory_profile: {
     expression_budget: 12,
     dominance_bias: 1,
@@ -39,7 +39,7 @@ const dnaWithStoredHint = {
 assert.equal(typeof determineFactionForDiagnostics, 'function');
 assert.equal(
   determineFactionForDiagnostics(dnaWithStoredHint, 'legacy_member'),
-  'TREND_FOLLOWER'
+  'EXPRESSION_DOMINANT'
 );
 
 console.log('ok - diagnostics enforces 10-vector centroids and stored faction hints');

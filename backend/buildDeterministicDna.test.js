@@ -8,7 +8,7 @@ const VALID_WEIGHTS = {
 };
 
 async function main() {
-  const dna = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_member_01', 'VALUE_SEEKER', 3);
+  const dna = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_member_01', 'DECAY_RESISTANT', 3);
 
   assert.ok(dna.genome_id, 'T1: genome_id exists');
   assert.ok(dna.lineage, 'T1: lineage exists');
@@ -16,7 +16,7 @@ async function main() {
   assert.ok(Array.isArray(dna.strategy_genes), 'T1: strategy_genes is array');
   assert.ok(Array.isArray(dna.mutation_log), 'T1: mutation_log is array');
   assert.strictEqual(dna.generation, 3, 'T1: generation matches input');
-  assert.strictEqual(dna.faction_hint, 'VALUE_SEEKER', 'T1: faction_hint matches input');
+  assert.strictEqual(dna.faction_hint, 'DECAY_RESISTANT', 'T1: faction_hint matches input');
 
   assert.ok(/^AISG-G3-[a-f0-9]{8}$/.test(dna.genome_id), 'T2: genome_id format AISG-G{gen}-{hash}');
 
@@ -47,15 +47,15 @@ async function main() {
   assert.strictEqual(buySubgenes[0].weight, 0.1, 'T7: BUY[0] weight correct');
   assert.strictEqual(sellSubgenes[4].weight, 0.1, 'T7: SELL[4] weight correct');
 
-  const dna2 = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_member_01', 'VALUE_SEEKER', 3);
+  const dna2 = buildDeterministicCouncilDna(VALID_WEIGHTS, 'test_member_01', 'DECAY_RESISTANT', 3);
   assert.deepStrictEqual(dna, dna2, 'T8: deterministic - same inputs produce same output');
 
-  const dnaDiff = buildDeterministicCouncilDna(VALID_WEIGHTS, 'different_member', 'VALUE_SEEKER', 3);
+  const dnaDiff = buildDeterministicCouncilDna(VALID_WEIGHTS, 'different_member', 'DECAY_RESISTANT', 3);
   assert.notStrictEqual(dna.genome_id, dnaDiff.genome_id, 'T9: different memberId produces different genome_id');
 
   assert.ok(dna.lineage.ancestor_ids.includes('test_member_01'), 'T10: ancestor_ids contains memberId');
 
-  const payload = bootstrapCouncilDnaPayload(VALID_WEIGHTS, 'test_m', 'TREND_FOLLOWER', 2);
+  const payload = bootstrapCouncilDnaPayload(VALID_WEIGHTS, 'test_m', 'EXPRESSION_DOMINANT', 2);
   assert.strictEqual(typeof payload.dna_json, 'string', 'T11: dna_json is string');
   assert.strictEqual(typeof payload.phenotype_json, 'string', 'T11: phenotype_json is string');
 

@@ -84,7 +84,7 @@ async function repairAiCouncilStateImpl(store) {
     const dnaPayload = bootstrapCouncilDnaPayload(
       weights,
       memberId,
-      seed.faction || 'MUTANT_ROOKIE',
+      seed.faction || 'UNCLASSIFIED',
       seed.generation || 1
     );
     await store.run(`
@@ -97,7 +97,7 @@ async function repairAiCouncilStateImpl(store) {
       seed.weights_json,
       dnaPayload.dna_json,
       dnaPayload.phenotype_json,
-      seed.faction || 'MUTANT_ROOKIE',
+      seed.faction || 'UNCLASSIFIED',
       seed.generation || 1,
     ]);
     total += 1;
@@ -117,7 +117,7 @@ async function insertMember(store, memberId, overrides = {}) {
     phenotype_json: VALID_WEIGHTS,
     voting_power: 1.0,
     status: 'ACTIVE',
-    faction: 'VALUE_SEEKER',
+    faction: 'DECAY_RESISTANT',
     generation: 1,
     correct_count: 0,
     total_count: 0,
@@ -227,8 +227,8 @@ async function main() {
       "SELECT faction FROM ais_council_members WHERE member_id LIKE 'mutant_refill_%'"
     );
     assert.ok(refilled.length > 0, 'T7: refilled members exist');
-    const allMutantRookie = refilled.every(r => r.faction === 'MUTANT_ROOKIE');
-    assert.ok(allMutantRookie, 'T7: null seed faction falls back to MUTANT_ROOKIE');
+    const allMutantRookie = refilled.every(r => r.faction === 'UNCLASSIFIED');
+    assert.ok(allMutantRookie, 'T7: null seed faction falls back to UNCLASSIFIED');
     store.close();
   }
 
