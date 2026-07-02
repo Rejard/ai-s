@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -116,12 +116,12 @@ function SchedulerCard({ scheduler }) {
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '10px' }}>
           {scheduler.successCount != null && (
             <span style={{ color: '#10B981', fontWeight: '700' }}>
-              ✓ {scheduler.successCount.toLocaleString()}
+              ✓ 성공 {scheduler.successCount.toLocaleString()}회
             </span>
           )}
           {scheduler.failCount != null && (
             <span style={{ color: scheduler.failCount > 0 ? '#EF4444' : 'var(--text-muted)', fontWeight: '700' }}>
-              ✗ {scheduler.failCount.toLocaleString()}
+              ✗ 실패 {scheduler.failCount.toLocaleString()}회
             </span>
           )}
         </div>
@@ -174,6 +174,10 @@ function SchedulerCard({ scheduler }) {
 }
 
 function AdminSchedulerTab({ schedulerData, loadingScheduler, fetchSchedulerHealth }) {
+  useEffect(() => {
+    fetchSchedulerHealth();
+  }, []);
+
   if (loadingScheduler) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

@@ -37,6 +37,7 @@ const SCHEDULER_DEFS = [
     intervalKey: 'global_ai_interval',
     defaultIntervalMin: 5,
     overdueMultiplier: 2.5,
+    extraKeys: { lastCount: 'scheduler_shadow_last_count' },
   },
   {
     id: 'safeguard',
@@ -47,7 +48,10 @@ const SCHEDULER_DEFS = [
     intervalKey: 'global_ai_interval',
     defaultIntervalMin: 5,
     overdueMultiplier: 2.5,
-    extraKeys: { lastTriggered: 'scheduler_safeguard_last_triggered' },
+    extraKeys: {
+      lastTriggered: 'scheduler_safeguard_last_triggered',
+      triggerCount: 'scheduler_safeguard_trigger_count',
+    },
   },
   {
     id: 'evolution_12h',
@@ -57,6 +61,7 @@ const SCHEDULER_DEFS = [
     lastRunKey: 'last_evolution_time',
     fixedIntervalMs: 12 * 60 * 60 * 1000,
     overdueMultiplier: 1.5,
+    extraKeys: { runCount: 'scheduler_evolution_run_count' },
   },
   {
     id: 'auto_training',
@@ -79,7 +84,10 @@ const SCHEDULER_DEFS = [
     lastRunKey: 'scheduler_kyc_cleanup_last_run',
     fixedIntervalMs: 60 * 60 * 1000,
     overdueMultiplier: 2.0,
-    extraKeys: { lastDeleted: 'scheduler_kyc_cleanup_last_deleted' },
+    extraKeys: {
+      lastDeleted: 'scheduler_kyc_cleanup_last_deleted',
+      totalDeleted: 'scheduler_kyc_cleanup_total_deleted',
+    },
   },
   {
     id: 'council_briefing',
@@ -90,7 +98,34 @@ const SCHEDULER_DEFS = [
     fixedIntervalMs: 12 * 60 * 60 * 1000,
     overdueMultiplier: 1.5,
   },
+  {
+    id: 'candle_collection',
+    name: '캔들 데이터 수집 (SUT_USDT)',
+    type: 'conditional',
+    intervalDesc: '진화 시 자동 수집',
+    candleTable: true,
+    fixedIntervalMs: 12 * 60 * 60 * 1000,
+    overdueMultiplier: 4.0,
+  },
 ];
+
+const DETAIL_LABEL_MAP = {
+  lastCount: '처리 건수',
+  lastDeleted: '삭제 건수',
+  totalDeleted: '누적 삭제',
+  lastTriggered: '마지막 발동',
+  triggerCount: '누적 발동',
+  lastCheck: '마지막 점검',
+  runCount: '진화 세대',
+};
+
+const COUNT_TYPE_UNITS = {
+  lastCount: '건',
+  lastDeleted: '건',
+  totalDeleted: '건',
+  triggerCount: '회',
+  runCount: '회',
+};
 
 function parseEpoch(val) {
   if (!val) return null;
@@ -130,6 +165,53 @@ async function collectSchedulerHealth() {
     }
   } catch (_) {}
 
+  let candleLastRun = null;
+  try {
+    const candleRow = await queries.get(
+      "SELECT MAX(timestamp) as latest FROM historical_candles"
+    );
+    if (candleRow && candleRow.latest) {
+      candleLastRun = candleRow.latest * 1000;
+    }
+  } catch (_) {}
+
+  let pendingLabelCount = 0;
+  try {
+    const r = await queries.get("SELECT COUNT(*) as c FROM ais_training_data WHERE evaluation_status = 'PENDING'");
+    if (r) pendingLabelCount = r.c;
+  } catch (_) {}
+
+  let totalShadowEntries = 0;
+  try {
+    const r = await queries.get("SELECT COUNT(*) as c FROM ais_training_data");
+    if (r) totalShadowEntries = r.c;
+  } catch (_) {}
+
+  let pendingTrainCount = 0;
+  try {
+    const r = await queries.get(
+      "SELECT COUNT(*) as c FROM ais_training_data WHERE evaluation_status = 'LABELED'"
+    );
+    if (r) pendingTrainCount = r.c;
+  } catch (_) {}
+
+  let briefingTotalCount = 0;
+  let briefingLastStatus = null;
+  try {
+    const cntRow = await queries.get("SELECT COUNT(*) as c FROM council_briefing_history");
+    if (cntRow) briefingTotalCount = cntRow.c;
+    const statusRow = await queries.get(
+      "SELECT status FROM council_briefing_history ORDER BY id DESC LIMIT 1"
+    );
+    if (statusRow) briefingLastStatus = statusRow.status;
+  } catch (_) {}
+
+  let candleTotalCount = 0;
+  try {
+    const r = await queries.get("SELECT COUNT(*) as c FROM historical_candles");
+    if (r) candleTotalCount = r.c;
+  } catch (_) {}
+
   const now = Date.now();
   const schedulers = [];
 
@@ -137,6 +219,8 @@ async function collectSchedulerHealth() {
     let lastRunAt = null;
     if (def.briefingTable) {
       lastRunAt = briefingLastRun;
+    } else if (def.candleTable) {
+      lastRunAt = candleLastRun;
     } else {
       lastRunAt = parseEpoch(settings[def.lastRunKey]);
     }
@@ -198,24 +282,43 @@ async function collectSchedulerHealth() {
     }
 
     let details = null;
+    const parts = [];
+
     if (def.extraKeys) {
-      const parts = [];
       for (const [label, key] of Object.entries(def.extraKeys)) {
         const val = settings[key];
-        if (val) {
-          if (label === 'lastCount' || label === 'lastDeleted') {
-            parts.push(`${label}: ${val}`);
+        const displayLabel = DETAIL_LABEL_MAP[label] || label;
+        if (val != null && val !== '') {
+          if (COUNT_TYPE_UNITS[label]) {
+            parts.push(`${displayLabel}: ${parseInt(val, 10).toLocaleString()}${COUNT_TYPE_UNITS[label]}`);
           } else {
             const ts = parseEpoch(val);
             if (ts) {
               const ago = Math.round((now - ts) / 60000);
-              parts.push(`${label}: ${ago}분 전`);
+              parts.push(`${displayLabel}: ${ago}분 전`);
             }
           }
         }
       }
-      if (parts.length > 0) details = parts.join(' | ');
     }
+
+    if (def.id === 'labeling') {
+      parts.push(`판정 대기: ${pendingLabelCount.toLocaleString()}건`);
+    } else if (def.id === 'shadow_racing') {
+      parts.push(`총 적재: ${totalShadowEntries.toLocaleString()}건`);
+    } else if (def.id === 'auto_training') {
+      parts.push(`학습 대기: ${pendingTrainCount.toLocaleString()}건`);
+    } else if (def.id === 'council_briefing') {
+      parts.push(`총 생성: ${briefingTotalCount.toLocaleString()}회`);
+      if (briefingLastStatus) {
+        const statusLabel = briefingLastStatus === 'SUCCESS' ? '성공' : briefingLastStatus === 'FAILED' ? '실패' : briefingLastStatus;
+        parts.push(`최근 상태: ${statusLabel}`);
+      }
+    } else if (def.id === 'candle_collection') {
+      parts.push(`보유 캔들: ${candleTotalCount.toLocaleString()}개`);
+    }
+
+    if (parts.length > 0) details = parts.join(' · ');
 
     schedulers.push({
       id: def.id,

@@ -75,10 +75,8 @@ function AppContent() {
     };
 
     refreshAccountRole();
-    const interval = setInterval(refreshAccountRole, 10000);
     return () => {
       cancelled = true;
-      clearInterval(interval);
     };
   }, [googleLoggedIn, googleEmail, isRegistered]);
 

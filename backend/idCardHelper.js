@@ -22,6 +22,9 @@ async function cleanExpiredPendingKycUsers() {
     if (expiredUsers.length === 0) {
       await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_run', ?)", [Date.now().toString()]);
       await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_deleted', '0')");
+      const kycRunRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'scheduler_kyc_cleanup_run_count'");
+      const kycRunPrev = kycRunRow ? parseInt(kycRunRow.value, 10) || 0 : 0;
+      await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_run_count', ?)", [(kycRunPrev + 1).toString()]);
       return;
     }
 
@@ -54,6 +57,12 @@ async function cleanExpiredPendingKycUsers() {
     }
     await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_run', ?)", [Date.now().toString()]);
     await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_last_deleted', ?)", [expiredUsers.length.toString()]);
+    const kycRunRow2 = await queries.get("SELECT value FROM platform_settings WHERE key = 'scheduler_kyc_cleanup_run_count'");
+    const kycRunPrev2 = kycRunRow2 ? parseInt(kycRunRow2.value, 10) || 0 : 0;
+    await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_run_count', ?)", [(kycRunPrev2 + 1).toString()]);
+    const totalDelRow = await queries.get("SELECT value FROM platform_settings WHERE key = 'scheduler_kyc_cleanup_total_deleted'");
+    const totalDelPrev = totalDelRow ? parseInt(totalDelRow.value, 10) || 0 : 0;
+    await queries.run("INSERT OR REPLACE INTO platform_settings (key, value) VALUES ('scheduler_kyc_cleanup_total_deleted', ?)", [(totalDelPrev + expiredUsers.length).toString()]);
   } catch (err) {
     console.error('❌ [KYC AUTO-CLEANUP ERROR]:', err.message);
   }

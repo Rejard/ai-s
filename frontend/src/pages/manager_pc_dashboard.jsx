@@ -478,8 +478,6 @@ function ManagerPcDashboard({ walletAddress, managerEmail }) {
 
   useEffect(() => {
     fetchManagerData();
-    const interval = setInterval(fetchManagerData, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

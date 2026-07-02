@@ -388,20 +388,8 @@ export function useAdminLogic(managerEmail) {
     fetchAiEngineConfig();
     fetchTrainingStats();
     fetchCouncilStats();
-    fetchDiagnostics();
-    fetchSchedulerHealth();
 
-    const interval = setInterval(() => {
-      fetchManagers();
-      fetchVaultSutBalance();
-      fetchStats();
-      fetchAiLogs();
-      fetchTrainingStats();
-      fetchCouncilStats();
-      fetchDiagnostics();
-      fetchSchedulerHealth();
-    }, 60000);
-    return () => clearInterval(interval);
+    return () => {};
   }, [managerEmail]);
 
 

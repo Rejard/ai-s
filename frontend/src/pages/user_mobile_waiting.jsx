@@ -18,7 +18,7 @@ function UserMobileWaiting({ walletAddress, onApproved }) {
       } catch (err) {
         console.error('실시간 승인 감지 오류:', err);
       }
-    }, 5000);
+    }, 300000);
 
     return () => clearInterval(checkInterval);
   }, [walletAddress, onApproved]);

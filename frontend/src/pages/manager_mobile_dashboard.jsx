@@ -268,7 +268,7 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
     } catch (err) { console.error('Manager data load failed:', err); } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchManagerData(); const interval = setInterval(fetchManagerData, 60000); return () => clearInterval(interval); }, []);
+  useEffect(() => { fetchManagerData(); }, []);
   useEffect(() => { if (gridSettings.ai_grid_status !== 'ON' || !aiLogs || aiLogs.length === 0) return; const latestStrategy = aiLogs[0]; if (lastExecutedStrategyIdRef.current === latestStrategy.id) return; lastExecutedStrategyIdRef.current = latestStrategy.id; }, [aiLogs, gridSettings.ai_grid_status]);
 
   const handleToggleAutoRangePreview = (enabled) => setGridSettings((cs) => toggleManagerAutoRangePreview({ enabled, currentSettings: cs, serverSettings: lastServerGridSettingsRef.current || cs, latestAiLog: aiLogs?.[0] || null }));

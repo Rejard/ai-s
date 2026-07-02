@@ -83,41 +83,10 @@ function UserPcDashboard({ walletAddress, userData, onLogout }) {
   };
 
   useEffect(() => {
-    let intervalId = null;
-
-    const startPolling = () => {
+    if (walletAddress) {
       fetchDashboardData();
       fetchTxHistory();
-      
-      intervalId = setInterval(() => {
-        fetchDashboardData();
-      }, 60000);
-    };
-
-    const stopPolling = () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        stopPolling();
-      } else {
-        startPolling();
-      }
-    };
-
-    if (walletAddress) {
-      startPolling();
-      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-
-    return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
   }, [walletAddress]);
 
   const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
