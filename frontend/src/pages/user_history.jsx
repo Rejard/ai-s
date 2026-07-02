@@ -5,7 +5,7 @@ import { ArrowLeft, Clock, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { API_BASE } from '../App';
 import { formatKoreanDateTime } from '../lib/dateTime';
 
-function UserMobileHistory({ walletAddress }) {
+function UserHistory({ walletAddress }) {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -108,4 +108,4 @@ function UserMobileHistory({ walletAddress }) {
   );
 }
 
-export default UserMobileHistory;
+export default UserHistory;

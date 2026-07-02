@@ -11,7 +11,7 @@ import { translateError } from '../lib/errorHandler';
 
 const DEFAULT_MANAGER_ADDRESS = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
 
-function UserMobileRegister({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
+function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
   const [email] = useState(googleEmail || '');
@@ -492,4 +492,4 @@ function UserMobileRegister({ walletAddress, googleEmail, googleName, onRegister
   );
 }
 
-export default UserMobileRegister;
+export default UserRegister;

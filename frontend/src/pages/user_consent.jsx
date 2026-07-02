@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ShieldCheck, AlertTriangle, Users, ChevronRight } from 'lucide-react';
 import { API_BASE } from '../App';
 
-function UserMobileConsent({ walletAddress, onLogout }) {
+function UserConsent({ walletAddress, onLogout }) {
   const navigate = useNavigate();
   const [agreements, setAgreements] = useState({
     lossLiability: false,
@@ -217,4 +217,4 @@ function UserMobileConsent({ walletAddress, onLogout }) {
   );
 }
 
-export default UserMobileConsent;
+export default UserConsent;

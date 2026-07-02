@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-for (const pageFile of ['../pages/admin_mobile_dashboard.jsx']) {
+for (const pageFile of ['../pages/admin_dashboard.jsx']) {
   const source = await readFile(new URL(pageFile, import.meta.url), 'utf8');
 
   assert.ok(source.includes('ADMIN_DIAGNOSTIC_SECTIONS'));

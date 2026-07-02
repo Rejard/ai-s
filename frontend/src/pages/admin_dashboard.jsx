@@ -14,7 +14,7 @@ import AdminDiagnosticsTab from './admin/AdminDiagnosticsTab';
 import AdminCouncilTab from './admin/AdminCouncilTab';
 import AdminSchedulerTab from './admin/AdminSchedulerTab';
 
-function AdminMobileDashboard({ walletAddress, managerEmail }) {
+function AdminDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('home');
   const diagSections = ADMIN_DIAGNOSTIC_SECTIONS.map((section) => ({
@@ -82,7 +82,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
 
   if (!isAdmin) {
     return (
-      <div className="app-frame" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', flex: 1 }}>
         <div className="glass-card" style={{ width: '100%', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
           <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', marginBottom: '20px' }}>
             <ShieldAlert size={48} color="var(--danger-color)" />
@@ -100,7 +100,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
   }
 
   return (
-    <div className="app-frame">
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -116,7 +116,7 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
         </div>
       </header>
 
-      <main style={{ flex: 1, padding: '20px', paddingBottom: '85px', overflowY: 'auto' }}>
+      <main className="no-scrollbar" style={{ flex: 1, padding: '20px', paddingBottom: '85px' }}>
 
         <div className="glass-card" style={{ padding: '16px', marginBottom: '20px', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -284,4 +284,4 @@ function AdminMobileDashboard({ walletAddress, managerEmail }) {
   );
 }
 
-export default AdminMobileDashboard;
+export default AdminDashboard;

@@ -39,7 +39,7 @@ const TABS = [
   { key: 'settings', label: '⚙️ 설정', color: '#6B7280' },
 ];
 
-function ManagerMobileDashboard({ walletAddress, managerEmail }) {
+function ManagerDashboard({ walletAddress, managerEmail }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
@@ -551,4 +551,4 @@ function ManagerMobileDashboard({ walletAddress, managerEmail }) {
   );
 }
 
-export default ManagerMobileDashboard;
+export default ManagerDashboard;

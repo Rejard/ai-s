@@ -28,7 +28,7 @@ import { isAdminGoogleAccount, isManagerAccount } from '../lib/accountIdentity';
 import { showFriendlyError } from '../lib/errorHandler';
 import { formatKoreanDateTime } from '../lib/dateTime';
 
-function UserMobileDashboard({ walletAddress, userData, onLogout }) {
+function UserDashboard({ walletAddress, userData, onLogout }) {
   const navigate = useNavigate();
   const googleEmail = userData?.email;
   const canAccessManager = isManagerAccount(userData, googleEmail, walletAddress);
@@ -524,4 +524,4 @@ function UserMobileDashboard({ walletAddress, userData, onLogout }) {
   );
 }
 
-export default UserMobileDashboard;
+export default UserDashboard;

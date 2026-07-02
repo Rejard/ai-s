@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Shield, ShieldCheck, Wallet, Users, BarChart3, Settings, Sparkles, AlertTriangle, ArrowDownUp } from 'lucide-react';
+import { Shield, Wallet } from 'lucide-react';
 import { ethers } from 'ethers';
 
-import UserMobileConsent from './pages/user_mobile_consent';
-import UserMobileRegister from './pages/user_mobile_register';
-import UserMobileWaiting from './pages/user_mobile_waiting';
-import UserMobileDashboard from './pages/user_mobile_dashboard';
-import ManagerMobileDashboard from './pages/manager_mobile_dashboard';
+import UserConsent from './pages/user_consent';
+import UserRegister from './pages/user_register';
+import UserWaiting from './pages/user_waiting';
+import UserDashboard from './pages/user_dashboard';
+import ManagerDashboard from './pages/manager_dashboard';
 
-import UserMobileHistory from './pages/user_mobile_history';
-import AdminMobileDashboard from './pages/admin_mobile_dashboard';
+import UserHistory from './pages/user_history';
+import AdminDashboard from './pages/admin_dashboard';
 
-import UserPcConsent from './pages/user_pc_consent';
-import UserPcRegister from './pages/user_pc_register';
-import UserPcWaiting from './pages/user_pc_waiting';
-import UserPcDashboard from './pages/user_pc_dashboard';
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
 import { buildTrustWalletOpenUrl, getPreferredInjectedProvider } from './lib/walletProvider';
@@ -48,15 +44,9 @@ function AppContent() {
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
 
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const isAdminViewer = googleLoggedIn && isAdminGoogleAccount(googleEmail);
   const isManagerViewer = googleLoggedIn && isManagerAccount(userData, googleEmail, walletAddress);
 
-  useEffect(() => {
-    const handleResize = () => setScreenWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     if (!googleLoggedIn || !googleEmail || !isRegistered) return undefined;
@@ -89,7 +79,6 @@ function AppContent() {
 
   const location = useLocation();
   const isManagerRoute = location.pathname.startsWith('/manager');
-  const isPcView = !isMobileDevice && screenWidth > 768;
 
   const unsupportedBrowser = React.useMemo(
     () => detectUnsupportedBrowser(navigator.userAgent, window.ethereum),
@@ -530,142 +519,20 @@ function AppContent() {
     );
   };
 
-  const renderPcIntro = () => {
-    return (
-      <div className="pc-layout-wrapper">
-        <div className="pc-side-intro" style={{ animationDelay: '0.1s' }}>
-          <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '16px', background: 'rgba(139,92,246,0.1)', marginBottom: '24px', width: 'fit-content' }}>
-            <Sparkles size={36} color="#8B5CF6" />
-          </div>
-          <h1>Ai S Trading</h1>
-          <p>
-            폴리곤 네트워크 및 안전한 구글 로그인 연동을 지원하는 AI 기반 다자간 시뮬레이션 트레이딩 플랫폼입니다.
-            실시간 온체인 게이지 분석 및 다이렉트 슬립 연산 위임(Approve)을 즉시 시작해 보십시오.
-          </p>
-
-          <div className="pc-intro-cards">
-            <div className="pc-intro-card">
-              <div className="icon-wrapper">
-                <Shield size={22} />
-              </div>
-              <div>
-                <h4>안전한 구글 로그인 & DApp 연동</h4>
-                <p>Google 공식 인증 및 폴리곤 Web3 다이렉트 연계를 결합하여 계정 권한을 안전하게 확인합니다.</p>
-              </div>
-            </div>
-
-            <div className="pc-intro-card">
-              <div className="icon-wrapper">
-                <ArrowDownUp size={22} />
-              </div>
-              <div>
-                <h4>자동 이체 및 자산 인출 위임</h4>
-                <p>스마트 컨트랙트 승인(Approve)을 통해 가입비 및 이율을 투명하고 안전하게 정산 시뮬레이션합니다.</p>
-              </div>
-            </div>
-
-            <div className="pc-intro-card">
-              <div className="icon-wrapper">
-                <BarChart3 size={22} />
-              </div>
-              <div>
-                <h4>실시간 시세 피드백 차트</h4>
-                <p>Gate.io 및 주요 거래소 SUT 토큰 시세를 LIVE로 추적하여 실시간 지갑 가치 변화를 투영합니다.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ width: '420px', flexShrink: 0 }}>
-          {!unsupportedBrowser.supported && (
-            <UnsupportedBrowserBanner
-              browserName={unsupportedBrowser.browserName}
-              reason={unsupportedBrowser.reason}
-            />
-          )}
-          <div className="glass-card glow-active" style={{ padding: '40px 30px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', padding: '16px', borderRadius: '50%', background: 'rgba(139,92,246,0.08)', marginBottom: '20px' }}>
-              <Wallet size={48} color="#8B5CF6" />
-            </div>
-            <h2 style={{ fontSize: '24px', marginBottom: '12px', fontWeight: '700' }}>플랫폼 연동</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.6', marginBottom: '30px' }}>
-              안전한 보안 통신 규격을 기반으로 서비스를 실행합니다. 아래 연동 과정을 차례대로 밟아주십시오.
-            </p>
-
-            {!googleLoggedIn ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                <div style={{ fontSize: '13px', color: '#A78BFA', fontWeight: '600' }}>
-                  🔑 1단계: 구글 공식 계정 연동
-                </div>
-                <GoogleSignInBtn />
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  color: '#E5E7EB'
-                }}>
-                  🟢 <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>Google 인증됨:</span> {googleEmail}
-                </div>
-
-                <div style={{ fontSize: '13px', color: '#A78BFA', fontWeight: '600' }}>
-                  📲 2단계: 폴리곤 지갑 연결
-                </div>
-
-                <button
-                  className="btn-primary"
-                  onClick={connectWallet}
-                  style={{ padding: '16px', fontSize: '15px' }}
-                >
-                  <Wallet size={20} />
-                  트러스트 월렛 연결하기
-                </button>
-
-                <button
-                  className="btn-secondary"
-                  style={{ color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)', padding: '12px' }}
-                  onClick={disconnectWallet}
-                >
-                  구글 연동 해제
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div
-      style={
-        isPcView
-        ? {
-            width: '100%',
-            minHeight: '100vh',
-            backgroundColor: 'var(--bg-color)',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative'
-          }
-        : {
-            width: `${screenWidth}px`,
-            maxWidth: '100vw',
-            minHeight: '100vh',
-            backgroundColor: 'var(--bg-app)',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            overflowX: 'hidden',
-            margin: '0 auto'
-          }
-      }
+      style={{
+        width: '100%',
+        maxWidth: '100vw',
+        minHeight: '100vh',
+        backgroundColor: 'var(--bg-app)',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflowX: 'hidden',
+        margin: '0 auto'
+      }}
     >
-      {!isPcView && (
         <header style={{
           padding: '18px 20px',
           borderBottom: '1px solid var(--glass-border)',
@@ -687,9 +554,8 @@ function AppContent() {
             </div>
           )}
         </header>
-      )}
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: isPcView ? '0' : '70px', position: 'relative' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: '70px', position: 'relative' }}>
         {(!isAppReady || loading) ? (
           <div style={{ margin: 'auto', textAlign: 'center' }}>
             <div className="shimmer-loading" style={{ width: '50px', height: '50px', borderRadius: '50%', margin: '0 auto 15px' }}></div>
@@ -699,7 +565,7 @@ function AppContent() {
           <Routes>
             <Route path="/manager" element={
               isManagerViewer ? (
-                <ManagerMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                <ManagerDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -707,7 +573,7 @@ function AppContent() {
 
             <Route path="/admin" element={
               isAdminViewer ? (
-                <AdminMobileDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
+                <AdminDashboard walletAddress={walletAddress} managerEmail={googleEmail} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -717,7 +583,7 @@ function AppContent() {
 
             <Route path="/" element={
               !googleLoggedIn || !walletAddress ? (
-                isPcView ? renderPcIntro() : renderIntro()
+                renderIntro()
               ) : !isRegistered ? (
                 <Navigate to="/consent" replace />
               ) : userStatus === 'PENDING_KYC' ? (
@@ -725,20 +591,6 @@ function AppContent() {
               ) : userStatus === 'APPROVED' ? (
                 <Navigate to="/dashboard" replace />
               ) : userStatus === 'REJECTED' ? (
-                isPcView ? (
-                  <div className="pc-layout-wrapper" style={{ justifyContent: 'center' }}>
-                    <div className="glass-card" style={{ maxWidth: '450px', width: '100%', textAlign: 'center', padding: '40px' }}>
-                      <ShieldCheck size={48} color="#EF4444" style={{ marginBottom: '20px', margin: '0 auto' }} />
-                      <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>KYC 승인이 반려되었습니다</h3>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '25px' }}>
-                        신분증 심사가 반려되었습니다. 재도전하시려면 아래 버튼을 눌러주십시오.
-                      </p>
-                      <button className="btn-primary" onClick={() => setIsRegistered(false)}>
-                        가입 신청 다시 접수하기
-                      </button>
-                    </div>
-                  </div>
-                ) : (
                   <div className="glass-card" style={{ margin: 'auto 20px', textAlign: 'center' }}>
                     <Shield size={40} color="#EF4444" style={{ marginBottom: '15px' }} />
                     <h3 style={{ marginBottom: '10px' }}>KYC 승인이 반려되었습니다</h3>
@@ -749,15 +601,14 @@ function AppContent() {
                       가입 재신청하기
                     </button>
                   </div>
-                )
               ) : (
-                isPcView ? renderPcIntro() : renderIntro()
+                renderIntro()
               )
             } />
 
             <Route path="/login" element={
               !googleLoggedIn || isAdminViewer ? (
-                isPcView ? renderPcIntro() : renderIntro()
+                renderIntro()
               ) : (
                 <Navigate to="/" replace />
               )
@@ -765,11 +616,7 @@ function AppContent() {
 
             <Route path="/consent" element={
               isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
-                isPcView ? (
-                  <UserPcConsent walletAddress={walletAddress} onLogout={disconnectWallet} />
-                ) : (
-                  <UserMobileConsent walletAddress={walletAddress} onLogout={disconnectWallet} />
-                )
+                <UserConsent walletAddress={walletAddress} onLogout={disconnectWallet} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -777,21 +624,12 @@ function AppContent() {
 
             <Route path="/register" element={
               isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
-                isPcView ? (
-                  <UserPcRegister
+                <UserRegister
                     walletAddress={walletAddress}
                     googleEmail={googleEmail}
                     googleName={googleName}
                     onRegisterComplete={() => checkUserStatus(walletAddress)}
                   />
-                ) : (
-                  <UserMobileRegister
-                    walletAddress={walletAddress}
-                    googleEmail={googleEmail}
-                    googleName={googleName}
-                    onRegisterComplete={() => checkUserStatus(walletAddress)}
-                  />
-                )
               ) : (
                 <Navigate to="/" replace />
               )
@@ -799,11 +637,7 @@ function AppContent() {
 
             <Route path="/waiting" element={
               isAdminViewer || (googleLoggedIn && walletAddress && isRegistered && userStatus === 'PENDING_KYC') ? (
-                isPcView ? (
-                  <UserPcWaiting walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
-                ) : (
-                  <UserMobileWaiting walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
-                )
+                <UserWaiting walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -811,11 +645,7 @@ function AppContent() {
 
             <Route path="/dashboard" element={
               googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED' ? (
-                isPcView ? (
-                  <UserPcDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
-                ) : (
-                  <UserMobileDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
-                )
+                <UserDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -823,11 +653,7 @@ function AppContent() {
 
             <Route path="/history" element={
               isAdminViewer || (googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED') ? (
-                isPcView && !isAdminViewer ? (
-                  <Navigate to="/dashboard" replace />
-                ) : (
-                  <UserMobileHistory walletAddress={walletAddress} />
-                )
+                <UserHistory walletAddress={walletAddress} />
               ) : (
                 <Navigate to="/" replace />
               )

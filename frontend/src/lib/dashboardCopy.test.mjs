@@ -24,11 +24,11 @@ assert.deepEqual(DASHBOARD_COPY, {
   logout: '로그아웃',
 });
 
-for (const pageFile of ['../pages/user_mobile_dashboard.jsx', '../pages/user_pc_dashboard.jsx']) {
+for (const pageFile of ['../pages/user_dashboard.jsx']) {
   const source = await readFile(new URL(pageFile, import.meta.url), 'utf8');
 
   assert.match(source, /DASHBOARD_COPY/);
   assert.doesNotMatch(source, /Withdraw Funds|거래 히스토리|인출/);
 }
 
-console.log('ok - mobile and PC dashboards share formal financial terminology');
+console.log('ok - mobile dashboard uses formal financial terminology');

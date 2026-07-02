@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-for (const pageFile of ['../pages/manager_mobile_dashboard.jsx', '../pages/manager_pc_dashboard.jsx']) {
+for (const pageFile of ['../pages/manager_dashboard.jsx']) {
   const source = await readFile(new URL(pageFile, import.meta.url), 'utf8');
 
   assert.equal(
