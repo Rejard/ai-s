@@ -104,7 +104,7 @@ async function runExtendedDiagnostics() {
     let fcStatus = 'OK';
     let fcMsg = '';
     const jsFeatureCount = 10;
-    let pyFeatureCount = 5;
+    let pyFeatureCount = 0;
     try {
       const pyPath = path.resolve(__dirname, '..', 'ais_features.py');
       const pyContent = fs.readFileSync(pyPath, 'utf8');
@@ -112,15 +112,13 @@ async function runExtendedDiagnostics() {
       if (match) pyFeatureCount = parseInt(match[1], 10);
     } catch (_) {}
     fcMsg = `JS AIDL_FEATURE_ORDER: ${jsFeatureCount}, Python FEATURE_COUNT: ${pyFeatureCount}`;
-    if (jsFeatureCount === 10 && pyFeatureCount === 5) {
-      fcStatus = 'OK';
-      fcMsg += ' — by design: JS=simulation DNA evolution (10), Python=centroid inference (5)';
-    } else if (jsFeatureCount !== pyFeatureCount) {
-      fcStatus = 'WARNING';
-      fcMsg += ' — unexpected divergence detected, verify pipeline integrity';
+    if (jsFeatureCount !== pyFeatureCount) {
+      fcStatus = 'ERROR';
+      fcMsg += ' — CRITICAL: JS and Python feature definitions are out of sync!';
       warnings.push(fcMsg);
     } else {
-      fcMsg += ' — synchronized';
+      fcStatus = 'OK';
+      fcMsg += ' — synchronized (10 features)';
     }
     results.push({ name: 'JS↔Python 피처 수 정합성', status: fcStatus, percentage: pct(fcStatus), details: fcMsg });
   } catch (e) {

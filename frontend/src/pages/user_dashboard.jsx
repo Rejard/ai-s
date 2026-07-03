@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   TrendingUp, TrendingDown, Wallet, Users, AlertTriangle,
-  ArrowUpRight, ArrowDownLeft, ShieldCheck, Play, Sparkles, StopCircle
+  ArrowUpRight, ArrowDownLeft, ShieldCheck, Play, Sparkles, StopCircle,
+  Copy, Check
 } from 'lucide-react';
 import { API_BASE } from '../App';
 import { ethers } from 'ethers';
@@ -55,6 +56,15 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [txHistory, setTxHistory] = useState([]);
   const [vaultApproved, setVaultApproved] = useState(null);
   const [approvingVault, setApprovingVault] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(null);
+
+  const VAULT_ADDRESS = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
+
+  const handleCopyAddress = (address, type) => {
+    navigator.clipboard.writeText(address);
+    setCopiedAddress(type);
+    setTimeout(() => setCopiedAddress(null), 2000);
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -409,6 +419,30 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
                   <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
                 </div>
+
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  background: 'rgba(0, 0, 0, 0.2)', 
+                  padding: '8px 12px', 
+                  borderRadius: '8px', 
+                  marginBottom: '15px',
+                  border: '1px solid rgba(255, 255, 255, 0.03)'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>내 지갑 주소</span>
+                    <span style={{ fontSize: '11px', color: '#F3F4F6', fontFamily: 'monospace' }}>
+                      {walletAddress.substring(0, 10)}...{walletAddress.substring(walletAddress.length - 10)}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => handleCopyAddress(walletAddress, 'user')}
+                    style={{ background: 'transparent', border: 'none', color: copiedAddress === 'user' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  >
+                    {copiedAddress === 'user' ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </div>
               </>
             );
           })()}
@@ -420,6 +454,31 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '12px 2px 0' }}>
             PC에서 1회 위임 승인을 하면 모바일에서 SUT 입금/출금이 가능합니다.
           </p>
+
+          <div style={{ 
+            marginTop: '15px', 
+            padding: '10px 12px', 
+            background: 'rgba(139, 92, 246, 0.05)', 
+            border: '1px solid rgba(139, 92, 246, 0.1)', 
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '10px', color: '#A78BFA', fontWeight: '600' }}>매니저 지갑 (Vault)</span>
+              <span style={{ fontSize: '11px', color: '#F3F4F6', fontFamily: 'monospace' }}>
+                {VAULT_ADDRESS.substring(0, 10)}...{VAULT_ADDRESS.substring(VAULT_ADDRESS.length - 10)}
+              </span>
+            </div>
+            <button 
+              onClick={() => handleCopyAddress(VAULT_ADDRESS, 'manager')}
+              style={{ background: 'transparent', border: 'none', color: copiedAddress === 'manager' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+            >
+              {copiedAddress === 'manager' ? <Check size={14} /> : <Copy size={14} />}
+            </button>
+          </div>
+
           {vaultApproved === true ? (
             <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
               <ShieldCheck size={12} /> ✅ 위임 승인 완료
@@ -516,6 +575,30 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
 
 
+      <div className="glass-card" style={{ padding: '16px', background: 'rgba(139, 92, 246, 0.03)', border: '1px solid rgba(139, 92, 246, 0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ fontSize: '13px', fontWeight: '700', color: '#A78BFA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span>👤</span> {DASHBOARD_COPY.managerInfo || '담당 매니저 정보'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>성함</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6' }}>{userData?.managerName || '관리자'}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>이메일</span>
+            <a href={`mailto:${userData?.managerEmail || 'lemaiiisk@gmail.com'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
+              {userData?.managerEmail || 'lemaiiisk@gmail.com'}
+            </a>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>연락처</span>
+            <a href={`tel:${userData?.managerPhone || '010-2020-6447'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
+              {userData?.managerPhone || '010-2020-6447'}
+            </a>
+          </div>
+        </div>
+      </div>
+
       <button
         type="button"
         className="btn-secondary"
@@ -524,23 +607,6 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       >
         🔌 {DASHBOARD_COPY.logout}
       </button>
-
-      {!canAccessManager && (
-      <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '20px' }}>
-        <div style={{ fontSize: '12px', color: 'var(--text-dark)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-          <div>💬 담당 매니저 문의</div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <a href={`mailto:${userData?.managerEmail || 'lemaiiisk@gmail.com'}`} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
-              ✉️ {userData?.managerEmail || 'lemaiiisk@gmail.com'}
-            </a>
-            <span style={{ color: 'var(--glass-border)' }}>|</span>
-            <a href={`tel:${userData?.managerPhone || '010-2020-6447'}`} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
-              📞 {userData?.managerPhone || '010-2020-6447'}
-            </a>
-          </div>
-        </div>
-      </div>
-      )}
 
     </div>
   );
