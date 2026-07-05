@@ -1,6 +1,7 @@
 const { queries } = require('./database');
 const { loadCandles, collectHistoricalCandles, getCandleStats } = require('./historicalCandles');
 const { safeParseJson } = require('./councilShared');
+const { classifyFactionByDna } = require('./factionClassifier');
 const { DEFAULT_WEIGHTS, FEATURE_COUNT } = require('./simulationEngine');
 const { Worker } = require('worker_threads');
 const path = require('path');
@@ -107,13 +108,16 @@ async function savePopulationToDb(population, store = queries) {
   for (const member of population) {
     const dna = member.dna;
     const weightsJson = JSON.stringify(dna.weights || {});
+    const reclassifiedFaction = classifyFactionByDna(dna, member.memberId);
+    member.faction = reclassifiedFaction;
+    dna.faction_hint = reclassifiedFaction;
     const dnaJson = JSON.stringify(dna);
 
     await store.run(
       `UPDATE ais_council_members
        SET dna_json = ?, weights_json = ?, generation = ?, faction = ?
        WHERE member_id = ?`,
-      [dnaJson, weightsJson, dna.generation || 1, member.faction, member.memberId]
+      [dnaJson, weightsJson, dna.generation || 1, reclassifiedFaction, member.memberId]
     );
   }
 }

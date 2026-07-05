@@ -159,10 +159,77 @@ async function getCandleStats({ pair = 'SUT_USDT', interval = '1h', store = quer
   };
 }
 
+async function refreshRecentCandles({ pair = 'SUT_USDT', interval = '1h', store = queries } = {}) {
+  await ensureCandleTable(store);
+
+  const stats = await getCandleStats({ pair, interval, store });
+  const now = Math.floor(Date.now() / 1000);
+
+  let fromTime;
+  if (stats.latest) {
+    fromTime = Math.floor(new Date(stats.latest).getTime() / 1000);
+  } else {
+    fromTime = now - (7 * 86400);
+  }
+
+  if (now - fromTime < 600) {
+    return { totalSaved: 0, skipped: true, reason: 'data is fresh' };
+  }
+
+  const intervalSec = intervalToSeconds(interval);
+  const windowSize = (MAX_CANDLES_PER_REQUEST - 1) * intervalSec;
+  let currentFrom = fromTime;
+  let totalSaved = 0;
+
+  while (currentFrom < now) {
+    const currentTo = Math.min(currentFrom + windowSize, now);
+    try {
+      const candles = await fetchCandlesFromGateIo(pair, interval, currentFrom, currentTo);
+      if (candles.length > 0) {
+        totalSaved += await saveCandlesToDb(store, pair, interval, candles);
+      }
+    } catch (err) {
+      console.error('[CANDLES] Refresh fetch failed:', err.message);
+    }
+    currentFrom = currentTo;
+    if (currentFrom < now) await sleep(REQUEST_DELAY_MS);
+  }
+
+  return { totalSaved, fromTime: new Date(fromTime * 1000).toISOString() };
+}
+
+const CANDLE_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+
+function initCandleRefreshScheduler() {
+  console.log('[📊 CANDLE SCHEDULER] Auto-refresh scheduler initialized (interval: 1h)');
+
+  setTimeout(async () => {
+    try {
+      const result = await refreshRecentCandles();
+      console.log(`[📊 CANDLE SCHEDULER] Initial refresh: ${result.totalSaved} candles saved`);
+    } catch (err) {
+      console.error('[📊 CANDLE SCHEDULER] Initial refresh failed:', err.message);
+    }
+  }, 10000);
+
+  setInterval(async () => {
+    try {
+      const result = await refreshRecentCandles();
+      if (!result.skipped) {
+        console.log(`[📊 CANDLE SCHEDULER] Hourly refresh: ${result.totalSaved} candles saved`);
+      }
+    } catch (err) {
+      console.error('[📊 CANDLE SCHEDULER] Hourly refresh failed:', err.message);
+    }
+  }, CANDLE_REFRESH_INTERVAL_MS);
+}
+
 module.exports = {
   ensureCandleTable,
   collectHistoricalCandles,
   loadCandles,
   getCandleStats,
+  refreshRecentCandles,
+  initCandleRefreshScheduler,
   SUPPORTED_INTERVALS,
 };

@@ -6,6 +6,7 @@ const { initializeDatabase, repairAiCouncilState } = require('./database');
 const { autoDeployContracts } = require('./contractHelper');
 const { initGridBotScheduler } = require('./gridBot');
 const { initIdCardCleanupScheduler } = require('./idCardHelper');
+const { initCandleRefreshScheduler } = require('./historicalCandles');
 const { attachStdioErrorGuard } = require('./stdioErrorGuard');
 
 dotenv.config();
@@ -83,6 +84,7 @@ async function bootstrap() {
 
     initGridBotScheduler();
     initIdCardCleanupScheduler();
+    initCandleRefreshScheduler();
   } catch (err) {
     console.error('❌ Failed to bootstrap the backend server:', err);
     process.exit(1);
