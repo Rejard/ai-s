@@ -370,4 +370,73 @@ router.get('/payments/:walletAddress', requireAuthenticatedSession, async (req, 
   }
 });
 
+router.post('/update-own-wallets', requireAuthenticatedSession, async (req, res) => {
+  const { userWallet, managerWallet } = req.body;
+
+  if (!userWallet || !userWallet.startsWith('0x') || userWallet.length !== 42) {
+    return res.status(400).json({ success: false, message: '올바른 42자리 Ethereum 형식의 내 지갑 주소를 입력해 주십시오.' });
+  }
+  if (!managerWallet || !managerWallet.startsWith('0x') || managerWallet.length !== 42) {
+    return res.status(400).json({ success: false, message: '올바른 42자리 Ethereum 형식의 담당 매니저 지갑 주소를 입력해 주십시오.' });
+  }
+
+  const cleanUserWallet = userWallet.trim();
+  const cleanManagerWallet = managerWallet.trim();
+  const email = req.authEmail;
+
+  try {
+    const user = await queries.get(
+      "SELECT id, wallet_address, status FROM users WHERE LOWER(email) = LOWER(?)",
+      [email]
+    );
+    if (!user) {
+      return res.status(404).json({ success: false, message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const duplicateUser = await queries.get(
+      "SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND id != ?",
+      [cleanUserWallet.toLowerCase(), user.id]
+    );
+    if (duplicateUser) {
+      return res.status(400).json({ success: false, message: '입력하신 개인 지갑 주소는 이미 등록된 타 회원의 지갑 주소입니다.' });
+    }
+
+    const manager = await queries.get(
+      "SELECT id, name FROM users WHERE LOWER(wallet_address) = LOWER(?) AND is_manager = 1 AND status = 'APPROVED'",
+      [cleanManagerWallet]
+    );
+    if (!manager) {
+      return res.status(400).json({ success: false, message: '등록되지 않았거나 승인되지 않은 부적절한 매니저 지갑 주소입니다.' });
+    }
+
+    const prevWallet = user.wallet_address;
+
+    await queries.run(
+      "UPDATE users SET wallet_address = ?, manager_address = ? WHERE id = ?",
+      [cleanUserWallet, cleanManagerWallet, user.id]
+    );
+
+    if (prevWallet && prevWallet.toLowerCase() !== cleanUserWallet.toLowerCase()) {
+      await queries.run(
+        "UPDATE ledger SET wallet_address = ? WHERE LOWER(wallet_address) = LOWER(?)",
+        [cleanUserWallet, prevWallet]
+      );
+      await queries.run(
+        "UPDATE withdrawal_requests SET wallet_address = ? WHERE LOWER(wallet_address) = LOWER(?)",
+        [cleanUserWallet, prevWallet]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: '지갑 주소 정보가 실시간 데이터베이스에 완벽하게 저장되었습니다!',
+      managerName: manager.name
+    });
+
+  } catch (err) {
+    console.error('❌ 내 지갑 주소 설정 API 오류:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

@@ -38,16 +38,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
   const [activeTab, setActiveTab] = useState('asset');
   const [userWallet, setUserWallet] = useState(() => {
-    const saved = localStorage.getItem('user_wallet_address');
-    if (saved) return saved;
     const rawAddr = userData?.walletAddress || walletAddress || '';
     const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
     return isVirtual ? '' : rawAddr;
   });
   const [managerWallet, setManagerWallet] = useState(() => {
-    const saved = localStorage.getItem('manager_wallet_address');
-    if (saved) return saved;
-
     const isManagerOrAdminUser = userData?.isManager === true || canAccessManager === true || canAccessAdmin === true;
     if (isManagerOrAdminUser) {
       const selfAddr = userData?.walletAddress || walletAddress || '';
@@ -85,15 +80,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [copiedAddress, setCopiedAddress] = useState(null);
 
   const [userVerifyState, setUserVerifyState] = useState(() => {
-    const saved = localStorage.getItem('user_wallet_address');
-    if (saved) return 'none';
     const rawAddr = userData?.walletAddress || walletAddress || '';
     const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
     return isVirtual ? 'failed' : 'none';
   });
   const [userVerifyMsg, setUserVerifyMsg] = useState(() => {
-    const saved = localStorage.getItem('user_wallet_address');
-    if (saved) return '';
     const rawAddr = userData?.walletAddress || walletAddress || '';
     const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
     return isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '';
@@ -268,19 +259,29 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   }, [userWallet]);
 
   useEffect(() => {
-    if (walletAddress && !localStorage.getItem('user_wallet_address')) {
-      const isVirtual = !walletAddress || walletAddress === 'none' || walletAddress.toLowerCase().startsWith('0xnone') || walletAddress.toLowerCase().endsWith('00000000');
+    if (walletAddress) {
+      const isVirtual = walletAddress === 'none' || walletAddress.toLowerCase().startsWith('0xnone') || walletAddress.toLowerCase().endsWith('00000000');
       setUserWallet(isVirtual ? '' : walletAddress);
+      setUserVerifyState(isVirtual ? 'failed' : 'none');
+      setUserVerifyMsg(isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '');
     }
   }, [walletAddress]);
 
   useEffect(() => {
-    if (userData?.managerAddress && userData.managerAddress !== 'none' && !localStorage.getItem('manager_wallet_address')) {
-      setManagerWallet(userData.managerAddress);
-    }
-  }, [userData]);
+    if (userData) {
+      const rawAddr = userData.walletAddress || walletAddress || '';
+      const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
+      setUserWallet(isVirtual ? '' : rawAddr);
+      setUserVerifyState(isVirtual ? 'failed' : 'none');
+      setUserVerifyMsg(isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '');
 
-  const handleSaveWallets = (e) => {
+      if (userData.managerAddress && userData.managerAddress !== 'none') {
+        setManagerWallet(userData.managerAddress);
+      }
+    }
+  }, [userData, walletAddress]);
+
+  const handleSaveWallets = async (e) => {
     e.preventDefault();
     if (!userWallet || !userWallet.startsWith('0x') || userWallet.length !== 42) {
       alert('올바른 Ethereum 형식의 내 지갑 주소(0x...)를 입력해 주세요.');
@@ -292,18 +293,37 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       return;
     }
 
-    localStorage.setItem('user_wallet_address', userWallet);
-    localStorage.setItem('manager_wallet_address', managerWallet);
+    if (!window.confirm('입력하신 지갑 주소를 서버 실시간 데이터베이스에 완벽하게 연동 저장하시겠습니까?')) {
+      return;
+    }
 
-    alert('✅ 지갑 주소 설정이 성공적으로 저장되었습니다!');
-    fetchDashboardData();
-    fetchTxHistory();
+    try {
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      const headers = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      const response = await axios.post(`${API_BASE}/auth/update-own-wallets`, {
+        userWallet: userWallet.trim(),
+        managerWallet: managerWallet.trim()
+      }, headers);
+
+      if (response.data.success) {
+        alert(response.data.message || '✅ 지갑 주소 설정이 성공적으로 저장되었습니다!');
+        fetchDashboardData();
+        fetchTxHistory();
+      } else {
+        throw new Error(response.data.message || '지갑 주소 저장에 실패했습니다.');
+      }
+    } catch (err) {
+      alert(`❌ 지갑 주소 설정 저장 실패: ${err.response?.data?.message || err.message}`);
+    }
   };
 
   const handleResetWallets = () => {
     if (window.confirm('지갑 주소를 기본 지갑 주소로 초기화하시겠습니까?')) {
-      localStorage.removeItem('user_wallet_address');
-      localStorage.removeItem('manager_wallet_address');
       const rawAddr = walletAddress || '';
       const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
       setUserWallet(isVirtual ? '' : rawAddr);
