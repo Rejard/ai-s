@@ -444,31 +444,7 @@ function ManagerAiConfigSection({
         </div>
       </div>
 
-      <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-        <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Settings size={18} color="#A78BFA" />
-          Gate.io API 및 입금 주소 설정
-        </h4>
-        <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
-          Gate.io API 연동 키 및 입금 주소는 매니저 보안 최적화를 위해 <strong>[⚙️ 설정]</strong> 탭에서 안전하게 통합 관리되고 있습니다. <br/>
-          API 정보를 입력하거나 초기화하시려면 설정 페이지로 이동해 주세요.
-        </p>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => handleTabChange?.('settings')}
-          style={{
-            padding: '10px',
-            fontSize: '11px',
-            background: 'var(--primary-gradient)',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            marginTop: '4px'
-          }}
-        >
-          ⚙️ API 및 주소 설정하러 가기
-        </button>
-      </div>
+
 
     </div>
   );
