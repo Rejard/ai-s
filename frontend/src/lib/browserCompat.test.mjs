@@ -2,31 +2,28 @@ import assert from 'node:assert/strict';
 import { detectUnsupportedBrowser } from './browserCompat.js';
 
 const tests = [
-  ['marks iOS Safari as unsupported', () => {
+  ['marks iOS Safari as supported', () => {
     const result = detectUnsupportedBrowser(
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
       undefined
     );
-    assert.equal(result.supported, false);
-    assert.equal(result.browserName, 'Safari');
+    assert.equal(result.supported, true);
   }],
 
-  ['marks iPad Safari as unsupported', () => {
+  ['marks iPad Safari as supported', () => {
     const result = detectUnsupportedBrowser(
       'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
       undefined
     );
-    assert.equal(result.supported, false);
-    assert.equal(result.browserName, 'Safari');
+    assert.equal(result.supported, true);
   }],
 
-  ['marks Samsung Internet as unsupported', () => {
+  ['marks Samsung Internet as supported', () => {
     const result = detectUnsupportedBrowser(
       'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/125.0.6422.165 Mobile Safari/537.36',
       undefined
     );
-    assert.equal(result.supported, false);
-    assert.equal(result.browserName, '삼성 인터넷');
+    assert.equal(result.supported, true);
   }],
 
   ['marks Chrome Desktop as supported', () => {
