@@ -82,20 +82,7 @@ function UserConsent({ walletAddress, onLogout }) {
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-      <div className="glass-card" style={{ padding: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '8px', color: 'var(--text-muted)' }}>
-          <span>🔥 1차 500명 선착순 특별 모집</span>
-          <span><strong>{totalCount}</strong> / {limit} 명</span>
-        </div>
-        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-          <div style={{
-            width: `${(totalCount / limit) * 100}%`,
-            height: '100%',
-            background: 'var(--primary-gradient)',
-            boxShadow: '0 0 10px rgba(139,92,246,0.6)'
-          }}></div>
-        </div>
-      </div>
+
 
       <div style={{ textAlign: 'center', margin: '10px 0', position: 'relative' }}>
         <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>Investment Intent and Terms of Service Agreement</h2>

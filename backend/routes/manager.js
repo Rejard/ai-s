@@ -196,14 +196,17 @@ router.get('/users', async (req, res) => {
 });
 
 router.post('/approve-user', async (req, res) => {
-  const { walletAddress } = req.body;
-  if (!walletAddress) {
-    return res.status(400).json({ success: false, message: '지갑 주소가 누락되었습니다.' });
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: '이메일 주소가 누락되었습니다.' });
   }
-  const cleanWallet = walletAddress.trim();
+  const cleanEmail = email.toLowerCase().trim();
 
   try {
-    const user = await getManagedUser(queries, req.managerWallet, cleanWallet);
+    const user = await queries.get(
+      "SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [cleanEmail, req.managerWallet]
+    );
     if (!user) {
       return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
     }
@@ -224,10 +227,10 @@ router.post('/approve-user', async (req, res) => {
       UPDATE users
       SET status = 'APPROVED',
           approved_at = datetime('now')
-      WHERE LOWER(wallet_address) = LOWER(?)
+      WHERE LOWER(email) = LOWER(?)
         AND LOWER(manager_address) = LOWER(?)
         AND COALESCE(is_manager, 0) = 0
-    `, [cleanWallet, req.managerWallet]);
+    `, [cleanEmail, req.managerWallet]);
 
     res.json({
       success: true,
@@ -240,21 +243,24 @@ router.post('/approve-user', async (req, res) => {
 });
 
 router.post('/reject-user', async (req, res) => {
-  const { walletAddress } = req.body;
-  if (!walletAddress) {
-    return res.status(400).json({ success: false, message: '지갑 주소가 누락되었습니다.' });
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: '이메일 주소가 누락되었습니다.' });
   }
-  const cleanWallet = walletAddress.trim();
+  const cleanEmail = email.toLowerCase().trim();
 
   try {
-    const user = await getManagedUser(queries, req.managerWallet, cleanWallet);
+    const user = await queries.get(
+      "SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [cleanEmail, req.managerWallet]
+    );
     if (!user) {
       return res.status(404).json({ success: false, message: '회원을 찾을 수 없습니다.' });
     }
 
     await queries.run(
-      "UPDATE users SET status = 'REJECTED' WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
-      [cleanWallet, req.managerWallet]
+      "UPDATE users SET status = 'REJECTED' WHERE LOWER(email) = LOWER(?) AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+      [cleanEmail, req.managerWallet]
     );
     res.json({ success: true, message: '회원의 가입 신청이 성공적으로 반려되었습니다.' });
   } catch (err) {
@@ -339,6 +345,7 @@ router.get('/stats', async (req, res) => {
 
 router.post('/update-user', async (req, res) => {
   const {
+    targetEmail,
     targetWalletAddress,
     walletAddress,
     email,
@@ -348,34 +355,47 @@ router.post('/update-user', async (req, res) => {
     status
   } = req.body;
 
-  if (!targetWalletAddress || !walletAddress || !email || !name || !phone || !country || !status) {
+  if (!email || !name || !phone || !country || !status) {
     return res.status(400).json({ success: false, message: '모든 필수 수정 필드를 올바르게 기입해 주십시오.' });
   }
 
-  const cleanTarget = targetWalletAddress.trim();
-  const cleanNewWallet = walletAddress.trim();
+  const cleanTargetEmail = String(targetEmail || email).trim().toLowerCase();
+  const cleanTargetWallet = targetWalletAddress ? targetWalletAddress.trim() : '';
+  const cleanNewWallet = walletAddress ? walletAddress.trim() : '';
 
   try {
+    let user = null;
+    if (cleanTargetEmail) {
+      user = await queries.get(
+        "SELECT * FROM users WHERE LOWER(email) = ? AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+        [cleanTargetEmail, req.managerWallet]
+      );
+    }
+    if (!user && cleanTargetWallet) {
+      user = await queries.get(
+        "SELECT * FROM users WHERE LOWER(wallet_address) = LOWER(?) AND LOWER(manager_address) = LOWER(?) AND COALESCE(is_manager, 0) = 0",
+        [cleanTargetWallet, req.managerWallet]
+      );
+    }
 
-    const user = await getManagedUser(queries, req.managerWallet, cleanTarget);
     if (!user) {
       return res.status(404).json({ success: false, message: '수정할 회원을 찾을 수 없습니다.' });
     }
 
-    if (cleanTarget !== cleanNewWallet) {
+    if (cleanNewWallet && cleanNewWallet.toLowerCase() !== 'none' && cleanNewWallet !== user.wallet_address) {
       const duplicateUser = await queries.get(
-        "SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?)",
-        [cleanNewWallet]
+        "SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND id != ?",
+        [cleanNewWallet, user.id]
       );
       if (duplicateUser) {
         return res.status(400).json({ success: false, message: '변경하려는 지갑 주소는 이미 등록된 타 회원의 지갑 주소입니다.' });
       }
     }
 
-    if (cleanTarget !== cleanNewWallet) {
+    if (user.wallet_address && cleanNewWallet && user.wallet_address !== cleanNewWallet) {
       await queries.run(
         "UPDATE ledger SET wallet_address = ? WHERE LOWER(wallet_address) = LOWER(?)",
-        [cleanNewWallet, cleanTarget]
+        [cleanNewWallet, user.wallet_address]
       );
     }
 
@@ -387,18 +407,15 @@ router.post('/update-user', async (req, res) => {
           phone = ?,
           country = ?,
           status = ?
-      WHERE LOWER(wallet_address) = LOWER(?)
-        AND LOWER(manager_address) = LOWER(?)
-        AND COALESCE(is_manager, 0) = 0
+      WHERE id = ?
     `, [
-      cleanNewWallet,
+      cleanNewWallet || null,
       email.toLowerCase().trim(),
       name,
       phone,
       country,
       status,
-      cleanTarget,
-      req.managerWallet
+      user.id
     ]);
 
     res.json({ success: true, message: '회원 상세 정보가 완벽하게 수정 반영되었습니다!' });

@@ -268,17 +268,17 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
     } catch (err) { alert('신분증 이미지를 불러오지 못했습니다.'); }
   };
 
-  const handleApprove = async (walletAddressToApprove) => {
+  const handleApprove = async (emailToApprove) => {
     if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) return;
-    setSubmittingId(walletAddressToApprove);
-    try { const res = await approveManagerUser({ apiBase: API_BASE, managerEmail, walletAddress: walletAddressToApprove, axiosClient: axios, getStorageItem: (key) => localStorage.getItem(key) }); if (res.data.success) { alert(res.data.message); fetchManagerData(); } }
+    setSubmittingId(emailToApprove);
+    try { const res = await approveManagerUser({ apiBase: API_BASE, managerEmail, email: emailToApprove, axiosClient: axios, getStorageItem: (key) => localStorage.getItem(key) }); if (res.data.success) { alert(res.data.message); fetchManagerData(); } }
     catch (err) { alert('승인 처리 중 오류 발생: ' + (err.response?.data?.message || err.message)); } finally { setSubmittingId(null); }
   };
 
-  const handleReject = async (walletAddressToReject) => {
+  const handleReject = async (emailToReject) => {
     if (!confirm('해당 회원의 신원 서류가 부적합하여 가입 신청을 반려하시겠습니까?')) return;
-    setSubmittingId(walletAddressToReject);
-    try { const res = await rejectManagerUser({ apiBase: API_BASE, managerEmail, walletAddress: walletAddressToReject, axiosClient: axios, getStorageItem: (key) => localStorage.getItem(key) }); if (res.data.success) { alert(res.data.message); fetchManagerData(); } }
+    setSubmittingId(emailToReject);
+    try { const res = await rejectManagerUser({ apiBase: API_BASE, managerEmail, email: emailToReject, axiosClient: axios, getStorageItem: (key) => localStorage.getItem(key) }); if (res.data.success) { alert(res.data.message); fetchManagerData(); } }
     catch (err) { alert('반려 처리 중 오류 발생: ' + err.message); } finally { setSubmittingId(null); }
   };
 

@@ -274,13 +274,13 @@ export async function clearManagerGateIoCredentials({
 export async function approveManagerUser({
   apiBase,
   managerEmail,
-  walletAddress,
+  email,
   axiosClient,
   getStorageItem,
 }) {
   return axiosClient.post(
     `${apiBase}/manager/approve-user`,
-    { walletAddress },
+    { email },
     buildManagerHeaders({ managerEmail, getStorageItem })
   );
 }
@@ -288,13 +288,13 @@ export async function approveManagerUser({
 export async function rejectManagerUser({
   apiBase,
   managerEmail,
-  walletAddress,
+  email,
   axiosClient,
   getStorageItem,
 }) {
   return axiosClient.post(
     `${apiBase}/manager/reject-user`,
-    { walletAddress },
+    { email },
     buildManagerHeaders({ managerEmail, getStorageItem })
   );
 }

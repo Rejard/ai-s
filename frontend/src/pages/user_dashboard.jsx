@@ -37,7 +37,13 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const canAccessAdmin = isAdminGoogleAccount(googleEmail || userData?.email);
 
   const [activeTab, setActiveTab] = useState('asset');
-  const [userWallet, setUserWallet] = useState(() => localStorage.getItem('user_wallet_address') || userData?.walletAddress || walletAddress || '');
+  const [userWallet, setUserWallet] = useState(() => {
+    const saved = localStorage.getItem('user_wallet_address');
+    if (saved) return saved;
+    const rawAddr = userData?.walletAddress || walletAddress || '';
+    const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
+    return isVirtual ? '' : rawAddr;
+  });
   const [managerWallet, setManagerWallet] = useState(() => {
     const saved = localStorage.getItem('manager_wallet_address');
     if (saved) return saved;
@@ -78,8 +84,20 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [approvingVault, setApprovingVault] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(null);
 
-  const [userVerifyState, setUserVerifyState] = useState('none');
-  const [userVerifyMsg, setUserVerifyMsg] = useState('');
+  const [userVerifyState, setUserVerifyState] = useState(() => {
+    const saved = localStorage.getItem('user_wallet_address');
+    if (saved) return 'none';
+    const rawAddr = userData?.walletAddress || walletAddress || '';
+    const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
+    return isVirtual ? 'failed' : 'none';
+  });
+  const [userVerifyMsg, setUserVerifyMsg] = useState(() => {
+    const saved = localStorage.getItem('user_wallet_address');
+    if (saved) return '';
+    const rawAddr = userData?.walletAddress || walletAddress || '';
+    const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
+    return isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '';
+  });
   const [managerVerifyState, setManagerVerifyState] = useState('none');
   const [managerVerifyMsg, setManagerVerifyMsg] = useState('');
 
@@ -95,9 +113,9 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   };
 
   const handleVerifyUserWallet = async () => {
-    if (!userWallet || !userWallet.startsWith('0x') || userWallet.length !== 42) {
+    if (!userWallet || !userWallet.startsWith('0x') || ![34, 42].includes(userWallet.length)) {
       setUserVerifyState('failed');
-      setUserVerifyMsg('올바른 42자리 이더리움 형식(0x...)이 아닙니다.');
+      setUserVerifyMsg('올바른 이더리움 형식(0x...)이 아닙니다.');
       return;
     }
     
@@ -142,9 +160,9 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   };
 
   const handleVerifyManagerWallet = async () => {
-    if (!managerWallet || !managerWallet.startsWith('0x') || managerWallet.length !== 42) {
+    if (!managerWallet || !managerWallet.startsWith('0x') || ![34, 42].includes(managerWallet.length)) {
       setManagerVerifyState('failed');
-      setManagerVerifyMsg('올바른 42자리 이더리움 형식(0x...)이 아닙니다.');
+      setManagerVerifyMsg('올바른 이더리움 형식(0x...)이 아닙니다.');
       return;
     }
     
@@ -162,33 +180,39 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       
       const managerName = checkRes.data.name;
 
-      // 2. 온체인 SUT 잔고 추가 조회
-      let provider;
-      if (ethers.JsonRpcProvider) {
-        provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
-      } else {
-        const provs = ethers['providers'];
-        provider = new provs.JsonRpcProvider('https://polygon-rpc.com');
-      }
-
-      const formatEth = (weiVal) => {
-        if (ethers.formatEther) {
-          return ethers.formatEther(weiVal);
+      // 2. 온체인 SUT 잔고 추가 조회 (네트워크 상태에 영향을 받지 않도록 격리)
+      try {
+        let provider;
+        if (ethers.JsonRpcProvider) {
+          provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+        } else {
+          const provs = ethers['providers'];
+          provider = new provs.JsonRpcProvider('https://polygon-rpc.com');
         }
-        const ut = ethers['utils'];
-        return ut.formatEther(weiVal);
-      };
-      
-      const sutContractAddress = '0x989654741366156d910a524e887e2a9b37742d4a';
-      const erc20Abi = [
-        "function balanceOf(address owner) view returns (uint256)"
-      ];
-      const sutContract = new ethers.Contract(sutContractAddress, erc20Abi, provider);
-      const sutBalanceWei = await sutContract.balanceOf(managerWallet);
-      const sutBalance = parseFloat(formatEth(sutBalanceWei));
-      
-      setManagerVerifyState('success');
-      setManagerVerifyMsg(`✅ 정상 매니저 확인 완료! [담당: ${managerName}] (SUT 보유량: ${sutBalance.toLocaleString(undefined, {maximumFractionDigits: 2})} SUT)`);
+
+        const formatEth = (weiVal) => {
+          if (ethers.formatEther) {
+            return ethers.formatEther(weiVal);
+          }
+          const ut = ethers['utils'];
+          return ut.formatEther(weiVal);
+        };
+        
+        const sutContractAddress = '0x989654741366156d910a524e887e2a9b37742d4a';
+        const erc20Abi = [
+          "function balanceOf(address owner) view returns (uint256)"
+        ];
+        const sutContract = new ethers.Contract(sutContractAddress, erc20Abi, provider);
+        const sutBalanceWei = await sutContract.balanceOf(managerWallet);
+        const sutBalance = parseFloat(formatEth(sutBalanceWei));
+        
+        setManagerVerifyState('success');
+        setManagerVerifyMsg(`✅ 정상 매니저 확인 완료! [담당: ${managerName}] (SUT 보유량: ${sutBalance.toLocaleString(undefined, {maximumFractionDigits: 2})} SUT)`);
+      } catch (chainErr) {
+        console.warn('Manager blockchain check skipped/failed, falling back to DB verify:', chainErr);
+        setManagerVerifyState('success');
+        setManagerVerifyMsg(`✅ 정상 매니저 확인 완료! [담당: ${managerName}] (네트워크 상태에 의해 가상 검증 완료)`);
+      }
     } catch (err) {
       console.error('Manager validation failed:', err);
       if (err.response && err.response.data && err.response.data.message) {
@@ -245,7 +269,8 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
   useEffect(() => {
     if (walletAddress && !localStorage.getItem('user_wallet_address')) {
-      setUserWallet(walletAddress);
+      const isVirtual = !walletAddress || walletAddress === 'none' || walletAddress.toLowerCase().startsWith('0xnone') || walletAddress.toLowerCase().endsWith('00000000');
+      setUserWallet(isVirtual ? '' : walletAddress);
     }
   }, [walletAddress]);
 
@@ -279,7 +304,9 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     if (window.confirm('지갑 주소를 기본 지갑 주소로 초기화하시겠습니까?')) {
       localStorage.removeItem('user_wallet_address');
       localStorage.removeItem('manager_wallet_address');
-      setUserWallet(walletAddress || '');
+      const rawAddr = walletAddress || '';
+      const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
+      setUserWallet(isVirtual ? '' : rawAddr);
       setManagerWallet(userData?.managerAddress && userData.managerAddress !== 'none' ? userData.managerAddress : '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987');
       alert('🔄 기본 지갑 주소로 초기화되었습니다.');
     }

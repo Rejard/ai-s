@@ -157,11 +157,11 @@ function ManagerMembersTab({
               </thead>
               <tbody>
                 {allUsers.map((user) => {
-                  const isMaster = user.wallet_address.toLowerCase() === MASTER_WALLET.toLowerCase();
+                  const isMaster = user.wallet_address && user.wallet_address.toLowerCase() === MASTER_WALLET.toLowerCase();
                   return (
                     <tr
                       key={user.id}
-                      onClick={() => setEditingUserWallet(user.wallet_address)}
+                      onClick={() => setEditingUserWallet(user.email)}
                       style={{
                         borderBottom: '1px solid rgba(255,255,255,0.03)',
                         fontSize: '11px',
@@ -185,7 +185,11 @@ function ManagerMembersTab({
                         <div style={{ fontSize: '9px', color: 'var(--text-dark)' }}>{user.phone}</div>
                       </td>
                       <td style={{ padding: '12px 8px', fontFamily: 'monospace', fontSize: '10px', color: '#A7F3D0' }}>
-                        {user.wallet_address.substring(0, 10)}...{user.wallet_address.substring(user.wallet_address.length - 8)}
+                        {user.wallet_address ? (
+                          `${user.wallet_address.substring(0, 10)}...${user.wallet_address.substring(user.wallet_address.length - 8)}`
+                        ) : (
+                          <span style={{ fontStyle: 'italic', color: 'var(--text-dark)' }}>지갑 없음</span>
+                        )}
                       </td>
                       <td style={{ padding: '12px 8px' }}>
                         <span style={{

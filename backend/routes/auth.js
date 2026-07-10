@@ -171,23 +171,29 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
       return res.status(400).json({ success: false, message: '승인된 담당 매니저 지갑 주소가 아닙니다. 주소를 확인하고 다시 입력해 주세요.' });
     }
 
-    const crypto = require('crypto');
-    const hash = crypto.createHash('md5').update(cleanEmail).digest('hex');
-    const cleanWallet = '0x' + hash.toLowerCase().substring(0, 40);
+    const cleanWallet = null;
 
     const existingUser = await queries.get(
-      "SELECT email FROM users WHERE email = ?",
+      "SELECT id, email, status, id_card_path FROM users WHERE email = ?",
       [cleanEmail]
     );
     if (existingUser) {
-      if (req.file) {
-        fs.unlink(req.file.path, () => {});
+      if (existingUser.status === 'REJECTED') {
+        if (existingUser.id_card_path) {
+          const oldFilePath = path.resolve(__dirname, '..', existingUser.id_card_path.replace(/^\//, ''));
+          fs.unlink(oldFilePath, () => {});
+        }
+        await queries.run("DELETE FROM users WHERE id = ?", [existingUser.id]);
+      } else {
+        if (req.file) {
+          fs.unlink(req.file.path, () => {});
+        }
+        return res.status(409).json({
+          success: false,
+          code: 'EMAIL_ALREADY_REGISTERED',
+          message: '이미 가입된 Google 계정입니다. 기존 계정으로 로그인해 주세요.'
+        });
       }
-      return res.status(409).json({
-        success: false,
-        code: 'EMAIL_ALREADY_REGISTERED',
-        message: '이미 가입된 Google 계정입니다. 기존 계정으로 로그인해 주세요.'
-      });
     }
 
     if (!req.file) {

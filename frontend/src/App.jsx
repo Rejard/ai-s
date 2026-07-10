@@ -606,7 +606,7 @@ function AppContent() {
             } />
 
             <Route path="/dashboard" element={
-              googleLoggedIn && walletAddress && isRegistered && userStatus === 'APPROVED' ? (
+              googleLoggedIn && isRegistered && userStatus === 'APPROVED' ? (
                 <UserDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
               ) : (
                 <Navigate to="/" replace />

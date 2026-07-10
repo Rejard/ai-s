@@ -181,15 +181,17 @@ function ManagerLedgerTab({ walletAddress, managerEmail }) {
           ) : (
             filteredMembers.map((m) => (
               <div
-                key={m.walletAddress}
+                key={m.walletAddress || m.memberName || Math.random().toString()}
                 onClick={() => {
-                  setSelectedMember(m.walletAddress);
+                  if (m.walletAddress) {
+                    setSelectedMember(m.walletAddress);
+                  }
                   setSearchTerm('');
                 }}
                 style={{
                   padding: '10px 12px',
                   borderRadius: '8px',
-                  cursor: 'pointer',
+                  cursor: m.walletAddress ? 'pointer' : 'default',
                   background: selectedMember === m.walletAddress ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.02)',
                   border: selectedMember === m.walletAddress ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(255,255,255,0.04)',
                   transition: 'all 0.2s'
@@ -199,7 +201,11 @@ function ManagerLedgerTab({ walletAddress, managerEmail }) {
                   <div>
                     <span style={{ fontSize: '12px', fontWeight: '700', color: '#FFF' }}>{m.memberName || 'Unknown'}</span>
                     <span style={{ fontSize: '9px', color: 'var(--text-dark)', marginLeft: '6px', fontFamily: 'monospace' }}>
-                      {m.walletAddress.slice(0, 8)}...{m.walletAddress.slice(-6)}
+                      {m.walletAddress ? (
+                        `${m.walletAddress.slice(0, 8)}...${m.walletAddress.slice(-6)}`
+                      ) : (
+                        <span style={{ fontStyle: 'italic', color: 'var(--text-dark)' }}>지갑 없음</span>
+                      )}
                     </span>
                   </div>
                   <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--success-color)' }}>

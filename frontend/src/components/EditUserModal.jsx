@@ -45,14 +45,16 @@ function EditUserModal({ walletAddress, managerEmail, onClose, onSuccess }) {
     try {
       const usersResponse = await axios.get(`${API_BASE}/manager/users`, headers);
       const user = (usersResponse.data.users || []).find(
-        (item) => item.wallet_address?.toLowerCase() === walletAddress?.toLowerCase()
+        (item) => 
+          (item.email && item.email.toLowerCase() === walletAddress?.toLowerCase()) ||
+          (item.wallet_address && item.wallet_address.toLowerCase() === walletAddress?.toLowerCase())
       );
 
       if (!user) {
         throw new Error('선택한 회원을 찾을 수 없습니다.');
       }
 
-      setTargetWallet(user.wallet_address);
+      setTargetWallet(user.wallet_address || '');
       setFormData({
         walletAddress: user.wallet_address || '',
         email: user.email || '',
@@ -62,19 +64,22 @@ function EditUserModal({ walletAddress, managerEmail, onClose, onSuccess }) {
         status: user.status || 'PENDING_KYC',
       });
 
+      const hasWallet = user.wallet_address && user.wallet_address !== 'none';
       const [portfolioResult, withdrawalsResult] = await Promise.allSettled([
-        axios.get(`${API_BASE}/investment/portfolio/${user.wallet_address}`),
+        hasWallet ? axios.get(`${API_BASE}/investment/portfolio/${user.wallet_address}`) : Promise.resolve({ data: { success: true, portfolio: {} } }),
         axios.get(`${API_BASE}/manager/withdrawals`, headers),
       ]);
 
-      if (portfolioResult.status === 'fulfilled' && portfolioResult.value.data.success) {
+      if (portfolioResult.status === 'fulfilled' && portfolioResult.value.data?.success) {
         setCurrentInvested(Number(portfolioResult.value.data.portfolio?.totalInvested) || 0);
       }
 
-      if (withdrawalsResult.status === 'fulfilled' && withdrawalsResult.value.data.success) {
+      if (withdrawalsResult.status === 'fulfilled' && withdrawalsResult.value.data?.success) {
         setUserWithdrawals(
           (withdrawalsResult.value.data.withdrawals || []).filter(
-            (request) => request.wallet_address?.toLowerCase() === user.wallet_address.toLowerCase()
+            (request) => 
+              (request.wallet_address && user.wallet_address && request.wallet_address.toLowerCase() === user.wallet_address.toLowerCase()) ||
+              (request.email && user.email && request.email.toLowerCase() === user.email.toLowerCase())
           )
         );
       }
@@ -102,6 +107,7 @@ function EditUserModal({ walletAddress, managerEmail, onClose, onSuccess }) {
     setSubmitting(true);
     try {
       const response = await axios.post(`${API_BASE}/manager/update-user`, {
+        targetEmail: walletAddress, // Send original email for lookup
         targetWalletAddress: targetWallet,
         walletAddress: formData.walletAddress.trim(),
         email: formData.email.trim(),

@@ -79,7 +79,6 @@ function ManagerManagementSection({
                 </div>
 
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
-                  <div style={{ wordBreak: 'break-all' }}>지갑: <b>{user.wallet_address}</b></div>
                   <div>전화번호: {user.phone}</div>
                   {(() => {
                     const diffHours = 24 - (Date.now() - new Date(user.joined_at + 'Z').getTime()) / (1000 * 60 * 60);
@@ -108,8 +107,8 @@ function ManagerManagementSection({
                     type="button"
                     className="btn-primary"
                     style={{ flex: 1, padding: '8px', fontSize: '11px', borderRadius: '8px', gap: '4px', background: 'var(--success-color)', boxShadow: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: hasDownloadedId[user.id] ? 1 : 0.4 }}
-                    onClick={() => handleApprove(user.wallet_address)}
-                    disabled={submittingId === user.wallet_address || !hasDownloadedId[user.id]}
+                    onClick={() => handleApprove(user.email)}
+                    disabled={submittingId === user.email || !hasDownloadedId[user.id]}
                   >
                     <Check size={12} />
                     승인
@@ -118,8 +117,8 @@ function ManagerManagementSection({
                     type="button"
                     className="btn-primary"
                     style={{ width: '40px', padding: '8px', fontSize: '11px', borderRadius: '8px', background: 'var(--danger-color)', boxShadow: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                    onClick={() => handleReject(user.wallet_address)}
-                    disabled={submittingId === user.wallet_address}
+                    onClick={() => handleReject(user.email)}
+                    disabled={submittingId === user.email}
                   >
                     <X size={12} />
                   </button>

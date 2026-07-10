@@ -31,9 +31,9 @@ function UserRegister({ googleEmail, googleName, onRegisterComplete }) {
 
   const handleVerifyManager = async () => {
     const cleanAddr = managerAddress.toLowerCase().trim();
-    if (!cleanAddr || !cleanAddr.startsWith('0x') || cleanAddr.length !== 42) {
+    if (!cleanAddr || !cleanAddr.startsWith('0x') || ![34, 42].includes(cleanAddr.length)) {
       setManagerVerifyState('failed');
-      setManagerVerifyMsg('올바른 42자리 이더리움 지갑 주소(0x...) 형식이 아닙니다.');
+      setManagerVerifyMsg('올바른 이더리움 지갑 주소(0x...) 형식이 아닙니다.');
       return;
     }
 

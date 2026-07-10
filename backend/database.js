@@ -164,7 +164,7 @@ function initializeDatabase() {
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          wallet_address TEXT UNIQUE NOT NULL,
+          wallet_address TEXT UNIQUE,
           email TEXT UNIQUE NOT NULL,
           name TEXT NOT NULL,
           phone TEXT NOT NULL,
