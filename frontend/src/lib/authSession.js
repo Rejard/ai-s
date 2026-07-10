@@ -1,19 +1,32 @@
 const AUTH_TOKEN_KEY = 'auth_token';
 
 export function getAuthToken(storage = localStorage) {
-  return storage.getItem(AUTH_TOKEN_KEY) || '';
+  try {
+    return storage.getItem(AUTH_TOKEN_KEY) || '';
+  } catch (e) {
+    console.warn("getAuthToken storage is blocked:", e.message);
+    return '';
+  }
 }
 
 export function saveAuthSession(token, profile, storage = localStorage) {
-  storage.setItem(AUTH_TOKEN_KEY, token);
-  storage.setItem('google_email', profile.email);
-  storage.setItem('google_name', profile.name || profile.email);
+  try {
+    storage.setItem(AUTH_TOKEN_KEY, token);
+    storage.setItem('google_email', profile.email);
+    storage.setItem('google_name', profile.name || profile.email);
+  } catch (e) {
+    console.warn("saveAuthSession storage is blocked:", e.message);
+  }
 }
 
 export function clearAuthSession(storage = localStorage) {
-  storage.removeItem(AUTH_TOKEN_KEY);
-  storage.removeItem('google_email');
-  storage.removeItem('google_name');
+  try {
+    storage.removeItem(AUTH_TOKEN_KEY);
+    storage.removeItem('google_email');
+    storage.removeItem('google_name');
+  } catch (e) {
+    console.warn("clearAuthSession storage is blocked:", e.message);
+  }
 }
 
 export function buildAuthHeaders(storage = localStorage) {

@@ -1000,14 +1000,71 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 상태: 완료됨
                 </div>
               ) : vaultApproved === false ? (
-                <button
-                  type="button"
-                  onClick={handleApproveVault}
-                  disabled={approvingVault}
-                  style={{ width: '100%', padding: '12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '8px', fontWeight: '800', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)', boxSizing: 'border-box' }}
-                >
-                  <ShieldCheck size={14} /> {approvingVault ? '⏳ 블록체인 서명 및 승인 승격 대기 중...' : '🔐 플랫폼 위임 승인하기 (1회)'}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={handleApproveVault}
+                    disabled={approvingVault}
+                    style={{ width: '100%', padding: '12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '8px', fontWeight: '800', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)', boxSizing: 'border-box' }}
+                  >
+                    <ShieldCheck size={14} /> {approvingVault ? '⏳ 블록체인 서명 및 승인 승격 대기 중...' : '🔐 원클릭 자동 위임 승인 시도'}
+                  </button>
+
+                  {/* 수동 다이렉트 위임 가이드 카드 */}
+                  <div style={{ 
+                    padding: '12px', 
+                    background: 'rgba(239, 68, 68, 0.03)', 
+                    border: '1px solid rgba(139, 92, 246, 0.15)', 
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '11px', color: '#EF4444', fontWeight: '700' }}>⚠️ 원클릭 자동 승인 실패 시 100% 성공 수동 위임 가이드</span>
+                    
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.4' }}>
+                      <div>
+                        <strong>1. 폴리곤스캔 링크 복사</strong>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '3px' }}>
+                          <input readOnly value="https://polygonscan.com/address/0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55#writeContract" style={{ flex: 1, fontSize: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 6px', color: 'var(--text-muted)' }} />
+                          <button type="button" onClick={() => handleCopyAddress('https://polygonscan.com/address/0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55#writeContract', 'scanLink')} style={{ padding: '2px 8px', fontSize: '9px', background: '#374151', border: 'none', color: '#FFF', borderRadius: '4px', cursor: 'pointer' }}>
+                            {copiedAddress === 'scanLink' ? '복사됨' : '복사'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <strong>2. 트러스트월렛 앱 실행</strong> {'→'} 하단 <strong>[Browser]</strong> 또는 <strong>[디앱]</strong> 메뉴 진입 {'→'} 맨 위 주소창에 복사한 링크 붙여넣고 이동.
+                      </div>
+
+                      <div>
+                        <strong>3. [Connect to Web3] 터치</strong> {'→'} 본인 지갑 연결.
+                      </div>
+
+                      <div>
+                        <strong>4. [1. approve] 항목 기입</strong> 아래 값들 각각 복사하여 입력.
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '4px 6px', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>spender (볼트 주소)</span>
+                            <button type="button" onClick={() => handleCopyAddress('0x855c880D538892fD899eECb72D4b1Ac5B46089eA', 'vault')} style={{ padding: '1px 6px', fontSize: '9px', background: '#4B5563', border: 'none', color: '#FFF', borderRadius: '3px', cursor: 'pointer' }}>
+                              {copiedAddress === 'vault' ? '복사됨' : '복사'}
+                            </button>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '4px 6px', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>value (위임할 수량)</span>
+                            <button type="button" onClick={() => handleCopyAddress('1000000000000000000000000', 'amount')} style={{ padding: '1px 6px', fontSize: '9px', background: '#4B5563', border: 'none', color: '#FFF', borderRadius: '3px', cursor: 'pointer' }}>
+                              {copiedAddress === 'amount' ? '복사됨' : '복사'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <strong>5. [Write] 터치</strong> {'→'} 지갑 트랜잭션 승인 완료.
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
                   <ShieldCheck size={14} /> ⏳ 온체인 위임 승인 상태 확인 중...

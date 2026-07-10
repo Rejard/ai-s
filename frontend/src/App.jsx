@@ -164,52 +164,69 @@ function AppContent() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await restoreGoogleOAuthRedirect();
-      } catch (err) {
-        console.error('Google OAuth redirect restore failed:', err);
-        alert('Google 로그인 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
-      }
-
-      let searchString = window.location.search;
-      if (searchString.includes('&amp;')) {
-        searchString = searchString.replace(/&amp;/g, '&');
-      }
-      const params = new URLSearchParams(searchString);
-      const hashParams = new URLSearchParams(window.location.hash.startsWith('#')
-        ? window.location.hash.slice(1)
-        : '');
-      const handoffToken = hashParams.get('auth_token');
-
-      let currentEmail = '';
-      let currentName = '';
-      const authToken = handoffToken || getAuthToken();
-
-      let _googleLoggedIn = false;
-      if (authToken) {
         try {
-          const sessionResponse = await axios.get(`${API_BASE}/auth/session`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-          });
-          currentEmail = sessionResponse.data.profile.email;
-          currentName = sessionResponse.data.profile.name;
-          saveAuthSession(authToken, { email: currentEmail, name: currentName });
-          setGoogleEmail(currentEmail);
-          setGoogleName(currentName);
-          setGoogleLoggedIn(true);
-          _googleLoggedIn = true;
-
-          if (handoffToken) {
-            window.history.replaceState(null, '', window.location.pathname);
-          }
-        } catch {
-          clearAuthSession();
+          await restoreGoogleOAuthRedirect();
+        } catch (err) {
+          console.error('Google OAuth redirect restore failed:', err);
         }
-      }
 
-      if (_googleLoggedIn && currentEmail) {
-        await restoreSessionByEmail(currentEmail);
+        let searchString = window.location.search;
+        if (searchString.includes('&amp;')) {
+          searchString = searchString.replace(/&amp;/g, '&');
+        }
+        const params = new URLSearchParams(searchString);
+        const hashParams = new URLSearchParams(window.location.hash.startsWith('#')
+          ? window.location.hash.slice(1)
+          : '');
+        const handoffToken = hashParams.get('auth_token');
+
+        let currentEmail = '';
+        let currentName = '';
+        let authToken = '';
+        try {
+          authToken = handoffToken || getAuthToken();
+        } catch (e) {
+          console.warn("Local storage retrieval failed/blocked:", e.message);
+        }
+
+        let _googleLoggedIn = false;
+        if (authToken) {
+          try {
+            const sessionResponse = await axios.get(`${API_BASE}/auth/session`, {
+              headers: { Authorization: `Bearer ${authToken}` },
+            });
+            currentEmail = sessionResponse.data.profile.email;
+            currentName = sessionResponse.data.profile.name;
+            try {
+              saveAuthSession(authToken, { email: currentEmail, name: currentName });
+            } catch (e) {
+              console.warn("Local storage save failed/blocked:", e.message);
+            }
+            setGoogleEmail(currentEmail);
+            setGoogleName(currentName);
+            setGoogleLoggedIn(true);
+            _googleLoggedIn = true;
+
+            if (handoffToken) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          } catch {
+            try {
+              clearAuthSession();
+            } catch (e) {
+              console.warn("Local storage clean failed/blocked:", e.message);
+            }
+          }
+        }
+
+        if (_googleLoggedIn && currentEmail) {
+          await restoreSessionByEmail(currentEmail);
+        }
+      } catch (globalErr) {
+        console.error("initializeApp global safe rescue triggered:", globalErr);
+      } finally {
+        setIsAppReady(true);
       }
-      setIsAppReady(true);
     };
 
     initializeApp();
