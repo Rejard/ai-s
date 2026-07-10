@@ -78,6 +78,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [vaultApproved, setVaultApproved] = useState(null);
   const [approvingVault, setApprovingVault] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(null);
+  const [hasLoadedFromDB, setHasLoadedFromDB] = useState(false);
 
   const [userVerifyState, setUserVerifyState] = useState(() => {
     const rawAddr = userData?.walletAddress || walletAddress || '';
@@ -252,34 +253,26 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   };
 
   useEffect(() => {
-    if (userWallet) {
-      fetchDashboardData();
-      fetchTxHistory();
-    }
-  }, [userWallet]);
+    fetchDashboardData();
+    fetchTxHistory();
+  }, []);
 
   useEffect(() => {
-    if (walletAddress) {
-      const isVirtual = walletAddress === 'none' || walletAddress.toLowerCase().startsWith('0xnone') || walletAddress.toLowerCase().endsWith('00000000');
-      setUserWallet(isVirtual ? '' : walletAddress);
-      setUserVerifyState(isVirtual ? 'failed' : 'none');
-      setUserVerifyMsg(isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '');
-    }
-  }, [walletAddress]);
-
-  useEffect(() => {
-    if (userData) {
-      const rawAddr = userData.walletAddress || walletAddress || '';
-      const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
-      setUserWallet(isVirtual ? '' : rawAddr);
-      setUserVerifyState(isVirtual ? 'failed' : 'none');
-      setUserVerifyMsg(isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '');
-
-      if (userData.managerAddress && userData.managerAddress !== 'none') {
-        setManagerWallet(userData.managerAddress);
+    if (!hasLoadedFromDB) {
+      const targetAddr = userData?.walletAddress || walletAddress || '';
+      if (targetAddr) {
+        const isVirtual = targetAddr === 'none' || targetAddr.toLowerCase().startsWith('0xnone') || targetAddr.toLowerCase().endsWith('00000000');
+        setUserWallet(isVirtual ? '' : targetAddr);
+        setUserVerifyState(isVirtual ? 'failed' : 'none');
+        setUserVerifyMsg(isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '');
+        
+        if (userData?.managerAddress && userData.managerAddress !== 'none') {
+          setManagerWallet(userData.managerAddress);
+        }
+        setHasLoadedFromDB(true);
       }
     }
-  }, [userData, walletAddress]);
+  }, [userData, walletAddress, hasLoadedFromDB]);
 
   const handleSaveWallets = async (e) => {
     e.preventDefault();
@@ -312,6 +305,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
       if (response.data.success) {
         alert(response.data.message || '✅ 지갑 주소 설정이 성공적으로 저장되었습니다!');
+        setHasLoadedFromDB(false); // DB 저장 완료되었으므로 잠금장치를 해제하여 최신 데이터가 무결하게 들어오도록 허용!
         fetchDashboardData();
         fetchTxHistory();
       } else {
@@ -737,7 +731,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>{DASHBOARD_COPY.withdrawAction}</button>
               </div>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '12px 2px 0', textAlign: 'left' }}>
-                PC에서 1회 위임 승인을 하면 모바일에서 SUT 입금/출금이 가능합니다.
+                * 입출금 신청 전, 우측 상단 [⚙️ 설정] 메뉴에서 최초 1회 플랫폼 위임 승인이 반드시 수반되어야 모바일 SUT 정상 트랜잭션이 개시됩니다.
               </p>
 
               <div style={{ 
@@ -765,25 +759,6 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   {copiedAddress === 'manager' ? <Check size={14} /> : <Copy size={14} />}
                 </button>
               </div>
-
-              {vaultApproved === true ? (
-                <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
-                  <ShieldCheck size={12} /> ✅ 위임 승인 완료
-                </div>
-              ) : vaultApproved === false ? (
-                <button
-                  type="button"
-                  onClick={handleApproveVault}
-                  disabled={approvingVault}
-                  style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}
-                >
-                  <ShieldCheck size={12} /> {approvingVault ? '승인 처리 중...' : '🔐 위임 승인(1회)'}
-                </button>
-              ) : (
-                <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
-                  <ShieldCheck size={12} /> 위임 승인 확인 중...
-                </div>
-              )}
             </div>
           </div>
 
@@ -1006,6 +981,39 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 </button>
               </div>
             </form>
+
+            <div style={{ 
+              marginTop: '20px', 
+              paddingTop: '16px', 
+              borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
+              textAlign: 'left'
+            }}>
+              <label style={{ fontSize: '11.5px', color: '#C084FC', display: 'block', marginBottom: '8px', fontWeight: '700' }}>
+                🔐 SUT 자산 거래 위임 승인 (최초 1회 필수)
+              </label>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
+                플랫폼을 통한 모바일 SUT 토큰 입금 및 출금 자동 처리를 개시하기 위하여 최초 1회 위임 승인 서명이 필요합니다. (승인 시 약 10원 내외의 극소량 폴리곤 가스비가 소모됩니다)
+              </p>
+
+              {vaultApproved === true ? (
+                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
+                  <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 상태: 완료됨
+                </div>
+              ) : vaultApproved === false ? (
+                <button
+                  type="button"
+                  onClick={handleApproveVault}
+                  disabled={approvingVault}
+                  style={{ width: '100%', padding: '12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '8px', fontWeight: '800', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)', boxSizing: 'border-box' }}
+                >
+                  <ShieldCheck size={14} /> {approvingVault ? '⏳ 블록체인 서명 및 승인 승격 대기 중...' : '🔐 플랫폼 위임 승인하기 (1회)'}
+                </button>
+              ) : (
+                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
+                  <ShieldCheck size={14} /> ⏳ 온체인 위임 승인 상태 확인 중...
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 담당 매니저 정보 */}
