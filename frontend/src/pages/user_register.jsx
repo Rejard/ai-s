@@ -30,8 +30,13 @@ function UserRegister({ googleEmail, googleName, onRegisterComplete }) {
   };
 
   const handleVerifyManager = async () => {
-    const cleanAddr = managerAddress.toLowerCase().trim();
-    if (!cleanAddr || !cleanAddr.startsWith('0x') || ![34, 42].includes(cleanAddr.length)) {
+    let cleanAddr = managerAddress.toLowerCase().trim();
+    if (!cleanAddr) {
+      cleanAddr = '0x436af28144f75f8c56a375154f71279ef4f53f6e';
+      setManagerAddress('0x436af28144f75f8c56a375154f71279ef4f53f6e');
+    }
+
+    if (!cleanAddr.startsWith('0x') || ![34, 42].includes(cleanAddr.length)) {
       setManagerVerifyState('failed');
       setManagerVerifyMsg('올바른 이더리움 지갑 주소(0x...) 형식이 아닙니다.');
       return;
@@ -202,7 +207,7 @@ function UserRegister({ googleEmail, googleName, onRegisterComplete }) {
                 type="text"
                 className="form-input"
                 style={{ paddingLeft: '45px' }}
-                placeholder="0x..."
+                placeholder="0x436af28144f75f8c56a375154f71279ef4f53f6e"
                 value={managerAddress}
                 onChange={(e) => {
                   setManagerAddress(e.target.value);

@@ -355,7 +355,8 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       }
     };
 
-    if (activeTab === 'settings' && userData) {
+    const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (activeTab === 'settings' && userData && isMobileDevice) {
       autoSyncTrustWallet();
     }
   }, [activeTab, userData, managerWallet]);
