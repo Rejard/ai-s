@@ -649,8 +649,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const isFullModeOverride = queryParams.get('mode') === 'full';
 
   // 트러스트 월넷 인앱 디앱 브라우저 전용 컴포넌트 렌더링 분기 (전용 단일 페이지)
-  // 단, 사용자가 "AiS 앱으로 돌아가기"를 터치해 mode=full 을 요청한 경우는 대시보드 전체 뷰를 보여주도록 예외처리함!
-  if (window.ethereum && !isFullModeOverride) {
+  // 단, PC 브라우저에 MetaMask, Trust Wallet 등의 지갑 확장 프로그램이 주입되어 있어 오작동하는 현상을 원천 방지하기 위해,
+  // 실제 모바일 스마트폰 기기(/iPhone|iPad|iPod|Android/i) 환경에서 접속했을 때만 이 디앱 전용 미니 뷰 레이아웃을 작동시킵니다!
+  // 또한, 사용자가 "AiS 앱으로 돌아가기"를 터치해 mode=full 을 요청한 경우는 대시보드 전체 뷰를 보여주도록 예외처리함!
+  const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (window.ethereum && isMobileDevice && !isFullModeOverride) {
     return (
       <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
         
