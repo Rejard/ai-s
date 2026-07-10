@@ -208,7 +208,7 @@ function AppContent() {
             _googleLoggedIn = true;
 
             if (handoffToken) {
-              window.history.replaceState(null, '', window.location.pathname);
+              window.history.replaceState(null, '', window.location.pathname + window.location.search);
             }
           } catch {
             try {

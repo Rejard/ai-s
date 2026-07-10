@@ -36,7 +36,14 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const canAccessManager = isManagerAccount(userData, googleEmail, walletAddress);
   const canAccessAdmin = isAdminGoogleAccount(googleEmail || userData?.email);
 
-  const [activeTab, setActiveTab] = useState('asset');
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlTab = params.get('active_tab');
+    if (urlTab === 'settings' || urlTab === 'asset') {
+      return urlTab;
+    }
+    return 'asset';
+  });
   const [userWallet, setUserWallet] = useState(() => {
     const rawAddr = userData?.walletAddress || walletAddress || '';
     const isVirtual = !rawAddr || rawAddr === 'none' || rawAddr.toLowerCase().startsWith('0xnone') || rawAddr.toLowerCase().endsWith('00000000');
@@ -110,10 +117,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       setUserVerifyMsg('올바른 이더리움 형식(0x...)이 아닙니다.');
       return;
     }
-    
+
     setUserVerifyState('checking');
     setUserVerifyMsg('폴리곤 온체인 잔액 조회 중...');
-    
+
     try {
       let provider;
       if (ethers.JsonRpcProvider) {
@@ -130,10 +137,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         const ut = ethers['utils'];
         return ut.formatEther(weiVal);
       };
-      
+
       const balanceWei = await provider.getBalance(userWallet);
       const balanceMatic = parseFloat(formatEth(balanceWei));
-      
+
       const sutContractAddress = '0x989654741366156d910a524e887e2a9b37742d4a';
       const erc20Abi = [
         "function balanceOf(address owner) view returns (uint256)"
@@ -141,9 +148,9 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       const sutContract = new ethers.Contract(sutContractAddress, erc20Abi, provider);
       const sutBalanceWei = await sutContract.balanceOf(userWallet);
       const sutBalance = parseFloat(formatEth(sutBalanceWei));
-      
+
       setUserVerifyState('success');
-      setUserVerifyMsg(`정상 규격 검증 완료! (SUT 잔고: ${sutBalance.toLocaleString(undefined, {maximumFractionDigits: 2})} SUT / 가스비: ${balanceMatic.toLocaleString(undefined, {maximumFractionDigits: 3})} POL)`);
+      setUserVerifyMsg(`정상 규격 검증 완료! (SUT 잔고: ${sutBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} SUT / 가스비: ${balanceMatic.toLocaleString(undefined, { maximumFractionDigits: 3 })} POL)`);
     } catch (err) {
       console.error('Wallet validation failed:', err);
       setUserVerifyState('success');
@@ -157,10 +164,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       setManagerVerifyMsg('올바른 이더리움 형식(0x...)이 아닙니다.');
       return;
     }
-    
+
     setManagerVerifyState('checking');
     setManagerVerifyMsg('온체인 계약 상태 및 매니저 등록 여부 조회 중...');
-    
+
     try {
       // 1. 백엔드 데이터베이스 기반 공식 등록 매니저 여부 교차 검증
       const checkRes = await axios.get(`${API_BASE}/auth/verify-manager/${managerWallet}`);
@@ -169,7 +176,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         setManagerVerifyMsg(`⚠️ 검증 실패: ${checkRes.data?.message || '우리 플랫폼에 승인 등록된 매니저 주소가 아닙니다.'}`);
         return;
       }
-      
+
       const managerName = checkRes.data.name;
 
       // 2. 온체인 SUT 잔고 추가 조회 (네트워크 상태에 영향을 받지 않도록 격리)
@@ -189,7 +196,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
           const ut = ethers['utils'];
           return ut.formatEther(weiVal);
         };
-        
+
         const sutContractAddress = '0x989654741366156d910a524e887e2a9b37742d4a';
         const erc20Abi = [
           "function balanceOf(address owner) view returns (uint256)"
@@ -197,9 +204,9 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         const sutContract = new ethers.Contract(sutContractAddress, erc20Abi, provider);
         const sutBalanceWei = await sutContract.balanceOf(managerWallet);
         const sutBalance = parseFloat(formatEth(sutBalanceWei));
-        
+
         setManagerVerifyState('success');
-        setManagerVerifyMsg(`✅ 정상 매니저 확인 완료! [담당: ${managerName}] (SUT 보유량: ${sutBalance.toLocaleString(undefined, {maximumFractionDigits: 2})} SUT)`);
+        setManagerVerifyMsg(`✅ 정상 매니저 확인 완료! [담당: ${managerName}] (SUT 보유량: ${sutBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} SUT)`);
       } catch (chainErr) {
         console.warn('Manager blockchain check skipped/failed, falling back to DB verify:', chainErr);
         setManagerVerifyState('success');
@@ -265,7 +272,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         setUserWallet(isVirtual ? '' : targetAddr);
         setUserVerifyState(isVirtual ? 'failed' : 'none');
         setUserVerifyMsg(isVirtual ? '⚠️ 아직 입출금용 지갑 주소가 등록되지 않았습니다. 본인의 실제 개인 지갑 주소를 등록해 주세요.' : '');
-        
+
         if (userData?.managerAddress && userData.managerAddress !== 'none') {
           setManagerWallet(userData.managerAddress);
         }
@@ -327,15 +334,38 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   };
 
   const handleApproveVault = async () => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile && !window.ethereum) {
+      const targetUrl = new URL(window.location.origin + window.location.pathname);
+      targetUrl.searchParams.set('active_tab', 'settings');
+
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '';
+      let hashStr = '';
+      if (token) {
+        hashStr = `#auth_token=${encodeURIComponent(token)}`;
+      }
+
+      const finalUrl = `${targetUrl.toString()}${hashStr}`;
+      const trustDeepLink = `trust://open_url?coin_id=966&url=${encodeURIComponent(finalUrl)}`;
+
+      window.location.href = trustDeepLink;
+      return;
+    }
+
     setApprovingVault(true);
     try {
       await approveVault({ ethersLib: ethers });
       setVaultApproved(true);
       alert('✅ 위임 승인 완료!');
     } catch (err) {
-      if (err?.code === 'ACTION_REJECTED' || err?.message?.includes('rejected')) { alert('지갑에서 승인 서명이 취소되었습니다.'); }
-      else { alert(`❌ 위임 승인 실패: ${err.message || err}`); }
-    } finally { setApprovingVault(false); }
+      if (err?.code === 'ACTION_REJECTED' || err?.message?.includes('rejected')) {
+        alert('지갑에서 승인 서명이 취소되었습니다.');
+      } else {
+        alert(`❌ 위임 승인 실패: ${err.message || err}`);
+      }
+    } finally {
+      setApprovingVault(false);
+    }
   };
 
   const handleTxSubmit = async (e, explicitAmount = null, explicitType = null, explicitCurrentUrl = null) => {
@@ -425,6 +455,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
     const resumeUrl = new URL(window.location.href);
     resumeUrl.searchParams.delete('recover_sut_approval');
+    resumeUrl.searchParams.delete('active_tab');
     window.history.replaceState(null, '', `${resumeUrl.pathname}${resumeUrl.search}${resumeUrl.hash}`);
 
     handleApprovalRecovery({ allowRedirectOnMissingWallet: false });
@@ -583,11 +614,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       </div>
 
       {/* 탭 네비게이션 헤더 */}
-      <div style={{ 
-        display: 'flex', 
-        background: 'rgba(0, 0, 0, 0.2)', 
-        padding: '5px', 
-        borderRadius: '12px', 
+      <div style={{
+        display: 'flex',
+        background: 'rgba(0, 0, 0, 0.2)',
+        padding: '5px',
+        borderRadius: '12px',
         border: '1px solid rgba(255, 255, 255, 0.05)',
         marginTop: '-10px',
         boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)'
@@ -644,7 +675,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       {activeTab === 'asset' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
           {portfolio ? (
-            <SutPriceCard 
+            <SutPriceCard
               sutPrice={sutPrice}
               sutChange24h={sutChange24h}
               krwRate={portfolio.krwRate}
@@ -686,11 +717,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <div style={{ textAlign: 'left' }}>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.walletBalance}</span>
-                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#8B5CF6' }}>{walletSutBalance.toFixed(2)} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({walletPercent.toFixed(1)}%)</span></span>
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#8B5CF6' }}>{walletSutBalance.toFixed(2)} SUT <span style={{ fontSize: '10px', fontWeight: 'normal' }}>({walletPercent.toFixed(1)}%)</span></span>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.managedAssets}</span>
-                        <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>{portfolio ? portfolio.totalInvested.toFixed(2) : '0.00'} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({depositedPercent.toFixed(1)}%)</span></span>
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>{portfolio ? portfolio.totalInvested.toFixed(2) : '0.00'} SUT <span style={{ fontSize: '10px', fontWeight: 'normal' }}>({depositedPercent.toFixed(1)}%)</span></span>
                       </div>
                     </div>
 
@@ -699,13 +730,13 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                       <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
                     </div>
 
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      background: 'rgba(0, 0, 0, 0.2)', 
-                      padding: '8px 12px', 
-                      borderRadius: '8px', 
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
                       marginBottom: '15px',
                       border: '1px solid rgba(255, 255, 255, 0.03)'
                     }}>
@@ -715,7 +746,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                           {userWallet ? `${userWallet.substring(0, 10)}...${userWallet.substring(userWallet.length - 10)}` : '등록된 지갑 없음'}
                         </span>
                       </div>
-                      <button 
+                      <button
                         onClick={() => handleCopyAddress(userWallet, 'user')}
                         style={{ background: 'transparent', border: 'none', color: copiedAddress === 'user' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                       >
@@ -734,11 +765,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 * 입출금 신청 전, 우측 상단 [⚙️ 설정] 메뉴에서 최초 1회 플랫폼 위임 승인이 반드시 수반되어야 모바일 SUT 정상 트랜잭션이 개시됩니다.
               </p>
 
-              <div style={{ 
-                marginTop: '15px', 
-                padding: '10px 12px', 
-                background: 'rgba(139, 92, 246, 0.05)', 
-                border: '1px solid rgba(139, 92, 246, 0.1)', 
+              <div style={{
+                marginTop: '15px',
+                padding: '10px 12px',
+                background: 'rgba(139, 92, 246, 0.05)',
+                border: '1px solid rgba(139, 92, 246, 0.1)',
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
@@ -752,7 +783,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                     {displayManagerAddress ? `${displayManagerAddress.substring(0, 10)}...${displayManagerAddress.substring(displayManagerAddress.length - 10)}` : '0x7660Bf40...7987'}
                   </span>
                 </div>
-                <button 
+                <button
                   onClick={() => handleCopyAddress(displayManagerAddress, 'manager')}
                   style={{ background: 'transparent', border: 'none', color: copiedAddress === 'manager' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                 >
@@ -813,38 +844,38 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       {/* 탭 2: 설정 및 정보 탭 */}
       {activeTab === 'settings' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
-          
+
           {/* 지갑 주소 설정 보드 */}
-          <div className="glass-card" style={{ 
-            padding: '20px', 
+          <div className="glass-card" style={{
+            padding: '20px',
             border: '1px solid rgba(139, 92, 246, 0.25)',
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%)'
           }}>
             <h3 style={{ fontSize: '15px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px 0', fontWeight: '700' }}>
               <span style={{ fontSize: '16px' }}>👛</span> 지갑 주소 관리 및 편집
             </h3>
-            
+
             <form onSubmit={handleSaveWallets} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ textAlign: 'left' }}>
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
                   내 개인 지갑 주소 (SUT 입출금용)
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={userWallet}
                     onChange={(e) => {
                       setUserWallet(e.target.value);
                       setUserVerifyState('none');
                     }}
-                    placeholder="0x..." 
-                    style={{ 
-                      flex: 1, 
-                      padding: '10px 12px', 
-                      fontSize: '12px', 
-                      background: 'rgba(0, 0, 0, 0.3)', 
-                      border: '1px solid rgba(255, 255, 255, 0.08)', 
-                      borderRadius: '8px', 
+                    placeholder="0x..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      fontSize: '12px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '8px',
                       color: '#FFF',
                       outline: 'none',
                       fontFamily: 'monospace',
@@ -871,10 +902,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   </button>
                 </div>
                 {userVerifyState !== 'none' && (
-                  <span style={{ 
-                    fontSize: '10.5px', 
-                    color: userVerifyState === 'success' ? '#10B981' : userVerifyState === 'failed' ? '#EF4444' : '#F59E0B', 
-                    display: 'block', 
+                  <span style={{
+                    fontSize: '10.5px',
+                    color: userVerifyState === 'success' ? '#10B981' : userVerifyState === 'failed' ? '#EF4444' : '#F59E0B',
+                    display: 'block',
                     marginTop: '5px',
                     fontWeight: '500'
                   }}>
@@ -888,21 +919,21 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   담당 매니저 지갑 주소 (SUT 위임 계약용)
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={managerWallet}
                     onChange={(e) => {
                       setManagerWallet(e.target.value);
                       setManagerVerifyState('none');
                     }}
                     placeholder="0x..."
-                    style={{ 
-                      flex: 1, 
-                      padding: '10px 12px', 
-                      fontSize: '11px', 
-                      background: 'rgba(0, 0, 0, 0.3)', 
-                      border: '1px solid rgba(255, 255, 255, 0.08)', 
-                      borderRadius: '8px', 
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      fontSize: '11px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '8px',
                       color: '#FFF',
                       outline: 'none',
                       fontFamily: 'monospace',
@@ -928,10 +959,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   </button>
                 </div>
                 {managerVerifyState !== 'none' ? (
-                  <span style={{ 
-                    fontSize: '10.5px', 
-                    color: managerVerifyState === 'success' ? '#10B981' : managerVerifyState === 'failed' ? '#EF4444' : '#F59E0B', 
-                    display: 'block', 
+                  <span style={{
+                    fontSize: '10.5px',
+                    color: managerVerifyState === 'success' ? '#10B981' : managerVerifyState === 'failed' ? '#EF4444' : '#F59E0B',
+                    display: 'block',
                     marginTop: '5px',
                     fontWeight: '500'
                   }}>
@@ -948,14 +979,14 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 <button
                   type="button"
                   onClick={handleResetWallets}
-                  style={{ 
-                    flex: 1, 
-                    padding: '10px', 
-                    fontSize: '12px', 
-                    background: 'rgba(255, 255, 255, 0.05)', 
-                    color: '#D1D5DB', 
-                    border: '1px solid rgba(255, 255, 255, 0.1)', 
-                    borderRadius: '8px', 
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    fontSize: '12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: '#D1D5DB',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
                     fontWeight: '700',
                     cursor: 'pointer'
                   }}
@@ -964,14 +995,14 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 </button>
                 <button
                   type="submit"
-                  style={{ 
-                    flex: 2, 
-                    padding: '10px', 
-                    fontSize: '12px', 
-                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)', 
-                    color: '#FFF', 
-                    border: 'none', 
-                    borderRadius: '8px', 
+                  style={{
+                    flex: 2,
+                    padding: '10px',
+                    fontSize: '12px',
+                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                    color: '#FFF',
+                    border: 'none',
+                    borderRadius: '8px',
                     fontWeight: '800',
                     cursor: 'pointer',
                     boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)'
@@ -982,9 +1013,9 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
               </div>
             </form>
 
-            <div style={{ 
-              marginTop: '20px', 
-              paddingTop: '16px', 
+            <div style={{
+              marginTop: '20px',
+              paddingTop: '16px',
               borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
               textAlign: 'left'
             }}>
@@ -1001,27 +1032,84 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 </div>
               ) : vaultApproved === false ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum && (
+                    <div style={{
+                      padding: '10px 12px',
+                      background: 'rgba(5, 0, 255, 0.05)',
+                      border: '1px solid rgba(5, 0, 255, 0.25)',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: '#60A5FA',
+                      lineHeight: '1.4',
+                      boxSizing: 'border-box',
+                      textAlign: 'left'
+                    }}>
+                      💡 아래 파란색 버튼 터치 시 <strong>트러스트 월넷 앱으로 이동</strong>. 앱 접속 후 보라색 버튼을 <strong>다시 한 번 터치</strong>.
+                    </div>
+                  )}
+
+                  {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && window.ethereum && (
+                    <div style={{
+                      padding: '10px 12px',
+                      background: 'rgba(16, 185, 129, 0.05)',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: '#34D399',
+                      lineHeight: '1.4',
+                      boxSizing: 'border-box',
+                      textAlign: 'left'
+                    }}>
+                      💡 트러스트 월넷 연동. 아래 보라색 <strong>[원클릭 자동 위임 승인 시도]</strong> 버튼을 터치하여 폴리곤 블록체인 가스비 서명을 완료.
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleApproveVault}
                     disabled={approvingVault}
-                    style={{ width: '100%', padding: '12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '8px', fontWeight: '800', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)', boxSizing: 'border-box' }}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '12px',
+                      background: (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum)
+                        ? 'linear-gradient(135deg, #0500FF 0%, #357BFF 100%)'
+                        : 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '800',
+                      color: '#FFF',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum)
+                        ? '0 4px 12px rgba(5, 0, 255, 0.25)'
+                        : '0 4px 12px rgba(139, 92, 246, 0.25)',
+                      boxSizing: 'border-box'
+                    }}
                   >
-                    <ShieldCheck size={14} /> {approvingVault ? '⏳ 블록체인 서명 및 승인 승격 대기 중...' : '🔐 원클릭 자동 위임 승인 시도'}
+                    <ShieldCheck size={14} />
+                    {approvingVault
+                      ? '⏳ 블록체인 서명 및 승인 승격 대기 중...'
+                      : (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum)
+                        ? '🔵 트러스트 월넷으로 위임 승인 이동'
+                        : '🔐 원클릭 자동 위임 승인 시도'}
                   </button>
 
                   {/* 수동 다이렉트 위임 가이드 카드 */}
-                  <div style={{ 
-                    padding: '12px', 
-                    background: 'rgba(239, 68, 68, 0.03)', 
-                    border: '1px solid rgba(139, 92, 246, 0.15)', 
+                  <div style={{
+                    padding: '12px',
+                    background: 'rgba(239, 68, 68, 0.03)',
+                    border: '1px solid rgba(139, 92, 246, 0.15)',
                     borderRadius: '8px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px'
                   }}>
                     <span style={{ fontSize: '11px', color: '#EF4444', fontWeight: '700' }}>⚠️ 원클릭 자동 승인 실패 시 100% 성공 수동 위임 가이드</span>
-                    
+
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.4' }}>
                       <div>
                         <strong>1. 폴리곤스캔 링크 복사</strong>
@@ -1034,7 +1122,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                       </div>
 
                       <div>
-                        <strong>2. 트러스트월렛 앱 실행</strong> {'→'} 하단 <strong>[Browser]</strong> 또는 <strong>[디앱]</strong> 메뉴 진입 {'→'} 맨 위 주소창에 복사한 링크 붙여넣고 이동.
+                        <strong>2. 트러스트월렛 앱 실행</strong> {'→'} 하단 <strong>[나침반 아이콘]</strong> 또는 <strong>[탐색]</strong> 메뉴 진입 {'→'} 맨 위 탐색 검색창에 복사한 링크 붙여넣고 이동.
                       </div>
 
                       <div>
