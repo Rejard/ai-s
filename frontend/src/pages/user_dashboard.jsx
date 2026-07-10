@@ -694,6 +694,40 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 <Wallet size={18} color="#8B5CF6" />
                 {DASHBOARD_COPY.assetOverview}
               </h3>
+
+              {vaultApproved === true ? (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: '800',
+                  color: '#10B981',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  padding: '2px 8px',
+                  borderRadius: '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
+                  거래가능
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: '800',
+                  color: '#EF4444',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  padding: '2px 8px',
+                  borderRadius: '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#EF4444', display: 'inline-block' }}></span>
+                  승인필요
+                </span>
+              )}
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
