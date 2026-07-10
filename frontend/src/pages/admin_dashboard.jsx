@@ -24,6 +24,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
 
   const {
     managers,
+    fetchManagers,
     loading,
     promoteWallet,
     setPromoteWallet,
@@ -138,6 +139,8 @@ function AdminDashboard({ walletAddress, managerEmail }) {
             stats={stats}
             loading={loading}
             managers={managers}
+            fetchManagers={fetchManagers}
+            managerEmail={managerEmail}
             submittingDelete={submittingDelete}
             handleDeleteManager={handleDeleteManager}
             promoteWallet={promoteWallet}

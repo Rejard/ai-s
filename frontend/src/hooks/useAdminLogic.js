@@ -452,6 +452,7 @@ export function useAdminLogic(managerEmail) {
 
   return {
     managers,
+    fetchManagers,
     loading,
     promoteWallet,
     setPromoteWallet,

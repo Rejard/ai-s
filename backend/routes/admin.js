@@ -535,17 +535,176 @@ router.get('/managers', async (req, res) => {
         console.error(`[Admin CEX Onchain SUT Query Error] ${m.wallet_address}:`, err.message);
       }
 
+      let gateioSut = 0.0;
+      let gateioUsdt = 0.0;
+      try {
+        const cred = await queries.get(
+          "SELECT encrypted_api_key, encrypted_api_secret FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)",
+          [m.email]
+        );
+        if (cred) {
+          const { decryptText } = require('../secureCredentials');
+          const decryptedKey = decryptText(cred.encrypted_api_key);
+          const decryptedSecret = decryptText(cred.encrypted_api_secret);
+          const { getGateIoBalances } = require('../gateioHelper');
+          const apiRes = await getGateIoBalances(decryptedKey, decryptedSecret);
+          if (apiRes && apiRes.balances) {
+            gateioSut = Number(apiRes.balances.SUT) || 0.0;
+            gateioUsdt = Number(apiRes.balances.USDT) || 0.0;
+          }
+        }
+      } catch (err) {
+        console.error(`[Admin Gate.io Query Error] Manager: ${m.email}`, err.message);
+      }
+
       return {
         ...m,
         userCount,
         performance,
-        onchainBalance
+        onchainBalance,
+        gateioSut,
+        gateioUsdt
       };
     }));
 
     res.json({ success: true, managers: enrichedManagers });
   } catch (err) {
     console.error("❌ 어드민 매니저 목록 로드 에러:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/manager-detail/:email', async (req, res) => {
+  const { email } = req.params;
+  try {
+    const manager = await queries.get(
+      "SELECT id, wallet_address, email, name, phone, country FROM users WHERE LOWER(email) = LOWER(?) AND is_manager = 1",
+      [email]
+    );
+    if (!manager) {
+      return res.status(404).json({ success: false, message: 'NotFound' });
+    }
+    let gateioBalances = { SUT: 0.0, USDT: 0.0 };
+    let gateioConnected = false;
+    let gateioError = null;
+    try {
+      const cred = await queries.get(
+        "SELECT encrypted_api_key, encrypted_api_secret FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)",
+        [email]
+      );
+      if (cred) {
+        const { decryptText } = require('../secureCredentials');
+        const decryptedKey = decryptText(cred.encrypted_api_key);
+        const decryptedSecret = decryptText(cred.encrypted_api_secret);
+        const { getGateIoBalances } = require('../gateioHelper');
+        const apiRes = await getGateIoBalances(decryptedKey, decryptedSecret);
+        if (apiRes && apiRes.balances) {
+          gateioBalances.SUT = Number(apiRes.balances.SUT) || 0.0;
+          gateioBalances.USDT = Number(apiRes.balances.USDT) || 0.0;
+          gateioConnected = true;
+        } else {
+          gateioError = apiRes.message || 'StructureMismatch';
+        }
+      } else {
+        gateioError = 'NoCredentials';
+      }
+    } catch (err) {
+      gateioError = err.message;
+    }
+    let onchainBalance = 0.0;
+    try {
+      const balanceWei = await sutContract.balanceOf(manager.wallet_address);
+      onchainBalance = parseFloat(ethers.formatUnits(balanceWei, 18));
+    } catch (err) {
+      console.error(err.message);
+    }
+    let vaultBalance = 0.0;
+    try {
+      const paymentStats = await queries.get(`
+        SELECT
+          COALESCE(SUM(CASE WHEN type IN ('DEPOSIT', 'AI_PROFIT') THEN amount ELSE 0 END), 0) -
+          COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN amount ELSE 0 END), 0) as vaultBalance
+        FROM ledger l
+        JOIN users u ON LOWER(l.wallet_address) = LOWER(u.wallet_address)
+        WHERE l.manager_address = ? AND u.is_manager = 0
+      `, [manager.wallet_address]);
+      vaultBalance = paymentStats ? paymentStats.vaultBalance : 0.0;
+    } catch (err) {
+      console.error(err.message);
+    }
+    res.json({
+      success: true,
+      manager,
+      balances: {
+        gateio: gateioBalances,
+        gateioConnected,
+        gateioError,
+        onchain: onchainBalance,
+        vault: vaultBalance
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/update-manager', async (req, res) => {
+  const {
+    targetEmail,
+    walletAddress,
+    email,
+    name,
+    phone,
+    country
+  } = req.body;
+
+  if (!email || !name || !phone || !country) {
+    return res.status(400).json({ success: false, message: '모든 필수 수정 필드를 올바르게 기입해 주십시오.' });
+  }
+
+  const cleanTargetEmail = String(targetEmail || email).trim().toLowerCase();
+  const cleanNewWallet = walletAddress ? walletAddress.trim() : '';
+
+  try {
+    const manager = await queries.get(
+      "SELECT id, wallet_address FROM users WHERE LOWER(email) = ? AND is_manager = 1",
+      [cleanTargetEmail]
+    );
+
+    if (!manager) {
+      return res.status(404).json({ success: false, message: '수정할 매니저를 찾을 수 없습니다.' });
+    }
+
+    if (cleanNewWallet && cleanNewWallet.toLowerCase() !== 'none' && cleanNewWallet !== manager.wallet_address) {
+      const duplicateUser = await queries.get(
+        "SELECT id FROM users WHERE LOWER(wallet_address) = LOWER(?) AND id != ?",
+        [cleanNewWallet, manager.id]
+      );
+      if (duplicateUser) {
+        return res.status(400).json({ success: false, message: '변경하려는 지갑 주소는 이미 등록된 타 회원의 지갑 주소입니다.' });
+      }
+    }
+
+    await queries.run(`
+      UPDATE users
+      SET wallet_address = ?,
+          email = ?,
+          name = ?,
+          phone = ?,
+          country = ?
+      WHERE id = ?
+    `, [
+      cleanNewWallet || null,
+      email.toLowerCase().trim(),
+      name,
+      phone,
+      country,
+      manager.id
+    ]);
+
+    res.json({ success: true, message: '매니저 정보가 성공적으로 수정되었습니다.' });
+  } catch (err) {
+    console.error("❌ 매니저 정보 수정 에러:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

@@ -1,11 +1,14 @@
-import React from 'react';
-import { BarChart3, Loader2, UserPlus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, Loader2, UserPlus } from 'lucide-react';
+import EditUserModal from '../../components/EditUserModal';
 
 function AdminHomeTab({
   vaultSutBalance,
   stats,
   loading,
   managers,
+  fetchManagers,
+  managerEmail,
   submittingDelete,
   handleDeleteManager,
   promoteWallet,
@@ -13,6 +16,10 @@ function AdminHomeTab({
   handlePromoteManager,
   submittingPromote
 }) {
+  const [selectedManagerWallet, setSelectedManagerWallet] = useState(null);
+  const [selectedManagerEmail, setSelectedManagerEmail] = useState(null);
+  const [hoveredCard, setHoveredCard] = useState(null);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -45,8 +52,26 @@ function AdminHomeTab({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {managers.map((m) => {
               const isMaster = m.wallet_address.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase();
+              const isHovered = hoveredCard === m.wallet_address;
               return (
-                <div key={m.wallet_address} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px' }}>
+                <div
+                  key={m.wallet_address}
+                  onClick={() => {
+                    setSelectedManagerWallet(m.wallet_address);
+                    setSelectedManagerEmail(m.email);
+                  }}
+                  onMouseEnter={() => setHoveredCard(m.wallet_address)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  style={{
+                    background: isHovered ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.25)',
+                    border: isHovered ? '1px solid var(--primary-color)' : '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    transform: isHovered ? 'translateY(-2px)' : 'none',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: isMaster ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : 'rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '14px' }}>
@@ -64,24 +89,18 @@ function AdminHomeTab({
 
                   <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>매니저 SUT (온체인)</div>
-                      <div style={{ fontSize: '13px', color: '#10B981', fontWeight: 'bold' }}>{parseFloat(m.onchainBalance || 0).toLocaleString()} SUT</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>매니저 Gate.io 자산</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 'bold' }}>
+                        <span style={{ color: '#10B981' }}>{parseFloat(m.gateioSut || 0).toLocaleString()} SUT</span>
+                        <span style={{ color: 'rgba(255, 255, 255, 0.15)', fontSize: '10px', fontWeight: 'normal' }}>|</span>
+                        <span style={{ color: '#6EE7B7' }}>{parseFloat(m.gateioUsdt || 0).toLocaleString()} USDT</span>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>회원 총 자산 (온체인)</div>
                       <div style={{ fontSize: '13px', color: '#FFF', fontWeight: 'bold' }}>{parseFloat(m.performance || 0).toLocaleString()} SUT</div>
                     </div>
                   </div>
-
-                  {!isMaster && (
-                    <button
-                      onClick={() => handleDeleteManager(m.wallet_address, m.name)}
-                      disabled={submittingDelete === m.wallet_address}
-                      style={{ marginTop: '12px', width: '100%', padding: '10px', fontSize: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
-                    >
-                      {submittingDelete === m.wallet_address ? <Loader2 size={14} className="spin" /> : <><Trash2 size={14} /> 계정 삭제 및 이관</>}
-                    </button>
-                  )}
                 </div>
               );
             })}
@@ -117,6 +136,22 @@ function AdminHomeTab({
           </button>
         </form>
       </div>
+
+      {selectedManagerWallet && (
+        <EditUserModal
+          isOpen={!!selectedManagerWallet}
+          onClose={() => {
+            setSelectedManagerWallet(null);
+            setSelectedManagerEmail(null);
+            if (fetchManagers) fetchManagers();
+          }}
+          walletAddress={selectedManagerWallet}
+          targetEmail={selectedManagerEmail}
+          isManagerEdit={true}
+          onDeleteManager={handleDeleteManager}
+          submittingDelete={submittingDelete}
+        />
+      )}
 
     </div>
   );
