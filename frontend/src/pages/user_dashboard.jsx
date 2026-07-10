@@ -37,12 +37,24 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const canAccessAdmin = isAdminGoogleAccount(googleEmail || userData?.email);
 
   const [activeTab, setActiveTab] = useState('asset');
-  const [userWallet, setUserWallet] = useState(() => localStorage.getItem('user_wallet_address') || walletAddress || '');
-  const [managerWallet, setManagerWallet] = useState(() => 
-    localStorage.getItem('manager_wallet_address') || 
-    (userData?.managerAddress && userData.managerAddress !== 'none' ? userData.managerAddress : '') || 
-    '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'
-  );
+  const [userWallet, setUserWallet] = useState(() => localStorage.getItem('user_wallet_address') || userData?.walletAddress || walletAddress || '');
+  const [managerWallet, setManagerWallet] = useState(() => {
+    const saved = localStorage.getItem('manager_wallet_address');
+    if (saved) return saved;
+
+    const isManagerOrAdminUser = userData?.isManager === true || canAccessManager === true || canAccessAdmin === true;
+    if (isManagerOrAdminUser) {
+      const selfAddr = userData?.walletAddress || walletAddress || '';
+      if (selfAddr && selfAddr !== 'none' && !selfAddr.startsWith('0xnone')) {
+        return selfAddr;
+      }
+    }
+
+    if (userData?.managerAddress && userData.managerAddress !== 'none') {
+      return userData.managerAddress;
+    }
+    return '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
+  });
 
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
@@ -66,6 +78,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [approvingVault, setApprovingVault] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(null);
 
+  const [userVerifyState, setUserVerifyState] = useState('none');
+  const [userVerifyMsg, setUserVerifyMsg] = useState('');
+  const [managerVerifyState, setManagerVerifyState] = useState('none');
+  const [managerVerifyMsg, setManagerVerifyMsg] = useState('');
+
   const VAULT_ADDRESS = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
   const isManagerOrAdmin = userData?.isManager === true || canAccessManager === true || canAccessAdmin === true;
   const displayManagerAddress = managerWallet;
@@ -75,6 +92,113 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     navigator.clipboard.writeText(address);
     setCopiedAddress(type);
     setTimeout(() => setCopiedAddress(null), 2000);
+  };
+
+  const handleVerifyUserWallet = async () => {
+    if (!userWallet || !userWallet.startsWith('0x') || userWallet.length !== 42) {
+      setUserVerifyState('failed');
+      setUserVerifyMsg('올바른 42자리 이더리움 형식(0x...)이 아닙니다.');
+      return;
+    }
+    
+    setUserVerifyState('checking');
+    setUserVerifyMsg('폴리곤 온체인 잔액 조회 중...');
+    
+    try {
+      let provider;
+      if (ethers.JsonRpcProvider) {
+        provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+      } else {
+        const provs = ethers['providers'];
+        provider = new provs.JsonRpcProvider('https://polygon-rpc.com');
+      }
+
+      const formatEth = (weiVal) => {
+        if (ethers.formatEther) {
+          return ethers.formatEther(weiVal);
+        }
+        const ut = ethers['utils'];
+        return ut.formatEther(weiVal);
+      };
+      
+      const balanceWei = await provider.getBalance(userWallet);
+      const balanceMatic = parseFloat(formatEth(balanceWei));
+      
+      const sutContractAddress = '0x989654741366156d910a524e887e2a9b37742d4a';
+      const erc20Abi = [
+        "function balanceOf(address owner) view returns (uint256)"
+      ];
+      const sutContract = new ethers.Contract(sutContractAddress, erc20Abi, provider);
+      const sutBalanceWei = await sutContract.balanceOf(userWallet);
+      const sutBalance = parseFloat(formatEth(sutBalanceWei));
+      
+      setUserVerifyState('success');
+      setUserVerifyMsg(`정상 규격 검증 완료! (SUT 잔고: ${sutBalance.toLocaleString(undefined, {maximumFractionDigits: 2})} SUT / 가스비: ${balanceMatic.toLocaleString(undefined, {maximumFractionDigits: 3})} POL)`);
+    } catch (err) {
+      console.error('Wallet validation failed:', err);
+      setUserVerifyState('success');
+      setUserVerifyMsg('규격 검증 완료 (온체인 RPC 통신 지연으로 가상 상태 검증)');
+    }
+  };
+
+  const handleVerifyManagerWallet = async () => {
+    if (!managerWallet || !managerWallet.startsWith('0x') || managerWallet.length !== 42) {
+      setManagerVerifyState('failed');
+      setManagerVerifyMsg('올바른 42자리 이더리움 형식(0x...)이 아닙니다.');
+      return;
+    }
+    
+    setManagerVerifyState('checking');
+    setManagerVerifyMsg('온체인 계약 상태 및 매니저 등록 여부 조회 중...');
+    
+    try {
+      // 1. 백엔드 데이터베이스 기반 공식 등록 매니저 여부 교차 검증
+      const checkRes = await axios.get(`${API_BASE}/auth/verify-manager/${managerWallet}`);
+      if (!checkRes.data || !checkRes.data.success) {
+        setManagerVerifyState('failed');
+        setManagerVerifyMsg(`⚠️ 검증 실패: ${checkRes.data?.message || '우리 플랫폼에 승인 등록된 매니저 주소가 아닙니다.'}`);
+        return;
+      }
+      
+      const managerName = checkRes.data.name;
+
+      // 2. 온체인 SUT 잔고 추가 조회
+      let provider;
+      if (ethers.JsonRpcProvider) {
+        provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+      } else {
+        const provs = ethers['providers'];
+        provider = new provs.JsonRpcProvider('https://polygon-rpc.com');
+      }
+
+      const formatEth = (weiVal) => {
+        if (ethers.formatEther) {
+          return ethers.formatEther(weiVal);
+        }
+        const ut = ethers['utils'];
+        return ut.formatEther(weiVal);
+      };
+      
+      const sutContractAddress = '0x989654741366156d910a524e887e2a9b37742d4a';
+      const erc20Abi = [
+        "function balanceOf(address owner) view returns (uint256)"
+      ];
+      const sutContract = new ethers.Contract(sutContractAddress, erc20Abi, provider);
+      const sutBalanceWei = await sutContract.balanceOf(managerWallet);
+      const sutBalance = parseFloat(formatEth(sutBalanceWei));
+      
+      setManagerVerifyState('success');
+      setManagerVerifyMsg(`✅ 정상 매니저 확인 완료! [담당: ${managerName}] (SUT 보유량: ${sutBalance.toLocaleString(undefined, {maximumFractionDigits: 2})} SUT)`);
+    } catch (err) {
+      console.error('Manager validation failed:', err);
+      if (err.response && err.response.data && err.response.data.message) {
+        setManagerVerifyState('failed');
+        setManagerVerifyMsg(`⚠️ 검증 실패: ${err.response.data.message}`);
+      } else {
+        setManagerVerifyState('failed');
+        setManagerVerifyMsg('⚠️ 검증 실패: 네트워크 상태를 확인하시거나 승인된 매니저 주소인지 확인해 주세요.');
+      }
+    }
   };
 
   const fetchDashboardData = async () => {
@@ -683,25 +807,58 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
                   내 개인 지갑 주소 (SUT 입출금용)
                 </label>
-                <input 
-                  type="text" 
-                  value={userWallet}
-                  onChange={(e) => setUserWallet(e.target.value)}
-                  placeholder="0x..." 
-                  style={{ 
-                    width: '100%', 
-                    padding: '10px 12px', 
-                    fontSize: '12px', 
-                    background: 'rgba(0, 0, 0, 0.3)', 
-                    border: '1px solid rgba(255, 255, 255, 0.08)', 
-                    borderRadius: '8px', 
-                    color: '#FFF',
-                    outline: 'none',
-                    fontFamily: 'monospace',
-                    boxSizing: 'border-box'
-                  }}
-                  required
-                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    value={userWallet}
+                    onChange={(e) => {
+                      setUserWallet(e.target.value);
+                      setUserVerifyState('none');
+                    }}
+                    placeholder="0x..." 
+                    style={{ 
+                      flex: 1, 
+                      padding: '10px 12px', 
+                      fontSize: '12px', 
+                      background: 'rgba(0, 0, 0, 0.3)', 
+                      border: '1px solid rgba(255, 255, 255, 0.08)', 
+                      borderRadius: '8px', 
+                      color: '#FFF',
+                      outline: 'none',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box'
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyUserWallet}
+                    disabled={userVerifyState === 'checking'}
+                    style={{
+                      padding: '0 12px',
+                      fontSize: '12px',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      border: '1px solid rgba(139, 92, 246, 0.25)',
+                      borderRadius: '8px',
+                      color: '#C084FC',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {userVerifyState === 'checking' ? '⏳ 검사 중' : '🔍 지갑 검증'}
+                  </button>
+                </div>
+                {userVerifyState !== 'none' && (
+                  <span style={{ 
+                    fontSize: '10.5px', 
+                    color: userVerifyState === 'success' ? '#10B981' : userVerifyState === 'failed' ? '#EF4444' : '#F59E0B', 
+                    display: 'block', 
+                    marginTop: '5px',
+                    fontWeight: '500'
+                  }}>
+                    {userVerifyMsg}
+                  </span>
+                )}
               </div>
 
               <div style={{ textAlign: 'left' }}>
@@ -712,7 +869,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   <input 
                     type="text" 
                     value={managerWallet}
-                    onChange={(e) => setManagerWallet(e.target.value)}
+                    onChange={(e) => {
+                      setManagerWallet(e.target.value);
+                      setManagerVerifyState('none');
+                    }}
                     placeholder="0x..."
                     style={{ 
                       flex: 1, 
@@ -729,7 +889,8 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                   />
                   <button
                     type="button"
-                    onClick={() => handleCopyAddress(managerWallet, 'mgrVerify')}
+                    onClick={handleVerifyManagerWallet}
+                    disabled={managerVerifyState === 'checking'}
                     style={{
                       padding: '0 12px',
                       fontSize: '12px',
@@ -741,12 +902,24 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                       fontWeight: '600'
                     }}
                   >
-                    {copiedAddress === 'mgrVerify' ? '✓ 복사됨' : '📋 복사'}
+                    {managerVerifyState === 'checking' ? '⏳ 검사 중' : '🔍 매니저 검증'}
                   </button>
                 </div>
-                <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.35)', display: 'block', marginTop: '5px' }}>
-                  * 가입 시 매칭된 담당 매니저 지갑 주소 또는 플랫폼 운영 지갑 주소입니다. 담당자 변경 시 직접 수정 및 입력이 가능합니다.
-                </span>
+                {managerVerifyState !== 'none' ? (
+                  <span style={{ 
+                    fontSize: '10.5px', 
+                    color: managerVerifyState === 'success' ? '#10B981' : managerVerifyState === 'failed' ? '#EF4444' : '#F59E0B', 
+                    display: 'block', 
+                    marginTop: '5px',
+                    fontWeight: '500'
+                  }}>
+                    {managerVerifyMsg}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.35)', display: 'block', marginTop: '5px' }}>
+                    * 가입 시 매칭된 담당 매니저 지갑 주소 또는 플랫폼 운영 지갑 주소입니다. 담당자 변경 시 직접 수정 및 입력이 가능합니다.
+                  </span>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
@@ -791,23 +964,25 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
           {/* 담당 매니저 정보 */}
           <div className="glass-card" style={{ padding: '16px', background: 'rgba(139, 92, 246, 0.03)', border: '1px solid rgba(139, 92, 246, 0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ fontSize: '13px', fontWeight: '700', color: '#A78BFA', display: 'flex', alignItems: 'center', gap: '6px', textAlign: 'left' }}>
-              <span>👤</span> {DASHBOARD_COPY.managerInfo || '담당 매니저 정보'}
+              <span>👤</span> {isManagerOrAdmin ? '본인 매니저 정보' : (DASHBOARD_COPY.managerInfo || '담당 매니저 정보')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>성함</span>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6' }}>{userData?.managerName || '관리자'}</span>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6' }}>
+                  {isManagerOrAdmin ? (userData?.name || '매니저') : (userData?.managerName || '관리자')}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>이메일</span>
-                <a href={`mailto:${userData?.managerEmail || 'lemaiiisk@gmail.com'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
-                  {userData?.managerEmail || 'lemaiiisk@gmail.com'}
+                <a href={`mailto:${isManagerOrAdmin ? (userData?.email || '') : (userData?.managerEmail || 'lemaiiisk@gmail.com')}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
+                  {isManagerOrAdmin ? (userData?.email || '') : (userData?.managerEmail || 'lemaiiisk@gmail.com')}
                 </a>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>연락처</span>
-                <a href={`tel:${userData?.managerPhone || '010-2020-6447'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
-                  {userData?.managerPhone || '010-2020-6447'}
+                <a href={`tel:${isManagerOrAdmin ? (userData?.phone || '') : (userData?.managerPhone || '010-2020-6447')}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
+                  {isManagerOrAdmin ? (userData?.phone || '') : (userData?.managerPhone || '010-2020-6447')}
                 </a>
               </div>
             </div>

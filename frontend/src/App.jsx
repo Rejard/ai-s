@@ -197,6 +197,7 @@ function AppContent() {
           setGoogleName(currentName);
           setGoogleLoggedIn(true);
           _googleLoggedIn = true;
+
           if (handoffToken) {
             window.history.replaceState(null, '', window.location.pathname);
           }
@@ -205,44 +206,9 @@ function AppContent() {
         }
       }
 
-      const promises = [];
-      let emailWalletAddress = null;
-
       if (_googleLoggedIn && currentEmail) {
-        promises.push(
-          restoreSessionByEmail(currentEmail).then(addr => {
-            if (addr) emailWalletAddress = addr;
-          })
-        );
+        await restoreSessionByEmail(currentEmail);
       }
-
-      promises.push(
-        new Promise(resolve => setTimeout(async () => {
-          if (window.ethereum) {
-            try {
-              let accounts = await window.ethereum.request({ method: 'eth_accounts' });
-              if (accounts.length === 0) {
-                try {
-                  accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                } catch(e) {}
-              }
-              if (accounts.length > 0) {
-                const address = accounts[0];
-                if (emailWalletAddress && !hasApprovalRecoveryResumeFlag(window.location.href)) {
-                  console.log("[AUTO-CONNECT] Email session already established. Skipping injected wallet overwrite.");
-                } else {
-                  await checkUserStatus(address, currentEmail);
-                }
-              }
-            } catch (err) {
-              console.error("지갑 자동 조회 실패:", err);
-            }
-          }
-          resolve();
-        }, 600))
-      );
-
-      await Promise.all(promises);
       setIsAppReady(true);
     };
 
@@ -503,13 +469,10 @@ function AppContent() {
                 🟢 <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>Google 계정 연동됨:</span> {googleEmail}
               </div>
 
-              <button
-                className="btn-primary"
-                onClick={connectWallet}
-              >
-                <Wallet size={20} />
-                {'트러스트 월렛 연결하기'}
-              </button>
+              <div style={{ margin: '15px 0', textAlign: 'center' }}>
+                <div className="shimmer-loading" style={{ width: '40px', height: '40px', borderRadius: '50%', margin: '0 auto 10px' }}></div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>플랫폼으로 안전하게 진입하고 있습니다...</p>
+              </div>
 
               <button className="btn-secondary" style={{ color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={disconnectWallet}>
                 인증 계정 로그아웃
@@ -581,10 +544,8 @@ function AppContent() {
               )
             } />
 
-
-
             <Route path="/" element={
-              !googleLoggedIn || !walletAddress ? (
+              !googleLoggedIn ? (
                 renderIntro()
               ) : !isRegistered ? (
                 <Navigate to="/consent" replace />
@@ -617,7 +578,7 @@ function AppContent() {
             } />
 
             <Route path="/consent" element={
-              isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
+              isAdminViewer || (googleLoggedIn && !isRegistered) ? (
                 <UserConsent walletAddress={walletAddress} onLogout={disconnectWallet} />
               ) : (
                 <Navigate to="/" replace />
@@ -625,12 +586,11 @@ function AppContent() {
             } />
 
             <Route path="/register" element={
-              isAdminViewer || (googleLoggedIn && walletAddress && !isRegistered) ? (
+              isAdminViewer || (googleLoggedIn && !isRegistered) ? (
                 <UserRegister
-                    walletAddress={walletAddress}
                     googleEmail={googleEmail}
                     googleName={googleName}
-                    onRegisterComplete={() => checkUserStatus(walletAddress)}
+                    onRegisterComplete={() => restoreSessionByEmail(googleEmail)}
                   />
               ) : (
                 <Navigate to="/" replace />
@@ -638,8 +598,8 @@ function AppContent() {
             } />
 
             <Route path="/waiting" element={
-              isAdminViewer || (googleLoggedIn && walletAddress && isRegistered && userStatus === 'PENDING_KYC') ? (
-                <UserWaiting walletAddress={walletAddress} onApproved={() => checkUserStatus(walletAddress)} />
+              isAdminViewer || (googleLoggedIn && isRegistered && userStatus === 'PENDING_KYC') ? (
+                <UserWaiting walletAddress={walletAddress} onApproved={() => restoreSessionByEmail(googleEmail)} />
               ) : (
                 <Navigate to="/" replace />
               )

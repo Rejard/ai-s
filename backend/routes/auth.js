@@ -150,49 +150,43 @@ router.get('/verify-manager/:walletAddress', async (req, res) => {
 
 router.post('/register', upload.single('idCard'), async (req, res) => {
   try {
-    const { walletAddress, email, name, phone, country, managerAddress } = req.body;
+    const { email, name, phone, country, managerAddress } = req.body;
 
-    if (!walletAddress || !email || !name || !phone || !country) {
-      return res.status(400).json({ success: false, message: '모든 필수 입력 필드를 기입해 주세요.' });
+    if (!email || !name || !phone || !country || !managerAddress) {
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
+      return res.status(400).json({ success: false, message: '모든 필수 입력 필드와 담당 매니저 주소를 기입해 주세요.' });
     }
 
-    const cleanWallet = walletAddress.trim();
     const cleanEmail = email.toLowerCase().trim();
+    const cleanManager = String(managerAddress).toLowerCase().trim();
 
-    const requestedManager = managerAddress ? managerAddress.trim() : MASTER_MANAGER_WALLET;
-    const manager = await findApprovedManager(requestedManager);
-    if (!manager) {
+    // DB 내에 승인된 매니저인지 실시간 쿼리 검증 수행
+    const validManager = await findApprovedManager(cleanManager);
+    if (!validManager) {
       if (req.file) {
         fs.unlink(req.file.path, () => {});
       }
-      return res.status(400).json({ success: false, message: '승인된 매니저 지갑이 아닙니다.' });
+      return res.status(400).json({ success: false, message: '승인된 담당 매니저 지갑 주소가 아닙니다. 주소를 확인하고 다시 입력해 주세요.' });
     }
 
-    const countRow = await countManagerMembers(manager.wallet_address);
-    const totalCount = countRow ? countRow.total : 0;
-    if (totalCount >= 500) {
-      if (req.file) {
-        fs.unlink(req.file.path, () => {});
-      }
-      return res.status(400).json({ success: false, message: '1차 한정 모집 인원 500명이 마감되었습니다.' });
-    }
+    const crypto = require('crypto');
+    const hash = crypto.createHash('md5').update(cleanEmail).digest('hex');
+    const cleanWallet = '0x' + hash.toLowerCase().substring(0, 40);
 
     const existingUser = await queries.get(
-      "SELECT wallet_address, email FROM users WHERE LOWER(wallet_address) = LOWER(?) OR email = ?",
-      [cleanWallet, cleanEmail]
+      "SELECT email FROM users WHERE email = ?",
+      [cleanEmail]
     );
     if (existingUser) {
       if (req.file) {
         fs.unlink(req.file.path, () => {});
       }
-
-      const duplicateWallet = existingUser.wallet_address.toLowerCase() === cleanWallet.toLowerCase();
       return res.status(409).json({
         success: false,
-        code: duplicateWallet ? 'WALLET_ALREADY_REGISTERED' : 'EMAIL_ALREADY_REGISTERED',
-        message: duplicateWallet
-          ? '이미 다른 Google 계정으로 가입된 지갑입니다. 기존 가입 Google 계정으로 로그인하거나 다른 지갑을 연결해 주세요.'
-          : '이미 가입된 Google 계정입니다. 기존 계정으로 로그인해 주세요.'
+        code: 'EMAIL_ALREADY_REGISTERED',
+        message: '이미 가입된 Google 계정입니다. 기존 계정으로 로그인해 주세요.'
       });
     }
 
@@ -202,13 +196,11 @@ router.post('/register', upload.single('idCard'), async (req, res) => {
 
     const idCardPath = `/uploads/${req.file.filename}`;
 
-    const assignedManager = manager.wallet_address.toLowerCase();
-
     await queries.run(`
       INSERT INTO users (
         wallet_address, email, name, phone, country, id_card_path, status, manager_address, referrer_address
       ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING_KYC', ?, 'none')
-    `, [cleanWallet, cleanEmail, name, phone, country, idCardPath, assignedManager]);
+    `, [cleanWallet, cleanEmail, name, phone, country, idCardPath, cleanManager]);
 
     res.json({
       success: true,

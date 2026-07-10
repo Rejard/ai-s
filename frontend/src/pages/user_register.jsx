@@ -1,53 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Phone, Globe, Image, UserCheck, Key, ShieldAlert } from 'lucide-react';
+import { User, Phone, Globe, Image, ShieldAlert } from 'lucide-react';
 import { API_BASE } from '../App';
 import { translateError } from '../lib/errorHandler';
 
-const DEFAULT_MANAGER_ADDRESS = '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987';
-
-function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComplete }) {
+function UserRegister({ googleEmail, googleName, onRegisterComplete }) {
   const navigate = useNavigate();
 
   const [email] = useState(googleEmail || '');
-  const [name, setName] = useState(googleName || '');
+  const [name] = useState(googleName || '');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('Korea');
   const [idCardFile, setIdCardFile] = useState(null);
   const [idCardName, setIdCardName] = useState('');
 
   const [managerAddress, setManagerAddress] = useState('');
-  const [managerVerified, setManagerVerified] = useState(false);
-  const [managerName, setManagerName] = useState('');
+  const [managerVerifyState, setManagerVerifyState] = useState('none');
+  const [managerVerifyMsg, setManagerVerifyMsg] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
-
-  const verifyManager = async () => {
-    if (!managerAddress) {
-      alert('담당 매니저의 폴리곤 지갑 주소를 입력해 주세요.');
-      return;
-    }
-    const cleanAddr = managerAddress.toLowerCase().trim();
-    if (cleanAddr === walletAddress.toLowerCase()) {
-      alert('본인 지갑 주소는 매니저로 입력할 수 없습니다.');
-      return;
-    }
-
-    try {
-      const res = await axios.get(`${API_BASE}/auth/verify-manager/${cleanAddr}`);
-      if (res.data.success) {
-        setManagerVerified(true);
-        setManagerName(res.data.name);
-      } else {
-        setManagerVerified(false);
-        setManagerName('');
-        alert(res.data.message);
-      }
-    } catch (err) {
-      alert('매니저 검증 중 에러가 발생했습니다.');
-    }
-  };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -57,9 +29,33 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
     }
   };
 
+  const handleVerifyManager = async () => {
+    const cleanAddr = managerAddress.toLowerCase().trim();
+    if (!cleanAddr || !cleanAddr.startsWith('0x') || cleanAddr.length !== 42) {
+      setManagerVerifyState('failed');
+      setManagerVerifyMsg('올바른 42자리 이더리움 지갑 주소(0x...) 형식이 아닙니다.');
+      return;
+    }
 
+    setManagerVerifyState('checking');
+    setManagerVerifyMsg('우리 시스템 승인 여부 실시간 확인 중...');
 
-  const isFormComplete = phone.trim() !== '' && idCardFile !== null && managerVerified;
+    try {
+      const res = await axios.get(`${API_BASE}/auth/verify-manager/${cleanAddr}`);
+      if (res.data.success) {
+        setManagerVerifyState('success');
+        setManagerVerifyMsg(`확인 완료: [${res.data.name}] 담당 매니저 계정입니다.`);
+      } else {
+        setManagerVerifyState('failed');
+        setManagerVerifyMsg(res.data.message || '승인된 매니저 지갑 주소가 아닙니다.');
+      }
+    } catch (err) {
+      setManagerVerifyState('failed');
+      setManagerVerifyMsg('서버 상태가 원활하지 않습니다. 다시 시도해 주세요.');
+    }
+  };
+
+  const isFormComplete = phone.trim() !== '' && idCardFile !== null && managerVerifyState === 'success';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,29 +67,24 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
       return;
     }
 
+    if (managerVerifyState !== 'success') {
+      alert('👤 [미검증 오류] 담당 매니저 지갑 주소 검증을 완료해 주십시오.');
+      return;
+    }
+
     if (!idCardFile) {
       alert('🪪 [누락 사항] 신원 확인 및 KYC 심사 통과를 위해 주민등록증 / 여권 사진을 첨부해 주십시오.');
       return;
     }
 
-    if (!managerVerified) {
-      alert('👑 [검증 필요] 담당 매니저 지갑 주소를 입력하고 [검증] 버튼을 눌러 승인받으셔야 가입이 가능합니다.');
-      return;
-    }
-
-
-
     setSubmitting(true);
     const formData = new FormData();
-    formData.append('walletAddress', walletAddress);
     formData.append('email', email);
     formData.append('name', name);
     formData.append('phone', phone);
     formData.append('country', country);
+    formData.append('managerAddress', managerAddress.toLowerCase().trim());
     formData.append('idCard', idCardFile);
-    if (managerVerified) {
-      formData.append('managerAddress', managerAddress);
-    }
 
     try {
       const res = await axios.post(`${API_BASE}/auth/register`, formData, {
@@ -117,81 +108,14 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
   return (
     <div style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
 
-      {false && ((walletAddress && walletAddress.toLowerCase() === '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'.toLowerCase()) ||
-        (localStorage.getItem('google_email') && localStorage.getItem('google_email').toLowerCase() === 'lemaiiisk@gmail.com'.toLowerCase())) && (
-          <div
-            className="glass-card glow-active"
-            onClick={() => navigate('/manager')}
-            style={{
-              padding: '12px 16px',
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              transition: 'transform 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '18px' }}>👑</span>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>Master Manager Connected</div>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>터치 시 즉시 마스터 메니져 화면으로 복귀합니다.</div>
-              </div>
-            </div>
-            <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
-              메니져 모드 가기
-            </button>
-          </div>
-        )}
-
       <div style={{ textAlign: 'center', marginTop: '10px' }}>
-        <h2 style={{ fontSize: '20px', color: '#F3F4F6' }}>New Member KYC Registration</h2>
+        <h2 style={{ fontSize: '20px', color: '#F3F4F6', fontFamily: 'var(--font-title)', fontWeight: '700' }}>New Member KYC Registration</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
-          구글 인증 및 지갑 연결이 무사히 완료되었습니다. 나머지 가입 정보를 정확하게 입력해 주십시오.
+          구글 소셜 인증이 완료되었습니다. 나머지 가입 및 KYC 심사 정보를 정확하게 입력해 주십시오.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">
-            {(() => {
-              const getManagerName = (addr) => {
-                if (!addr) return null;
-                const managers = {
-                  '0x7660bf401af0d13645f0cfed3e72b8e8b6fd7987': '마스터'
-                };
-                return managers[addr.toLowerCase()];
-              };
-
-              const mgrName = getManagerName(walletAddress);
-              if (mgrName) {
-                return (
-                  <span style={{ color: '#C084FC', fontWeight: '700' }}>
-                    👑 {mgrName} 본인 지갑 접속 중
-                  </span>
-                );
-              }
-              return '👤 회원 본인 폴리곤 지갑 주소';
-            })()}
-          </label>
-          <div style={{
-            background: 'rgba(0,0,0,0.4)',
-            border: '1px dashed var(--glass-border)',
-            padding: '13px 16px',
-            borderRadius: '12px',
-            fontSize: '13px',
-            color: 'var(--text-muted)',
-            wordBreak: 'break-all'
-          }}>
-            {walletAddress}
-          </div>
-        </div>
 
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">📧 연동된 구글 계정 이메일</label>
@@ -248,7 +172,7 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-        <div className="form-group" style={{ marginBottom: 0 }}>
+         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">🌐 거주 국가</label>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)', zIndex: 1 }}><Globe size={18} /></span>
@@ -268,74 +192,57 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
+        {/* 담당 매니저 지갑 주소 */}
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">
-            👑 담당 메니져 폴리곤 지갑 주소 (필수)
-            {managerVerified && (
-              <span style={{ marginLeft: '10px', color: 'var(--success-color)', fontSize: '11px', fontWeight: 'bold' }}>
-                ✓ {managerName} 매니저 확인됨
-              </span>
-            )}
-          </label>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <label className="form-label">👤 담당 매니저 지갑 주소 (DB 실시간 검증 필수)</label>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }}><UserCheck size={18} /></span>
+              <span style={{ position: 'absolute', left: '14px', top: '15px', color: 'var(--text-muted)' }}>🔑</span>
               <input
                 type="text"
                 className="form-input"
-                style={{
-                  paddingLeft: '45px',
-                  borderColor: managerVerified ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.1)',
-                }}
-                placeholder="매니저 지갑 주소를 입력하세요 (0x...)"
+                style={{ paddingLeft: '45px' }}
+                placeholder="0x..."
                 value={managerAddress}
                 onChange={(e) => {
                   setManagerAddress(e.target.value);
-                  setManagerVerified(false);
+                  setManagerVerifyState('none');
+                  setManagerVerifyMsg('');
                 }}
-                disabled={managerVerified}
+                required
               />
-            </div>
-            {!managerVerified ? (
-              <button
-                type="button"
-                className="btn-primary"
-                style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto' }}
-                onClick={verifyManager}
-              >
-                검증
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ padding: '0 20px', whiteSpace: 'nowrap', width: 'auto', background: 'rgba(239, 68, 68, 0.2)', color: '#FCA5A5' }}
-                onClick={() => {
-                  setManagerVerified(false);
-                  setManagerAddress('');
-                  setManagerName('');
-                }}
-              >
-                취소
-              </button>
-            )}
-          </div>
-          <span style={{ fontSize: '10px', color: 'var(--text-dark)', marginTop: '4px', display: 'block', paddingLeft: '4px' }}>
-            * 본인을 초대한 매니저의 지갑 주소를 입력하고 반드시 검증을 완료해 주십시오. (소속 코드가 기록됩니다)
-          </span>
-          <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.15)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-            <div style={{ overflow: 'hidden' }}>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>대표 매니저 주소</span>
-              <span style={{ fontSize: '11px', color: '#A78BFA', fontFamily: 'monospace', wordBreak: 'break-all' }}>{DEFAULT_MANAGER_ADDRESS}</span>
             </div>
             <button
               type="button"
-              style={{ flexShrink: 0, padding: '4px 10px', fontSize: '10px', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '6px', color: '#A78BFA', cursor: 'pointer', fontWeight: '700' }}
-              onClick={() => { navigator.clipboard.writeText(DEFAULT_MANAGER_ADDRESS); alert('주소가 복사되었습니다.'); }}
+              className="btn-primary"
+              style={{
+                width: '100px',
+                borderRadius: '12px',
+                padding: '0 10px',
+                fontSize: '11px',
+                background: managerVerifyState === 'success' ? '#10B981' : 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                color: '#FFF',
+                border: 'none',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+              onClick={handleVerifyManager}
+              disabled={managerVerifyState === 'checking'}
             >
-              복사
+              {managerVerifyState === 'checking' ? '확인 중...' : managerVerifyState === 'success' ? '✓ 인증완료' : '매니저 검증'}
             </button>
           </div>
+          {managerVerifyState !== 'none' && (
+            <div style={{
+              fontSize: '11px',
+              marginTop: '6px',
+              paddingLeft: '4px',
+              color: managerVerifyState === 'success' ? '#10B981' : managerVerifyState === 'failed' ? '#EF4444' : '#9CA3AF',
+              fontWeight: '500'
+            }}>
+              {managerVerifyMsg}
+            </div>
+          )}
         </div>
 
         <div className="form-group" style={{ marginBottom: 0 }}>
@@ -373,26 +280,11 @@ function UserRegister({ walletAddress, googleEmail, googleName, onRegisterComple
           </div>
         </div>
 
-
-        <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <Key size={20} color="#10B981" style={{ marginTop: '2px', flexShrink: 0 }} />
-            <div>
-              <h4 style={{ fontSize: '14px', color: '#F3F4F6' }}>SUT 위임 승인 안내</h4>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.5' }}>
-                가입 완료 후 PC에서 사용자 페이지에 접속하여 <strong style={{ color: '#8B5CF6' }}>"위임 승인(1회)"</strong> 버튼을 눌러주세요.<br/>
-                승인 완료 후 SUT 입금/출금이 활성화됩니다.
-              </p>
-            </div>
-          </div>
-        </div>
-
-
         <div style={{ display: 'flex', gap: '8px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', padding: '12px', borderRadius: '10px' }}>
           <ShieldAlert size={18} color="var(--danger-color)" style={{ flexShrink: 0, marginTop: '2px' }} />
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
             가입 접수 완료 시 본사 배심단의 수동 심사 단계로 진입합니다. 심사 및 가입 최종 승인까지 평균 1~2시간이 소요됩니다.<br/>
-            <strong style={{ color: 'var(--danger-color)' }}>※ 가입 신청 후 24시간 이내에 매니저 승인이 완료되지 않을 경우, 신청 내역은 자동 취소되며 서버에 업로드된 신분증 사진은 복구 불가능하게 영구 삭제됩니다.</strong>
+            <strong style={{ color: 'var(--danger-color)' }}>※ 가입 신청 후 24시간 이내에 본사 승인이 완료되지 않을 경우, 신청 내역은 자동 취소되며 서버에 업로드된 신분증 사진은 영구 삭제됩니다.</strong>
           </p>
         </div>
 
