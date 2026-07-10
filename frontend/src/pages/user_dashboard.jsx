@@ -36,6 +36,14 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const canAccessManager = isManagerAccount(userData, googleEmail, walletAddress);
   const canAccessAdmin = isAdminGoogleAccount(googleEmail || userData?.email);
 
+  const [activeTab, setActiveTab] = useState('asset');
+  const [userWallet, setUserWallet] = useState(() => localStorage.getItem('user_wallet_address') || walletAddress || '');
+  const [managerWallet, setManagerWallet] = useState(() => 
+    localStorage.getItem('manager_wallet_address') || 
+    (userData?.managerAddress && userData.managerAddress !== 'none' ? userData.managerAddress : '') || 
+    '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'
+  );
+
   const [portfolio, setPortfolio] = useState(null);
   const [walletSutBalance, setWalletSutBalance] = useState(0);
   const [depositPercent, setDepositPercent] = useState(0);
@@ -59,18 +67,22 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   const [copiedAddress, setCopiedAddress] = useState(null);
 
   const VAULT_ADDRESS = '0x855c880D538892fD899eECb72D4b1Ac5B46089eA';
+  const isManagerOrAdmin = userData?.isManager === true || canAccessManager === true || canAccessAdmin === true;
+  const displayManagerAddress = managerWallet;
 
   const handleCopyAddress = (address, type) => {
+    if (!address) return;
     navigator.clipboard.writeText(address);
     setCopiedAddress(type);
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
   const fetchDashboardData = async () => {
+    if (!userWallet) return;
     try {
       const data = await loadUserDashboardData({
         apiBase: API_BASE,
-        walletAddress,
+        walletAddress: userWallet,
         axiosClient: axios,
         ethersLib: ethers,
       });
@@ -85,14 +97,15 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       console.error('Dashboard data load failed:', err);
     }
     try {
-      const approved = await checkVaultAllowance({ walletAddress, ethersLib: ethers });
+      const approved = await checkVaultAllowance({ walletAddress: userWallet, ethersLib: ethers });
       setVaultApproved(approved);
     } catch (e) { console.error('Vault allowance check failed:', e); }
   };
 
   const fetchTxHistory = async () => {
+    if (!userWallet) return;
     try {
-      const history = await loadUserTxHistory({ apiBase: API_BASE, walletAddress, axiosClient: axios });
+      const history = await loadUserTxHistory({ apiBase: API_BASE, walletAddress: userWallet, axiosClient: axios });
       setTxHistory(history);
     } catch (err) {
       console.error('Transaction history load failed:', err);
@@ -100,11 +113,53 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   };
 
   useEffect(() => {
-    if (walletAddress) {
+    if (userWallet) {
       fetchDashboardData();
       fetchTxHistory();
     }
+  }, [userWallet]);
+
+  useEffect(() => {
+    if (walletAddress && !localStorage.getItem('user_wallet_address')) {
+      setUserWallet(walletAddress);
+    }
   }, [walletAddress]);
+
+  useEffect(() => {
+    if (userData?.managerAddress && userData.managerAddress !== 'none' && !localStorage.getItem('manager_wallet_address')) {
+      setManagerWallet(userData.managerAddress);
+    }
+  }, [userData]);
+
+  const handleSaveWallets = (e) => {
+    e.preventDefault();
+    if (!userWallet || !userWallet.startsWith('0x') || userWallet.length !== 42) {
+      alert('올바른 Ethereum 형식의 내 지갑 주소(0x...)를 입력해 주세요.');
+      return;
+    }
+
+    if (!managerWallet || !managerWallet.startsWith('0x') || managerWallet.length !== 42) {
+      alert('올바른 Ethereum 형식의 담당 매니저 지갑 주소(0x...)를 입력해 주세요.');
+      return;
+    }
+
+    localStorage.setItem('user_wallet_address', userWallet);
+    localStorage.setItem('manager_wallet_address', managerWallet);
+
+    alert('✅ 지갑 주소 설정이 성공적으로 저장되었습니다!');
+    fetchDashboardData();
+    fetchTxHistory();
+  };
+
+  const handleResetWallets = () => {
+    if (window.confirm('지갑 주소를 기본 지갑 주소로 초기화하시겠습니까?')) {
+      localStorage.removeItem('user_wallet_address');
+      localStorage.removeItem('manager_wallet_address');
+      setUserWallet(walletAddress || '');
+      setManagerWallet(userData?.managerAddress && userData.managerAddress !== 'none' ? userData.managerAddress : '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987');
+      alert('🔄 기본 지갑 주소로 초기화되었습니다.');
+    }
+  };
 
   const handleApproveVault = async () => {
     setApprovingVault(true);
@@ -133,7 +188,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     try {
       const result = await submitUserInvestmentTransaction({
         apiBase: API_BASE,
-        walletAddress,
+        walletAddress: userWallet,
         amount: finalAmount,
         type: finalType,
         portfolio,
@@ -183,7 +238,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         ethereum: window.ethereum,
         currentUrl: window.location.href,
         userAgent: navigator.userAgent,
-        expectedWalletAddress: walletAddress,
+        expectedWalletAddress: userWallet,
         alertFn: window.alert,
         confirmFn: window.confirm,
         setLocationHref: (url) => {
@@ -197,7 +252,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
   };
 
   useEffect(() => {
-    if (!walletAddress || autoRecoveryAttempted || !hasApprovalRecoveryResumeFlag(window.location.href)) {
+    if (!userWallet || autoRecoveryAttempted || !hasApprovalRecoveryResumeFlag(window.location.href)) {
       return;
     }
 
@@ -208,10 +263,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     window.history.replaceState(null, '', `${resumeUrl.pathname}${resumeUrl.search}${resumeUrl.hash}`);
 
     handleApprovalRecovery({ allowRedirectOnMissingWallet: false });
-  }, [walletAddress, autoRecoveryAttempted]);
+  }, [userWallet, autoRecoveryAttempted]);
 
   useEffect(() => {
-    if (!walletAddress || autoDepositAttempted) {
+    if (!userWallet || autoDepositAttempted) {
       return;
     }
 
@@ -232,10 +287,10 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     setTxType('DEPOSIT');
     setTxAmount(resumeAmount);
     handleTxSubmit(null, resumeAmount, 'DEPOSIT', resumeExecutionUrl);
-  }, [walletAddress, autoDepositAttempted]);
+  }, [userWallet, autoDepositAttempted]);
 
   useEffect(() => {
-    if (!walletAddress || autoDepositFinalizeAttempted) {
+    if (!userWallet || autoDepositFinalizeAttempted) {
       return;
     }
 
@@ -258,7 +313,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
 
     finalizePendingDepositTransaction({
       apiBase: API_BASE,
-      walletAddress,
+      walletAddress: userWallet,
       amount,
       txHash,
       axiosClient: axios,
@@ -278,7 +333,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         setProcessingTx(false);
         setTxAmount('');
       });
-  }, [walletAddress, autoDepositFinalizeAttempted]);
+  }, [userWallet, autoDepositFinalizeAttempted]);
 
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -356,152 +411,421 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         }}>
           {(userData && userData.name ? userData.name.substring(0, 1).toUpperCase() : '👤')}
         </div>
-        <div>
-          <h3 style={{ fontSize: '16px', color: '#F3F4F6' }}>{userData ? userData.name : 'Test Member'}</h3>
+        <div style={{ textAlign: 'left' }}>
+          <h3 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0 }}>{userData ? userData.name : 'Test Member'}</h3>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{userData ? userData.email : '이메일 정보 없음'}</span>
         </div>
       </div>
 
-      {portfolio ? (
-        <SutPriceCard 
-          sutPrice={sutPrice}
-          sutChange24h={sutChange24h}
-          krwRate={portfolio.krwRate}
-          priceHistory={priceHistory}
-          sutHigh24h={portfolio.sutHigh24h}
-          sutLow24h={portfolio.sutLow24h}
-          isMobile={true}
-        />
-      ) : (
-        <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
-      )}
-
-      <div className="glass-card" style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
-          <h3 style={{ fontSize: '16px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <Wallet size={18} color="#8B5CF6" />
-            {DASHBOARD_COPY.assetOverview}
-          </h3>
-        </div>
-
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {(() => {
-            const totalAssets = walletSutBalance + (portfolio ? portfolio.totalInvested : 0);
-            let walletPercent = 100;
-            let depositedPercent = 0;
-            if (totalAssets > 0) {
-              walletPercent = (walletSutBalance / totalAssets) * 100;
-              depositedPercent = 100 - walletPercent;
-            }
-            return (
-              <>
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.totalAssets}</span>
-                  <div style={{ fontSize: '26px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)', marginTop: '4px' }}>
-                    {totalAssets.toFixed(2)} SUT
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div style={{ textAlign: 'left' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.walletBalance}</span>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#8B5CF6' }}>{walletSutBalance.toFixed(2)} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({walletPercent.toFixed(1)}%)</span></span>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.managedAssets}</span>
-                    <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>{portfolio ? portfolio.totalInvested.toFixed(2) : '0.00'} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({depositedPercent.toFixed(1)}%)</span></span>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '10px', marginBottom: '20px', width: '100%', height: '14px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '10px', overflow: 'hidden', display: 'flex' }}>
-
-                  <div style={{ width: `${walletPercent}%`, height: '100%', background: 'var(--primary-gradient)', transition: 'width 0.5s ease' }}></div>
-
-                  <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
-                </div>
-
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  background: 'rgba(0, 0, 0, 0.2)', 
-                  padding: '8px 12px', 
-                  borderRadius: '8px', 
-                  marginBottom: '15px',
-                  border: '1px solid rgba(255, 255, 255, 0.03)'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>내 지갑 주소</span>
-                    <span style={{ fontSize: '11px', color: '#F3F4F6', fontFamily: 'monospace' }}>
-                      {walletAddress.substring(0, 10)}...{walletAddress.substring(walletAddress.length - 10)}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => handleCopyAddress(walletAddress, 'user')}
-                    style={{ background: 'transparent', border: 'none', color: copiedAddress === 'user' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                  >
-                    {copiedAddress === 'user' ? <Check size={14} /> : <Copy size={14} />}
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>{DASHBOARD_COPY.depositAction}</button>
-            <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>{DASHBOARD_COPY.withdrawAction}</button>
-          </div>
-          <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '12px 2px 0' }}>
-            PC에서 1회 위임 승인을 하면 모바일에서 SUT 입금/출금이 가능합니다.
-          </p>
-
-          <div style={{ 
-            marginTop: '15px', 
-            padding: '10px 12px', 
-            background: 'rgba(139, 92, 246, 0.05)', 
-            border: '1px solid rgba(139, 92, 246, 0.1)', 
+      {/* 탭 네비게이션 헤더 */}
+      <div style={{ 
+        display: 'flex', 
+        background: 'rgba(0, 0, 0, 0.2)', 
+        padding: '5px', 
+        borderRadius: '12px', 
+        border: '1px solid rgba(255, 255, 255, 0.05)',
+        marginTop: '-10px',
+        boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)'
+      }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('asset')}
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            fontSize: '12px',
+            fontWeight: '800',
             borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            background: activeTab === 'asset' ? 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' : 'transparent',
+            color: activeTab === 'asset' ? '#FFF' : 'var(--text-muted)',
+            transition: 'all 0.2s ease',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span style={{ fontSize: '10px', color: '#A78BFA', fontWeight: '600' }}>매니저 지갑 (Vault)</span>
-              <span style={{ fontSize: '11px', color: '#F3F4F6', fontFamily: 'monospace' }}>
-                {VAULT_ADDRESS.substring(0, 10)}...{VAULT_ADDRESS.substring(VAULT_ADDRESS.length - 10)}
-              </span>
-            </div>
-            <button 
-              onClick={() => handleCopyAddress(VAULT_ADDRESS, 'manager')}
-              style={{ background: 'transparent', border: 'none', color: copiedAddress === 'manager' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-            >
-              {copiedAddress === 'manager' ? <Check size={14} /> : <Copy size={14} />}
-            </button>
-          </div>
-
-          {vaultApproved === true ? (
-            <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
-              <ShieldCheck size={12} /> ✅ 위임 승인 완료
-            </div>
-          ) : vaultApproved === false ? (
-            <button
-              type="button"
-              onClick={handleApproveVault}
-              disabled={approvingVault}
-              style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}
-            >
-              <ShieldCheck size={12} /> {approvingVault ? '승인 처리 중...' : '🔐 위임 승인(1회)'}
-            </button>
-          ) : (
-            <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
-              <ShieldCheck size={12} /> 위임 승인 확인 중...
-            </div>
-          )}
-        </div>
+            justifyContent: 'center',
+            gap: '6px',
+            boxShadow: activeTab === 'asset' ? '0 4px 12px rgba(139, 92, 246, 0.25)' : 'none'
+          }}
+        >
+          📈 내 자산 현황
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('settings')}
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            fontSize: '12px',
+            fontWeight: '800',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            background: activeTab === 'settings' ? 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)' : 'transparent',
+            color: activeTab === 'settings' ? '#FFF' : 'var(--text-muted)',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            boxShadow: activeTab === 'settings' ? '0 4px 12px rgba(139, 92, 246, 0.25)' : 'none'
+          }}
+        >
+          ⚙️ 지갑 및 환경 설정
+        </button>
       </div>
 
+      {/* 탭 1: 내 자산 탭 */}
+      {activeTab === 'asset' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
+          {portfolio ? (
+            <SutPriceCard 
+              sutPrice={sutPrice}
+              sutChange24h={sutChange24h}
+              krwRate={portfolio.krwRate}
+              priceHistory={priceHistory}
+              sutHigh24h={portfolio.sutHigh24h}
+              sutLow24h={portfolio.sutLow24h}
+              isMobile={true}
+            />
+          ) : (
+            <div className="shimmer-loading" style={{ height: '160px', borderRadius: '12px' }}></div>
+          )}
 
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '16px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <Wallet size={18} color="#8B5CF6" />
+                {DASHBOARD_COPY.assetOverview}
+              </h3>
+            </div>
 
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              {(() => {
+                const totalAssets = walletSutBalance + (portfolio ? portfolio.totalInvested : 0);
+                let walletPercent = 100;
+                let depositedPercent = 0;
+                if (totalAssets > 0) {
+                  walletPercent = (walletSutBalance / totalAssets) * 100;
+                  depositedPercent = 100 - walletPercent;
+                }
+                return (
+                  <>
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.totalAssets}</span>
+                      <div style={{ fontSize: '26px', fontWeight: '800', color: '#F3F4F6', fontFamily: 'var(--font-title)', marginTop: '4px' }}>
+                        {totalAssets.toFixed(2)} SUT
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.walletBalance}</span>
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#8B5CF6' }}>{walletSutBalance.toFixed(2)} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({walletPercent.toFixed(1)}%)</span></span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{DASHBOARD_COPY.managedAssets}</span>
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--success-color)' }}>{portfolio ? portfolio.totalInvested.toFixed(2) : '0.00'} SUT <span style={{fontSize:'10px', fontWeight:'normal'}}>({depositedPercent.toFixed(1)}%)</span></span>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '10px', marginBottom: '20px', width: '100%', height: '14px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '10px', overflow: 'hidden', display: 'flex' }}>
+                      <div style={{ width: `${walletPercent}%`, height: '100%', background: 'var(--primary-gradient)', transition: 'width 0.5s ease' }}></div>
+                      <div style={{ width: `${depositedPercent}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #059669)', transition: 'width 0.5s ease' }}></div>
+                    </div>
+
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      background: 'rgba(0, 0, 0, 0.2)', 
+                      padding: '8px 12px', 
+                      borderRadius: '8px', 
+                      marginBottom: '15px',
+                      border: '1px solid rgba(255, 255, 255, 0.03)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>내 지갑 주소</span>
+                        <span style={{ fontSize: '11px', color: '#F3F4F6', fontFamily: 'monospace' }}>
+                          {userWallet ? `${userWallet.substring(0, 10)}...${userWallet.substring(userWallet.length - 10)}` : '등록된 지갑 없음'}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleCopyAddress(userWallet, 'user')}
+                        style={{ background: 'transparent', border: 'none', color: copiedAddress === 'user' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                      >
+                        {copiedAddress === 'user' ? <Check size={14} /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px' }} onClick={() => { setTxType('DEPOSIT'); setShowTxModal(true); }}>{DASHBOARD_COPY.depositAction}</button>
+                <button className="btn-secondary" style={{ flex: 1, padding: '12px', fontSize: '13px', background: 'rgba(239, 68, 68, 0.1)', color: '#FCA5A5', borderColor: 'rgba(239, 68, 68, 0.2)' }} onClick={() => { setTxType('WITHDRAW'); setShowTxModal(true); }}>{DASHBOARD_COPY.withdrawAction}</button>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '12px 2px 0', textAlign: 'left' }}>
+                PC에서 1회 위임 승인을 하면 모바일에서 SUT 입금/출금이 가능합니다.
+              </p>
+
+              <div style={{ 
+                marginTop: '15px', 
+                padding: '10px 12px', 
+                background: 'rgba(139, 92, 246, 0.05)', 
+                border: '1px solid rgba(139, 92, 246, 0.1)', 
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                  <span style={{ fontSize: '10px', color: '#A78BFA', fontWeight: '600' }}>
+                    {isManagerOrAdmin ? '담당 매니저 지갑 (본인)' : '담당 매니저 지갑'}
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#F3F4F6', fontFamily: 'monospace' }}>
+                    {displayManagerAddress ? `${displayManagerAddress.substring(0, 10)}...${displayManagerAddress.substring(displayManagerAddress.length - 10)}` : '0x7660Bf40...7987'}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => handleCopyAddress(displayManagerAddress, 'manager')}
+                  style={{ background: 'transparent', border: 'none', color: copiedAddress === 'manager' ? 'var(--success-color)' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  {copiedAddress === 'manager' ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+
+              {vaultApproved === true ? (
+                <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
+                  <ShieldCheck size={12} /> ✅ 위임 승인 완료
+                </div>
+              ) : vaultApproved === false ? (
+                <button
+                  type="button"
+                  onClick={handleApproveVault}
+                  disabled={approvingVault}
+                  style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}
+                >
+                  <ShieldCheck size={12} /> {approvingVault ? '승인 처리 중...' : '🔐 위임 승인(1회)'}
+                </button>
+              ) : (
+                <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '10px' }}>
+                  <ShieldCheck size={12} /> 위임 승인 확인 중...
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <h3 style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: '#F3F4F6', margin: 0 }}>
+                <span style={{ color: 'var(--accent-color)' }}>📜</span> {DASHBOARD_COPY.recentTransactions}
+              </h3>
+              <button
+                onClick={() => navigate('/history')}
+                style={{
+                  background: 'transparent', border: 'none', color: 'var(--accent-color)',
+                  fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+                }}
+              >
+                전체 보기 &gt;
+              </button>
+            </div>
+
+            {txHistory && txHistory.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {txHistory.slice(0, 3).map(tx => {
+                  const isDeposit = tx.type !== 'WITHDRAW_REQUEST';
+                  return (
+                    <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--glass-border)' }}>
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6', marginBottom: '4px' }}>
+                          {isDeposit ? DASHBOARD_COPY.depositCompleted : DASHBOARD_COPY.withdrawalPending}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {formatKoreanDateTime(tx.createdAt)}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '700', fontFamily: 'var(--font-title)', color: isDeposit ? 'var(--success-color)' : 'var(--danger-color)' }}>
+                          {isDeposit ? '+' : '-'}{parseFloat(tx.amount).toFixed(2)} SUT
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                {DASHBOARD_COPY.noTransactions}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 탭 2: 설정 및 정보 탭 */}
+      {activeTab === 'settings' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%' }}>
+          
+          {/* 지갑 주소 설정 보드 */}
+          <div className="glass-card" style={{ 
+            padding: '20px', 
+            border: '1px solid rgba(139, 92, 246, 0.25)',
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%)'
+          }}>
+            <h3 style={{ fontSize: '15px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px 0', fontWeight: '700' }}>
+              <span style={{ fontSize: '16px' }}>👛</span> 지갑 주소 관리 및 편집
+            </h3>
+            
+            <form onSubmit={handleSaveWallets} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                  내 개인 지갑 주소 (SUT 입출금용)
+                </label>
+                <input 
+                  type="text" 
+                  value={userWallet}
+                  onChange={(e) => setUserWallet(e.target.value)}
+                  placeholder="0x..." 
+                  style={{ 
+                    width: '100%', 
+                    padding: '10px 12px', 
+                    fontSize: '12px', 
+                    background: 'rgba(0, 0, 0, 0.3)', 
+                    border: '1px solid rgba(255, 255, 255, 0.08)', 
+                    borderRadius: '8px', 
+                    color: '#FFF',
+                    outline: 'none',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box'
+                  }}
+                  required
+                />
+              </div>
+
+              <div style={{ textAlign: 'left' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                  담당 매니저 지갑 주소 (SUT 위임 계약용)
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    value={managerWallet}
+                    onChange={(e) => setManagerWallet(e.target.value)}
+                    placeholder="0x..."
+                    style={{ 
+                      flex: 1, 
+                      padding: '10px 12px', 
+                      fontSize: '11px', 
+                      background: 'rgba(0, 0, 0, 0.3)', 
+                      border: '1px solid rgba(255, 255, 255, 0.08)', 
+                      borderRadius: '8px', 
+                      color: '#FFF',
+                      outline: 'none',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopyAddress(managerWallet, 'mgrVerify')}
+                    style={{
+                      padding: '0 12px',
+                      fontSize: '12px',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      border: '1px solid rgba(139, 92, 246, 0.25)',
+                      borderRadius: '8px',
+                      color: '#C084FC',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {copiedAddress === 'mgrVerify' ? '✓ 복사됨' : '📋 복사'}
+                  </button>
+                </div>
+                <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.35)', display: 'block', marginTop: '5px' }}>
+                  * 가입 시 매칭된 담당 매니저 지갑 주소 또는 플랫폼 운영 지갑 주소입니다. 담당자 변경 시 직접 수정 및 입력이 가능합니다.
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={handleResetWallets}
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px', 
+                    fontSize: '12px', 
+                    background: 'rgba(255, 255, 255, 0.05)', 
+                    color: '#D1D5DB', 
+                    border: '1px solid rgba(255, 255, 255, 0.1)', 
+                    borderRadius: '8px', 
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔄 초기화
+                </button>
+                <button
+                  type="submit"
+                  style={{ 
+                    flex: 2, 
+                    padding: '10px', 
+                    fontSize: '12px', 
+                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)', 
+                    color: '#FFF', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)'
+                  }}
+                >
+                  💾 설정 저장하기
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* 담당 매니저 정보 */}
+          <div className="glass-card" style={{ padding: '16px', background: 'rgba(139, 92, 246, 0.03)', border: '1px solid rgba(139, 92, 246, 0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#A78BFA', display: 'flex', alignItems: 'center', gap: '6px', textAlign: 'left' }}>
+              <span>👤</span> {DASHBOARD_COPY.managerInfo || '담당 매니저 정보'}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>성함</span>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6' }}>{userData?.managerName || '관리자'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>이메일</span>
+                <a href={`mailto:${userData?.managerEmail || 'lemaiiisk@gmail.com'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
+                  {userData?.managerEmail || 'lemaiiisk@gmail.com'}
+                </a>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>연락처</span>
+                <a href={`tel:${userData?.managerPhone || '010-2020-6447'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
+                  {userData?.managerPhone || '010-2020-6447'}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* 로그아웃 버튼 */}
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ padding: '14px', fontSize: '14px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.02)', display: 'flex', justifyContent: 'center', gap: '8px' }}
+            onClick={onLogout}
+          >
+            🔌 {DASHBOARD_COPY.logout}
+          </button>
+        </div>
+      )}
+
+      {/* 모달 등 헬퍼 컴포넌트 렌더링 유지 */}
       {showTxModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className="glass-card" style={{ width: '90%', maxWidth: '380px', background: 'var(--bg-app)', border: '1px solid rgba(255,255,255,0.1)', padding: '24px' }}>
@@ -509,11 +833,11 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
               {txType === 'DEPOSIT' ? DASHBOARD_COPY.depositAction : DASHBOARD_COPY.withdrawAction}
             </h3>
             <form onSubmit={handleTxSubmit}>
-              <div className="form-group">
+              <div className="form-group" style={{ textAlign: 'left' }}>
                 <label className="form-label">{txType === 'DEPOSIT' ? DASHBOARD_COPY.depositAmount : DASHBOARD_COPY.withdrawAmount}</label>
-                <input type="number" className="form-input" placeholder="예: 250" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} min="1" required />
+                <input type="number" className="form-input" placeholder="예: 250" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} min="1" required style={{ width: '100%', boxSizing: 'border-box' }} />
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '20px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', textAlign: 'left' }}>
                 {txType === 'DEPOSIT'
                   ? '입금한 SUT는 운용 자산에 반영됩니다.'
                   : '출금 신청 금액은 운용 자산에서 차감되며 승인 후 연결된 지갑으로 전송됩니다.'}
@@ -526,87 +850,6 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
           </div>
         </div>
       )}
-
-      <div className="glass-card" style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <h3 style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: '#F3F4F6' }}>
-            <span style={{ color: 'var(--accent-color)' }}>📜</span> {DASHBOARD_COPY.recentTransactions}
-          </h3>
-          <button
-            onClick={() => navigate('/history')}
-            style={{
-              background: 'transparent', border: 'none', color: 'var(--accent-color)',
-              fontSize: '12px', fontWeight: '600', cursor: 'pointer'
-            }}
-          >
-            전체 보기 &gt;
-          </button>
-        </div>
-
-        {txHistory && txHistory.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {txHistory.slice(0, 3).map(tx => {
-              const isDeposit = tx.type !== 'WITHDRAW_REQUEST';
-              return (
-                <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--glass-border)' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6', marginBottom: '4px' }}>
-                      {isDeposit ? DASHBOARD_COPY.depositCompleted : DASHBOARD_COPY.withdrawalPending}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      {formatKoreanDateTime(tx.createdAt)}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '700', fontFamily: 'var(--font-title)', color: isDeposit ? 'var(--success-color)' : 'var(--danger-color)' }}>
-                      {isDeposit ? '+' : '-'}{parseFloat(tx.amount).toFixed(2)} SUT
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-            {DASHBOARD_COPY.noTransactions}
-          </div>
-        )}
-      </div>
-
-
-
-      <div className="glass-card" style={{ padding: '16px', background: 'rgba(139, 92, 246, 0.03)', border: '1px solid rgba(139, 92, 246, 0.1)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: '#A78BFA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>👤</span> {DASHBOARD_COPY.managerInfo || '담당 매니저 정보'}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>성함</span>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: '#F3F4F6' }}>{userData?.managerName || '관리자'}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>이메일</span>
-            <a href={`mailto:${userData?.managerEmail || 'lemaiiisk@gmail.com'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
-              {userData?.managerEmail || 'lemaiiisk@gmail.com'}
-            </a>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>연락처</span>
-            <a href={`tel:${userData?.managerPhone || '010-2020-6447'}`} style={{ fontSize: '13px', color: '#8B5CF6', textDecoration: 'none' }}>
-              {userData?.managerPhone || '010-2020-6447'}
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="btn-secondary"
-        style={{ padding: '14px', fontSize: '14px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.15)', background: 'rgba(239,68,68,0.02)', marginTop: '5px', display: 'flex', justifyContent: 'center', gap: '8px' }}
-        onClick={onLogout}
-      >
-        🔌 {DASHBOARD_COPY.logout}
-      </button>
 
     </div>
   );

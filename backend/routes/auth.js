@@ -260,7 +260,8 @@ router.get('/status/:walletAddress', async (req, res) => {
         isManager: user.is_manager === 1,
         managerName,
         managerEmail,
-        managerPhone
+        managerPhone,
+        managerAddress: user.manager_address
       }
     });
 
@@ -308,7 +309,8 @@ router.get('/status-by-email/:email', async (req, res) => {
         isManager: user.is_manager === 1,
         managerName,
         managerEmail,
-        managerPhone
+        managerPhone,
+        managerAddress: user.manager_address
       }
     });
 
