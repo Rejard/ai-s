@@ -25,7 +25,8 @@ function ManagerAiConfigSection({
   setShowSendSutModal,
   handleApproveOperator,
   approvingOperator,
-  operatorApproved
+  operatorApproved,
+  handleTabChange
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -194,48 +195,185 @@ function ManagerAiConfigSection({
         </div>
       </div>
 
-      <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)', background: gateioBalance ? 'rgba(16, 185, 129, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}>
+      <div className="glass-card" style={{ 
+        padding: '16px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'space-between', 
+        border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.3)', 
+        background: gateioBalance 
+          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(6, 78, 59, 0.03) 100%)' 
+          : 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(120, 53, 4, 0.03) 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: gateioBalance ? '0 4px 20px rgba(16, 185, 129, 0.08)' : '0 4px 20px rgba(245, 158, 11, 0.05)'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '-20px',
+          right: '-20px',
+          width: '70px',
+          height: '70px',
+          borderRadius: '50%',
+          background: gateioBalance ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.15)',
+          filter: 'blur(15px)',
+          pointerEvents: 'none'
+        }} />
+
         <div>
-          <h4 style={{ fontSize: '13px', color: '#FFF', margin: '0 0 10px 0', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '14px' }}>📊</span> Gate.io API 실거래 연동 현황
-          </h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ 
+                padding: '6px', 
+                borderRadius: '50%', 
+                background: gateioBalance ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Settings size={14} color={gateioBalance ? '#10B981' : '#F59E0B'} />
+              </span>
+              Gate.io API 실거래 연동 현황
+            </h4>
+
+            <span style={{
+              fontSize: '10px',
+              fontWeight: '800',
+              padding: '3px 8px',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: gateioBalance ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              color: gateioBalance ? '#10B981' : '#F59E0B',
+              border: gateioBalance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)'
+            }}>
+              <span className="pulse-indicator" style={{ 
+                width: '6px', 
+                height: '6px', 
+                borderRadius: '50%', 
+                background: gateioBalance ? '#10B981' : '#F59E0B',
+                display: 'inline-block',
+                boxShadow: gateioBalance ? '0 0 8px #10B981' : '0 0 8px #F59E0B'
+              }} />
+              {gateioBalance ? '실거래 정상 가동' : '가상 데모 모드'}
+            </span>
+          </div>
+
           {gateioBalance ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>연동 상태:</span>
-                <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>● 실거래 가동 중</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>거래소 보유 SUT:</span>
-                <span style={{ color: '#FFF', fontWeight: '700' }}>{parseFloat(gateioBalance.SUT).toFixed(2)} SUT</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>거래소 보유 USDT:</span>
-                <span style={{ color: '#FFF', fontWeight: '700' }}>{parseFloat(gateioBalance.USDT).toFixed(2)} USDT</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+              {localApiKey && (
+                <div style={{ 
+                  background: 'rgba(0, 0, 0, 0.2)', 
+                  padding: '6px 10px', 
+                  borderRadius: '6px', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  marginBottom: '2px'
+                }}>
+                  <span style={{ color: 'var(--text-muted)' }}>🔑 연동 키:</span>
+                  <span style={{ fontFamily: 'monospace', color: '#D1D5DB', fontWeight: '500' }}>
+                    {`${localApiKey.slice(0, 6)}****************${localApiKey.slice(-4)}`}
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.02)', 
+                  padding: '10px', 
+                  borderRadius: '8px', 
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SUT 보유 잔고</span>
+                  <span style={{ color: '#10B981', fontSize: '14px', fontWeight: '800' }}>
+                    {parseFloat(gateioBalance.SUT).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '10px', color: '#34D399', fontWeight: '700' }}>SUT</span>
+                  </span>
+                </div>
+
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.02)', 
+                  padding: '10px', 
+                  borderRadius: '8px', 
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>USDT 보유 잔고</span>
+                  <span style={{ color: '#FBBF24', fontSize: '14px', fontWeight: '800' }}>
+                    {parseFloat(gateioBalance.USDT).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '10px', color: '#FCD34D', fontWeight: '700' }}>USDT</span>
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
-            <div style={{ textAlign: 'left', fontSize: '11px', lineHeight: '1.5' }}>
-              <span style={{ color: '#F59E0B', fontWeight: '700', display: 'block', marginBottom: '4px' }}>⚠️ API 키 미등록 (가상 데모 모드)</span>
-              <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-                아래 로컬 설정을 통해 API 키를 등록하면, 거래소 SUT/USDT 자금 조회 및 소액 자동매매 실거래 연동이 활성화됩니다.
+            <div style={{ 
+              textAlign: 'left', 
+              fontSize: '11px', 
+              lineHeight: '1.6',
+              background: 'rgba(245, 158, 11, 0.03)',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '1px solid rgba(245, 158, 11, 0.15)'
+            }}>
+              <span style={{ color: '#F59E0B', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px', fontSize: '11.5px' }}>
+                ⚠️ API 연동 키 미등록 상태
+              </span>
+              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '10.5px' }}>
+                실거래 체결을 가동하고 거래소 SUT/USDT 자금을 실시간 동기화하려면 설정 페이지에서 API 정보를 안전하게 입력해 주세요.
               </p>
             </div>
           )}
         </div>
 
-        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
             type="button"
             className="btn-primary"
             onClick={() => setShowSendSutModal(true)}
-            style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+            style={{ 
+              width: '100%', 
+              padding: '10px 12px', 
+              fontSize: '11px', 
+              background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', 
+              border: 'none', 
+              borderRadius: '8px', 
+              fontWeight: '800', 
+              color: '#FFF', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '6px',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+              transition: 'all 0.2s'
+            }}
           >
-            <ArrowUpDown size={12} /> 내 지갑에서 Gate.io로 SUT 송금
+            <ArrowUpDown size={13} /> 내 지갑에서 Gate.io로 SUT 송금
           </button>
+          
           {operatorApproved ? (
-            <div style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
-              <ShieldCheck size={12} /> ✅ 서버 대행 출금 승인 완료
+            <div style={{ 
+              width: '100%', 
+              padding: '10px 12px', 
+              fontSize: '11px', 
+              background: 'rgba(16, 185, 129, 0.08)', 
+              border: '1px solid rgba(16, 185, 129, 0.25)', 
+              borderRadius: '8px', 
+              fontWeight: '800', 
+              color: '#10B981', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '6px'
+            }}>
+              <ShieldCheck size={13} /> ✅ 서버 대행 출금 승인 완료
             </div>
           ) : (
             <button
@@ -243,9 +381,25 @@ function ManagerAiConfigSection({
               className="btn-primary"
               onClick={handleApproveOperator}
               disabled={approvingOperator}
-              style={{ width: '100%', padding: '8px 12px', fontSize: '11px', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', borderRadius: '6px', fontWeight: '700', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}
+              style={{ 
+                width: '100%', 
+                padding: '10px 12px', 
+                fontSize: '11px', 
+                background: 'linear-gradient(135deg, #10B981 0%, #047857 100%)', 
+                border: 'none', 
+                borderRadius: '8px', 
+                fontWeight: '800', 
+                color: '#FFF', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+                transition: 'all 0.2s'
+              }}
             >
-              <ShieldCheck size={12} /> {approvingOperator ? '승인 처리 중...' : '🔐 서버 대행 출금 승인(1회)'}
+              <ShieldCheck size={13} /> {approvingOperator ? '출금 권한 승인 처리 중...' : '🔐 서버 대행 출금 권한 승인(1회)'}
             </button>
           )}
         </div>
@@ -293,61 +447,27 @@ function ManagerAiConfigSection({
       <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
         <h4 style={{ fontSize: '13px', color: '#FFF', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Settings size={18} color="#A78BFA" />
-          로컬 전용 Gate.io API 키 및 주소 설정
+          Gate.io API 및 입금 주소 설정
         </h4>
-        <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-          보안 유지를 위해 입력 정보는 <strong>현재 기기 브라우저에만 저장</strong>되며 서버 DB나 설정 파일에 등록되지 않습니다. <br/><span style={{ color: '#10B981', fontWeight: 'bold' }}>(해당 정보 전송 시 AES-256-GCM 군사급 암호화 알고리즘이 적용 중입니다.)</span>
+        <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
+          Gate.io API 연동 키 및 입금 주소는 매니저 보안 최적화를 위해 <strong>[⚙️ 설정]</strong> 탭에서 안전하게 통합 관리되고 있습니다. <br/>
+          API 정보를 입력하거나 초기화하시려면 설정 페이지로 이동해 주세요.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <input
-            type="password"
-            value={localApiKey}
-            onChange={(e) => setLocalApiKey(e.target.value)}
-            placeholder="Gate.io API Key 입력"
-            style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
-          />
-          <input
-            type="password"
-            value={localApiSecret}
-            onChange={(e) => setLocalApiSecret(e.target.value)}
-            placeholder="Gate.io API Secret Key 입력"
-            style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
-          />
-          <input
-            type="text"
-            value={localDepositAddress}
-            onChange={(e) => setLocalDepositAddress(e.target.value)}
-            placeholder="Gate.io SUT 입금 주소 (Polygon) 입력"
-            style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px', fontSize: '11px', color: '#FFF', outline: 'none' }}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleSaveApiKeys}
-            disabled={isSavingCredentials}
-            style={{
-              flex: 1,
-              padding: '10px',
-              fontSize: '11px',
-              background: isSavingCredentials ? '#4b5563' : 'var(--primary-gradient)',
-              fontWeight: 'bold',
-              cursor: isSavingCredentials ? 'not-allowed' : 'pointer',
-              opacity: isSavingCredentials ? 0.7 : 1
-            }}
-          >
-            {isSavingCredentials ? '⏳ 저장 중...' : '💾 기기 저장'}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={handleClearApiKeys}
-            style={{ flex: 1, padding: '10px', fontSize: '11px', color: 'var(--danger-color)', borderColor: 'rgba(239,68,68,0.2)', fontWeight: 'bold' }}
-          >
-            🗑️ 삭제
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => handleTabChange?.('settings')}
+          style={{
+            padding: '10px',
+            fontSize: '11px',
+            background: 'var(--primary-gradient)',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            marginTop: '4px'
+          }}
+        >
+          ⚙️ API 및 주소 설정하러 가기
+        </button>
       </div>
 
     </div>

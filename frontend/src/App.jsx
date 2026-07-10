@@ -65,8 +65,10 @@ function AppContent() {
     };
 
     refreshAccountRole();
+    const intervalId = setInterval(refreshAccountRole, 10000);
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
   }, [googleLoggedIn, googleEmail, isRegistered]);
 

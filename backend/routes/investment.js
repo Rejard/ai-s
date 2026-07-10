@@ -483,7 +483,7 @@ Rules:
 
 
 
-router.get('/council-stats' , requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
+router.get('/council-stats', requireAuthenticatedSession, requireAdminCouncilAccess, async (req, res) => {
   try {
     const factionRows = await queries.all(`
       SELECT COALESCE(faction, 'UNCLASSIFIED') as faction, COUNT(*) as count 

@@ -16,7 +16,8 @@ function ManagerTradingTab({
   handleGateIoOrderClick, confirmMode, submittingOrder,
   handleCancelOrder, sutPrice,
   ManagerAiConfigSection,
-  handleApproveOperator, approvingOperator, operatorApproved
+  handleApproveOperator, approvingOperator, operatorApproved,
+  handleTabChange
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -46,6 +47,7 @@ function ManagerTradingTab({
         handleApproveOperator={handleApproveOperator}
         approvingOperator={approvingOperator}
         operatorApproved={operatorApproved}
+        handleTabChange={handleTabChange}
       />
 
       <ManagerAiDecisionHistory logs={aiLogs} isMobile />
