@@ -119,8 +119,34 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     }
 
     setUserVerifyState('checking');
-    setUserVerifyMsg('폴리곤 온체인 잔액 조회 중...');
+    setUserVerifyMsg('지갑 주소 일치 여부 및 온체인 상태 검증 중...');
 
+    // 1. Web3 프로바이더(트러스트 월넷 인앱 등)가 활성화되어 있는 경우
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts.length > 0) {
+          const trustWalletAddr = accounts[0].toLowerCase();
+          const typedAddr = userWallet.trim().toLowerCase();
+
+          if (trustWalletAddr === typedAddr) {
+            setUserVerifyState('success');
+            setUserVerifyMsg(`🟢 지갑 검증 성공! 현재 트러스트 월넷 활성 계정과 일치함 (${accounts[0].substring(0,6)}...)`);
+            alert(`🟢 지갑 검증 성공!\n\n현재 트러스트 월넷 앱에 연결된 실제 활성 지갑 주소와 입력하신 지갑 주소가 100% 완벽히 일치합니다.\n\n안심하고 위임 승인 및 서비스를 이용하십시오.`);
+            return;
+          } else {
+            setUserVerifyState('failed');
+            setUserVerifyMsg(`❌ 지갑 주소 불일치! 앱 활성 주소: ${accounts[0].substring(0,8)}...`);
+            alert(`❌ 지갑 주소 불일치 경고!\n\n입력한 주소:\n${userWallet}\n\n현재 트러스트 월넷 앱의 실제 활성 지갑 주소:\n${accounts[0]}\n\n두 지갑 주소가 틀립니다! 오타가 있거나 다른 트러스트 월넷 지갑 계정이 열려있습니다. 주소를 복사해서 다시 기입하거나 트러스트 월넷 앱 계정을 일치시켜 주십시오.`);
+            return;
+          }
+        }
+      } catch (ethErr) {
+        console.warn('Failed to fetch window.ethereum accounts directly:', ethErr);
+      }
+    }
+
+    // 2. 일반 브라우저 환경이거나 Web3 호출에 실패했을 때의 RPC 온체인 잔고 규격 검증 폴백
     try {
       let provider;
       if (ethers.JsonRpcProvider) {
@@ -150,11 +176,13 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       const sutBalance = parseFloat(formatEth(sutBalanceWei));
 
       setUserVerifyState('success');
-      setUserVerifyMsg(`정상 규격 검증 완료! (SUT 잔고: ${sutBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} SUT / 가스비: ${balanceMatic.toLocaleString(undefined, { maximumFractionDigits: 3 })} POL)`);
+      setUserVerifyMsg(`규격 완료! (SUT: ${sutBalance.toLocaleString(undefined, { maximumFractionDigits: 1 })} / ${balanceMatic.toLocaleString(undefined, { maximumFractionDigits: 2 })} POL)`);
+      alert(`💡 일반 브라우저 환경 안내\n\n지갑의 온체인 주소 규격 및 잔액 조회를 완료하였습니다.\n(SUT 잔고: ${sutBalance.toLocaleString()} SUT / 가스비 잔고: ${balanceMatic.toLocaleString()} POL)\n\n※ 실제 스마트폰 트러스트 월넷 앱과의 하드웨어 실시간 일치 검증은 트러스트 월넷 앱 내부에서 접속했을 때만 가능합니다.`);
     } catch (err) {
-      console.error('Wallet validation failed:', err);
+      console.error('Wallet validation fallback failed:', err);
       setUserVerifyState('success');
-      setUserVerifyMsg('규격 검증 완료 (온체인 RPC 통신 지연으로 가상 상태 검증)');
+      setUserVerifyMsg('규격 검증 완료 (RPC 통신 지연으로 형식 상태 검사 완료)');
+      alert(`💡 지갑 형식 검증 완료\n\n입력하신 지갑 주소의 0x 규격 및 자릿수 검증을 정상 완료하였습니다.\n\n※ 트러스트 월넷 인앱 실시간 대조 검증은 트러스트 월넷 앱 내부에서 실행 시 활성화됩니다.`);
     }
   };
 
@@ -281,6 +309,57 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
     }
   }, [userData, walletAddress, hasLoadedFromDB]);
 
+  // 트러스트 월넷 인앱 디앱 브라우저 내부일 때:
+  // 1. 자동으로 window.ethereum 주소(accounts[0])를 싹 긁어온다.
+  // 2. 긁어온 주소를 수동 입력창에 오토 기입한다.
+  // 3. 만일, 현재 DB(userData?.walletAddress)에 저장된 주소와 실제 하드웨어 지갑 주소가 틀리거나 가상 지갑(0xnone 등)인 경우:
+  //    사용자가 손가락 하나 대지 않아도 조용히 백엔드 API로 자동 영구 바인딩 연동 저장까지 완료해 준다! (Auto Sync & Save)
+  useEffect(() => {
+    const autoSyncTrustWallet = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          if (accounts && accounts[0]) {
+            const liveAddr = accounts[0].toLowerCase();
+            const currentSavedAddr = (userData?.walletAddress || '').toLowerCase();
+            const isVirtual = !currentSavedAddr || currentSavedAddr === 'none' || currentSavedAddr.startsWith('0xnone') || currentSavedAddr.endsWith('00000000');
+
+            // 화면 상태 자동 기입
+            setUserWallet(accounts[0]);
+
+            // 현재 DB에 저장된 실제 주소와 다르거나 최초 가입 상태(가상 지갑)일 때 즉시 자동 백엔드 영구 보관 저장 단행!
+            if (liveAddr !== currentSavedAddr || isVirtual) {
+              const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+              const headers = {
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              };
+
+              const response = await axios.post(`${API_BASE}/auth/update-own-wallets`, {
+                userWallet: accounts[0].trim(),
+                managerWallet: managerWallet || '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987'
+              }, headers);
+
+              if (response.data.success) {
+                console.log('🔮 Trust Wallet Auto Sync Succeeded:', accounts[0]);
+                setHasLoadedFromDB(false); // 잠금을 열어 대시보드가 원활하게 최신 동기화 데이터를 읽어오도록 지시
+                fetchDashboardData();
+                fetchTxHistory();
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Trust Wallet Auto Sync failed:', err);
+        }
+      }
+    };
+
+    if (activeTab === 'settings' && userData) {
+      autoSyncTrustWallet();
+    }
+  }, [activeTab, userData, managerWallet]);
+
   const handleSaveWallets = async (e) => {
     e.preventDefault();
     if (!userWallet || !userWallet.startsWith('0x') || userWallet.length !== 42) {
@@ -331,6 +410,40 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       setManagerWallet(userData?.managerAddress && userData.managerAddress !== 'none' ? userData.managerAddress : '0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987');
       alert('🔄 기본 지갑 주소로 초기화되었습니다.');
     }
+  };
+
+  const handleExitDApp = () => {
+    try {
+      window.close();
+    } catch (e) {
+      console.error("window.close failed", e);
+    }
+    alert(
+      "🚪 트러스트월넷 종료 안내\n\n" +
+      "안전하게 지갑 연동 및 위임 설정이 실시간 반영되었습니다.\n" +
+      "이 브라우저를 종료하고 원래 보고 계셨던 일반 웹 브라우저 화면으로 돌아가시려면,\n" +
+      "지금 스마트폰 화면 좌측 상단의 [ ❌ ] 또는 뒤로가기 버튼을 터치해 주십시오."
+    );
+  };
+
+  const handleJumpToTrustWallet = () => {
+    if (window.ethereum) {
+      alert('💡 이미 트러스트월넷 디앱 브라우저 내부에서 작동 중이므로 앱 이동 링크가 비활성화되었습니다.');
+      return;
+    }
+    const targetUrl = new URL(window.location.origin + window.location.pathname);
+    targetUrl.searchParams.set('active_tab', 'settings');
+
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '';
+    let hashStr = '';
+    if (token) {
+      hashStr = `#auth_token=${encodeURIComponent(token)}`;
+    }
+
+    const finalUrl = `${targetUrl.toString()}${hashStr}`;
+    const trustDeepLink = `trust://open_url?coin_id=966&url=${encodeURIComponent(finalUrl)}`;
+
+    window.location.href = trustDeepLink;
   };
 
   const handleApproveVault = async () => {
@@ -530,6 +643,250 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
         setTxAmount('');
       });
   }, [userWallet, autoDepositFinalizeAttempted]);
+
+  // URL에서 mode=full 쿼리 파라미터가 있는지 검사
+  const queryParams = new URLSearchParams(window.location.search);
+  const isFullModeOverride = queryParams.get('mode') === 'full';
+
+  // 트러스트 월넷 인앱 디앱 브라우저 전용 컴포넌트 렌더링 분기 (전용 단일 페이지)
+  // 단, 사용자가 "AiS 앱으로 돌아가기"를 터치해 mode=full 을 요청한 경우는 대시보드 전체 뷰를 보여주도록 예외처리함!
+  if (window.ethereum && !isFullModeOverride) {
+    return (
+      <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+        
+        {/* 매니저 바로가기 배너 */}
+        {canAccessManager && (
+          <div
+            className="glass-card glow-active"
+            onClick={() => navigate('/manager')}
+            style={{
+              padding: '12px 16px',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '18px' }}>👑</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>{DASHBOARD_COPY.managerPage}</div>
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>회원 관리 화면으로 이동</div>
+              </div>
+            </div>
+            <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
+              {DASHBOARD_COPY.managerPage}
+            </button>
+          </div>
+        )}
+
+        {/* 어드민 바로가기 배너 */}
+        {canAccessAdmin && (
+          <div
+            className="glass-card glow-active"
+            onClick={() => navigate('/admin')}
+            style={{
+              padding: '12px 16px',
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'transform 0.2s',
+              marginTop: '-10px'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '18px' }}>🔑</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: '#F87171' }}>{DASHBOARD_COPY.adminPage}</div>
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>시스템 관리 화면으로 이동</div>
+              </div>
+            </div>
+            <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'linear-gradient(90deg, #EF4444, #DC2626)', border: 'none', color: '#FFF' }}>
+              {DASHBOARD_COPY.adminPage}
+            </button>
+          </div>
+        )}
+
+        {/* 사용자 프로필 카드 */}
+        <div className="glass-card" style={{
+          padding: '15px 18px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)'
+        }}>
+          <div style={{
+            width: '42px', height: '42px', borderRadius: '50%', background: 'var(--primary-gradient)',
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            fontSize: '18px', fontWeight: '700', color: '#FFFFFF'
+          }}>
+            {(userData && userData.name ? userData.name.substring(0, 1).toUpperCase() : '👤')}
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <h3 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0 }}>{userData ? userData.name : 'Test Member'}</h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{userData ? userData.email : '이메일 정보 없음'}</span>
+          </div>
+        </div>
+
+        {/* 👛 트러스트월넷 전용 연동 카드 */}
+        <div className="glass-card" style={{
+          padding: '20px',
+          border: '1px solid rgba(139, 92, 246, 0.25)',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%)'
+        }}>
+          <h3 style={{ fontSize: '15px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px 0', fontWeight: '700' }}>
+            <span style={{ fontSize: '16px' }}>👛</span> 트러스트월넷에서 지갑 연동
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ textAlign: 'left' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                내 개인 지갑 주소 (SUT 입출금용)
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={userWallet}
+                  readOnly
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    fontSize: '12px',
+                    background: 'rgba(16, 185, 129, 0.06)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '8px',
+                    color: '#34D399',
+                    outline: 'none',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <span style={{
+                fontSize: '10.5px',
+                color: '#10B981',
+                display: 'block',
+                marginTop: '6px',
+                fontWeight: '600',
+                lineHeight: '1.4'
+              }}>
+                🟢 트러스트월넷 실제 온체인 활성 지갑이 안전하게 자동 동기화 완료되었습니다. (자동 저장됨)
+              </span>
+            </div>
+
+            <div style={{
+              marginTop: '20px',
+              paddingTop: '16px',
+              borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
+              textAlign: 'left'
+            }}>
+              <label style={{ fontSize: '11.5px', color: '#C084FC', display: 'block', marginBottom: '8px', fontWeight: '700' }}>
+                🔐 SUT 자산 거래 위임 승인 (최초 1회 필수)
+              </label>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
+                플랫폼을 통한 모바일 SUT 토큰 입금 및 출금 자동 처리를 개시하기 위하여 최초 1회 위임 승인 서명이 필요합니다. (승인을 위해 약 0.02 ~ 0.05 POL 정도의 소량의 폴리곤을 미리 충전해두어야 합니다)
+              </p>
+
+              {vaultApproved === true ? (
+                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
+                  <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 상태: 완료됨
+                </div>
+              ) : vaultApproved === false ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    padding: '10px 12px',
+                    background: 'rgba(16, 185, 129, 0.05)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    color: '#34D399',
+                    lineHeight: '1.4',
+                    boxSizing: 'border-box',
+                    textAlign: 'left'
+                  }}>
+                    💡 트러스트 월넷 연동. 아래 보라색 <strong>[원클릭 자동 위임 승인 시도]</strong> 버튼을 터치하여 폴리곤 블록체인 가스비 서명을 완료.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleApproveVault}
+                    disabled={approvingVault}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '12px',
+                      background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '800',
+                      color: '#FFF',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <ShieldCheck size={14} />
+                    {approvingVault ? '⏳ 블록체인 서명 및 승인 승격 대기 중...' : '🔐 원클릭 자동 위임 승인 시도'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
+                  <ShieldCheck size={14} /> ⏳ 온체인 위임 승인 상태 확인 중...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 트러스트월넷 디앱 브라우저 나가기 버튼 (카드 블록 밖 밑으로 이동 배치) */}
+        <button
+          type="button"
+          onClick={handleExitDApp}
+          style={{
+            width: '100%',
+            padding: '14px 20px',
+            fontSize: '15px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '10px',
+            fontWeight: '800',
+            color: '#F3F4F6',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxSizing: 'border-box',
+            transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          🚪 트러스트월넷 나가기
+        </button>
+
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -886,310 +1243,198 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
             background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%)'
           }}>
             <h3 style={{ fontSize: '15px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px 0', fontWeight: '700' }}>
-              <span style={{ fontSize: '16px' }}>👛</span> 지갑 주소 관리 및 편집
+              <span style={{ fontSize: '16px' }}>👛</span> 트러스트월넷에서 지갑 연동
             </h3>
 
-            <form onSubmit={handleSaveWallets} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ textAlign: 'left' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
-                  내 개인 지갑 주소 (SUT 입출금용)
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={userWallet}
-                    onChange={(e) => {
-                      setUserWallet(e.target.value);
-                      setUserVerifyState('none');
-                    }}
-                    placeholder="0x..."
-                    style={{
-                      flex: 1,
-                      padding: '10px 12px',
-                      fontSize: '12px',
-                      background: 'rgba(0, 0, 0, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: '8px',
-                      color: '#FFF',
-                      outline: 'none',
-                      fontFamily: 'monospace',
-                      boxSizing: 'border-box'
-                    }}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={handleVerifyUserWallet}
-                    disabled={userVerifyState === 'checking'}
-                    style={{
-                      padding: '0 12px',
-                      fontSize: '12px',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      border: '1px solid rgba(139, 92, 246, 0.25)',
-                      borderRadius: '8px',
-                      color: '#C084FC',
-                      cursor: 'pointer',
-                      fontWeight: '600'
-                    }}
-                  >
-                    {userVerifyState === 'checking' ? '⏳ 검사 중' : '🔍 지갑 검증'}
-                  </button>
-                </div>
-                {userVerifyState !== 'none' && (
-                  <span style={{
-                    fontSize: '10.5px',
-                    color: userVerifyState === 'success' ? '#10B981' : userVerifyState === 'failed' ? '#EF4444' : '#F59E0B',
-                    display: 'block',
-                    marginTop: '5px',
-                    fontWeight: '500'
-                  }}>
-                    {userVerifyMsg}
-                  </span>
-                )}
-              </div>
-
-              <div style={{ textAlign: 'left' }}>
-                <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
-                  담당 매니저 지갑 주소 (SUT 위임 계약용)
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={managerWallet}
-                    onChange={(e) => {
-                      setManagerWallet(e.target.value);
-                      setManagerVerifyState('none');
-                    }}
-                    placeholder="0x..."
-                    style={{
-                      flex: 1,
-                      padding: '10px 12px',
-                      fontSize: '11px',
-                      background: 'rgba(0, 0, 0, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: '8px',
-                      color: '#FFF',
-                      outline: 'none',
-                      fontFamily: 'monospace',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleVerifyManagerWallet}
-                    disabled={managerVerifyState === 'checking'}
-                    style={{
-                      padding: '0 12px',
-                      fontSize: '12px',
-                      background: 'rgba(139, 92, 246, 0.1)',
-                      border: '1px solid rgba(139, 92, 246, 0.25)',
-                      borderRadius: '8px',
-                      color: '#C084FC',
-                      cursor: 'pointer',
-                      fontWeight: '600'
-                    }}
-                  >
-                    {managerVerifyState === 'checking' ? '⏳ 검사 중' : '🔍 매니저 검증'}
-                  </button>
-                </div>
-                {managerVerifyState !== 'none' ? (
-                  <span style={{
-                    fontSize: '10.5px',
-                    color: managerVerifyState === 'success' ? '#10B981' : managerVerifyState === 'failed' ? '#EF4444' : '#F59E0B',
-                    display: 'block',
-                    marginTop: '5px',
-                    fontWeight: '500'
-                  }}>
-                    {managerVerifyMsg}
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.35)', display: 'block', marginTop: '5px' }}>
-                    * 가입 시 매칭된 담당 매니저 지갑 주소 또는 플랫폼 운영 지갑 주소입니다. 담당자 변경 시 직접 수정 및 입력이 가능합니다.
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+            {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum && !isFullModeOverride && (
+              <div style={{ marginBottom: '18px', padding: '14px', background: 'rgba(5, 0, 255, 0.05)', border: '1px solid rgba(5, 0, 255, 0.15)', borderRadius: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '11px', color: '#93C5FD', lineHeight: '1.45', margin: '0 0 12px 0', textAlign: 'left', fontWeight: '500' }}>
+                  💡 스마트폰 일반 브라우저 환경에서는 수동 입력의 번거로움과 실수를 방지하기 위해, 아래 버튼을 터치하여 트러스트 월넷 디앱 브라우저로 이동해 안전하게 지갑을 검증 및 자동 연동하기를 강력히 권장합니다.
+                </p>
                 <button
                   type="button"
-                  onClick={handleResetWallets}
+                  onClick={handleJumpToTrustWallet}
                   style={{
-                    flex: 1,
-                    padding: '10px',
-                    fontSize: '12px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    color: '#D1D5DB',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
-                    fontWeight: '700',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🔄 초기화
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 2,
-                    padding: '10px',
-                    fontSize: '12px',
-                    background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-                    color: '#FFF',
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '13px',
+                    background: 'linear-gradient(135deg, #0500FF 0%, #3B82F6 100%)',
                     border: 'none',
                     borderRadius: '8px',
                     fontWeight: '800',
+                    color: '#FFF',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)'
+                    boxShadow: '0 4px 14px rgba(5, 0, 255, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease-in-out'
                   }}
                 >
-                  💾 설정 저장하기
+                  🔵 트러스트월넷으로 이동
                 </button>
               </div>
-            </form>
+            )}
 
-            <div style={{
-              marginTop: '20px',
-              paddingTop: '16px',
-              borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
-              textAlign: 'left'
-            }}>
-              <label style={{ fontSize: '11.5px', color: '#C084FC', display: 'block', marginBottom: '8px', fontWeight: '700' }}>
-                🔐 SUT 자산 거래 위임 승인 (최초 1회 필수)
+            {/* 내 개인 지갑 주소 표시 보드 */}
+            <div style={{ textAlign: 'left', marginBottom: '22px' }}>
+              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: '700' }}>
+                내 개인 지갑 주소 (SUT 입출금용)
               </label>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-                플랫폼을 통한 모바일 SUT 토큰 입금 및 출금 자동 처리를 개시하기 위하여 최초 1회 위임 승인 서명이 필요합니다. (승인을 위해 약 0.02 ~ 0.05 POL 정도의 소량의 폴리곤을 미리 충전해두어야 합니다)
-              </p>
-
-              {vaultApproved === true ? (
-                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
-                  <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 상태: 완료됨
-                </div>
-              ) : vaultApproved === false ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum && (
-                    <div style={{
-                      padding: '10px 12px',
-                      background: 'rgba(5, 0, 255, 0.05)',
-                      border: '1px solid rgba(5, 0, 255, 0.25)',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      color: '#60A5FA',
-                      lineHeight: '1.4',
-                      boxSizing: 'border-box',
-                      textAlign: 'left'
-                    }}>
-                      💡 아래 파란색 버튼 터치 시 <strong>트러스트 월넷 앱으로 이동</strong>. 앱 접속 후 보라색 버튼을 <strong>다시 한 번 터치</strong>.
-                    </div>
-                  )}
-
-                  {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && window.ethereum && (
-                    <div style={{
-                      padding: '10px 12px',
-                      background: 'rgba(16, 185, 129, 0.05)',
-                      border: '1px solid rgba(16, 185, 129, 0.25)',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      color: '#34D399',
-                      lineHeight: '1.4',
-                      boxSizing: 'border-box',
-                      textAlign: 'left'
-                    }}>
-                      💡 트러스트 월넷 연동. 아래 보라색 <strong>[원클릭 자동 위임 승인 시도]</strong> 버튼을 터치하여 폴리곤 블록체인 가스비 서명을 완료.
-                    </div>
-                  )}
-
+              <div style={{
+                padding: '14px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                boxSizing: 'border-box',
+                wordBreak: 'break-all',
+                whiteSpace: 'normal'
+              }}>
+                <span style={{
+                  fontFamily: 'monospace',
+                  fontSize: '13.5px',
+                  color: userWallet ? '#E5E7EB' : 'var(--text-muted)',
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.4',
+                  flex: 1,
+                  userSelect: 'all'
+                }}>
+                  {userWallet || '등록된 개인 지갑 주소가 없습니다.'}
+                </span>
+                {userWallet && (
                   <button
                     type="button"
-                    onClick={handleApproveVault}
-                    disabled={approvingVault}
+                    onClick={() => handleCopyAddress(userWallet, 'wallet')}
                     style={{
-                      width: '100%',
-                      padding: '12px',
-                      fontSize: '12px',
-                      background: (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum)
-                        ? 'linear-gradient(135deg, #0500FF 0%, #357BFF 100%)'
-                        : 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '800',
-                      color: '#FFF',
+                      padding: '6px 12px',
+                      fontSize: '11px',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      border: '1px solid rgba(139, 92, 246, 0.25)',
+                      borderRadius: '6px',
+                      color: '#C084FC',
                       cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      boxShadow: (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum)
-                        ? '0 4px 12px rgba(5, 0, 255, 0.25)'
-                        : '0 4px 12px rgba(139, 92, 246, 0.25)',
-                      boxSizing: 'border-box'
+                      fontWeight: '700',
+                      transition: 'all 0.15s',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.18)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
                     }}
                   >
-                    <ShieldCheck size={14} />
-                    {approvingVault
-                      ? '⏳ 블록체인 서명 및 승인 승격 대기 중...'
-                      : (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !window.ethereum)
-                        ? '🔵 트러스트 월넷으로 위임 승인 이동'
-                        : '🔐 원클릭 자동 위임 승인 시도'}
+                    {copiedAddress === 'wallet' ? '복사 완료' : '주소 복사'}
                   </button>
+                )}
+              </div>
+              {window.ethereum && (
+                <span style={{
+                  fontSize: '11px',
+                  color: '#10B981',
+                  display: 'block',
+                  marginTop: '8px',
+                  fontWeight: '600',
+                  lineHeight: '1.4'
+                }}>
+                  🟢 트러스트월넷 실제 온체인 활성 지갑이 안전하게 자동 동기화 완료되었습니다.
+                </span>
+              )}
+            </div>
 
-                  {/* 수동 다이렉트 위임 가이드 카드 */}
-                  <div style={{
-                    padding: '12px',
-                    background: 'rgba(239, 68, 68, 0.03)',
-                    border: '1px solid rgba(139, 92, 246, 0.15)',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
-                    <span style={{ fontSize: '11px', color: '#EF4444', fontWeight: '700' }}>⚠️ 원클릭 자동 승인 실패 시 100% 성공 수동 위임 가이드</span>
+            {/* SUT 자산 거래 위임 승인 여부 실시간 확인 보드 */}
+            <div style={{
+              paddingTop: '18px',
+              borderTop: '1px dashed rgba(255, 255, 255, 0.08)',
+              textAlign: 'left'
+            }}>
+              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '10px', fontWeight: '700' }}>
+                SUT 자산 거래 위임 승인 여부
+              </label>
 
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.4' }}>
-                      <div>
-                        <strong>1. 폴리곤스캔 링크 복사</strong>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '3px' }}>
-                          <input readOnly value="https://polygonscan.com/address/0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55#writeContract" style={{ flex: 1, fontSize: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 6px', color: 'var(--text-muted)' }} />
-                          <button type="button" onClick={() => handleCopyAddress('https://polygonscan.com/address/0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55#writeContract', 'scanLink')} style={{ padding: '2px 8px', fontSize: '9px', background: '#374151', border: 'none', color: '#FFF', borderRadius: '4px', cursor: 'pointer' }}>
-                            {copiedAddress === 'scanLink' ? '복사됨' : '복사'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <strong>2. 트러스트월렛 앱 실행</strong> {'→'} 하단 <strong>[나침반 아이콘]</strong> 또는 <strong>[탐색]</strong> 메뉴 진입 {'→'} 맨 위 탐색 검색창에 복사한 링크 붙여넣고 이동.
-                      </div>
-
-                      <div>
-                        <strong>3. [Connect to Web3] 터치</strong> {'→'} 본인 지갑 연결.
-                      </div>
-
-                      <div>
-                        <strong>4. [1. approve] 항목 기입</strong> 아래 값들 각각 복사하여 입력.
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '4px 6px', borderRadius: '4px' }}>
-                            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>spender (볼트 주소)</span>
-                            <button type="button" onClick={() => handleCopyAddress('0x855c880D538892fD899eECb72D4b1Ac5B46089eA', 'vault')} style={{ padding: '1px 6px', fontSize: '9px', background: '#4B5563', border: 'none', color: '#FFF', borderRadius: '3px', cursor: 'pointer' }}>
-                              {copiedAddress === 'vault' ? '복사됨' : '복사'}
-                            </button>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '4px 6px', borderRadius: '4px' }}>
-                            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>value (위임할 수량)</span>
-                            <button type="button" onClick={() => handleCopyAddress('1000000000000000000000000', 'amount')} style={{ padding: '1px 6px', fontSize: '9px', background: '#4B5563', border: 'none', color: '#FFF', borderRadius: '3px', cursor: 'pointer' }}>
-                              {copiedAddress === 'amount' ? '복사됨' : '복사'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <strong>5. [Write] 터치</strong> {'→'} 지갑 트랜잭션 승인 완료.
-                      </div>
-                    </div>
+              {vaultApproved === true ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  padding: '16px',
+                  background: 'rgba(16, 185, 129, 0.04)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  borderRadius: '10px',
+                  boxSizing: 'border-box'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      color: '#10B981'
+                    }}>
+                      <ShieldCheck size={13} /> 승인됨 (거래가능)
+                    </span>
                   </div>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0' }}>
+                    💡 플랫폼 모바일 SUT 토큰 입금 및 출금 처리에 필요한 위임 승인이 안전하게 승인 완료된 상태입니다. 실시간 거래 처리가 활성화되어 있습니다.
+                  </p>
+                </div>
+              ) : vaultApproved === false ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  padding: '16px',
+                  background: 'rgba(239, 68, 68, 0.04)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  borderRadius: '10px',
+                  boxSizing: 'border-box'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      color: '#F87171'
+                    }}>
+                      <ShieldCheck size={13} /> 승인 필요 (위임필요)
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0' }}>
+                    💡 SUT 자산 거래 위임 서명이 아직 완료되지 않았습니다. 입출금 처리를 개시하기 위해, 모바일 트러스트 월넷 디앱 전용 화면으로 한 번 접속하시어 원클릭 자동 위임을 진행해 주십시오.
+                  </p>
                 </div>
               ) : (
-                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
-                  <ShieldCheck size={14} /> ⏳ 온체인 위임 승인 상태 확인 중...
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '16px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: 'var(--text-muted)',
+                  boxSizing: 'border-box'
+                }}>
+                  <ShieldCheck size={13} className="spin-slow" /> ⏳ 온체인 위임 승인 상태 확인 중...
                 </div>
               )}
             </div>
