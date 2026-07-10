@@ -751,70 +751,111 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
               <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
                 내 개인 지갑 주소 (SUT 입출금용)
               </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  value={userWallet}
-                  readOnly
-                  style={{
-                    flex: 1,
-                    padding: '10px 12px',
-                    fontSize: '12px',
-                    background: 'rgba(16, 185, 129, 0.06)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '8px',
-                    color: '#34D399',
-                    outline: 'none',
-                    fontFamily: 'monospace',
-                    boxSizing: 'border-box'
-                  }}
-                />
+              <div style={{
+                padding: '12px',
+                background: 'rgba(16, 185, 129, 0.04)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                boxSizing: 'border-box',
+                wordBreak: 'break-all',
+                whiteSpace: 'normal'
+              }}>
+                <span style={{
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  color: userWallet ? '#34D399' : 'var(--text-muted)',
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.4',
+                  flex: 1,
+                  userSelect: 'all'
+                }}>
+                  {userWallet || '등록된 개인 지갑 주소가 없습니다.'}
+                </span>
+                {userWallet && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyAddress(userWallet, 'wallet')}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '10px',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                      borderRadius: '5px',
+                      color: '#34D399',
+                      cursor: 'pointer',
+                      fontWeight: '700',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {copiedAddress === 'wallet' ? '복사됨' : '복사'}
+                  </button>
+                )}
               </div>
               <span style={{
-                fontSize: '10.5px',
-                color: '#10B981',
+                fontSize: '10px',
+                color: '#34D399',
                 display: 'block',
                 marginTop: '6px',
                 fontWeight: '600',
                 lineHeight: '1.4'
               }}>
-                🟢 트러스트월넷 실제 온체인 활성 지갑이 안전하게 자동 동기화 완료되었습니다. (자동 저장됨)
+                🟢 트러스트월넷 실제 온체인 활성 지갑이 안전하게 자동 동기화 완료되었습니다.
               </span>
             </div>
 
             <div style={{
-              marginTop: '20px',
+              marginTop: '15px',
               paddingTop: '16px',
               borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
               textAlign: 'left'
             }}>
-              <label style={{ fontSize: '11.5px', color: '#C084FC', display: 'block', marginBottom: '8px', fontWeight: '700' }}>
-                🔐 SUT 자산 거래 위임 승인 (최초 1회 필수)
-              </label>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-                플랫폼을 통한 모바일 SUT 토큰 입금 및 출금 자동 처리를 개시하기 위하여 최초 1회 위임 승인 서명이 필요합니다. (승인을 위해 약 0.02 ~ 0.05 POL 정도의 소량의 폴리곤을 미리 충전해두어야 합니다)
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12.5px', color: '#C084FC', fontWeight: '700' }}>
+                  SUT 자산 거래 위임 승인 여부
+                </span>
+                {vaultApproved === true ? (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '3px 8px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    color: '#34D399'
+                  }}>
+                    🟢 승인 완료 (거래가능)
+                  </span>
+                ) : (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '3px 8px',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    color: '#F59E0B'
+                  }}>
+                    ⚠️ 미승인 (서명 필요)
+                  </span>
+                )}
+              </div>
 
               {vaultApproved === true ? (
                 <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
-                  <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 상태: 완료됨
+                  <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 완료
                 </div>
               ) : vaultApproved === false ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{
-                    padding: '10px 12px',
-                    background: 'rgba(16, 185, 129, 0.05)',
-                    border: '1px solid rgba(16, 185, 129, 0.25)',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    color: '#34D399',
-                    lineHeight: '1.4',
-                    boxSizing: 'border-box',
-                    textAlign: 'left'
-                  }}>
-                    💡 트러스트 월넷 연동. 아래 보라색 <strong>[원클릭 자동 위임 승인 시도]</strong> 버튼을 터치하여 폴리곤 블록체인 가스비 서명을 완료.
-                  </div>
-
                   <button
                     type="button"
                     onClick={handleApproveVault}
@@ -1360,75 +1401,53 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
               {vaultApproved === true ? (
                 <div style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  padding: '16px',
+                  alignItems: 'center',
+                  padding: '12px 16px',
                   background: 'rgba(16, 185, 129, 0.04)',
-                  border: '1px solid rgba(16, 185, 129, 0.25)',
-                  borderRadius: '10px',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  borderRadius: '8px',
                   boxSizing: 'border-box'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      color: '#10B981'
-                    }}>
-                      <ShieldCheck size={13} /> 승인됨 (거래가능)
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0' }}>
-                    💡 플랫폼 모바일 SUT 토큰 입금 및 출금 처리에 필요한 위임 승인이 안전하게 승인 완료된 상태입니다. 실시간 거래 처리가 활성화되어 있습니다.
-                  </p>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: '#34D399'
+                  }}>
+                    <ShieldCheck size={14} /> ✅ 승인 완료 (SUT 거래 가능)
+                  </span>
                 </div>
               ) : vaultApproved === false ? (
                 <div style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  padding: '16px',
-                  background: 'rgba(239, 68, 68, 0.04)',
-                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                  borderRadius: '10px',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '8px',
                   boxSizing: 'border-box'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      color: '#F87171'
-                    }}>
-                      <ShieldCheck size={13} /> 승인 필요 (위임필요)
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0' }}>
-                    💡 SUT 자산 거래 위임 서명이 아직 완료되지 않았습니다. 입출금 처리를 개시하기 위해, 모바일 트러스트 월넷 디앱 전용 화면으로 한 번 접속하시어 원클릭 자동 위임을 진행해 주십시오.
-                  </p>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: 'var(--text-muted)'
+                  }}>
+                    <ShieldCheck size={14} /> ⚠️ 미승인 (위임 필요)
+                  </span>
                 </div>
               ) : (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '16px',
+                  padding: '12px 16px',
                   background: 'rgba(255, 255, 255, 0.02)',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
-                  borderRadius: '10px',
+                  borderRadius: '8px',
                   fontSize: '12px',
                   fontWeight: '700',
                   color: 'var(--text-muted)',

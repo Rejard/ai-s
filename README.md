@@ -469,3 +469,24 @@ We introduced 4 unit and integration test scripts under the backend suite:
 4. **systemDiagnostics.test.js** ([systemDiagnostics.test.js](file:///c:/home/ai-s/backend/systemDiagnostics.test.js))
    - Conducts full-suite evaluations of all 35 diagnostics nodes, asserting correct order, correct schema format, and verifying correct error/warning state transitions.
 
+---
+
+## 📲 User Onboarding & Wallet Integration Process
+
+Recently, the AI-S platform has introduced a fully revamped, ultra-simplified onboarding workflow designed to maximize ease of entry while ensuring strict security and maximum wallet transparency.
+
+### 1. Google OAuth Seamless Signup
+* **1-Minute Onboarding**: No complex Web3 wallet setup is required during signup. Users can register instantly using Google's industry-standard OAuth 2.0 secure login protocol.
+* **Virtual Wallet Allocation**: At registration, users do not need to copy/paste Web3 addresses. Our proprietary internal mapping algorithm automatically provisions and binds a unique virtual placeholder wallet (0x+MD5 Email Padding) to the user's account.
+* **Referral & KYC Validation**: To prevent Sybil attacks and wash trading, a valid manager's address and a securely encrypted copy of the user's ID card are uploaded for evaluation.
+
+### 2. Manual Verification & 24-Hour Expiry Guard
+* **Manual Verification System**: Submitted KYC credentials and designated managers are reviewed manually by our dedicated board of audit managers.
+* **Security Expiry**: If registration is not approved within 24 hours, all uploaded ID images and sensitive form fields are permanently destroyed and physically erased from the server's storage and databases for compliance.
+
+### 3. Trust Wallet DApp Synchronization & One-Time Delegation
+* **On-Chain Address Auto-Sync**: Once approved, the user gains dashboard access. Logging in through the Trust Wallet DApp browser automatically links and synchronizes the active on-chain wallet address in real time.
+* **Full Address Exposure**: The user's active deposit address is displayed entirely (no masking or truncation) using a responsive monospace font layout. This allows effortless verification and copy actions directly on mobile screens without overflow clipping.
+* **SUT Asset Delegation Status (First-Time Essential)**:
+  * All anxious red warnings and redundant instruction boxes have been entirely cleaned out of the main view.
+  * In their place, a sophisticated, silent gray-toned state badge check system automatically detects the on-chain permission and displays either `🟢 Approved (Trading)` or `⚠️ Unapproved (Delegation Required)` to ensure a clean, high-premium user experience.

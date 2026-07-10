@@ -864,73 +864,6 @@
       line-height: 1.5;
       border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
-    .browser-mode-toggle {
-      display: flex;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--surface-border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 12px;
-      width: fit-content;
-    }
-
-    .browser-mode-btn {
-      padding: 8px 18px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: 'Noto Sans KR', sans-serif;
-      color: var(--text-muted);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .browser-mode-btn.active {
-      background: rgba(139, 92, 246, 0.15);
-      color: #c084fc;
-    }
-
-    .browser-mode-btn:hover:not(.active) {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .samsung-banner-mockup {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 10px;
-      color: var(--text-muted);
-      line-height: 1.4;
-      display: none;
-    }
-
-    .samsung-banner-mockup .banner-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #f59e0b;
-      margin-bottom: 3px;
-    }
-
-    .samsung-banner-mockup .banner-guide {
-      background: rgba(99, 102, 241, 0.06);
-      border: 1px solid rgba(99, 102, 241, 0.15);
-      border-radius: 6px;
-      padding: 8px;
-      margin-top: 6px;
-      font-size: 9px;
-      color: #c7d2fe;
-      line-height: 1.5;
-    }
-
-    body.samsung-mode .samsung-banner-mockup { display: block; }
-    body.samsung-mode .chrome-only { display: none !important; }
-    body:not(.samsung-mode) .samsung-only { display: none !important; }
-
     .tw-transition-overlay {
       position: absolute;
       inset: 0;
@@ -948,6 +881,162 @@
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
+    }
+
+    /* Mobile Responsive Optimizations for signup-guide.html */
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr !important;
+        gap: 30px !important;
+        padding: 20px 4% !important;
+      }
+      .mockup-container {
+        position: relative !important;
+        top: 0 !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        margin-top: 20px !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 14px 4% !important;
+      }
+      main {
+        padding: 20px 4% !important;
+        gap: 25px !important;
+      }
+      .hero-title {
+        font-size: 26px !important;
+        line-height: 1.25 !important;
+      }
+      .hero-subtitle {
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+      }
+      .step-node {
+        padding: 18px !important;
+        margin-bottom: 14px !important;
+      }
+      .step-title {
+        font-size: 15.5px !important;
+      }
+      .step-desc {
+        font-size: 12.5px !important;
+        line-height: 1.55 !important;
+      }
+      .phone-mockup {
+        width: 320px !important;
+        height: 640px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 12px 4% !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+      }
+      .logo-text {
+        font-size: 16.5px !important;
+        letter-spacing: -0.5px !important;
+      }
+      .header-badge {
+        padding: 3px 8px !important;
+        font-size: 9px !important;
+      }
+      .hero-title {
+        font-size: 22px !important;
+        line-height: 1.3 !important;
+        letter-spacing: -0.5px !important;
+      }
+      .hero-subtitle {
+        font-size: 12px !important;
+        margin-bottom: 15px !important;
+      }
+      .step-timeline {
+        margin-left: 8px !important;
+        padding-left: 14px !important;
+      }
+      .step-node {
+        padding: 14px 12px !important;
+        border-radius: 10px !important;
+        margin-bottom: 12px !important;
+      }
+      .step-node::before {
+        left: -25px !important;
+        top: 18px !important;
+        width: 14px !important;
+        height: 14px !important;
+      }
+      .step-badge {
+        font-size: 9px !important;
+        padding: 3px 7px !important;
+      }
+      .step-title {
+        font-size: 14px !important;
+        gap: 6px !important;
+      }
+      .step-desc {
+        font-size: 11.5px !important;
+        line-height: 1.5 !important;
+        color: #9CA3AF !important;
+      }
+      .step-info-box {
+        padding: 10px !important;
+        font-size: 10.5px !important;
+        line-height: 1.45 !important;
+      }
+      .faq-trigger {
+        padding: 12px !important;
+      }
+      .faq-question {
+        font-size: 11.5px !important;
+        line-height: 1.4 !important;
+      }
+      .faq-answer {
+        padding: 12px !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
+      }
+      /* Scale down physical mockup safely for ultra-small screens */
+      .phone-mockup {
+        width: 295px !important;
+        height: 590px !important;
+        border: 7px solid #27272a !important;
+        border-radius: 32px !important;
+      }
+      .phone-notch {
+        width: 110px !important;
+        height: 16px !important;
+        border-bottom-left-radius: 10px !important;
+        border-bottom-right-radius: 10px !important;
+      }
+      .notch-camera {
+        width: 5px !important;
+        height: 5px !important;
+      }
+      .phone-screen {
+        padding-top: 16px !important;
+      }
+      .status-bar {
+        padding: 0 14px !important;
+        font-size: 9px !important;
+      }
+      /* Adjust internal tutorial tooltips inside the mockup */
+      .tutorial-tooltip {
+        padding: 5px 8px !important;
+        font-size: 9.5px !important;
+        line-height: 1.4 !important;
+      }
+      #tooltip-step1 { top: 200px !important; left: 8px !important; right: 8px !important; }
+      #tooltip-step2 { top: 250px !important; left: 8px !important; right: 8px !important; }
+      #tooltip-step3 { bottom: 70px !important; left: 8px !important; right: 8px !important; }
+      #tooltip-step4 { bottom: 5px !important; left: 15px !important; right: 15px !important; }
     }
   </style>
 </head>
@@ -986,7 +1075,7 @@
             구글 간편 로그인
           </h3>
           <p class="step-desc">
-            AI-S 플랫폼 가입의 첫 단계는 구글 계정 연동입니다. 구글 인증을 통하여 이메일 및 실명 정보를 안전하게 연동 및 검증합니다.
+            AI-S 플랫폼 가입의 첫 단계는 구글 계정 연동입니다. 복잡한 지갑 연결 과정 없이, 구글 인증을 통하여 이메일 및 실명 정보를 안전하게 연동 및 검증합니다.
           </p>
           <div class="step-info-box">
             <i data-lucide="lightbulb" style="width: 14px; height: 14px;"></i>
@@ -1001,8 +1090,7 @@
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  브라우저의 캐시/쿠키 세션 충돌 문제일 수 있습니다. 크롬(Chrome) 브라우저를 사용해 보시거나, 시크릿 모드(InPrivate) 창을 열어 가입을 다시 시도해 주세요.<br><br>
-                  <strong>삼성 인터넷 브라우저</strong>를 사용 중이시라면, 구글 로그인은 삼성 인터넷에서 정상적으로 가능합니다. 로그인 완료 후 <strong>"트러스트 월렛 연결"</strong> 버튼을 누르면 자동으로 Trust Wallet 앱으로 이동되며, 로그인 상태가 유지됩니다.
+                  브라우저의 캐시/쿠키 세션 충돌 문제일 수 있습니다. 크롬(Chrome), 사파리(Safari), 또는 삼성 인터넷 등 모바일의 기본 브라우저를 사용하여 가입을 재시도해 주시거나, 시크릿 모드(InPrivate) 창을 열어 로그인 및 가입을 가동해 주십시오. 모든 모던 모바일 브라우저 환경에서 매끄럽고 완벽하게 호환됩니다.
                 </div>
               </div>
             </div>
@@ -1017,68 +1105,11 @@
                 </div>
               </div>
             </div>
-            <div class="faq-item">
-              <div class="faq-trigger" onclick="toggleFaq(event, this)">
-                <span class="faq-question">💡 Q. 삼성 인터넷(Samsung Internet) 브라우저에서도 가입이 되나요?</span>
-                <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
-              </div>
-              <div class="faq-content">
-                <div class="faq-answer">
-                  네, 가능합니다! 삼성 인터넷 브라우저에서는 아래 순서로 진행해 주세요:<br>
-                  <strong>① 삼성 인터넷에서 구글 로그인</strong>을 먼저 완료합니다. (구글 로그인은 정상 작동합니다)<br>
-                  <strong>② "트러스트 월렛 연결하기" 버튼</strong>을 누르면 자동으로 Trust Wallet 앱의 DApp 브라우저로 이동됩니다.<br>
-                  <strong>③ Trust Wallet 내에서</strong> 지갑 연결 및 나머지 가입 절차가 이어집니다. 로그인 상태는 자동으로 유지됩니다.<br><br>
-                  ※ Trust Wallet 앱이 사전에 설치되어 있어야 합니다. 미설치 시 <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp" target="_blank" style="color: #8b5cf6;">Play Store에서 다운로드</a>해 주세요.
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
         <div class="step-node" id="node-step2" onclick="switchMockupStep(2)">
           <div class="step-badge">Step 02</div>
-          <h3 class="step-title">
-            <i data-lucide="wallet" style="width: 18px; height: 18px;"></i>
-            지갑 주소 로그인
-          </h3>
-          <p class="step-desc">
-            본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet 브라우저 또는 앱을 사용하여 안전하게 주소를 연결합니다.
-          </p>
-          <div class="step-info-box">
-            <i data-lucide="info" style="width: 14px; height: 14px;"></i>
-            <span>지갑 연결 시 서명(Signature)만 발생하며, 비밀키(Private Key)는 절대 요구하지 않으므로 안심하셔도 됩니다.</span>
-          </div>
-
-          <div class="faq-container">
-            <div class="faq-item">
-              <div class="faq-trigger" onclick="toggleFaq(event, this)">
-                <span class="faq-question">💡 Q. 지갑 연결 버튼을 눌러도 반응이 없어요.</span>
-                <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
-              </div>
-              <div class="faq-content">
-                <div class="faq-answer">
-                  모바일 기기에 트러스트 월렛(Trust Wallet) 앱이 정상적으로 설치 및 로그인되어 있는지 확인해 주세요.<br><br>
-                  AI-S 플랫폼은 보안 및 안정성을 위해 <strong>트러스트 월렛(Trust Wallet)을 공식 지갑으로 사용</strong>합니다. 메타마스크 등 다른 지갑은 지원되지 않을 수 있습니다.<br><br>
-                  <strong>삼성 인터넷 브라우저</strong>를 사용 중이시라면, 구글 로그인을 먼저 완료한 후 "트러스트 월렛 연결" 버튼을 누르시면 자동으로 Trust Wallet 앱으로 전환됩니다. 삼성 인터넷에서 직접 지갑 연결이 되지 않는 것은 정상이며, Trust Wallet 앱에서 이어서 진행하시면 됩니다.
-                </div>
-              </div>
-            </div>
-            <div class="faq-item">
-              <div class="faq-trigger" onclick="toggleFaq(event, this)">
-                <span class="faq-question">💡 Q. 폴리곤 메인넷으로 설정해야 하나요?</span>
-                <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
-              </div>
-              <div class="faq-content">
-                <div class="faq-answer">
-                  네, 본 플랫폼은 폴리곤(Polygon) 체인 기반으로 작동합니다. 지갑 상단 네트워크가 '이더리움'이 아닌 'Polygon'으로 지정되어 있는지 꼭 확인하세요.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="step-node" id="node-step3" onclick="switchMockupStep(3)">
-          <div class="step-badge">Step 03</div>
           <h3 class="step-title">
             <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
             투자 의사 및 보안 약관 동의
@@ -1099,21 +1130,21 @@
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  3가지 필수 동의 카드의 체크박스를 모두 터치하여 노란색 깜빡임 강조 테두리가 해제되었는지 확인해 주세요. 모두 체크되어야 하단의 버튼이 활성화됩니다.
+                  3가지 필수 동의 카드의 체크박스를 모두 터치하여 노란색 깜빡임 강조 테두리가 해제 되었는지 확인해 주세요. 모두 체크되어야 하단의 버튼이 활성화됩니다.
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="step-node" id="node-step4" onclick="switchMockupStep(4)">
-          <div class="step-badge">Step 04</div>
+        <div class="step-node" id="node-step3" onclick="switchMockupStep(3)">
+          <div class="step-badge">Step 03</div>
           <h3 class="step-title">
             <i data-lucide="check-square" style="width: 18px; height: 18px;"></i>
             회원정보 입력 및 KYC 서류 제출
           </h3>
           <p class="step-desc">
-            1단계에서 연동한 구글 정보에 덧붙여 전화번호, 국가를 입력하고, 매니저 지갑 검증, 신분증(주민등록증/여권 등) 사진을 첨부합니다. 가입 완료 후 PC에서 사용자 대시보드의 "위임 승인(1회)" 버튼을 통해 SUT 거래 권한을 활성화합니다.
+            전화번호와 가입 국가를 입력하고, 전담 매니저 주소 검증을 마친 후 본인 확인을 위한 신분증 서류(주민등록증, 운전면허증, 여권 등)의 원본 사진을 투명하게 업로드하여 제출합니다.
           </p>
           <div class="step-info-box">
             <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
@@ -1134,30 +1165,30 @@
             </div>
             <div class="faq-item">
               <div class="faq-trigger" onclick="toggleFaq(event, this)">
-                <span class="faq-question">💡 Q. 가입 시 Approve(승인) 절차가 없나요?</span>
+                <span class="faq-question">💡 Q. 개인 정보 유출 우려나 신분증 보안은 어떤가요?</span>
                 <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
               </div>
               <div class="faq-content">
                 <div class="faq-answer">
-                  네, 가입 과정이 간소화되었습니다. 가입 완료 후 PC에서 사용자 대시보드의 <strong>"위임 승인(1회)"</strong> 버튼을 통해 별도로 진행합니다.
+                  업로드된 신분증 이미지는 AES-256 알고리즘으로 강력하게 암호화되어 별도 물리 격리 스토리지에 격리 보관되며, 심사 승인 즉시 또는 24시간 미승인 만료 시 데이터베이스에서 영구 소멸 처리됩니다.
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="step-node" id="node-step5" onclick="switchMockupStep(5)">
-          <div class="step-badge">Step 05</div>
+        <div class="step-node" id="node-step4" onclick="switchMockupStep(4)">
+          <div class="step-badge">Step 04</div>
           <h3 class="step-title">
             <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
             본사 배심단 수동 승인 대기
           </h3>
           <p class="step-desc">
-            가입 신청 및 KYC 서류 제출이 완료되면, 플랫폼 본사 매니저 배심단의 수동 심사 단계로 진입합니다. 심사 및 가입 최종 승인까지 평균 1~2시간이 소요됩니다.
+            제출된 회원 서류와 가상 지갑 정보의 불일치 여부를 본사 배심원단에서 최종 수동 대조 승인합니다. 심사 및 정회원 승인까지는 평균 1~2시간이 소요됩니다.
           </p>
           <div class="step-info-box">
             <i data-lucide="info" style="width: 14px; height: 14px;"></i>
-            <span>※ 가입 신청 후 24시간 이내에 승인이 완료되지 않는다면, 보안을 위해 서버에 보관 중인 신분증 서류는 영구 파기 및 취소 처리됩니다.</span>
+            <span>※ 가입 신청 후 24시간 이내에 최종 승인이 수락되지 않는다면, 보안을 위해 서버에 임시 보관 중인 모든 서류는 전면 무효화 및 자동 반려됩니다.</span>
           </div>
 
           <div class="faq-container">
@@ -1175,23 +1206,54 @@
           </div>
         </div>
 
+        <div class="step-node" id="node-step5" onclick="switchMockupStep(5)">
+          <div class="step-badge">Step 05</div>
+          <h3 class="step-title">
+            <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+            정회원 가입 승인 최종 완료 및 대시보드 로그인
+          </h3>
+          <p class="step-desc">
+            모든 서류 제출과 신청 양식 작성이 완료되면 본사 심사대기 단계로 이첩됩니다. 본사의 신원 대조 검토를 거쳐 가입 처리가 최종 완료되면 등록하신 계정을 통해 투명하게 자산 및 투자 현황 대시보드를 자유롭게 확인하고 투자를 개시할 수 있습니다.
+          </p>
+          <div class="step-info-box">
+            <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
+            <span>정회원 가입 후 나만의 대시보드에서 투명한 AI 투자 시스템의 전체 흐름을 모니터링할 수 있습니다.</span>
+          </div>
+
+          <div class="faq-container">
+            <div class="faq-item">
+              <div class="faq-trigger" onclick="toggleFaq(event, this)">
+                <span class="faq-question">💡 Q. 가입 신청 후 최종 승인 완료까지는 얼마나 걸리나요?</span>
+                <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
+              </div>
+              <div class="faq-content">
+                <div class="faq-answer">
+                  본사의 정밀한 보안 심사를 거치며, 통상 신청 제출 후 본사 배심원단의 검토를 통해 최대 24시간 이내에 순차적으로 심사 및 정회원 승격 처리가 신속하게 완료됩니다.
+                </div>
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-trigger" onclick="toggleFaq(event, this)">
+                <span class="faq-question">💡 Q. 가입 완료 후 대시보드 로그인은 어떻게 하나요?</span>
+                <span class="faq-icon"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></span>
+              </div>
+              <div class="faq-content">
+                <div class="faq-answer">
+                  가입 시 연동해 둔 구글 계정으로 메인 로그인 페이지를 통해 언제든지 즉시 안전하고 손쉽게 접속하실 수 있습니다. 별도의 비밀번호 입력이 필요 없어 분실 염려가 없고 강력한 구글 2단계 보안을 공유합니다.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
     <section class="mockup-container">
       
-      <div style="font-size: 13px; color: var(--accent-color); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+      <div style="font-size: 13px; color: var(--accent-color); font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
         <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-color); display: inline-block;"></span>
-        우측 폰 화면에서 가상으로 폼을 클릭해 보세요
-      </div>
-
-      <div class="browser-mode-toggle">
-        <button class="browser-mode-btn active" id="btn-mode-chrome" onclick="setBrowserMode('chrome')">
-          크롬 · Trust Wallet
-        </button>
-        <button class="browser-mode-btn" id="btn-mode-samsung" onclick="setBrowserMode('samsung')">
-          <span id="toggle-label-unsupported">Safari · 삼성 인터넷</span>
-        </button>
+        아래 폰 화면에서 가상으로 폼을 클릭해 보세요
       </div>
 
       <div class="phone-mockup">
@@ -1217,14 +1279,6 @@
               <div>
                 <h3 style="font-size: 18px; color: white; font-family: 'Outfit';">AI-S INVESTMENT SYSTEM</h3>
                 <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">지갑 주소 기반 시스템 자동 투자 플랫폼</p>
-              </div>
-            </div>
-
-            <div class="samsung-banner-mockup">
-              <div class="banner-title" id="mockup-banner-title">⚠️ 브라우저 지갑 연동 안내</div>
-              <div id="mockup-banner-desc">이 브라우저는 블록체인 지갑 연동을 지원하지 않습니다.</div>
-              <div class="banner-guide">
-                <strong style="color: #a78bfa;">이용 방법:</strong> 이 브라우저에서 Google 로그인을 먼저 완료해 주세요. 이후 "트러스트 월렛 연결" 버튼을 누르면 <strong>자동으로 Trust Wallet 앱으로 이동</strong>되며, 로그인 상태가 유지됩니다.
               </div>
             </div>
 
@@ -1254,102 +1308,15 @@
             </div>
           </div>
 
+          <!-- Step 2: Agreements -->
           <div class="slide-view" id="view-step2">
-            <div style="text-align: center; margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-              <div class="logo-icon" style="width: 50px; height: 50px; font-size: 24px; border-radius: 14px;">S</div>
-              <div>
-                <h3 style="font-size: 18px; color: white; font-family: 'Outfit';">AI-S INVESTMENT SYSTEM</h3>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">지갑 주소 기반 시스템 자동 투자 플랫폼</p>
-              </div>
-            </div>
-
-            <div class="glass-card glow-active" style="display: flex; flex-direction: column; gap: 14px; margin-top: 30px;">
-              <h4 style="font-size: 13px; color: white; font-weight: 700;">Polygon(SUT) 지갑 연결</h4>
-              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">회원가입 및 세션 연동을 위해 Trust Wallet을 연결하십시오.</p>
-              
-              <div class="form-group">
-                <span class="form-label">나의 폴리곤 지갑 주소</span>
-                <input type="text" class="form-input" id="mock-wallet-addr" placeholder="0x..." readonly style="color: var(--text-dark);">
-              </div>
-
-              <button class="btn-primary" style="height: 46px;" onclick="simulateWalletConnection()">
-                <i data-lucide="link" style="width: 16px; height: 16px;"></i>
-                지갑 주소 연결 시뮬레이션
-              </button>
-            </div>
-
-            <div class="step-info-box" style="margin-top: auto; font-size: 11px;">
-              <i data-lucide="shield-check" style="width: 14px; height: 14px; color: var(--success-color);"></i>
-              <span>지갑 연결 시 개인키(Private Key)는 절대 유출되지 않으므로 안심하시기 바랍니다.</span>
-            </div>
-
-            <div class="tutorial-tooltip" id="tooltip-step2">
-              <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
-              <span>지갑 연결 시뮬레이션 버튼을 클릭하세요!</span>
-            </div>
-          </div>
-
-          <div class="slide-view samsung-only" id="view-step2-samsung">
-            <div style="text-align: center; margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-              <div class="logo-icon" style="width: 44px; height: 44px; font-size: 20px; border-radius: 12px;">S</div>
-              <div>
-                <h3 style="font-size: 16px; color: white; font-family: 'Outfit';">AI-S INVESTMENT SYSTEM</h3>
-                <p id="samsung-step2-subtitle" style="font-size: 10px; color: var(--text-muted); margin-top: 3px;">Samsung Internet · 지갑 연동 단계</p>
-              </div>
-            </div>
-
-            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); padding: 10px 14px; border-radius: 10px; font-size: 11px; color: #10b981; display: flex; align-items: center; gap: 6px; margin-top: 20px;">
-              <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-              🌟 Google 계정 연동됨: <span id="samsung-step2-email" style="font-weight: 600;">support@example.com</span>
-            </div>
-
-            <div class="glass-card glow-active" style="display: flex; flex-direction: column; gap: 14px; margin-top: 15px; text-align: center;">
-              <div style="font-size: 12px; color: #a78bfa; font-weight: 600;">📲 2단계: 폴리곤 지갑 연결</div>
-              <p style="font-size: 10px; color: var(--text-muted); line-height: 1.5;">삼성 인터넷에서는 지갑 직접 연결이 불가합니다.<br>Trust Wallet 앱으로 자동 전환하여 연결합니다.</p>
-
-              <button class="btn-primary" style="height: 46px;" onclick="simulateSamsungToTrustWallet()">
-                <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
-                트러스트 월렛 연결하기
-              </button>
-            </div>
-
-            <div style="margin-top: auto; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 8px; padding: 10px; font-size: 9px; color: var(--text-muted); line-height: 1.5;">
-              ⚠️ 버튼을 누르면 Trust Wallet 앱이 열립니다. 앱이 설치되어 있지 않으면 <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp" target="_blank" style="color: #8b5cf6;">Play Store</a>에서 먼저 설치해 주세요.
-            </div>
-
-            <div class="tutorial-tooltip" id="tooltip-step2-samsung" style="top: 280px; left: 30px;">
-              <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
-              <span>Trust Wallet 연결 버튼을 클릭하세요!</span>
-            </div>
-          </div>
-
-          <div class="tw-transition-overlay" id="tw-transition-overlay">
-            <div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 800; box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);">
-              T
-            </div>
-            <div style="font-size: 14px; color: white; font-weight: 600;">Trust Wallet 앱으로 전환 중...</div>
-            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">로그인 상태를 유지하며 이동합니다</div>
-            <div style="width: 30px; height: 30px; border: 3px solid rgba(59, 130, 246, 0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-          </div>
-
-          <div class="slide-view" id="view-step3">
-            <div class="glass-card" style="padding: 12px; margin-top: 10px;">
-              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; color: var(--text-muted)">
-                <span>🔥 1차 500명 선착순 특별 모집</span>
-                <span><strong>412</strong> / 500 명</span>
-              </div>
-              <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden">
-                <div style="width: 82.4%; height: 100%; background: var(--primary-gradient); box-shadow: 0 0 10px rgba(139,92,246,0.6)"></div>
-              </div>
-            </div>
-
-            <div style="text-align: center;">
+            
+            <div style="text-align: center; margin-top: 18px;">
               <h3 style="font-size: 16px; color: white;">Investment Intent & Terms</h3>
               <p style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">안전한 플랫폼 운용을 위해 약관을 자세히 읽고 동의해 주십시오.</p>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
-              
               <div class="glass-card highlight-pulse" id="card-loss" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 8px; align-items: flex-start;">
                   <input type="checkbox" id="chk-loss" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;" onchange="checkAgreements()">
@@ -1385,35 +1352,27 @@
                   자금세탁 방지를 위해 실명 및 공식 신분증(여권/주민등록증)을 제출해야 하며, 플랫폼 매니저 배심단의 수동 심사를 거쳐 최종 가입 승인을 획득함에 동의합니다.
                 </div>
               </div>
-
             </div>
 
-            <button class="btn-primary" id="btn-next-step3" disabled onclick="switchMockupStep(4)" style="margin-top: auto; height: 46px;">
+            <button class="btn-primary" id="btn-next-step2" disabled onclick="switchMockupStep(3)" style="margin-top: auto; height: 46px;">
               <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
               동의 완료 및 회원정보 작성
             </button>
 
-            <div class="tutorial-tooltip" id="tooltip-step3">
+            <div class="tutorial-tooltip" id="tooltip-step2">
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
               <span>약관 3개에 모두 동의 체크하세요!</span>
             </div>
           </div>
 
-          <div class="slide-view" id="view-step4" style="padding: 10px 15px 25px;">
+          <!-- Step 3: KYC Form Details -->
+          <div class="slide-view" id="view-step3" style="padding: 10px 15px 25px;">
             <div style="text-align: center; margin-bottom: 5px;">
               <h3 style="font-size: 15px; color: white; font-weight: 700;">New Member KYC Registration</h3>
-              <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">나머지 인적 사항과 신분증 서류 및 인출 권한을 등록하십시오.</p>
+              <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">나머지 인적 사항과 신분증 서류를 등록하십시오.</p>
             </div>
 
-            <div id="step4-scroll-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
-              
-              <div class="form-group">
-                <span class="form-label">👤 내 폴리곤 지갑 주소</span>
-                <div style="background: rgba(0,0,0,0.4); border: 1px dashed rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 8px; font-size: 10px; color: var(--text-muted); word-break: break-all;">
-                  0x8898127391...81abf9c2d1
-                </div>
-              </div>
-
+            <div id="step3-scroll-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
               <div class="form-group">
                 <span class="form-label">📧 구글 인증 이메일</span>
                 <div id="google-email-badge" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); padding: 8px 12px; border-radius: 8px; font-size: 11px; color: var(--success-color); display: flex; align-items: center; gap: 6px;">
@@ -1460,61 +1419,95 @@
                   <span style="font-size: 8px; color: var(--text-dark); display: block;">(여기 클릭 시 모의 파일 업로드)</span>
                 </div>
               </div>
-
-              <div class="glass-card" style="padding: 12px; border: 1px solid rgba(16, 185, 129, 0.2); display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; gap: 6px; align-items: flex-start;">
-                  <i data-lucide="key" style="width: 16px; height: 16px; color: #10b981; flex-shrink: 0; margin-top: 1px;"></i>
-                  <div>
-                    <h5 style="font-size: 11px; color: white; font-weight: 700;">SUT 위임 승인 안내</h5>
-                    <p style="font-size: 9px; color: var(--text-muted); line-height: 1.3; margin-top: 1px;">
-                      가입 완료 후 PC에서 사용자 페이지에 접속하여 <strong style="color: #8b5cf6;">"위임 승인(1회)"</strong> 버튼을 눌러주세요.
-                    </p>
-                    <p style="font-size: 8px; color: var(--success-color); line-height: 1.3; margin-top: 4px; font-weight: 500;">
-                      승인 완료 후 SUT 입금/출금이 활성화됩니다.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            <div class="scroll-indicator-tooltip" id="step4-scroll-indicator" onclick="scrollMockupToApprove()" style="display: none;">
-              <span>아래에 스크롤할 내용이 있어요</span>
-              <i data-lucide="chevrons-down" style="width: 14px; height: 14px;"></i>
-            </div>
-
-            <button class="btn-primary" id="btn-submit-form" disabled onclick="switchMockupStep(5)" style="margin-top: 10px; height: 46px;">
+            <button class="btn-primary" id="btn-submit-form" disabled onclick="switchMockupStep(4)" style="margin-top: auto; height: 46px;">
               회원 가입 및 KYC 서류 제출
             </button>
 
-            <div class="tutorial-tooltip" id="tooltip-step4">
+            <div class="tutorial-tooltip" id="tooltip-step3">
               <i data-lucide="hand" style="width: 14px; height: 14px;"></i>
-              <span>전화번호 기입, 매니저 검증, 신분증 클릭을 모두 거치세요!</span>
+              <span>전화번호 기입, 매니저 검증, 신분증 클릭을 모두 완료하세요!</span>
             </div>
           </div>
 
-          <div class="slide-view" id="view-step5" style="justify-content: center; align-items: center; text-align: center; gap: 20px;">
-            <div style="display: inline-flex; padding: 20px; border-radius: 50%; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); animation: pulse-glow 2s infinite;">
+          <!-- Step 4: Headquarters Review Loading -->
+          <div class="slide-view" id="view-step4" style="justify-content: center; align-items: center; text-align: center; gap: 15px;">
+            <div id="review-loading-spinner" style="display: inline-flex; padding: 20px; border-radius: 50%; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); animation: pulse-glow 2s infinite;">
               <i data-lucide="loader" style="width: 44px; height: 44px; color: var(--accent-color); animation: spin 4s linear infinite;"></i>
             </div>
+            <div id="review-success-badge" style="display: none; padding: 20px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);">
+              <i data-lucide="check-circle" style="width: 44px; height: 44px; color: var(--success-color);"></i>
+            </div>
             
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <h3 style="font-size: 18px; color: white;">고객확인(KYC) 심사 대기 중</h3>
-              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.6; max-width: 280px; margin: 0 auto;">
-                회원가입 및 KYC 서류가 정상적으로 접수되었습니다.<br>
-                현재 본사 심사위원 배심단의 서류 확인 및 지갑 검증이 진행 중입니다. (평균 1~2시간 소요)
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <h3 style="font-size: 17px; color: white;" id="review-status-title">고객확인(KYC) 심사 대기 중</h3>
+              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 285px; margin: 0 auto;" id="review-status-desc">
+                회원가입 양식 및 서류가 무사히 접수되었습니다.<br>
+                현재 본사 수동 배심단에서 신원 및 지갑 정보를 고도 대조하고 있습니다.
               </p>
             </div>
 
-            <div class="glass-card" style="width: 100%; padding: 12px; font-size: 10px; color: var(--text-muted); text-align: left; line-height: 1.5; border-color: rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.02);">
+            <div class="glass-card" id="review-status-warning" style="width: 100%; padding: 12px; font-size: 10px; color: var(--text-muted); text-align: left; line-height: 1.5; border-color: rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.02);">
               <span style="color: var(--danger-color); font-weight: 700; display: block; margin-bottom: 2px;">⚠️ 심사 기한 만료 경고</span>
-              신청 접수 후 24시간 이내에 최종 승인이 완료되지 않을 경우, 개인 정보 보호를 위해 신분증 첨부 이미지 데이터는 서버에서 자동 영구 삭제되며 가입 신청은 전면 취소됩니다.
+              제출 후 24시간 내에 본사 승인이 이루어지지 않으면, 개인 신원 정보 보안을 위해 접수 서류가 완전 영구 파기되고 자동 취소 처리됩니다.
             </div>
 
-            <button class="btn-secondary" style="height: 40px; font-size: 11px; border-color: rgba(139,92,246,0.3); color: #c084fc; width: 80%;" onclick="resetTutorial()">
-              <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
-              튜토리얼 다시 처음부터 진행하기
+            <!-- Simulation CTA for Tutorial flow -->
+            <button class="btn-primary" id="btn-mock-approve-action" style="height: 44px; margin-top: 5px; width: 100%;" onclick="simulateHQApprove()">
+              <i data-lucide="check-square" style="width: 15px; height: 15px;"></i>
+              (모의 테스트) 즉시 배심원단 승인 처리하기
             </button>
+
+            <button class="btn-primary" id="btn-login-dashboard" style="height: 44px; margin-top: 5px; width: 100%; display: none; background: var(--success-gradient);" onclick="switchMockupStep(5)">
+              <i data-lucide="log-in" style="width: 15px; height: 15px;"></i>
+              정회원 대시보드로 이동하기
+            </button>
+          </div>
+
+          <!-- Step 5: Registration Completed Welcome View -->
+          <div class="slide-view" id="view-step5" style="padding: 20px 15px; flex-direction: column; gap: 15px; justify-content: center; align-items: center; text-align: center;">
+            <div style="padding: 18px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); border: 2px solid rgba(16, 185, 129, 0.3); margin-top: 10px; animation: pulse-glow 2s infinite;">
+              <i data-lucide="party-popper" style="width: 48px; height: 44px; color: var(--success-color);"></i>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <h3 style="font-size: 18px; color: white; font-weight: 800;">정회원 가입이 완료되었습니다!</h3>
+              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 270px; margin: 0 auto;">
+                축하합니다! AI-S 플랫폼 본사의 KYC 대조 심사를 거쳐 공식 ACTIVE 정회원 자격을 획득하셨습니다.
+              </p>
+            </div>
+
+            <div class="glass-card" style="width: 100%; padding: 12px; display: flex; flex-direction: column; gap: 8px; text-align: left; background: rgba(255,255,255,0.02);">
+              <span style="font-size: 10px; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px; display: block;">🔑 승인된 정회원 계정 프로필</span>
+              <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                <span style="color: var(--text-muted);">회원 실명:</span>
+                <span style="color: white; font-weight: 600;">홍길동</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                <span style="color: var(--text-muted);">연동 구글 이메일:</span>
+                <span style="color: white; font-weight: 600;">support@example.com</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                <span style="color: var(--text-muted);">정회원 가격 상태:</span>
+                <span style="color: var(--success-color); font-weight: 700;">ACTIVE (승인완료)</span>
+              </div>
+            </div>
+
+            <div style="font-size: 10.5px; color: var(--text-dark); line-height: 1.45; text-align: left; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 8px;">
+              ℹ️ <strong>다음 필수 행동 안내:</strong><br>
+              가입 승인이 최종 완료되었으므로 이제 메인 페이지에서 등록하신 구글 계정으로 로그인하여 나만의 자산 대시보드 및 투자 현황을 실시간으로 확인하실 수 있습니다.
+            </div>
+
+            <a href="/login" class="btn-primary" style="height: 46px; border-radius: 10px; text-decoration: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; background: var(--success-gradient); margin-top: auto;">
+              <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
+              실제 AI-S 로그인하러 가기
+            </a>
+
+            <div class="tutorial-tooltip" id="tooltip-step5">
+              <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+              <span>축하합니다! 신규 회원가입 튜토리얼이 모두 성공적으로 끝났습니다.</span>
+            </div>
           </div>
 
         </div>
@@ -1541,218 +1534,26 @@
                   <span class="google-account-name">홍길동</span>
                   <span class="google-account-email">support@example.com</span>
                 </div>
-              </div>
-              <div class="google-account-item" onclick="simulateGoogleSelect('Rejard', 'rejard@alonics.com')">
-                <div class="google-avatar" style="background: #06b6d4;">R</div>
-                <div class="google-account-info">
-                  <span class="google-account-name">Rejard</span>
-                  <span class="google-account-email">rejard@alonics.com</span>
-                </div>
-              </div>
-            </div>
-            
-            <div style="font-size: 10px; color: #5f6368; text-align: center; margin-top: 10px; line-height: 1.4;">
-              계속 진행하면 Google이 귀하의 이름, 이메일 주소, 프로필 사진을 AI-S PLATFORM과 공유하는 데 동의하게 됩니다.
-            </div>
-          </div>
-        </div>
-
-        <div class="wallet-popup-overlay" id="wallet-connect-overlay" onclick="closeConnectPopup()">
-          <div class="wallet-popup" id="wallet-connect-popup" onclick="event.stopPropagation()">
-            <div class="wallet-header">
-              <div class="wallet-logo">
-                <div class="wallet-logo-icon">T</div>
-                <span>Trust Wallet</span>
-              </div>
-              <span style="font-size: 11px; color: var(--text-dark);">Polygon Mainnet</span>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
-              <h4 style="font-size: 14px; color: white;">공식 지갑 연결 요청</h4>
-              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
-                플랫폼(ais.alonics.com)에 로그인하기 위해 <strong>지갑 주소 확인 및 서명 요청</strong>을 승인하시겠습니까?
-              </p>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; line-height: 1.4; color: var(--text-muted);">
-              <div>• 요청 권한: 공개 지갑 주소 보기</div>
-              <div>• 네트워크 요금: 없음 (Gas Fee 없음)</div>
-            </div>
-
-            <div style="display: flex; gap: 12px; margin-top: 5px;">
-              <button class="btn-secondary" style="flex: 1;" onclick="closeConnectPopup()">거절</button>
-              <button class="btn-primary" style="flex: 1.5; background: #3b82f6; border-color: #2563eb;" onclick="simulateWalletConnectApprove()">연결 (Connect)</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="wallet-popup-overlay" id="wallet-overlay" onclick="closeWalletPopup()">
-          <div class="wallet-popup" id="wallet-popup" onclick="event.stopPropagation()">
-            <div class="wallet-header">
-              <div class="wallet-logo">
-                <div class="wallet-logo-icon">T</div>
-                <span>Trust Wallet</span>
-              </div>
-              <span style="font-size: 11px; color: var(--text-dark);">Polygon Mainnet</span>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
-              <h4 style="font-size: 14px; color: white;">스마트 컨트랙트 인출 권한(Approve) 요청</h4>
-              <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
-                플랫폼의 AI 자동 매매 정산을 위해 지갑 내 <strong>SUT 자산 거래 승인 한도 위임</strong> 서명을 요청합니다.
-              </p>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">승인 허용 수량 (Limit)</span>
-                <span style="color: #fbbf24; font-weight: 700;">1,000,000 SUT</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">요청 계약 주소</span>
-                <span style="font-family: monospace; color: white;">0x7c3a...ed4f</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">네트워크 수수료 (Gas)</span>
-                <span style="color: var(--success-color);">~0.002 POL ($0.001)</span>
-              </div>
-            </div>
-
-            <div style="font-size: 10px; color: #fbbf24; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 10px; border-radius: 10px; line-height: 1.45;">
-              ⚠️ <strong>오해 방지 안내:</strong> 지갑에 표시되는 1,000,000 SUT 승인 한도는 거래 수량의 최대 한계치를 의미하며, <strong>실제 지갑에서 코인이 출금되거나 거래되는 것이 아닙니다.</strong> 단순 자동매매 권한 위임이므로 안심하셔도 됩니다.
-            </div>
-
-            <div style="display: flex; gap: 12px; margin-top: 5px;">
-              <button class="btn-secondary" style="flex: 1;" onclick="closeWalletPopup()">거부</button>
-              <button class="btn-primary" style="flex: 1.5; background: #3b82f6; border-color: #2563eb;" onclick="simulateWalletApprove()">승인 (Approve)</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-  <footer>
-    <div class="footer-links">
-      <a href="/guide.html" class="footer-btn">
-        <i data-lucide="help-circle" style="width: 13px; height: 13px;"></i>
-        자주 묻는 질문 (FAQ)
-      </a>
-      <a href="/login" class="footer-btn">
-        <i data-lucide="external-link" style="width: 13px; height: 13px;"></i>
-        실제 AI-S 로그인 페이지
-      </a>
-      <a href="https://ais.alonics.com" class="footer-btn">
-        <i data-lucide="globe" style="width: 13px; height: 13px;"></i>
-        AI-S 바로가기
-      </a>
-    </div>
-    <p>© 2026 AI-S PLATFORM. All rights reserved. This document is a mockup tutorial guide for users.</p>
-  </footer>
-
-  <script>
+<script>
     lucide.createIcons();
 
     document.addEventListener('DOMContentLoaded', () => {
-      const container = document.getElementById('step4-scroll-container');
+      const container = document.getElementById('step3-scroll-container');
       if (container) {
-        container.addEventListener('scroll', handleStep4Scroll);
-      }
-
-      const ua = navigator.userAgent || '';
-      const isSamsungBrowser = /SamsungBrowser/i.test(ua);
-      const isIOSSafari = /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS|DuckDuckGo/i.test(ua) && !/(Chrome|Chromium)/i.test(ua);
-      if (isSamsungBrowser) {
-        setBrowserMode('samsung', '삼성 인터넷');
-      } else if (isIOSSafari) {
-        setBrowserMode('samsung', 'Safari');
+        container.addEventListener('scroll', handleStep3Scroll);
       }
     });
 
     let googleAuthCompleted = false;
-    let userWalletConnected = false;
     let agreementsChecked = false;
     let phoneInputFilled = false;
     let managerVerified = false;
     let idCardUploaded = false;
+    let hqApproved = false;
     let walletApproved = false;
 
     let selectedName = "홍길동";
     let selectedEmail = "support@example.com";
-
-    let browserMode = 'chrome';
-    let unsupportedBrowserName = '';
-
-    function detectBrowserName() {
-      const ua = navigator.userAgent || '';
-      if (/SamsungBrowser/i.test(ua)) return '삼성 인터넷';
-      if (/iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS|DuckDuckGo/i.test(ua) && !/(Chrome|Chromium)/i.test(ua)) return 'Safari';
-      return 'Safari · 삼성 인터넷';
-    }
-
-    function setBrowserMode(mode, browserName) {
-      browserMode = mode;
-
-      if (mode === 'samsung') {
-        unsupportedBrowserName = browserName || detectBrowserName();
-      }
-
-      document.getElementById('btn-mode-chrome').classList.toggle('active', mode === 'chrome');
-      document.getElementById('btn-mode-samsung').classList.toggle('active', mode === 'samsung');
-      document.body.classList.toggle('samsung-mode', mode === 'samsung');
-
-      const toggleLabel = document.getElementById('toggle-label-unsupported');
-      if (toggleLabel && unsupportedBrowserName && unsupportedBrowserName !== 'Safari · 삼성 인터넷') {
-        toggleLabel.textContent = unsupportedBrowserName;
-      }
-
-      if (mode === 'samsung') {
-        const name = unsupportedBrowserName || '이';
-        const bannerTitle = document.getElementById('mockup-banner-title');
-        const bannerDesc = document.getElementById('mockup-banner-desc');
-        const step2Sub = document.getElementById('samsung-step2-subtitle');
-        if (bannerTitle) bannerTitle.textContent = '⚠️ ' + name + ' 브라우저 지갑 연동 안내';
-        if (bannerDesc) bannerDesc.textContent = name + ' 브라우저는 블록체인 지갑 연동을 지원하지 않습니다.';
-        if (step2Sub) step2Sub.textContent = name + ' · 지갑 연동 단계';
-      }
-
-      updateTimelineDescriptions();
-      resetTutorial();
-    }
-
-    function updateTimelineDescriptions() {
-      const step1Desc = document.querySelector('#node-step1 .step-desc');
-      const step2Title = document.querySelector('#node-step2 .step-title');
-      const step2Desc = document.querySelector('#node-step2 .step-desc');
-      const name = unsupportedBrowserName || '이';
-
-      if (browserMode === 'samsung') {
-        if (step1Desc) step1Desc.innerHTML = name + ' 브라우저에서 구글 계정으로 로그인합니다. ' + name + '에서도 구글 OAuth 로그인은 정상 작동하므로, 이 단계는 동일합니다.';
-        if (step2Title) step2Title.innerHTML = '<i data-lucide="smartphone" style="width: 18px; height: 18px;"></i>Trust Wallet 앱으로 전환';
-        if (step2Desc) step2Desc.innerHTML = name + '은(는) 블록체인 지갑을 지원하지 않으므로, Google 로그인 완료 후 <strong>"트러스트 월렛 연결하기"</strong> 버튼을 눌러 Trust Wallet 앱으로 자동 전환합니다. 로그인 상태는 자동으로 유지됩니다.';
-      } else {
-        if (step1Desc) step1Desc.innerHTML = 'AI-S 플랫폼 가입의 첫 단계는 구글 계정 연동입니다. 구글 인증을 통하여 이메일 및 실명 정보를 안전하게 연동 및 검증합니다.';
-        if (step2Title) step2Title.innerHTML = '<i data-lucide="wallet" style="width: 18px; height: 18px;"></i>지갑 주소 로그인';
-        if (step2Desc) step2Desc.innerHTML = '본인 소유의 폴리곤(Polygon) SUT 지갑 주소를 플랫폼과 연동합니다. Trust Wallet 브라우저를 사용하여 안전하게 주소를 연결합니다.';
-      }
-      lucide.createIcons();
-    }
-
-    function simulateSamsungToTrustWallet() {
-      const overlay = document.getElementById('tw-transition-overlay');
-      overlay.style.display = 'flex';
-
-      if (tooltip) tooltip.style.display = 'none';
-
-      setTimeout(() => {
-        overlay.style.display = 'none';
-        userWalletConnected = true;
-        switchMockupStep(3);
-      }, 1500);
-    }
 
     function switchMockupStep(stepNum) {
       document.querySelectorAll('.step-node').forEach(node => {
@@ -1765,76 +1566,25 @@
         view.classList.remove('active');
       });
 
-      if (browserMode === 'samsung' && stepNum === 2) {
-        const samsungView = document.getElementById('view-step2-samsung');
-        if (samsungView) samsungView.classList.add('active');
-        const emailEl = document.getElementById('samsung-step2-email');
-        if (emailEl) emailEl.textContent = selectedEmail;
-      } else {
-        const targetView = document.getElementById(`view-step${stepNum}`);
-        if (targetView) targetView.classList.add('active');
-      }
+      const targetView = document.getElementById(`view-step${stepNum}`);
+      if (targetView) targetView.classList.add('active');
 
       document.querySelectorAll('.tutorial-tooltip').forEach(tooltip => {
         tooltip.style.display = 'none';
       });
 
-      if (browserMode === 'samsung' && stepNum === 2) {
-        const sTooltip = document.getElementById('tooltip-step2-samsung');
-        if (sTooltip) sTooltip.style.display = 'flex';
-      } else {
-        const activeTooltip = document.getElementById(`tooltip-step${stepNum}`);
-        if (activeTooltip) activeTooltip.style.display = 'flex';
-      }
+      const activeTooltip = document.getElementById(`tooltip-step${stepNum}`);
+      if (activeTooltip) activeTooltip.style.display = 'flex';
       
       const screen = document.querySelector('.phone-screen');
       if (screen) screen.scrollTop = 0;
 
-      const step4Container = document.getElementById('step4-scroll-container');
-      if (step4Container) step4Container.scrollTop = 0;
-      handleStep4Scroll();
+      const step3Container = document.getElementById('step3-scroll-container');
+      if (step3Container) step3Container.scrollTop = 0;
+      handleStep3Scroll();
     }
 
-    function handleStep4Scroll() {
-      const container = document.getElementById('step4-scroll-container');
-      const targetCard = document.getElementById('card-sut');
-      const indicator = document.getElementById('step4-scroll-indicator');
-
-      if (!container || !targetCard || !indicator) return;
-
-      const isStep4Active = document.getElementById('view-step4').classList.contains('active');
-      if (!isStep4Active) {
-        indicator.style.display = 'none';
-        return;
-      }
-
-      const containerRect = container.getBoundingClientRect();
-      const cardRect = targetCard.getBoundingClientRect();
-
-      const isVisible = (cardRect.top < containerRect.bottom - 40);
-
-      if (isVisible) {
-        indicator.style.opacity = '0';
-        setTimeout(() => {
-          if (indicator.style.opacity === '0') {
-            indicator.style.display = 'none';
-          }
-        }, 300);
-      } else {
-        indicator.style.display = 'flex';
-        indicator.offsetHeight; 
-        indicator.style.opacity = '1';
-      }
-    }
-
-    function scrollMockupToApprove() {
-      const container = document.getElementById('step4-scroll-container');
-      if (container) {
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: 'smooth'
-        });
-      }
+    function handleStep3Scroll() {
     }
 
     function openGooglePopup() {
@@ -1857,7 +1607,6 @@
 
     function simulateGoogleSelect(name, email) {
       closeGooglePopup();
-      
       selectedName = name;
       selectedEmail = email;
       googleAuthCompleted = true;
@@ -1866,64 +1615,12 @@
       document.getElementById('mock-name').value = name;
 
       const tooltip = document.getElementById('tooltip-step1');
-
-      if (browserMode === 'samsung') {
-        if (tooltip) {
-          tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! Trust Wallet 연결 단계로 이동합니다.</span>';
-          lucide.createIcons();
-        }
-        setTimeout(() => {
-          switchMockupStep(2);
-        }, 800);
-      } else {
-        if (tooltip) {
-          tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! 지갑 연결 단계로 이동합니다.</span>';
-          lucide.createIcons();
-        }
-        setTimeout(() => {
-          switchMockupStep(2);
-        }, 800);
-      }
-    }
-
-    function simulateWalletConnection() {
-      openConnectPopup();
-    }
-
-    function openConnectPopup() {
-      const overlay = document.getElementById('wallet-connect-overlay');
-      const popup = document.getElementById('wallet-connect-popup');
-      overlay.style.display = 'flex';
-      setTimeout(() => {
-        popup.classList.add('open');
-      }, 50);
-    }
-
-    function closeConnectPopup() {
-      const overlay = document.getElementById('wallet-connect-overlay');
-      const popup = document.getElementById('wallet-connect-popup');
-      popup.classList.remove('open');
-      setTimeout(() => {
-        overlay.style.display = 'none';
-      }, 300);
-    }
-
-    function simulateWalletConnectApprove() {
-      closeConnectPopup();
-
-      const input = document.getElementById('mock-wallet-addr');
-      input.value = "0x88981273918a28cc1d7b819f9c2d1b744dfec09f";
-      input.style.color = "#E5E7EB";
-      userWalletConnected = true;
-
-      const tooltip = document.getElementById('tooltip-step2');
       if (tooltip) {
-        tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>지갑 주소 연동 완료! 약관 동의 단계로 이동합니다.</span>';
+        tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>구글 연동 성공! 약관 동의 단계로 이동합니다.</span>';
         lucide.createIcons();
       }
-
       setTimeout(() => {
-        switchMockupStep(3);
+        switchMockupStep(2);
       }, 800);
     }
 
@@ -1941,12 +1638,11 @@
       if (chkKyc) document.getElementById('card-kyc').classList.remove('highlight-pulse');
       else document.getElementById('card-kyc').classList.add('highlight-pulse');
 
-      const btnNext = document.getElementById('btn-next-step3');
+      const btnNext = document.getElementById('btn-next-step2');
       if (chkLoss && chkAuth && chkKyc) {
         btnNext.removeAttribute('disabled');
         agreementsChecked = true;
-        
-        const tooltip = document.getElementById('tooltip-step3');
+        const tooltip = document.getElementById('tooltip-step2');
         if (tooltip) {
           tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>동의 완료! 버튼을 클릭해 진행하세요.</span>';
           lucide.createIcons();
@@ -1968,8 +1664,7 @@
       if (phoneInputFilled && managerVerified && idCardUploaded) {
         btnSubmit.removeAttribute('disabled');
         btnSubmit.style.opacity = "1";
-        
-        const tooltip = document.getElementById('tooltip-step4');
+        const tooltip = document.getElementById('tooltip-step3');
         if (tooltip) {
           tooltip.innerHTML = '<i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i><span>준비 완료! 가입 신청 버튼을 클릭하세요!</span>';
           lucide.createIcons();
@@ -1987,17 +1682,14 @@
 
       managerVerified = true;
       document.getElementById('group-manager').classList.remove('highlight-pulse');
-      
       btnVerify.style.background = "rgba(16, 185, 129, 0.1)";
       btnVerify.style.borderColor = "var(--success-color)";
       btnVerify.style.color = "var(--success-color)";
       btnVerify.innerText = "완료";
       btnVerify.setAttribute('disabled', 'true');
       inputManager.setAttribute('readonly', 'true');
-
       statusSpan.style.color = "var(--success-color)";
       statusSpan.innerHTML = '✓ 마스터 매니저 확인완료';
-      
       checkRegisterForm();
     }
 
@@ -2008,14 +1700,49 @@
 
       idCardUploaded = true;
       uploader.classList.remove('highlight-pulse');
-      
       text.innerText = "✓ kyc-id-verification-card.jpg 첨부완료";
       text.style.color = "var(--success-color)";
       icon.style.color = "var(--success-color)";
       uploader.style.borderColor = "var(--success-color)";
       uploader.style.background = "rgba(16, 185, 129, 0.05)";
-
       checkRegisterForm();
+    }
+
+    function simulateHQApprove() {
+      const spinner = document.getElementById('review-loading-spinner');
+      const successBadge = document.getElementById('review-success-badge');
+      const title = document.getElementById('review-status-title');
+      const desc = document.getElementById('review-status-desc');
+      const warning = document.getElementById('review-status-warning');
+      const approveBtn = document.getElementById('btn-mock-approve-action');
+      const dashboardBtn = document.getElementById('btn-login-dashboard');
+
+      spinner.style.display = 'none';
+      successBadge.style.display = 'inline-flex';
+      title.innerText = 'KYC 서류 승인 성공!';
+      title.style.color = 'var(--success-color)';
+      desc.innerHTML = '플랫폼 본사 매니저 배심원단의 수동 대조 심사가 승인 처리되었습니다!<br>지금 정회원 대시보드로 즉시 이동할 수 있습니다.';
+      if (warning) warning.style.display = 'none';
+      approveBtn.style.display = 'none';
+      dashboardBtn.style.display = 'block';
+
+      hqApproved = true;
+
+      const tooltip = document.getElementById('tooltip-step4');
+      if (tooltip) {
+        tooltip.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i><span>승인 완료되었습니다! 대시보드로 이동하세요.</span>';
+        lucide.createIcons();
+      }
+    }
+
+    function triggerMockupTWDelegation() {
+      const overlay = document.getElementById('tw-transition-overlay');
+      if (overlay) overlay.style.display = 'flex';
+
+      setTimeout(() => {
+        if (overlay) overlay.style.display = 'none';
+        openWalletPopup();
+      }, 1500);
     }
 
     function openWalletPopup() {
@@ -2059,69 +1786,69 @@
       closeGooglePopup();
 
       googleAuthCompleted = false;
-      userWalletConnected = false;
       agreementsChecked = false;
       phoneInputFilled = false;
       managerVerified = false;
       idCardUploaded = false;
-      walletApproved = false;
 
       selectedName = "홍길동";
       selectedEmail = "support@example.com";
 
-      const tooltip1 = document.getElementById('tooltip-step1');
-      if (tooltip1) {
-        tooltip1.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>구글 로그인 버튼을 클릭하세요!</span>';
-      }
-      const tooltip2 = document.getElementById('tooltip-step2');
-      if (tooltip2) {
-        tooltip2.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>지갑 연결 시뮬레이션 버튼을 클릭하세요!</span>';
-      }
-
       const twOverlay = document.getElementById('tw-transition-overlay');
       if (twOverlay) twOverlay.style.display = 'none';
-      const tooltipS2 = document.getElementById('tooltip-step2-samsung');
-      if (tooltipS2) {
-        tooltipS2.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>Trust Wallet 연결 버튼을 클릭하세요!</span>';
-      }
 
-      document.getElementById('mock-wallet-addr').value = "";
-      document.getElementById('mock-wallet-addr').style.color = "var(--text-dark)";
-      
-      document.getElementById('chk-loss').checked = false;
-      document.getElementById('chk-auth').checked = false;
-      document.getElementById('chk-kyc').checked = false;
-      document.getElementById('card-loss').classList.add('highlight-pulse');
-      document.getElementById('card-auth').classList.add('highlight-pulse');
-      document.getElementById('card-kyc').classList.add('highlight-pulse');
-      document.getElementById('btn-next-step3').setAttribute('disabled', 'true');
+      const chkLoss = document.getElementById('chk-loss');
+      const chkAuth = document.getElementById('chk-auth');
+      const chkKyc = document.getElementById('chk-kyc');
+      if (chkLoss) chkLoss.checked = false;
+      if (chkAuth) chkAuth.checked = false;
+      if (chkKyc) chkKyc.checked = false;
 
-      const tooltip3 = document.getElementById('tooltip-step3');
-      if (tooltip3) {
-        tooltip3.innerHTML = '<i data-lucide="hand" style="width: 14px; height: 14px;"></i><span>약관 3개에 모두 동의 체크하세요!</span>';
-      }
+      const cardLoss = document.getElementById('card-loss');
+      const cardAuth = document.getElementById('card-auth');
+      const cardKyc = document.getElementById('card-kyc');
+      if (cardLoss) cardLoss.classList.add('highlight-pulse');
+      if (cardAuth) cardAuth.classList.add('highlight-pulse');
+      if (cardKyc) cardKyc.classList.add('highlight-pulse');
 
-      document.getElementById('mock-email').innerText = "support@example.com";
-      document.getElementById('mock-name').value = "홍길동";
+      const btnNextStep2 = document.getElementById('btn-next-step2');
+      if (btnNextStep2) btnNextStep2.setAttribute('disabled', 'true');
 
-      document.getElementById('input-phone').value = "";
-      document.getElementById('group-phone').classList.add('highlight-pulse');
+      const mockEmail = document.getElementById('mock-email');
+      if (mockEmail) mockEmail.innerText = "support@example.com";
+
+      const mockName = document.getElementById('mock-name');
+      if (mockName) mockName.value = "홍길동";
+
+      const inputPhone = document.getElementById('input-phone');
+      if (inputPhone) inputPhone.value = "";
+
+      const groupPhone = document.getElementById('group-phone');
+      if (groupPhone) groupPhone.classList.add('highlight-pulse');
       
       const btnVerify = document.getElementById('btn-manager-verify');
-      btnVerify.style.background = "var(--primary-gradient)";
-      btnVerify.style.borderColor = "rgba(139, 92, 246, 0.4)";
-      btnVerify.style.color = "white";
-      btnVerify.innerText = "검증";
-      btnVerify.removeAttribute('disabled');
+      if (btnVerify) {
+        btnVerify.style.background = "var(--primary-gradient)";
+        btnVerify.style.borderColor = "rgba(139, 92, 246, 0.4)";
+        btnVerify.style.color = "white";
+        btnVerify.innerText = "검증";
+        btnVerify.removeAttribute('disabled');
+      }
 
       const inputManager = document.getElementById('input-manager');
-      inputManager.removeAttribute('readonly');
-      inputManager.value = "0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987";
-      document.getElementById('group-manager').classList.add('highlight-pulse');
+      if (inputManager) {
+        inputManager.removeAttribute('readonly');
+        inputManager.value = "0x7660Bf401Af0D13645F0cfED3e72b8E8B6Fd7987";
+      }
+
+      const groupManager = document.getElementById('group-manager');
+      if (groupManager) groupManager.classList.add('highlight-pulse');
 
       const statusSpan = document.getElementById('manager-status');
-      statusSpan.style.color = "var(--text-dark)";
-      statusSpan.innerHTML = '* 초대 매니저의 지갑 주소 검증을 완료해야 진행 가능합니다.';
+      if (statusSpan) {
+        statusSpan.style.color = "var(--text-dark)";
+        statusSpan.innerHTML = '* 초대 매니저의 지갑 주소 검증을 완료해야 진행 가능합니다.';
+      }
 
       const uploader = document.getElementById('idcard-uploader');
       uploader.classList.add('highlight-pulse');

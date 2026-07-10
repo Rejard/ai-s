@@ -334,7 +334,7 @@ const actionAxios = {
 await approveManagerUser({
   apiBase: 'https://api.test',
   managerEmail: 'boss@example.com',
-  walletAddress: '0xuser',
+  email: 'user@example.com',
   axiosClient: actionAxios,
   getStorageItem: () => '',
 });
@@ -342,7 +342,7 @@ await approveManagerUser({
 await rejectManagerUser({
   apiBase: 'https://api.test',
   managerEmail: 'boss@example.com',
-  walletAddress: '0xuser2',
+  email: 'user2@example.com',
   axiosClient: actionAxios,
   getStorageItem: () => '',
 });
@@ -357,8 +357,8 @@ await approveManagerWithdrawal({
 });
 
 assert.deepEqual(actionPosts.map((call) => [call.url, call.body]), [
-  ['https://api.test/manager/approve-user', { walletAddress: '0xuser' }],
-  ['https://api.test/manager/reject-user', { walletAddress: '0xuser2' }],
+  ['https://api.test/manager/approve-user', { email: 'user@example.com' }],
+  ['https://api.test/manager/reject-user', { email: 'user2@example.com' }],
   ['https://api.test/manager/withdrawals/7/approve', { actualPayoutAmount: 3.25 }],
 ]);
 assert.equal(actionPosts[2].config.headers['x-manager-email'], 'boss@example.com');

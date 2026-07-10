@@ -337,6 +337,128 @@
       box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
       transform: translateY(-2px);
     }
+
+    /* Mobile-First Responsive optimization rules */
+    @media (max-width: 768px) {
+      header {
+        padding: 16px 4%;
+      }
+      .logo-text {
+        font-size: 18px;
+      }
+      .logo-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+        border-radius: 8px;
+      }
+      .btn-back {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+      main {
+        padding: 30px 4%;
+        gap: 24px;
+      }
+      .hero-title {
+        font-size: 22px;
+      }
+      .hero-desc {
+        font-size: 12px;
+      }
+      .category-tabs {
+        justify-content: flex-start;
+        padding-bottom: 12px;
+        gap: 6px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+      .faq-trigger {
+        padding: 14px 16px;
+      }
+      .faq-question {
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .faq-answer {
+        padding: 14px 16px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      footer {
+        padding: 20px;
+        margin-top: 40px;
+      }
+      .footer-links {
+        gap: 8px;
+      }
+      .footer-btn {
+        padding: 6px 12px;
+        font-size: 10.5px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 12px 4% !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+      }
+      .logo-text {
+        font-size: 16px !important;
+      }
+      .logo-icon {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important;
+      }
+      .btn-back {
+        padding: 5px 10px !important;
+        font-size: 10.5px !important;
+      }
+      main {
+        padding: 20px 4% !important;
+        gap: 18px !important;
+      }
+      .hero-title {
+        font-size: 20px !important;
+        letter-spacing: -0.5px !important;
+        line-height: 1.35 !important;
+      }
+      .hero-desc {
+        font-size: 11.5px !important;
+        line-height: 1.5 !important;
+      }
+      .category-tabs {
+        gap: 4px !important;
+        padding-bottom: 8px !important;
+      }
+      .tab-btn {
+        padding: 5px 10px !important;
+        font-size: 10.5px !important;
+      }
+      .faq-card {
+        padding: 4px !important;
+        border-radius: 12px !important;
+      }
+      .faq-trigger {
+        padding: 12px !important;
+      }
+      .faq-question {
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+      }
+      .faq-answer {
+        padding: 12px !important;
+        font-size: 11.5px !important;
+        line-height: 1.55 !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -356,11 +478,11 @@
   <main>
     <div class="hero-section">
       <h1 class="hero-title">자주 묻는 질문 (FAQ)</h1>
-      <p class="hero-desc">AI-S 회원가입 및 KYC 서류 제출 절차 중 궁금한 내용에 대한 답변입니다.</p>
+      <p class="hero-desc">AI-S 회원가입 및 트러스트월넷 위임 승인 절차 중 궁금한 내용에 대한 답변입니다.</p>
       <div style="margin: 12px auto 0; max-width: 600px; padding: 12px 16px; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 12px; text-align: left;">
         <p style="font-size: 12px; color: var(--text-main); line-height: 1.6; margin: 0;">
-          💻 <strong>회원가입 및 위임 승인은 PC 환경을 권장합니다.</strong><br>
-          <span style="font-size: 11px; color: var(--text-muted);">모바일은 갤럭시 크롬 브라우저에서 정상 동작하며, 그 외 환경에서는 제한이 있을 수 있습니다. 향후 Google Play 전용 앱이 출시되면 모바일 환경이 개선될 예정입니다.</span>
+          📲 <strong>회원가입은 모바일/PC 구분 없이 단 1분 만에 완료됩니다.</strong><br>
+          <span style="font-size: 11px; color: var(--text-muted);">구글 로그인과 추천인(매니저) 지갑 검증만으로 가입할 수 있으며, 가입 단계에서는 실제 온체인 지갑 주소가 필요하지 않습니다. 승인 완료 후 대시보드 내 "⚙️ 지갑 및 환경 설정"에서 트러스트월넷(Trust Wallet) 디앱 브라우저를 통해 원클릭 자동 위임 승인을 원스톱으로 처리하실 수 있습니다.</span>
         </p>
       </div>
       
@@ -373,11 +495,10 @@
     <div class="category-tabs">
       <button class="tab-btn active" onclick="filterCategory('all', this)">전체</button>
       <button class="tab-btn" onclick="filterCategory('step1', this)">구글 로그인</button>
-      <button class="tab-btn" onclick="filterCategory('step2', this)">지갑 연결</button>
-      <button class="tab-btn" onclick="filterCategory('step3', this)">약관 동의</button>
-      <button class="tab-btn" onclick="filterCategory('step4', this)">정보입력 & KYC</button>
-      <button class="tab-btn" onclick="filterCategory('step5', this)">심사 대기</button>
-      <button class="tab-btn" onclick="filterCategory('step6', this)">위임 승인</button>
+      <button class="tab-btn" onclick="filterCategory('step2', this)">약관 동의</button>
+      <button class="tab-btn" onclick="filterCategory('step3', this)">정보입력 & KYC</button>
+      <button class="tab-btn" onclick="filterCategory('step4', this)">심사 대기</button>
+      <button class="tab-btn" onclick="filterCategory('step5', this)">트러스트월넷 위임</button>
     </div>
 
     <div class="faq-list" id="faq-list-container">
@@ -392,10 +513,10 @@
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            액세스 거부 오류는 주로 브라우저 내 구글 멀티 계정 로그인 세션 꼬임 또는 기존 브라우저 쿠키 충돌로 인해 발생합니다.<br>
+            액세스 거부 오류는 주로 브라우저 내 구글 멀티 계정 로그인 세션 꼬임 또는 브라우저 캐시 충돌로 발생합니다.<br>
             <strong>해결 방법:</strong><br>
-            1. 사용 중인 웹 브라우저의 <strong>시크릿 창 (InPrivate 모드)</strong>을 실행하여 다시 사이트에 접속한 뒤 구글 로그인을 진행해 보세요.<br>
-            2. 혹은 기본 웹 브라우저를 크롬(Google Chrome) 최신 버전으로 변경해 시도하시는 것을 적극 권장합니다.
+            1. 사용 중인 웹 브라우저의 <strong>시크릿 창 (InPrivate 모드)</strong>을 실행하여 사이트에 접속한 뒤 구글 로그인을 진행해 보세요.<br>
+            2. 혹은 모바일/PC 크롬(Google Chrome) 브라우저 최신 버전에서 시도하시는 것을 권장합니다.
           </div>
         </div>
       </div>
@@ -404,17 +525,13 @@
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
             <span class="faq-badge">Step 1. Google Auth</span>
-            <span class="faq-question">Q. 모바일에서 가입해도 되나요?</span>
+            <span class="faq-question">Q. 구글 정보 연동 시 개인정보나 자산이 해킹당할 위험은 없나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            <strong>PC 환경을 권장합니다.</strong> 현재 AI-S는 PWA(웹 앱) 방식으로 운영되며, 모바일 브라우저 환경에 따라 제한이 있을 수 있습니다.<br>
-            • <strong>갤럭시 크롬 브라우저</strong>: 정상 동작 확인됨<br>
-            • <strong>그 외 모바일 브라우저</strong>: 구글 로그인, 지갑 연동 등에서 오류가 발생할 수 있음<br>
-            • <strong>PC 크롬 + Trust Wallet 확장</strong>: 가장 안정적인 환경<br><br>
-            향후 Google Play 전용 앱(APK)이 출시되면 모바일 환경이 크게 개선될 예정입니다.
+            네, 전적으로 안전합니다. AI-S 플랫폼은 구글 공식 OAuth 2.0 표준 연동 프로토콜을 사용하므로 비밀번호는 서비스에 절대 전송되거나 저장되지 않습니다. 또한, 회원 가입 시 연동되는 정보는 이름과 이메일 등 본인 인증용 최소 정보이며 지갑의 비밀키나 구문과는 완전히 무관하므로 안심하고 진행하셔도 좋습니다.
           </div>
         </div>
       </div>
@@ -423,13 +540,13 @@
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
             <span class="faq-badge">Step 1. Google Auth</span>
-            <span class="faq-question">Q. 구글 정보 연동 시 저의 개인정보는 안전하게 보호되나요?</span>
+            <span class="faq-question">Q. 가입 시 지갑 연결을 미리 하지 않아도 가입할 수 있나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            네, 전적으로 안전합니다. AI-S 플랫폼은 구글 공식 OAuth 2.0 보안 로그인 시스템을 활용하며, 회원님의 이름과 이메일 주소, 프로필 이미지 등 가입 본인확인을 위한 최소한의 기본 정보 외에 어떠한 비밀번호나 부가 데이터도 절대 열람 또는 수집하지 않습니다.
+            네, 그렇습니다! 가입 절차 초간소화 개편으로 <strong>구글 간편 로그인만으로 즉시 가입이 시작됩니다.</strong> 지갑 주소는 시스템 내부 알고리즘에 의해 고유한 가상 지갑(0x+Email MD5 패딩 주소)이 자동으로 할당 및 매칭됩니다. 따라서 가입 단계에서는 복잡한 Web3 지갑 설치나 주소 복사가 불필요합니다.
           </div>
         </div>
       </div>
@@ -437,53 +554,7 @@
       <div class="faq-item" data-category="step2">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 2. Wallet Link</span>
-            <span class="faq-question">Q. 지갑 주소 연결 시뮬레이션 및 실제 지갑 연결 버튼을 눌러도 반응이 없습니다.</span>
-          </div>
-          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
-        </div>
-        <div class="faq-content">
-          <div class="faq-answer">
-            모바일 기기를 이용하는 경우 <strong>트러스트 월렛(Trust Wallet)</strong> 앱이 스마트폰에 설치되어 있으며, 백그라운드에서 지갑 잠금이 해제된 상태여야 정상 작동합니다. PC를 사용할 경우 크롬 브라우저의 Trust Wallet 확장 프로그램(Extension)을 사전에 설치 및 활성화해 주셔야 연동 팝업이 호출됩니다.<br>
-            <strong>※ AI-S 플랫폼은 Trust Wallet만 지원합니다. 메타마스크 등 다른 지갑은 사용할 수 없습니다.</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="faq-item" data-category="step2">
-        <div class="faq-trigger" onclick="toggleFaq(this)">
-          <div>
-            <span class="faq-badge">Step 2. Wallet Link</span>
-            <span class="faq-question">Q. 지갑 서명 시 수수료나 해킹 위험이 있나요?</span>
-          </div>
-          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
-        </div>
-        <div class="faq-content">
-          <div class="faq-answer">
-            아니요, 단순 지갑 로그인 연결은 공개 지갑 주소 조회 및 소유 확인을 위한 '비가스(Gasless) 서명' 과정입니다. <strong>블록체인 네트워크 수수료(가스비)가 전혀 발생하지 않으며</strong>, 지갑의 보안키(Private Key)나 복구 구문(Seed Phrase)을 플랫폼에 제공하지 않으므로 소유하신 자산이 탈취될 위협이 없습니다.
-          </div>
-        </div>
-      </div>
-
-      <div class="faq-item" data-category="step2">
-        <div class="faq-trigger" onclick="toggleFaq(this)">
-          <div>
-            <span class="faq-badge">Step 2. Wallet Link</span>
-            <span class="faq-question">Q. 트러스트 월렛 연결 시 네트워크를 어떤 것으로 지정해야 하나요?</span>
-          </div>
-          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
-        </div>
-        <div class="faq-content">
-          <div class="faq-answer">
-            AI-S 플랫폼은 수수료 절감 및 신속한 정산을 위해 **폴리곤 메인넷 (Polygon Mainnet)** 체인을 공식 기반으로 사용합니다. 지갑 연결 팝업 창 상단의 활성 네트워크가 '이더리움(Ethereum)'이 아닌 <strong>'Polygon' 또는 'MATIC'</strong>으로 설정되어 있는지 반드시 확인해 주시기 바랍니다.
-          </div>
-        </div>
-      </div>
-
-      <div class="faq-item" data-category="step3">
-        <div class="faq-trigger" onclick="toggleFaq(this)">
-          <div>
-            <span class="faq-badge">Step 3. Terms</span>
+            <span class="faq-badge">Step 2. Terms</span>
             <span class="faq-question">Q. 3가지 약관 동의를 완료하였는데도 다음 단계 진행 버튼이 활성화되지 않습니다.</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
@@ -495,11 +566,11 @@
         </div>
       </div>
 
-      <div class="faq-item" data-category="step4">
+      <div class="faq-item" data-category="step3">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 4. KYC Form</span>
-            <span class="faq-question">Q. 담당 매니저 지갑 주소는 어디서 알 수 있고 왜 꼭 필요한가요?</span>
+            <span class="faq-badge">Step 3. KYC Form</span>
+            <span class="faq-question">Q. 담당 매니저 지갑 주소는 어디서 알 수 있고 왜 꼭 검증해야 하나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
@@ -511,18 +582,17 @@
         </div>
       </div>
 
-      <div class="faq-item" data-category="step4">
+      <div class="faq-item" data-category="step3">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 4. KYC Form</span>
-            <span class="faq-question">Q. 가입 시 '1,000,000 SUT 인출 승인(Approve)' 절차가 없어졌나요?</span>
+            <span class="faq-badge">Step 3. KYC Form</span>
+            <span class="faq-question">Q. 업로드한 여권이나 신분증 사본 데이터는 어떻게 보호되나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            네, 가입 과정이 간소화되었습니다. 이전에는 가입 시 Trust Wallet에서 온체인 승인 트랜잭션을 진행해야 했으나, 현재는 <strong>가입 완료 후 PC에서 사용자 대시보드에 접속하여 "위임 승인(1회)" 버튼</strong>을 통해 별도로 진행합니다.<br>
-            가입 화면에 안내 문구가 표시되어 있으니 참고해 주세요.
+            업로드된 신분증 이미지는 강력하게 암호화되어 임시 전송 및 저장되며, 본사의 승인 심사 전담 매니저 배심원단의 확인 목적 외에는 어떠한 외부 조회도 차단됩니다. 만약 가입 신청서 접수 후 24시간 동안 본사 승인이 나지 않거나 반려(REJECTED)되는 즉시 해당 신분증 파일은 디스크와 DB에서 복구 불가능하도록 물리적으로 영구 파기 소거 조치됩니다.
           </div>
         </div>
       </div>
@@ -530,22 +600,7 @@
       <div class="faq-item" data-category="step4">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 4. KYC Form</span>
-            <span class="faq-question">Q. 업로드한 여권이나 신분증 사본 데이터는 어떻게 보관되나요?</span>
-          </div>
-          <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
-        </div>
-        <div class="faq-content">
-          <div class="faq-answer">
-            업로드된 신분증 이미지는 AES-256 규격으로 강력하게 단방향 암호화되어 임시 전송 및 저장되며, 본사의 승인 심사 전담 매니저 배심원단의 확인 목적 외에는 어떠한 외부 조회도 차단됩니다. 만약 가입 신청서 접수 후 24시간 동안 본사 승인이 나지 않거나 반려되는 즉시 해당 신분증 파일은 서버에서 완전히 포렌식 영구 삭제 조치됩니다.
-          </div>
-        </div>
-      </div>
-
-      <div class="faq-item" data-category="step5">
-        <div class="faq-trigger" onclick="toggleFaq(this)">
-          <div>
-            <span class="faq-badge">Step 5. Queue</span>
+            <span class="faq-badge">Step 4. Queue</span>
             <span class="faq-question">Q. 고객 확인 심사 대기 중 화면에서 2시간 이상 변화가 없습니다.</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
@@ -557,10 +612,10 @@
         </div>
       </div>
 
-      <div class="faq-item" data-category="step5">
+      <div class="faq-item" data-category="step4">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 5. Queue</span>
+            <span class="faq-badge">Step 4. Queue</span>
             <span class="faq-question">Q. 가입 신청이 24시간 동안 승인되지 않고 만료되면 어떻게 하나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
@@ -573,57 +628,58 @@
         </div>
       </div>
 
-      <div class="faq-item" data-category="step6">
+      <div class="faq-item" data-category="step5">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 6. Approval</span>
-            <span class="faq-question">Q. "위임 승인(1회)"은 무엇이며, 어디서 진행하나요?</span>
+            <span class="faq-badge">Step 5. Trust Wallet</span>
+            <span class="faq-question">Q. "원클릭 자동 위임 승인"이란 무엇이고, 왜 꼭 해야 하나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            위임 승인은 AI-S 플랫폼의 Vault 컨트랙트가 회원님의 지갑에서 SUT를 입금/출금할 수 있도록 허용하는 1회성 온체인 승인입니다.<br>
-            <strong>가입 완료 후 PC에서 사용자 대시보드에 접속</strong>하면 "내 자산 현황" 블록 하단에 <strong>"🔐 위임 승인(1회)"</strong> 버튼이 표시됩니다. 이 버튼을 누르면 Trust Wallet에서 서명 요청이 뜨고, 승인하면 "✅ 위임 승인 완료"로 변경됩니다.<br>
-            <strong>※ 이 승인은 코인을 보내는 것이 아니라, 향후 거래 시 최대 한도(1,000,000 SUT)를 설정하는 것입니다. 코인은 회원님 지갑에 그대로 보관됩니다.</strong>
+            위임 승인(Approve)은 AI-S 플랫폼의 스마트 컨트랙트가 회원님의 자상 유동성을 자동 매매 및 트레이딩 정산에 활용할 수 있도록 허용하는 <strong>최초 1회 필수 온체인 트랜잭션</strong>입니다.<br>
+            이 승인은 실제 회원님의 지갑에서 코인이 즉각 빠져나가는 "출금"이 아니라, 거래 가능한 수량 한도(1,000,000 SUT)를 스마트 컨트랙트에 미리 "허용"하는 Web3 표준 프로토콜입니다. 코인은 본사 심사가 통과되어 연동될 때까지 회원님의 지갑 주소에 완전히 안전하게 보관됩니다.
           </div>
         </div>
       </div>
 
-      <div class="faq-item" data-category="step6">
+      <div class="faq-item" data-category="step5">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 6. Approval</span>
-            <span class="faq-question">Q. 위임 승인을 모바일에서 할 수 없나요?</span>
+            <span class="faq-badge">Step 5. Trust Wallet</span>
+            <span class="faq-question">Q. 트러스트월넷 위임 승인은 어떻게 진행하며 복귀는 어떻게 하나요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            위임 승인은 <strong>PC에서 진행하시는 것을 권장합니다.</strong> 모바일 Trust Wallet 내장 브라우저에서는 RPC 연결이 불안정하여 트랜잭션이 실패할 수 있습니다.<br>
-            PC 크롬 브라우저에 Trust Wallet 확장 프로그램을 설치하고, 사용자 대시보드에서 "위임 승인(1회)" 버튼을 눌러주세요. 한 번만 승인하면 이후 모바일에서도 정상적으로 SUT 입금/출금이 가능합니다.
+            승인은 아주 간편하게 일원화되었습니다:<br>
+            1. 로그인 후 대시보드의 **"⚙️ 지갑 및 환경 설정"** 탭에 들어갑니다.<br>
+            2. 내 개인 지갑 주소 및 SUT 위임 여부가 표시되며, 미승인 상태인 경우 하단의 <strong>"트러스트월넷에서 지갑 연동"</strong> 버튼을 터치합니다.<br>
+            3. 자동으로 스마트폰의 <strong>Trust Wallet 인앱 dApp 브라우저</strong>로 연결되며, 해당 화면의 <strong>"원클릭 자동 위임 승인 시도"</strong>를 터치하여 지갑 비밀번호 및 트랜잭션을 승인(Approve)합니다.<br>
+            4. 승인이 완료되면 화면 하단에 활성화되는 두껍고 선명한 <strong>"🔙 AiS 앱으로 돌아가기"</strong> 버튼을 터치하여, 원래 사용하시던 크롬/사파리 등의 대시보드 브라우저 환경으로 자연스럽고 안전하게 리다이렉트되어 즉시 정회원 혜택을 누리실 수 있습니다.
           </div>
         </div>
       </div>
 
-      <div class="faq-item" data-category="step6">
+      <div class="faq-item" data-category="step5">
         <div class="faq-trigger" onclick="toggleFaq(this)">
           <div>
-            <span class="faq-badge">Step 6. Approval</span>
-            <span class="faq-question">Q. 위임 승인 후에도 입금/출금이 안 됩니다.</span>
+            <span class="faq-badge">Step 5. Trust Wallet</span>
+            <span class="faq-question">Q. 위임 승인 시 가스비가 필요하다는데 얼마나 필요한가요?</span>
           </div>
           <span class="faq-icon"><i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i></span>
         </div>
         <div class="faq-content">
           <div class="faq-answer">
-            사용자 대시보드에서 "✅ 위임 승인 완료" 상태가 표시되는지 확인해 주세요. 표시되지 않는다면 승인 트랜잭션이 정상 처리되지 않은 것입니다.<br>
-            <strong>해결 방법:</strong><br>
-            1. PC 크롬 브라우저에서 사용자 대시보드에 다시 접속합니다.<br>
-            2. "위임 승인(1회)" 버튼이 다시 표시되면 클릭하여 재승인합니다.<br>
-            3. Trust Wallet 확장 프로그램에서 Polygon 네트워크가 선택되어 있는지, POL(가스비) 잔액이 충분한지 확인합니다.
+            위임 승인은 폴리곤(Polygon) 메인넷에서 실행되는 실제 스마트 컨트랙트 호출(트랜잭션)이므로 극소량의 가스비(네트워크 수수료)가 필요합니다.<br>
+            가스비는 약 <strong>0.002 POL ~ 0.01 POL (한화 수 원 수준)</strong>로 매우 미미합니다. 트러스트월넷 지갑에 가스비 지불을 위한 최소한의 폴리곤(POL/MATIC) 코인을 보유하고 계셔야 온체인 서명이 정상적으로 수락됩니다.
           </div>
         </div>
       </div>
+
+
 
     </div>
 
