@@ -1023,7 +1023,7 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
                 🔐 SUT 자산 거래 위임 승인 (최초 1회 필수)
               </label>
               <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-                플랫폼을 통한 모바일 SUT 토큰 입금 및 출금 자동 처리를 개시하기 위하여 최초 1회 위임 승인 서명이 필요합니다. (승인 시 약 10원 내외의 극소량 폴리곤 가스비가 소모됩니다)
+                플랫폼을 통한 모바일 SUT 토큰 입금 및 출금 자동 처리를 개시하기 위하여 최초 1회 위임 승인 서명이 필요합니다. (승인을 위해 약 0.02 ~ 0.05 POL 정도의 소량의 폴리곤을 미리 충전해두어야 합니다)
               </p>
 
               {vaultApproved === true ? (
