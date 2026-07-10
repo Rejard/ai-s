@@ -269,7 +269,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleApprove = async (emailToApprove) => {
-    if (!confirm('해당 회원의 신분증 및 구글 계정을 승인하고 10일 무료 체험(TRIAL) 등급으로 가입을 허가하시겠습니까?')) return;
+    if (!confirm('해당 회원의 신원 서류 및 가입 신청을 승인하고 정회원으로 가입을 허가하시겠습니까?')) return;
     setSubmittingId(emailToApprove);
     try { const res = await approveManagerUser({ apiBase: API_BASE, managerEmail, email: emailToApprove, axiosClient: axios, getStorageItem: (key) => localStorage.getItem(key) }); if (res.data.success) { alert(res.data.message); fetchManagerData(); } }
     catch (err) { alert('승인 처리 중 오류 발생: ' + (err.response?.data?.message || err.message)); } finally { setSubmittingId(null); }
