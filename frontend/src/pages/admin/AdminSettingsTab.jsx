@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Loader2, Receipt } from 'lucide-react';
 import { API_BASE } from '../../App';
 import AisTrainingEvidence from '../../components/AisTrainingEvidence';
+import { formatAiDecisionReason } from '../../lib/aiDecisionReason';
 import SimulationPanel from '../../components/SimulationPanel';
 import { formatKoreanDateTime } from '../../lib/dateTime';
 import { downloadAuthenticatedFile } from '../../lib/authSession';
@@ -506,7 +507,7 @@ function AdminSettingsTab({
                         <div>추천 밴드 범위: <span style={{ color: '#E5E7EB', fontWeight: '600' }}>{(log.proposed_lower || 0.15).toFixed(4)} ~ {(log.proposed_upper || 0.30).toFixed(4)} USDT</span></div>
                       </div>
                       <div style={{ fontSize: '10px', color: '#D1D5DB', lineHeight: '1.4', background: 'rgba(0,0,0,0.15)', padding: '8px', borderRadius: '6px' }}>
-                        {log.reason}
+                        {formatAiDecisionReason(log.reason)}
                       </div>
                     </div>
                   </div>

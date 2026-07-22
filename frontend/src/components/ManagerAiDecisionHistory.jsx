@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatKoreanDateTime } from '../lib/dateTime';
+import { formatAiDecisionReason } from '../lib/aiDecisionReason';
 
 function formatNumber(value, digits) {
   const number = Number(value);
@@ -122,7 +123,7 @@ function ManagerAiDecisionHistory({ logs = [], isMobile = false }) {
                 </div>
 
                 <div style={{ fontSize: isMobile ? '10px' : '12px', color: '#D1D5DB', lineHeight: '1.5', background: 'rgba(0, 0, 0, 0.15)', padding: isMobile ? '8px' : '10px', borderRadius: '8px', overflowWrap: 'anywhere' }}>
-                  <strong style={{ color: '#E5E7EB' }}>판단 근거:</strong> {log.reason || '판단 근거가 기록되지 않았습니다.'}
+                  <strong style={{ color: '#E5E7EB' }}>판단 근거:</strong> {formatAiDecisionReason(log.reason)}
                 </div>
               </div>
             );
