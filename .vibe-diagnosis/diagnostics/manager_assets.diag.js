@@ -51,8 +51,9 @@ module.exports = {
       let onchainOk = false;
       let onchainMsg = 'Polygon RPC connection pending';
       try {
-        const provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
-        const sutAddress = '0x170b0933cbe9f9393cbe9f9393cbe9f9393cbe9f';
+        const rpcUrl = process.env.RPC_URL || 'https://polygon-bor-rpc.publicnode.com';
+        const provider = new ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
+        const sutAddress = process.env.SUT_CONTRACT_ADDRESS || '0x98965474EcBeC2F532F1f780ee37b0b05F77Ca55';
         const sutAbi = ["function balanceOf(address account) external view returns (uint256)"];
         const sutContract = new ethers.Contract(sutAddress, sutAbi, provider);
         
