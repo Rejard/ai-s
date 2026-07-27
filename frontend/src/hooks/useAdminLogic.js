@@ -388,6 +388,8 @@ export function useAdminLogic(managerEmail) {
     fetchAiEngineConfig();
     fetchTrainingStats();
     fetchCouncilStats();
+    fetchDiagnostics();
+    fetchSchedulerHealth();
 
     return () => {};
   }, [managerEmail]);

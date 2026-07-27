@@ -146,11 +146,19 @@ function assessNarrativeDivergence(poolFactions, activeFactions) {
   const poolRunnerUp = Array.isArray(poolFactions) ? poolFactions[1] : null;
   const totalPool = (Array.isArray(poolFactions) ? poolFactions : []).reduce((sum, item) => sum + Number(item.cnt || 0), 0);
   const leaderGap = Number(poolLeader.cnt || 0) - Number(poolRunnerUp?.cnt || 0);
+  const leaderShare = totalPool > 0 ? Number(poolLeader.cnt || 0) / totalPool : 0;
   const nearTieThreshold = Math.max(5, Math.ceil(totalPool * 0.02));
   if (poolRunnerUp && leaderGap < nearTieThreshold) {
     return {
       status: "OK",
       message: `pool leadership is near-tied (${poolLeader.faction}:${poolLeader.cnt}, ${poolRunnerUp.faction}:${poolRunnerUp.cnt}) while active leader is ${activeLeader.faction}(${activeLeader.cnt})`,
+      warning: null,
+    };
+  }
+  if (leaderShare < 0.55 || leaderGap < Math.ceil(totalPool * 0.15)) {
+    return {
+      status: "OK",
+      message: `pool leader=${poolLeader.faction}(${poolLeader.cnt}) is not dominant enough to conflict with active leader=${activeLeader.faction}(${activeLeader.cnt})`,
       warning: null,
     };
   }
@@ -473,6 +481,153 @@ const adminAuthMiddleware = (req, res, next) => {
 router.use(zeroTrustMiddleware);
 router.use(requireAuthenticatedSession);
 router.use(adminAuthMiddleware);
+
+router.get('/assets', async (req, res) => {
+  try {
+    let accounts = await queries.all(`
+      SELECT id, wallet_address, email, name, joined_at, is_manager, subscription_expires_at
+      FROM users
+      WHERE status = 'APPROVED' AND (is_manager = 1 OR LOWER(email) = 'lemaiiisk@gmail.com')
+      ORDER BY 
+        CASE 
+          WHEN LOWER(email) = 'lemaiiisk@gmail.com' THEN 0 
+          ELSE 1 
+        END, 
+        joined_at ASC
+    `);
+
+    const { decryptText } = require('../secureCredentials');
+    const { getGateIoBalances } = require('../gateioHelper');
+    const assets = await Promise.all(accounts.map(async (account) => {
+      let expiresStr = account.subscription_expires_at;
+      if (account.email && account.email.toLowerCase().trim() === 'lemaiiisk@gmail.com') {
+        expiresStr = '9999-12-31 00:00:00';
+      }
+
+      const expiryDate = expiresStr ? new Date(expiresStr) : null;
+      const now = new Date();
+      const isExpired = !expiryDate || now.getTime() >= expiryDate.getTime();
+      const diffMs = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
+      const daysRemaining = expiryDate ? Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
+      let dDay = null;
+      if (!isExpired && daysRemaining <= 7) {
+        dDay = daysRemaining === 0 ? 'D-Day' : `D-${daysRemaining}`;
+      }
+
+      const subInfo = {
+        expiresAt: expiresStr ? expiresStr.split(' ')[0] : null,
+        isExpired,
+        hasSubscription: Boolean(expiresStr),
+        dDay,
+        daysRemaining,
+        statusLabel: !expiresStr ? '미설정' : isExpired ? '만료됨' : (daysRemaining <= 7 ? `만료 임박 (${daysRemaining}일 남음)` : '이용 중')
+      };
+
+      const credential = await queries.get(
+        "SELECT encrypted_api_key, encrypted_api_secret FROM manager_gateio_credentials WHERE LOWER(manager_email) = LOWER(?)",
+        [account.email]
+      );
+      if (!credential) {
+        return {
+          ...account,
+          subscription_expires_at: expiresStr,
+          subscriptionStatus: subInfo,
+          gateioConnected: false,
+          gateioState: 'Gate.io 미등록',
+          gateioBtc: 0,
+          gateioUsdt: 0
+        };
+      }
+      try {
+        const balances = await getGateIoBalances(
+          decryptText(credential.encrypted_api_key),
+          decryptText(credential.encrypted_api_secret)
+        );
+        return {
+          ...account,
+          subscription_expires_at: expiresStr,
+          subscriptionStatus: subInfo,
+          gateioConnected: true,
+          gateioState: 'Gate.io 연결됨',
+          gateioBtc: Number(balances?.balances?.BTC) || 0,
+          gateioUsdt: Number(balances?.balances?.USDT) || 0
+        };
+      } catch (error) {
+        console.error(`[Admin Asset Query Error] Account: ${account.email}`, error.message);
+        return {
+          ...account,
+          subscription_expires_at: expiresStr,
+          subscriptionStatus: subInfo,
+          gateioConnected: false,
+          gateioState: 'Gate.io 조회 실패',
+          gateioBtc: 0,
+          gateioUsdt: 0
+        };
+      }
+    }));
+    res.json({ success: true, assets });
+  } catch (error) {
+    console.error('[Admin Asset Overview Error]:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/user-subscription', async (req, res) => {
+  const { targetEmail, months, customDate } = req.body || {};
+  if (!targetEmail) {
+    return res.status(400).json({ success: false, message: '대상 회원의 이메일 주소가 누락되었습니다.' });
+  }
+
+  const cleanTargetEmail = String(targetEmail).trim().toLowerCase();
+
+  if (cleanTargetEmail === 'lemaiiisk@gmail.com') {
+    return res.status(403).json({ success: false, message: '최상위 관리자 계정의 구독 정보는 변경할 수 없습니다.' });
+  }
+
+  try {
+    const user = await queries.get("SELECT email, subscription_expires_at FROM users WHERE LOWER(email) = LOWER(?)", [cleanTargetEmail]);
+    if (!user) {
+      return res.status(404).json({ success: false, message: '해당 이메일의 가입 회원을 찾을 수 없습니다.' });
+    }
+
+    let nextExpiryDate;
+    if (customDate) {
+      nextExpiryDate = new Date(`${customDate}T00:00:00`);
+    } else {
+      const addedMonths = Number(months) || 1;
+      const baseDate = user.subscription_expires_at && new Date(user.subscription_expires_at) > new Date()
+        ? new Date(user.subscription_expires_at)
+        : new Date();
+      
+      nextExpiryDate = new Date(baseDate);
+      nextExpiryDate.setMonth(nextExpiryDate.getMonth() + addedMonths);
+      nextExpiryDate.setHours(0, 0, 0, 0);
+    }
+
+    if (isNaN(nextExpiryDate.getTime())) {
+      return res.status(400).json({ success: false, message: '유효하지 않은 만료 날짜 형식입니다.' });
+    }
+
+    const year = nextExpiryDate.getFullYear();
+    const month = String(nextExpiryDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nextExpiryDate.getDate()).padStart(2, '0');
+    const formattedExpiryStr = `${year}-${month}-${day} 00:00:00`;
+
+    await queries.run(
+      "UPDATE users SET subscription_expires_at = ? WHERE LOWER(email) = LOWER(?)",
+      [formattedExpiryStr, cleanTargetEmail]
+    );
+
+    res.json({
+      success: true,
+      message: `${cleanTargetEmail} 회원의 이용 만료일이 ${formattedExpiryStr} (0시)로 설정되었습니다.`,
+      subscriptionExpiresAt: formattedExpiryStr
+    });
+  } catch (error) {
+    console.error('[Admin User Subscription Error]:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 router.get('/managers', async (req, res) => {
   try {
@@ -2952,7 +3107,7 @@ async function performSystemDiagnostics() {
     ...extendedResults
   ];
 
-  return {
+  const payload = {
     success: true,
     diagnostics,
     details,
@@ -2961,6 +3116,18 @@ async function performSystemDiagnostics() {
     warnings,
     timestamp: new Date().toISOString()
   };
+
+  try {
+    await queries.run(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('last_system_diagnostics', ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `, [JSON.stringify(payload)]);
+  } catch (e) {
+    console.error("Failed to persist system diagnostics in DB:", e.message);
+  }
+
+  return payload;
 }
 
 

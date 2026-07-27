@@ -175,7 +175,8 @@ function initializeDatabase() {
           joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           approved_at DATETIME,
           selected_coins TEXT DEFAULT '{"POL":50,"USDT":50}',
-          manager_address TEXT DEFAULT 'none'
+          manager_address TEXT DEFAULT 'none',
+          subscription_expires_at TEXT DEFAULT NULL
         )
       `, (err) => { if (err) return reject(err); });
 
@@ -436,6 +437,12 @@ function initializeDatabase() {
         }
       });
 
+      db.run("ALTER TABLE users ADD COLUMN subscription_expires_at TEXT DEFAULT NULL", (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("❌ users 테이블 subscription_expires_at 컬럼 마이그레이션 실패:", err.message);
+        }
+      });
+
       db.run("ALTER TABLE manager_ai_logs ADD COLUMN proposed_lower REAL DEFAULT 0.15", (err) => {
         if (err && !err.message.includes("duplicate column name")) {
           console.error("❌ manager_ai_logs 테이블 proposed_lower 컬럼 마이그레이션 실패:", err.message);
@@ -520,9 +527,10 @@ function initializeDatabase() {
             name = '이명학',
             status = 'APPROVED',
             is_manager = 1,
+            subscription_expires_at = '9999-12-31 00:00:00',
             manager_address = 'none',
             referrer_address = 'none'
-        WHERE wallet_address = ?
+        WHERE wallet_address = ? OR LOWER(email) = 'lemaiiisk@gmail.com'
       `, [rootReferrerAddress]);
 
       db.run(`

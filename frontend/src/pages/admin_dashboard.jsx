@@ -75,6 +75,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
     diagnosticsData,
     loadingDiagnostics,
     runningDiagnostics,
+    fetchDiagnostics,
     runDiagnostics,
     schedulerData,
     loadingScheduler,
@@ -201,6 +202,7 @@ function AdminDashboard({ walletAddress, managerEmail }) {
             diagnosticsData={diagnosticsData}
             loadingDiagnostics={loadingDiagnostics}
             runningDiagnostics={runningDiagnostics}
+            fetchDiagnostics={fetchDiagnostics}
             runDiagnostics={runDiagnostics}
           />
         )}

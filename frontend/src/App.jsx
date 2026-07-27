@@ -12,6 +12,7 @@ import ManagerDashboard from './pages/manager_dashboard';
 
 import UserHistory from './pages/user_history';
 import AdminDashboard from './pages/admin_dashboard';
+import PayAdminDashboard from './pages/PayAdminDashboard';
 
 import { isAdminGoogleAccount, isManagerAccount, isWalletOwnedByGoogleAccount } from './lib/accountIdentity';
 import { hasApprovalRecoveryResumeFlag } from './lib/sutApprovalFlow';
@@ -561,6 +562,14 @@ function AppContent() {
               )
             } />
 
+            <Route path="/pay-admin" element={
+              isAdminViewer ? (
+                <PayAdminDashboard />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+
             <Route path="/" element={
               !googleLoggedIn ? (
                 renderIntro()
@@ -624,7 +633,7 @@ function AppContent() {
 
             <Route path="/dashboard" element={
               googleLoggedIn && isRegistered && userStatus === 'APPROVED' ? (
-                <UserDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} />
+                <UserDashboard walletAddress={walletAddress} userData={userData} onLogout={disconnectWallet} googleEmail={googleEmail} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -642,7 +651,6 @@ function AppContent() {
           </Routes>
         )}
       </main>
-
     </div>
   );
 }

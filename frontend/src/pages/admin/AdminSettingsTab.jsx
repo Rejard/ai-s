@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Receipt } from 'lucide-react';
 import { API_BASE } from '../../App';
 import AisTrainingEvidence from '../../components/AisTrainingEvidence';
@@ -47,6 +47,13 @@ function AdminSettingsTab({
   aiLogs
 }) {
   const [historyFilter, setHistoryFilter] = useState('ALL');
+  const [selectedEngine, setSelectedEngine] = useState(globalAiEngine || 'GEMINI');
+
+  useEffect(() => {
+    if (globalAiEngine) {
+      setSelectedEngine(globalAiEngine);
+    }
+  }, [globalAiEngine]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -300,16 +307,39 @@ function AdminSettingsTab({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
           <div>
             <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>작동 엔진 선택</label>
-            <select
-              value={globalAiEngine}
-              onChange={(e) => handleSaveAiEngine(e.target.value)}
-              disabled={savingAiEngine}
-              style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#FFF', outline: 'none' }}
-            >
-              <option value="GEMINI" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 매매 모드</option>
-              <option value="HYBRID_COOP" style={{ background: '#1A1825', color: '#FFF' }}>Gemini + AiS 공동 합의 매매 모드</option>
-              <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 매매 모드</option>
-            </select>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <select
+                value={selectedEngine}
+                onChange={(e) => setSelectedEngine(e.target.value)}
+                disabled={savingAiEngine}
+                style={{ flex: 1, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#FFF', outline: 'none' }}
+              >
+                <option value="GEMINI" style={{ background: '#1A1825', color: '#FFF' }}>Gemini 매매 모드</option>
+                <option value="HYBRID_COOP" style={{ background: '#1A1825', color: '#FFF' }}>Gemini + AiS 공동 합의 매매 모드</option>
+                <option value="AIS_ONLY" style={{ background: '#1A1825', color: '#FFF' }}>AiS 독자 매매 모드</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => handleSaveAiEngine(selectedEngine)}
+                disabled={savingAiEngine}
+                style={{
+                  padding: '12px 18px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                  color: '#FFF',
+                  border: 'none',
+                  cursor: savingAiEngine ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {savingAiEngine ? <Loader2 size={16} className="spin" /> : 'AiS 엔진 모드 저장'}
+              </button>
+            </div>
           </div>
 
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px' }}>

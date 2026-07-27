@@ -224,7 +224,7 @@ router.get('/status/:walletAddress', async (req, res) => {
   const walletAddress = req.params.walletAddress.trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address, is_manager
+      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address, is_manager, subscription_expires_at
       FROM users WHERE wallet_address = ?
     `, [walletAddress]);
     if (!user) {
@@ -244,6 +244,29 @@ router.get('/status/:walletAddress', async (req, res) => {
       }
     }
 
+    
+    let expiresStr = user.subscription_expires_at;
+    if (user.email && user.email.toLowerCase().trim() === 'lemaiiisk@gmail.com') {
+      expiresStr = '9999-12-31 00:00:00';
+    }
+    const expiryDate = expiresStr ? new Date(expiresStr) : null;
+    const now = new Date();
+    const isExpired = !expiryDate || now.getTime() >= expiryDate.getTime();
+    const diffMs = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
+    const daysRemaining = expiryDate ? Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
+    let dDay = null;
+    if (!isExpired && daysRemaining <= 7) {
+      dDay = daysRemaining === 0 ? 'D-Day' : `D-${daysRemaining}`;
+    }
+    const subInfo = {
+      expiresAt: expiresStr ? expiresStr.split(' ')[0] : null,
+      isExpired,
+      hasSubscription: Boolean(expiresStr),
+      dDay,
+      daysRemaining,
+      statusLabel: !expiresStr ? '미설정 (이용 불가)' : isExpired ? '이용 만료' : (daysRemaining <= 7 ? `만료 임박 (${daysRemaining}일 남음)` : '이용 중')
+    };
+
     res.json({
       success: true,
       registered: true,
@@ -259,7 +282,9 @@ router.get('/status/:walletAddress', async (req, res) => {
         managerName,
         managerEmail,
         managerPhone,
-        managerAddress: user.manager_address
+        managerAddress: user.manager_address,
+        subscriptionExpiresAt: expiresStr,
+        subscriptionStatus: subInfo
       }
     });
 
@@ -272,7 +297,7 @@ router.get('/status-by-email/:email', async (req, res) => {
   const email = req.params.email.toLowerCase().trim();
   try {
     const user = await queries.get(`
-      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address, is_manager
+      SELECT wallet_address, email, name, status, joined_at, approved_at, selected_coins, manager_address, is_manager, subscription_expires_at
       FROM users WHERE email = ?
     `, [email]);
 
@@ -293,6 +318,28 @@ router.get('/status-by-email/:email', async (req, res) => {
       }
     }
 
+    let expiresStr = user.subscription_expires_at;
+    if (user.email && user.email.toLowerCase().trim() === 'lemaiiisk@gmail.com') {
+      expiresStr = '9999-12-31 00:00:00';
+    }
+    const expiryDate = expiresStr ? new Date(expiresStr) : null;
+    const now = new Date();
+    const isExpired = !expiryDate || now.getTime() >= expiryDate.getTime();
+    const diffMs = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
+    const daysRemaining = expiryDate ? Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) : 0;
+    let dDay = null;
+    if (!isExpired && daysRemaining <= 7) {
+      dDay = daysRemaining === 0 ? 'D-Day' : `D-${daysRemaining}`;
+    }
+    const subInfo = {
+      expiresAt: expiresStr ? expiresStr.split(' ')[0] : null,
+      isExpired,
+      hasSubscription: Boolean(expiresStr),
+      dDay,
+      daysRemaining,
+      statusLabel: !expiresStr ? '미설정 (이용 불가)' : isExpired ? '이용 만료' : (daysRemaining <= 7 ? `만료 임박 (${daysRemaining}일 남음)` : '이용 중')
+    };
+
     res.json({
       success: true,
       registered: true,
@@ -308,7 +355,9 @@ router.get('/status-by-email/:email', async (req, res) => {
         managerName,
         managerEmail,
         managerPhone,
-        managerAddress: user.manager_address
+        managerAddress: user.manager_address,
+        subscriptionExpiresAt: expiresStr,
+        subscriptionStatus: subInfo
       }
     });
 

@@ -1,0 +1,48 @@
+[
+  {
+    "timestamp": "2026-07-22T09:36:50.323Z",
+    "passRate": 67,
+    "status": "WARNING",
+    "cardResults": [
+      {
+        "id": "ais-council-history-encoding",
+        "status": "OK"
+      },
+      {
+        "id": "example-diagnostic",
+        "status": "OK"
+      },
+      {
+        "id": "manager-assets-diagnostic",
+        "status": "WARNING"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-07-27T07:51:44.555Z",
+    "passRate": 100,
+    "status": "OK",
+    "cardResults": [
+      {
+        "id": "ais-council-history-encoding",
+        "status": "OK"
+      },
+      {
+        "id": "example-diagnostic",
+        "status": "OK"
+      },
+      {
+        "id": "manager-assets-diagnostic",
+        "status": "OK"
+      },
+      {
+        "id": "pay-admin-subscription-diag",
+        "status": "OK"
+      },
+      {
+        "id": "ais-python-ten-feature-contract",
+        "status": "OK"
+      }
+    ]
+  }
+]

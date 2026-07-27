@@ -645,294 +645,6 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
       });
   }, [userWallet, autoDepositFinalizeAttempted]);
 
-  // URL에서 mode=full 쿼리 파라미터가 있는지 검사
-  const queryParams = new URLSearchParams(window.location.search);
-  const isFullModeOverride = queryParams.get('mode') === 'full';
-
-  // 트러스트 월넷 인앱 디앱 브라우저 전용 컴포넌트 렌더링 분기 (전용 단일 페이지)
-  // 단, PC 브라우저에 MetaMask, Trust Wallet 등의 지갑 확장 프로그램이 주입되어 있어 오작동하는 현상을 원천 방지하기 위해,
-  // 실제 모바일 스마트폰 기기(/iPhone|iPad|iPod|Android/i) 환경에서 접속했을 때만 이 디앱 전용 미니 뷰 레이아웃을 작동시킵니다!
-  // 또한, 사용자가 "AiS 앱으로 돌아가기"를 터치해 mode=full 을 요청한 경우는 대시보드 전체 뷰를 보여주도록 예외처리함!
-  const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (window.ethereum && isMobileDevice && !isFullModeOverride) {
-    return (
-      <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-        
-        {/* 매니저 바로가기 배너 */}
-        {canAccessManager && (
-          <div
-            className="glass-card glow-active"
-            onClick={() => navigate('/manager')}
-            style={{
-              padding: '12px 16px',
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              transition: 'transform 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '18px' }}>👑</span>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#C084FC' }}>{DASHBOARD_COPY.managerPage}</div>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>회원 관리 화면으로 이동</div>
-              </div>
-            </div>
-            <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
-              {DASHBOARD_COPY.managerPage}
-            </button>
-          </div>
-        )}
-
-        {/* 어드민 바로가기 배너 */}
-        {canAccessAdmin && (
-          <div
-            className="glass-card glow-active"
-            onClick={() => navigate('/admin')}
-            style={{
-              padding: '12px 16px',
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              transition: 'transform 0.2s',
-              marginTop: '-10px'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '18px' }}>🔑</span>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#F87171' }}>{DASHBOARD_COPY.adminPage}</div>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>시스템 관리 화면으로 이동</div>
-              </div>
-            </div>
-            <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'linear-gradient(90deg, #EF4444, #DC2626)', border: 'none', color: '#FFF' }}>
-              {DASHBOARD_COPY.adminPage}
-            </button>
-          </div>
-        )}
-
-        {/* 사용자 프로필 카드 */}
-        <div className="glass-card" style={{
-          padding: '15px 18px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)'
-        }}>
-          <div style={{
-            width: '42px', height: '42px', borderRadius: '50%', background: 'var(--primary-gradient)',
-            display: 'flex', justifyContent: 'center', alignItems: 'center',
-            fontSize: '18px', fontWeight: '700', color: '#FFFFFF'
-          }}>
-            {(userData && userData.name ? userData.name.substring(0, 1).toUpperCase() : '👤')}
-          </div>
-          <div style={{ textAlign: 'left' }}>
-            <h3 style={{ fontSize: '16px', color: '#F3F4F6', margin: 0 }}>{userData ? userData.name : 'Test Member'}</h3>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{userData ? userData.email : '이메일 정보 없음'}</span>
-          </div>
-        </div>
-
-        {/* 👛 트러스트월넷 전용 연동 카드 */}
-        <div className="glass-card" style={{
-          padding: '20px',
-          border: '1px solid rgba(139, 92, 246, 0.25)',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%)'
-        }}>
-          <h3 style={{ fontSize: '15px', color: '#F3F4F6', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 16px 0', fontWeight: '700' }}>
-            <span style={{ fontSize: '16px' }}>👛</span> 트러스트월넷에서 지갑 연동
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ textAlign: 'left' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', fontWeight: '600' }}>
-                내 개인 지갑 주소 (SUT 입출금용)
-              </label>
-              <div style={{
-                padding: '12px',
-                background: 'rgba(16, 185, 129, 0.04)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '10px',
-                boxSizing: 'border-box',
-                wordBreak: 'break-all',
-                whiteSpace: 'normal'
-              }}>
-                <span style={{
-                  fontFamily: 'monospace',
-                  fontSize: '12px',
-                  color: userWallet ? '#34D399' : 'var(--text-muted)',
-                  letterSpacing: '0.5px',
-                  lineHeight: '1.4',
-                  flex: 1,
-                  userSelect: 'all'
-                }}>
-                  {userWallet || '등록된 개인 지갑 주소가 없습니다.'}
-                </span>
-                {userWallet && (
-                  <button
-                    type="button"
-                    onClick={() => handleCopyAddress(userWallet, 'wallet')}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: '10px',
-                      background: 'rgba(16, 185, 129, 0.1)',
-                      border: '1px solid rgba(16, 185, 129, 0.25)',
-                      borderRadius: '5px',
-                      color: '#34D399',
-                      cursor: 'pointer',
-                      fontWeight: '700',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    {copiedAddress === 'wallet' ? '복사됨' : '복사'}
-                  </button>
-                )}
-              </div>
-              <span style={{
-                fontSize: '10px',
-                color: '#34D399',
-                display: 'block',
-                marginTop: '6px',
-                fontWeight: '600',
-                lineHeight: '1.4'
-              }}>
-                🟢 트러스트월넷 실제 온체인 활성 지갑이 안전하게 자동 동기화 완료되었습니다.
-              </span>
-            </div>
-
-            <div style={{
-              marginTop: '15px',
-              paddingTop: '16px',
-              borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
-              textAlign: 'left'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '12.5px', color: '#C084FC', fontWeight: '700' }}>
-                  SUT 자산 거래 위임 승인 여부
-                </span>
-                {vaultApproved === true ? (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '3px 8px',
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '20px',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    color: '#34D399'
-                  }}>
-                    🟢 승인 완료 (거래가능)
-                  </span>
-                ) : (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '3px 8px',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    borderRadius: '20px',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    color: '#F59E0B'
-                  }}>
-                    ⚠️ 미승인 (서명 필요)
-                  </span>
-                )}
-              </div>
-
-              {vaultApproved === true ? (
-                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
-                  <ShieldCheck size={14} /> ✅ 플랫폼 위임 승인 완료
-                </div>
-              ) : vaultApproved === false ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button
-                    type="button"
-                    onClick={handleApproveVault}
-                    disabled={approvingVault}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      fontSize: '12px',
-                      background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '800',
-                      color: '#FFF',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <ShieldCheck size={14} />
-                    {approvingVault ? '⏳ 블록체인 서명 및 승인 승격 대기 중...' : '🔐 원클릭 자동 위임 승인 시도'}
-                  </button>
-                </div>
-              ) : (
-                <div style={{ width: '100%', padding: '10px 12px', fontSize: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '8px', fontWeight: '700', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box' }}>
-                  <ShieldCheck size={14} /> ⏳ 온체인 위임 승인 상태 확인 중...
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 트러스트월넷 디앱 브라우저 나가기 버튼 (카드 블록 밖 밑으로 이동 배치) */}
-        <button
-          type="button"
-          onClick={handleExitDApp}
-          style={{
-            width: '100%',
-            padding: '14px 20px',
-            fontSize: '15px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            borderRadius: '10px',
-            fontWeight: '800',
-            color: '#F3F4F6',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            boxSizing: 'border-box',
-            transition: 'all 0.2s',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          🚪 트러스트월넷 나가기
-        </button>
-
-      </div>
-    );
-  }
-
   return (
     <div style={{ padding: '20px', width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
 
@@ -963,6 +675,39 @@ function UserDashboard({ walletAddress, userData, onLogout }) {
           </div>
           <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'var(--primary-gradient)' }}>
             {DASHBOARD_COPY.managerPage}
+          </button>
+        </div>
+      )}
+
+      {/* 구매 관리 페이지 바로가기 배너 (최고 관리자 전용) */}
+      {canAccessAdmin && (
+        <div
+          className="glass-card glow-active"
+          onClick={() => navigate('/pay-admin')}
+          style={{
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(20, 16, 45, 0.4) 100%)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
+            marginTop: '-10px'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>💳</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#60A5FA' }}>구매 관리 페이지</div>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>매니저 이용 기간 관리 화면으로 이동</div>
+            </div>
+          </div>
+          <button className="btn-primary" style={{ width: 'auto', padding: '6px 14px', fontSize: '11px', borderRadius: '8px', background: 'linear-gradient(90deg, #3B82F6, #2563EB)', border: 'none', color: '#FFF' }}>
+            구매 관리 페이지
           </button>
         </div>
       )}

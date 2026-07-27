@@ -1061,30 +1061,34 @@ router.get('/gateio-performance', async (req, res) => {
     const currentValue = (sutBalance * sutPrice) + usdtBalance;
 
 
-    if (netInvested <= 0) {
-      let holdingQty = 0;
-      let avgPrice = 0;
-      let totalCost = 0;
-      const chronTrades = [...trades].sort((a, b) => parseFloat(a.create_time || 0) - parseFloat(b.create_time || 0));
-      
-      chronTrades.forEach(t => {
-        const price = parseFloat(t.price);
-        const amount = parseFloat(t.amount);
-        if (t.side === 'buy') {
-          totalCost += (price * amount);
-          holdingQty += amount;
-          if (holdingQty > 0) {
-            avgPrice = totalCost / holdingQty;
-          }
-        } else if (t.side === 'sell') {
-          holdingQty = Math.max(0, holdingQty - amount);
-          totalCost = holdingQty * avgPrice;
-          if (holdingQty === 0) {
-            avgPrice = 0;
-          }
+    let holdingQty = 0;
+    let avgPrice = 0;
+    let totalCost = 0;
+    const chronTrades = [...trades].sort((a, b) => parseFloat(a.create_time || 0) - parseFloat(b.create_time || 0));
+    
+    chronTrades.forEach(t => {
+      const price = parseFloat(t.price);
+      const amount = parseFloat(t.amount);
+      if (t.side === 'buy') {
+        totalCost += (price * amount);
+        holdingQty += amount;
+        if (holdingQty > 0) {
+          avgPrice = totalCost / holdingQty;
         }
-      });
-      netInvested = totalCost > 0 ? totalCost : 100;
+      } else if (t.side === 'sell') {
+        holdingQty = Math.max(0, holdingQty - amount);
+        totalCost = holdingQty * avgPrice;
+        if (holdingQty === 0) {
+          avgPrice = 0;
+        }
+      }
+    });
+
+    const sutInvested = sutBalance > 0 ? (sutBalance * (avgPrice || sutPrice)) : 0;
+    const totalPortfolioCost = sutInvested + usdtBalance;
+
+    if (netInvested <= 0 || (totalPortfolioCost > 0 && netInvested > totalPortfolioCost)) {
+      netInvested = totalPortfolioCost > 0 ? totalPortfolioCost : (totalCost > 0 ? totalCost : 100);
     }
 
     const totalBuyUsdt = netInvested;

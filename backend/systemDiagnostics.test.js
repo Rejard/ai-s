@@ -295,6 +295,25 @@ async function main() {
     }
 
     {
+      const softGapResult = adminRouter.__private__.assessNarrativeDivergence(
+        [
+          { faction: 'EXPRESSION_DOMINANT', cnt: 230 },
+          { faction: 'DECAY_RESISTANT', cnt: 166 },
+          { faction: 'MUTAGEN_ADAPTIVE', cnt: 104 },
+        ],
+        [
+          { faction: 'DECAY_RESISTANT', cnt: 5 },
+          { faction: 'MUTAGEN_ADAPTIVE', cnt: 4 },
+          { faction: 'EXPRESSION_DOMINANT', cnt: 2 },
+        ]
+      );
+      assert.equal(softGapResult.status, 'OK');
+      assert.ok(softGapResult.message.includes('not dominant enough'));
+      passed++;
+      console.log('  [PASS] Narrative divergence stays OK when pool leader is not dominant');
+    }
+
+    {
       const clearGapResult = adminRouter.__private__.assessNarrativeDivergence(
         [
           { faction: 'DECAY_RESISTANT', cnt: 320 },

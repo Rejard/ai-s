@@ -7,10 +7,17 @@ function AdminDiagnosticsTab({
   diagnosticsData,
   loadingDiagnostics,
   runningDiagnostics,
+  fetchDiagnostics,
   runDiagnostics
 }) {
   const [expandedSection, setExpandedSection] = useState('algorithm');
   const [terminalLogs, setTerminalLogs] = useState([]);
+
+  useEffect(() => {
+    if (!diagnosticsData && fetchDiagnostics) {
+      fetchDiagnostics();
+    }
+  }, [diagnosticsData, fetchDiagnostics]);
 
   useEffect(() => {
     if (runningDiagnostics) {

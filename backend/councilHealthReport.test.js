@@ -16,7 +16,7 @@ function buildMembers() {
   ];
 }
 
-function run() {
+function testHighDiversityReport() {
   const report = buildCouncilHealthReport({
     totalCount: 500,
     allMembers: buildMembers(),
@@ -33,5 +33,30 @@ function run() {
   assert.equal(report.diagnosticClass, 'success');
 }
 
-run();
+function testBorderlineDiversityRemainsHealthy() {
+  const base = Array.from({ length: 30 }, (_, index) => (index % 3) * 0.04);
+  const members = Array.from({ length: 10 }, (_, memberIndex) => ({
+    phenotype_json: JSON.stringify({
+      BUY: base.slice(0, 10).map((value) => value + memberIndex * 0.044),
+      SELL: base.slice(10, 20).map((value) => value - memberIndex * 0.044),
+      HOLD: base.slice(20, 30).map((value) => value + (memberIndex % 2) * 0.044),
+    }),
+  }));
+
+  const report = buildCouncilHealthReport({
+    totalCount: 500,
+    allMembers: members,
+    latestRun: {
+      run_key: 'ais_run_20260614021901_9eda6aba',
+      created_at: '2026-06-13 17:19:01',
+      completed_at: '2026-06-14 02:19:06',
+    },
+  });
+
+  assert.ok(report.diversityScore >= 35 && report.diversityScore < 40);
+  assert.equal(report.diagnosticClass, 'success');
+}
+
+testHighDiversityReport();
+testBorderlineDiversityRemainsHealthy();
 console.log('councilHealthReport tests passed');

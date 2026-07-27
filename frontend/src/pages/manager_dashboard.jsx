@@ -126,10 +126,13 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   const [sendingSut, setSendingSut] = useState(false);
   const [approvingOperator, setApprovingOperator] = useState(false);
   const [operatorApproved, setOperatorApproved] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const isSubscriptionExpired = subscriptionStatus ? subscriptionStatus.isExpired : false;
 
   const getManagerHeaders = () => buildManagerHeaders({ managerEmail, getStorageItem: (key) => localStorage.getItem(key) });
 
   const handleGateIoOrder = async (side) => {
+    if (isSubscriptionExpired) { alert("⚠️ 이용 기간이 설정되지 않았거나 만료되었습니다. 담당 관리자(lemaiiisk@gmail.com)에게 이용 기간 연장을 요청해 주세요."); return; }
     if (!orderAmount || parseFloat(orderAmount) <= 0) { alert("주문 수량을 입력하세요."); return; }
     if (!orderPrice || parseFloat(orderPrice) <= 0) { alert("주문 가격을 입력하세요."); return; }
     setSubmittingOrder(true);
@@ -149,6 +152,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleGateIoOrderClick = (side) => {
+    if (isSubscriptionExpired) { alert("⚠️ 이용 기간이 설정되지 않았거나 만료되었습니다. 담당 관리자(lemaiiisk@gmail.com)에게 이용 기간 연장을 요청해 주세요."); return; }
     if (!orderAmount || parseFloat(orderAmount) <= 0) { alert("주문 수량을 입력하세요."); return; }
     if (!orderPrice || parseFloat(orderPrice) <= 0) { alert("주문 가격을 입력하세요."); return; }
     const upperSide = side.toUpperCase();
@@ -246,6 +250,16 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
       if (managerData.credentialUpdates.clearApiKey) setLocalApiKey('');
       if (managerData.credentialUpdates.clearApiSecret) setLocalApiSecret('');
       if (managerData.credentialUpdates.depositAddress) setLocalDepositAddress(managerData.credentialUpdates.depositAddress);
+      if (managerEmail) {
+        try {
+          const subRes = await axios.get(`${API_BASE}/auth/status-by-email/${encodeURIComponent(managerEmail)}`);
+          if (subRes.data.success && subRes.data.user && subRes.data.user.subscriptionStatus) {
+            setSubscriptionStatus(subRes.data.user.subscriptionStatus);
+          }
+        } catch (subErr) {
+          console.error('Failed to load subscription status:', subErr);
+        }
+      }
     } catch (err) { console.error('Manager data load failed:', err); } finally { setLoading(false); }
     try {
       if (walletAddress) {
@@ -296,6 +310,7 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
   };
 
   const handleToggleAiStatus = async () => {
+    if (isSubscriptionExpired && gridSettings.ai_grid_status !== 'ON') { alert("⚠️ 이용 기간이 설정되지 않았거나 만료되었습니다. 담당 관리자(lemaiiisk@gmail.com)에게 이용 기간 연장을 요청해 주세요."); return; }
     const newStatus = gridSettings.ai_grid_status === 'ON' ? 'OFF' : 'ON';
     if (newStatus === 'ON') { const typed = prompt(`[⚠️ 법적 책임 면책 동의서 ⚠️]\n\n본 AI 자동 매매(Grid Trading) 기능의 가동으로 인해 발생하는 회원의 자산 손실 및 모든 민형사상 법적 책임은 해당 기능을 활성화한 '매니저 본인'에게 귀속됩니다.\n\n위 내용에 동의하시면 "동의합니다" 라고 입력해 주세요.`); if (typed !== "동의합니다") { alert("동의 문구가 일치하지 않아 AI 오토 트레이딩이 가동되지 않았습니다."); return; } }
     try { const res = await saveManagerAiSettings({ apiBase: API_BASE, managerEmail, settings: { status: newStatus }, axiosClient: axios, getStorageItem: (key) => localStorage.getItem(key) }); if (res.data.success) { const savedSettings = normalizeManagerGridSettings(res.data.settings || { ai_grid_status: newStatus }, { ...gridSettingsRef.current, ai_grid_status: newStatus }); setGridSettings(savedSettings); lastServerGridSettingsRef.current = savedSettings; alert(newStatus === 'ON' ? '🤖 완전 자동화 AI 트레이딩 봇이 가동되었습니다!' : 'AI 트레이딩 봇이 정지되었습니다.'); fetchManagerData(); } }
@@ -372,6 +387,24 @@ function ManagerDashboard({ walletAddress, managerEmail }) {
         </button>
         <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>🏢 <strong>매니저 대시보드</strong></span>
       </div>
+
+      {/* 구독 상태 알림 배너 */}
+      {isSubscriptionExpired ? (
+        <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(239,68,68,.12)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span>⚠️ <strong>이용 기간 미설정 / 만료</strong>: 실제 매매 주문 기능이 비활성화되었습니다. 담당 관리자(lemaiiisk@gmail.com)에게 이용 기간 연장을 요청해 주세요.</span>
+        </div>
+      ) : subscriptionStatus?.dDay ? (
+        <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#fbbf24', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <strong style={{ background: 'rgba(245,158,11,.25)', padding: '4px 8px', borderRadius: 6, fontSize: 12, flexShrink: 0 }}>⏳ {subscriptionStatus.dDay}</strong>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, lineHeight: 1.4 }}>
+              <span>이용 만료일이 7일 이하 남았습니다.</span>
+              <span style={{ fontSize: 12, opacity: 0.9 }}>(만료 예정: {subscriptionStatus?.expiresAt ? subscriptionStatus.expiresAt.split(' ')[0] : ''})</span>
+            </div>
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>관리자(lemaiiisk@gmail.com) 문의</span>
+        </div>
+      ) : null}
 
       <div style={{
         display: 'flex', gap: '4px', padding: '4px',

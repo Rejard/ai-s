@@ -106,7 +106,7 @@ function buildCouncilHealthReport({ totalCount, allMembers, latestRun }) {
     diversityGrade = 'CRITICAL';
     diagnosticClass = 'danger';
     recommendationText = `⚠️ 경고: AI 의원들의 유전적 다양성(${diversityScore}%)이 바닥나 거의 똑같이 판단하는 획일화 현상이 감지되었습니다. 다양성 확보를 위해 의원 정원을 800~1,000명으로 확장하거나, 돌연변이 수혈 비중을 강제로 높여야 합니다.`;
-  } else if (diversityScore < 40) {
+  } else if (diversityScore < 35) {
     diversityGrade = 'WARNING';
     diagnosticClass = 'warning';
     recommendationText = `⚠️ 주의: 유전적 획일화 현상이 시작되었습니다. 현재 ${totalCount}명 정원은 아직 가능하나, 시장이 정체될 경우 정원을 800명 수준으로 늘려 다양성을 확보하는 것을 권장합니다.`;
